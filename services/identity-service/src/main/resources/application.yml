@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: identity-service
+  data:
+    mongodb:
+      uri: mongodb://identity_user:identity_password@localhost:27017/db_identity?authSource=db_identity
+
+server:
+  port: 8081

@@ -1,0 +1,31 @@
+# Node
+node_modules/
+dist/
+build/
+
+# Java / Maven / Spring Boot
+target/
+*.jar
+*.war
+.mvn/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env

@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.healthcore.catalog.grpc";
+option java_outer_classname = "CatalogProto";
+
+package catalog;
+
+service NutritionalCatalog {
+  rpc GetFoodItem (FoodRequest) returns (FoodResponse) {}
+  
+  rpc SearchFood (SearchRequest) returns (SearchResponse) {}
+}
+
+message FoodRequest {
+  string food_id = 1;
+}
+
+message FoodResponse {
+  string food_id = 1;
+  string name = 2;
+  float calories_per_100g = 3;
+  float proteins_per_100g = 4;
+  float carbs_per_100g = 5;
+  float fats_per_100g = 6;
+  string source = 7; 
+}
+
+message SearchRequest {
+  string query = 1;
+  int32 limit = 2;
+}
+
+message SearchResponse {
+  repeated FoodResponse items = 1; 
+}

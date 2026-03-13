@@ -13,18 +13,20 @@ service NutritionalCatalog {
 }
 
 message FoodRequest {
-  string food_id = 1;
+  string barcode = 1; 
 }
 
 message FoodResponse {
-  string food_id = 1;
+  string barcode = 1;
   string name = 2;
-  float calories_per_100g = 3;
-  float proteins_per_100g = 4;
-  float carbs_per_100g = 5;
-  float fats_per_100g = 6;
-  string source = 7; 
-}
+  string brand = 3;       
+  string image_url = 4;   
+  float calories_per_100g = 5;
+  float proteins_per_100g = 6;
+  float carbs_per_100g = 7;
+  float fats_per_100g = 8;
+  string source = 9;    
+}  
 
 message SearchRequest {
   string query = 1;

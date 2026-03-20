@@ -64,7 +64,8 @@ Este servicio se conecta a *Open Food Facts* y expone los datos mediante gRPC.
    `cd services/catalog-service`
 2. Activa el entorno virtual (Windows):
    `venv\Scripts\activate`
-   *(Si alguien no tiene las dependencias, puede instalarlas con: `pip install fastapi uvicorn requests pydantic grpcio grpcio-tools`)*
+   *(Si alguien no tiene las dependencias, puede instalarlas con: `pip install fastapi uvicorn requests pydantic grpcio grpcio-tools` dentro del entorno virtual)*
+   *(Si alguien no tiene las el entorno virtual instalado, puede instalarlas con: `pyhton -n venv venv` )*
 3. Levanta el servidor **gRPC**:
    `python -m src.grpc_server`
    ✅ *Deberías ver el mensaje: 🚀 Servidor gRPC de Catalog-Service iniciado en el puerto 50051...*

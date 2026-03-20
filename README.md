@@ -25,6 +25,26 @@ For a deep dive into our technology stack and the reasons behind our architectur
 2. **Use Aliases**: Always use `@/` for internal imports.
 3. **Compatibility**: When installing new packages, remember to use `--legacy-peer-deps` due to current Vite 8 plugin resolution.
 
+## 🌿 Flujo de Trabajo (Git Workflow)
+
+**NUNCA trabajes directamente en la rama `main`.**
+
+1. Actualiza tu rama principal: `git checkout main` y luego `git pull origin main`
+2. Crea tu rama de trabajo: `git checkout -b feature/nombre-de-tu-tarea`
+* **`[FEAT]`**: Para añadir funcionalidades, describe lo que añadiste en el commit.
+* **`[CHORE]`**: Para tareas, describe la tarea hecha en el commit.
+* **`[FIX]`**: Para arreglar, describe el problema que arreglaste en el commit.
+* **`[DOC]`**: para documentación, describe la documentación agregada en el commit.
+* **`[PERF]`**: Para optimización, describe lo que optimizaste en el commit.
+* **`[REFACTOR]`**: para refactorización, describe lo que refactorizaste en el commit.
+3. Revisamos en qué rama nos encontramos: `git branch`
+3. Revisamos qué archivos hemos modificado: `git status`
+4. Añade todos los cambios trabajados en memoria: `git add .`
+5. Guarda los cambios: `git commit -m "feat: agregué X componente"`
+6. Sube tu rama: `git push -u origin feature/nombre-de-tu-tarea`
+8. Ve a GitHub y abre un **Pull Request** para revisión, agrega una descripción clara y crea el pull request.
+7. Cuando se apruebe el merge regresa a la rama principal y actualízala: `git checkout main` y luego `git pull origin main`
+
 # 🚀 Guía de Pruebas Locales: Ecosistema Backend (HealthCore)
 
 Actualmente, el ecosistema cuenta con dos microservicios comunicados a través de un puente de alto rendimiento **gRPC**. Para probar la extracción de datos nutricionales desde la base de datos mundial, sigue estos pasos:

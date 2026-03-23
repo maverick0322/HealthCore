@@ -1,0 +1,37 @@
+services:
+  # 1. El Motor de Base de Datos
+  mongodb:
+    image: mongo:7.0 
+    container_name: healthcore-mongodb
+    ports:
+      - "27018:27017" 
+    volumes:
+      - mongo_data:/data/db 
+    restart: unless-stopped 
+
+  # 2. La Interfaz Gráfica
+  mongo-express:
+    image: mongo-express:latest
+    container_name: healthcore-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081" 
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
+      ME_CONFIG_BASICAUTH: false 
+    depends_on:
+      - mongodb 
+
+  # 3. Nuestro API Gateway (NGINX)
+  api-gateway:
+    image: nginx:alpine # Usamos la versión ligera de NGINX
+    container_name: healthcore-api-gateway
+    ports:
+      - "80:80" # El puerto por defecto de internet
+    volumes:
+      # Conectamos tu archivo de configuración hacia adentro del contenedor
+      - ./services/api_gateway/nginx.conf:/etc/nginx/nginx.conf:ro 
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

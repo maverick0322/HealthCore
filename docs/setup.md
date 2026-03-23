@@ -30,9 +30,17 @@ The main web application built with React, Vite, and Tailwind CSS.
    ```bash
    npm run dev
    ```
-   The app will be available at `http://localhost:5173`.
+   The app will be available at `https://localhost:5173`. 
 
-4. **Building for production**:
+4. **HTTPS/SSL Trust (First Time Only)**:
+   > [!IMPORTANT]
+   > For the team: We use the `@vitejs/plugin-basic-ssl` to enable HTTPS in development. This is required for PWA features (like the "Install" prompt) to work on your phone.
+   
+   - When you first visit the site, your browser will show a **"Your connection is not private"** warning.
+   - Click **Advanced** and then **"Proceed to localhost (unsafe)"**. 
+   - You only need to do this once per device.
+
+5. **Building for production**:
    ```bash
    npm run build
    ```

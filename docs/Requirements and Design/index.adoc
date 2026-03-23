@@ -1,0 +1,21 @@
+= Proyecto HealthCore: Documentación Técnica
+:author: Velvet Team
+:revnumber: 1.0
+:revdate: 2026-03-24
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectnums:
+:sectanchors:
+:pdf-theme: ./theme.yml
+:icons: font
+:imagesdir: ./images
+
+// Introducción al documento
+[preface]
+== Introducción
+Este documento describe formalmente los requisitos y el diseño técnico del sistema HealthCore, un ecosistema integral de salud y nutrición.
+
+include::requirements.adoc[]
+
+include::design.adoc[]

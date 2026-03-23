@@ -1,0 +1,41 @@
+= Diseño
+:icons: font
+
+== Diseño arquitectónico
+Descripción global de la infraestructura HealthCore.
+
+// TODO: Add Diagram
+
+== Vista de casos de uso (diagrama uml de casos de uso)
+Diagrama que muestra la interacción entre usuarios y el sistema.
+
+// TODO: Add Use Case Diagram
+
+== Vista lógica (diagrama uml de clases)
+Estructura de clases lógica de las entidades principales.
+
+// TODO ADD Domain model
+
+== Vista de implementación (diagrama uml de componentes)
+Distribución de los artefactos de software.
+
+// TODO ADD Component Diagram
+
+== Vista de procesos (diagramas uml de secuencia)
+Flujo de interacción gRPC entre microservicios.
+
+// TODO ADD Sequences Diagrams
+
+== Vista de despliegue (diagrama uml de despliegue)
+Estructura física de despliegue.
+
+* *Frontend*: GitHub Pages
+* *Backend (Catalog)*: Docker Container (Python).
+* *Backend (Tracking)*: Docker Container (Java/Spring).
+* *DB*: MongoDB Atlas Cluster.
+
+== Modelo de datos (diagrama de entidad-relación)
+Diseño conceptual de la base de datos (NoSQL / Relacional).
+
+== Descripciones de casos de uso
+Detalle paso a paso de los flujos principales (Flujo básico, alterno y excepciones).

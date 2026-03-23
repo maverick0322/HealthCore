@@ -1,0 +1,27 @@
+name: Publish Technical Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/Requirements and Design/**'
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build AsciiDoc to HTML and PDF
+        uses: asciidoctor/action-asciidoctor@v5
+        with:
+          program: |
+            asciidoctor -D output docs/Requirements\ and\ Design/index.adoc
+            asciidoctor-pdf -a pdf-theme=docs/Requirements\ and\ Design/theme.yml -D output docs/Requirements\ and\ Design/index.adoc
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: technical-docs
+          path: output/

@@ -1,0 +1,46 @@
+= Requerimientos
+:icons: font
+:imagesdir: ./images
+
+== Contexto
+[desc-contexto]
+Incluir aquí el diagrama de contexto del sistema. Este diagrama muestra los límites del sistema y su interacción con entidades externas (usuarios, otros sistemas, bases de datos externas).
+
+image::context-diagram.png[Diagrama de Contexto, width=600]
+
+== Clases de usuario
+Definición de los diferentes perfiles de usuario que interactúan con el sistema HealthCore.
+
+* *Paciente / Usuario Final*: Persona que registra su alimentación y rutinas.
+* *Nutricionista*: Profesional que realiza seguimiento y asigna planes.
+* *Administrador*: Gestión de usuarios y configuración global del sistema.
+
+== Casos de uso (análisis)
+Descripción funcional de las interacciones principales.
+
+[cols="1,3"]
+|===
+| Caso de Uso | Descripción Breve
+| Registrar Alimento | El paciente busca un alimento por código de barras o nombre y lo añade a su diario.
+| Consultar Plan | El paciente visualiza el plan nutricional asignado por su nutricionista.
+| Generar Reporte | El sistema consolida los datos de consumo semanal para su análisis.
+|===
+
+== Prototipo de UI (baja fidelidad)
+Enlace o descripción de los bocetos iniciales de la interfaz.
+
+
+
+== Requisitos funcionales
+[req-func]
+Listado de capacidades que el sistema debe proveer.
+
+1. 
+
+== Requisitos no funcionales
+[req-no-func]
+Restricciones y calidades técnicas del sistema.
+
+*
+*
+*

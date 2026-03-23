@@ -4,9 +4,8 @@ HealthCore is a comprehensive health and fitness management platform.
 
 ---
 
-## 👥 The Maverick Team
+## 👥 The Velvet Team
 This project is a collaborative effort dedicated to building a high-performance, scalable health ecosystem.
-- **Lead Developer**: @maverick0322
 - **Core Strategy**: Clean Architecture & gRPC Integration
 
 ---

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -129,9 +130,9 @@ export const LoginPage = () => {
             <div className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-sm font-medium">{t("password")}</Label>
-                <a href="#" className="text-xs font-semibold text-primary hover:underline hover:text-primary/80 transition-colors">
+                <Link to="/forgot-password" className="text-xs font-semibold text-primary hover:underline hover:text-primary/80 transition-colors">
                   {t("forgot")}
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <Input
@@ -158,9 +159,9 @@ export const LoginPage = () => {
 
         <p className="text-center text-sm text-muted-foreground">
           {t("noAccount")}{" "}
-          <a href="#" className="font-semibold text-primary hover:underline hover:text-primary/80 transition-colors">
+          <Link to="/signup" className="font-semibold text-primary hover:underline hover:text-primary/80 transition-colors">
             {t("register")}
-          </a>
+          </Link>
         </p>
 
         <footer className="text-center pt-4 sm:pt-8 pb-4">

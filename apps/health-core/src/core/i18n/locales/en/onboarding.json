@@ -1,0 +1,72 @@
+{
+  "step1": {
+    "title": "Tell us about yourself",
+    "subtitle": "This data helps us accurately personalize your nutritional plan.",
+    "age": "Age",
+    "height": "Height (cm)",
+    "weight": "Current Weight (kg)",
+    "next": "Next Step",
+    "editLater": "You can edit this data later in your profile."
+  },
+  "step2": {
+    "title": "What is your main goal?",
+    "subtitle": "Select the goal that best fits what you aim to achieve with us.",
+    "goals": {
+      "weightLoss": {
+        "title": "Lose Weight",
+        "desc": "Reduce body fat in a healthy way"
+      },
+      "muscleGain": {
+        "title": "Gain Muscle Mass",
+        "desc": "Increase your strength and muscle volume"
+      },
+      "health": {
+        "title": "Improve Health",
+        "desc": "Optimize your habits and overall well-being"
+      },
+      "performance": {
+        "title": "Sports Performance",
+        "desc": "Take your energy and power to the next level"
+      }
+    },
+    "continue": "Continue",
+    "changeLater": "You can change this goal later in settings."
+  },
+  "step3": {
+    "title": "Your Dietary Preferences",
+    "subtitle": "This helps us filter out recipes and plans that don't suit you.",
+    "dietType": "Diet Type",
+    "diets": {
+      "omnivore": "Omnivore",
+      "vegetarian": "Vegetarian",
+      "vegan": "Vegan",
+      "keto": "Keto",
+      "paleo": "Paleo"
+    },
+    "allergies": "Allergies and Intolerances",
+    "allergyItems": {
+      "gluten": "Gluten",
+      "lactose": "Lactose",
+      "nuts": "Nuts",
+      "seafood": "Seafood",
+      "egg": "Egg"
+    },
+    "avoidFoods": "Foods to avoid",
+    "avoidPlaceholder": "E.g. Cilantro, Onion, Bell Pepper...",
+    "back": "Back",
+    "continue": "Continue"
+  },
+  "step4": {
+    "title": "All set to start!",
+    "subtitle": "Review your summary and confirm to begin your journey towards a healthier life.",
+    "physicalData": "Physical Data",
+    "mainGoal": "Main Goal",
+    "preferences": "Preferences",
+    "finishBtn": "Finish and see my Dashboard",
+    "editBtn": "Edit my data",
+    "secure": "Your data is secure with NutriTrack"
+  },
+  "stepper": {
+    "step": "Step {{current}} of {{total}}"
+  }
+}

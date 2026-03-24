@@ -6,4 +6,4 @@ spring:
       uri: mongodb://identity_user:identity_password@localhost:27017/db_identity?authSource=db_identity
 
 server:
-  port: 8081
+  port: 8082

@@ -5,6 +5,7 @@ import { SignUpPage } from "@/features/auth/pages/SignUpPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { VerifyCodePage } from "@/features/auth/pages/VerifyCodePage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { PatientOnboardingPage } from "@/features/onboarding/pages/PatientOnboardingPage";
 
 export const appRouter = createBrowserRouter([
   {
@@ -30,5 +31,9 @@ export const appRouter = createBrowserRouter([
   {
     path: "/reset-password",
     element: <ResetPasswordPage />,
+  },
+  {
+    path: "/onboarding/patient",
+    element: <PatientOnboardingPage />,
   },
 ]);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -11,12 +11,22 @@ import { usePasswordStrength } from "../hooks/usePasswordStrength";
 import { PasswordStrengthIndicator } from "../components/PasswordStrengthIndicator";
 
 export const SignUpPage = () => {
+  const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<"paciente" | "nutriologo">("paciente");
   const { t } = useTranslation("auth");
   const strength = usePasswordStrength(password);
+
+  const handleSignUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (role === "paciente") {
+      navigate("/onboarding/patient");
+    } else {
+      // Todo: Navigate to nutriologo onboarding
+    }
+  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-8 bg-background text-foreground font-sans relative transition-colors duration-500 ease-in-out">
@@ -124,7 +134,7 @@ export const SignUpPage = () => {
             <div className="flex-grow border-t border-border"></div>
           </div>
 
-          <form className="space-y-4 sm:space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-4 sm:space-y-5" onSubmit={handleSignUp}>
             <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="full-name" className="text-sm font-medium">{t("fullName")}</Label>
               <Input

@@ -14,12 +14,12 @@ export const LoginPage = () => {
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-8 bg-background text-foreground font-sans relative transition-colors duration-500 ease-in-out">
-      
+
       {/* Top Controls */}
       <SettingsBar />
 
       <div className="w-full max-w-md w-full sm:w-[420px] space-y-6 sm:space-y-8 animate-in fade-in zoom-in-95 duration-500">
-        
+
         {/* Header */}
         <div className="flex flex-col items-center space-y-3 sm:space-y-4">
           <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 rounded-xl flex items-center justify-center shadow-inner transition-transform hover:scale-105 duration-300">
@@ -49,30 +49,27 @@ export const LoginPage = () => {
 
         {/* Card Form */}
         <div className="bg-card text-card-foreground p-5 sm:p-8 rounded-xl sm:rounded-2xl border border-border shadow-md space-y-5 sm:space-y-6 transition-colors duration-500">
-          
+
           <div className="relative flex w-full p-1 bg-muted rounded-lg select-none">
             {/* Animated Pill Container */}
             <div className="absolute inset-1 flex">
               <div
-                className={`w-1/2 h-full bg-background rounded-md shadow-sm transition-transform duration-300 ease-in-out ${
-                  role === "paciente" ? "translate-x-0" : "translate-x-full"
-                }`}
+                className={`w-1/2 h-full bg-background rounded-md shadow-sm transition-transform duration-300 ease-in-out ${role === "paciente" ? "translate-x-0" : "translate-x-full"
+                  }`}
               />
             </div>
-            
+
             <button
               onClick={() => setRole("paciente")}
-              className={`relative z-10 w-1/2 py-1.5 text-sm font-medium transition-colors duration-300 rounded-md ${
-                role === "paciente" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`relative z-10 w-1/2 py-1.5 text-sm font-medium transition-colors duration-300 rounded-md ${role === "paciente" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               {t("patient")}
             </button>
             <button
               onClick={() => setRole("nutriologo")}
-              className={`relative z-10 w-1/2 py-1.5 text-sm font-medium transition-colors duration-300 rounded-md ${
-                role === "nutriologo" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
+              className={`relative z-10 w-1/2 py-1.5 text-sm font-medium transition-colors duration-300 rounded-md ${role === "nutriologo" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
             >
               {t("nutritionist")}
             </button>
@@ -123,7 +120,7 @@ export const LoginPage = () => {
                 id="email"
                 type="email"
                 placeholder={t("emailPlaceholder")}
-                className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground" 
+                className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground"
                 required
               />
             </div>

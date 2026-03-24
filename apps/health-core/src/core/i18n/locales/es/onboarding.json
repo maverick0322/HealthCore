@@ -1,0 +1,72 @@
+{
+  "step1": {
+    "title": "Cuéntanos sobre ti",
+    "subtitle": "Estos datos nos ayudan a personalizar tu plan nutricional de manera precisa.",
+    "age": "Edad",
+    "height": "Estatura (cm)",
+    "weight": "Peso Actual (kg)",
+    "next": "Siguiente Paso",
+    "editLater": "Podrás editar estos datos más adelante en tu perfil."
+  },
+  "step2": {
+    "title": "¿Cuál es tu meta principal?",
+    "subtitle": "Selecciona el objetivo que mejor se adapte a lo que buscas conseguir con nosotros.",
+    "goals": {
+      "weightLoss": {
+        "title": "Perder Peso",
+        "desc": "Reduce grasa corporal de forma saludable"
+      },
+      "muscleGain": {
+        "title": "Ganar Masa Muscular",
+        "desc": "Aumenta tu fuerza y volumen muscular"
+      },
+      "health": {
+        "title": "Mejorar Salud",
+        "desc": "Optimiza tus hábitos y bienestar general"
+      },
+      "performance": {
+        "title": "Rendimiento Deportivo",
+        "desc": "Lleva tu energía y potencia al siguiente nivel"
+      }
+    },
+    "continue": "Continuar",
+    "changeLater": "Puedes cambiar este objetivo más tarde en la configuración."
+  },
+  "step3": {
+    "title": "Tus Preferencias Alimentarias",
+    "subtitle": "Esto nos ayuda a filtrar recetas y planes que no se adapten a ti.",
+    "dietType": "Tipo de Dieta",
+    "diets": {
+      "omnivore": "Omnívora",
+      "vegetarian": "Vegetariana",
+      "vegan": "Vegana",
+      "keto": "Keto",
+      "paleo": "Paleo"
+    },
+    "allergies": "Alergias e Intolerancias",
+    "allergyItems": {
+      "gluten": "Gluten",
+      "lactose": "Lactosa",
+      "nuts": "Frutos Secos",
+      "seafood": "Mariscos",
+      "egg": "Huevo"
+    },
+    "avoidFoods": "Alimentos a evitar",
+    "avoidPlaceholder": "Ej. Cilantro, Cebolla, Pimiento...",
+    "back": "Atrás",
+    "continue": "Continuar"
+  },
+  "step4": {
+    "title": "¡Todo listo para comenzar!",
+    "subtitle": "Revisa tu resumen y confirma para empezar tu viaje hacia una vida más saludable.",
+    "physicalData": "Datos Físicos",
+    "mainGoal": "Objetivo Principal",
+    "preferences": "Preferencias",
+    "finishBtn": "Finalizar y ver mi Dashboard",
+    "editBtn": "Editar mis datos",
+    "secure": "Tus datos están seguros con NutriTrack"
+  },
+  "stepper": {
+    "step": "Paso {{current}} de {{total}}"
+  }
+}

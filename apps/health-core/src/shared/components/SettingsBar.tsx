@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 
-export const SettingsBar = () => {
+export const SettingsBar = ({ className }: { className?: string }) => {
   const { theme, setTheme, language, setLanguage } = useSettingsStore();
 
   const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -18,8 +18,10 @@ export const SettingsBar = () => {
     setTheme(isDark ? "light" : "dark");
   };
 
+  const containerClass = className ?? "absolute top-4 right-4 flex items-center gap-2 z-50";
+
   return (
-    <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+    <div className={containerClass}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 

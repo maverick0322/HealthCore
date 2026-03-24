@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8AA382",
+                        "background-light": "#F9FAFB",
+                        "background-dark": "#181b17",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<title>Restablecer Contraseña</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col">
+<div class="flex-1 flex items-center justify-center p-4">
+<div class="w-full max-w-[440px] bg-white dark:bg-zinc-900 shadow-sm border border-slate-200 dark:border-zinc-800 rounded-xl p-8 md:p-10">
+<!-- Logo Section -->
+<div class="flex flex-col items-center mb-8">
+<div class="size-12 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary">
+<span class="material-symbols-outlined text-3xl">shield_lock</span>
+</div>
+<h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight text-center">
+                    ¿Olvidaste tu contraseña?
+                </h1>
+<p class="mt-2 text-slate-500 dark:text-zinc-400 text-sm text-center leading-relaxed">
+                    Ingresa tu correo electrónico y te enviaremos las instrucciones para restablecerla.
+                </p>
+</div>
+<!-- Form Section -->
+<form action="#" class="space-y-6" method="POST">
+<div class="space-y-2">
+<label class="text-sm font-medium leading-none text-slate-700 dark:text-zinc-300" for="email">
+                        Correo electrónico
+                    </label>
+<div class="relative">
+<input class="flex h-12 w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200" id="email" name="email" placeholder="nombre@ejemplo.com" required="" type="email"/>
+</div>
+</div>
+<button class="inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-12 px-8 w-full shadow-md shadow-primary/20" type="submit">
+                    Enviar instrucciones
+                </button>
+</form>
+<!-- Footer Section -->
+<div class="mt-8 text-center">
+<a class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-zinc-400 hover:text-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                    Volver al inicio de sesión
+                </a>
+</div>
+</div>
+</div>
+<!-- Optional Illustration / Decorative Element (Subtle) -->
+<div class="fixed bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/10 via-primary/40 to-primary/10 opacity-50"></div>
+</body></html>

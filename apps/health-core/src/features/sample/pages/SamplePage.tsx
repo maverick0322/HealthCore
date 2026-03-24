@@ -37,7 +37,7 @@ export const SamplePage = () => {
           type="text" 
           value={barcode}
           onChange={(e) => setBarcode(e.target.value)}
-          placeholder="Ingresa el código de barras (ej. 7501045403915)"
+          placeholder="Ingresa el código de barras (ej. t´´)"
           className="w-full px-4 py-2 text-black bg-white dark:bg-slate-800 dark:text-white rounded-md border border-gray-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 

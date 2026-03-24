@@ -12,7 +12,12 @@ def serve():
     
     print("Servidor gRPC de Catalog-Service iniciado en el puerto 50051...")
     server.start()
-    server.wait_for_termination()
+
+    try:
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        print("\n[gRPC] Apagando el servidor de catálogo de manera segura... ¡Adiós!")
+        server.stop(0)
 
 if __name__ == '__main__':
     serve()

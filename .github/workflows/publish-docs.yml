@@ -1,27 +1,44 @@
-name: Publish Technical Documentation
+name: Build & Publish Docs
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'docs/Requirements and Design/**'
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  build-docs:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Build AsciiDoc to HTML and PDF
-        uses: asciidoctor/action-asciidoctor@v5
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
         with:
-          program: |
-            asciidoctor -D output docs/Requirements\ and\ Design/index.adoc
-            asciidoctor-pdf -a pdf-theme=docs/Requirements\ and\ Design/theme.yml -D output docs/Requirements\ and\ Design/index.adoc
-
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+          ruby-version: 3.3
+      - run: gem install asciidoctor asciidoctor-pdf
+      # HTML
+      - run: mkdir -p build
+      - run: asciidoctor -D build "docs/Requirements and Design/index.adoc"
+      # PDF (with theme, adjust path if needed)
+      - run: asciidoctor-pdf -a pdf-theme="docs/Requirements and Design/theme.yml" -o build/index.pdf "docs/Requirements and Design/index.adoc"
+      # Copy static assets (e.g., images, themes)
+      - name: Copy static assets
+        run: |
+          if [ -d "docs/Requirements and Design/images" ]; then
+            mkdir -p build/images
+            cp docs/Requirements\ and\ Design/images/* build/images/
+          fi
+          # Add more copies if needed, e.g., for theme files
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: technical-docs
-          path: output/
+          path: build
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

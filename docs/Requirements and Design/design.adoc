@@ -4,7 +4,7 @@
 == Diseño arquitectónico
 Descripción global de la infraestructura HealthCore.
 
-// TODO: Add Diagram
+// TODO: Add Diagram in png format
 
 == Vista de casos de uso (diagrama uml de casos de uso)
 Diagrama que muestra la interacción entre usuarios y el sistema.

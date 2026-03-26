@@ -1,12 +1,4 @@
 # theme.yml
-font:
-  catalog:
-    # Use standard fonts if specific ones are not provided
-    Noto Serif:
-      normal: notoserif-regular-subset.ttf
-      bold: notoserif-bold-subset.ttf
-      italic: notoserif-italic-subset.ttf
-      bold_italic: notoserif-bolditalic-subset.ttf
 page:
   layout: portrait
   margin: [1in, 1in, 1in, 1in]

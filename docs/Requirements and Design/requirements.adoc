@@ -2,6 +2,27 @@
 :icons: font
 :imagesdir: ./images
 
+== Propósito
+Definir los requisitos funcionales, no funcionales y reglas de negocio para el desarrollo de Health Core, una plataforma distribuida que centralice el seguimiento nutricional entre pacientes y profesionales.
+
+=== Alcance del sistema 
+El sistema permitirá el registro de alimentos (vía catálogo local y Open Food Facts ), gestión de citas con control de concurrencia , y visualización de progreso. El acceso será multiplataforma: Web, Escritorio (Electron) y Móvil (PWA).
+
+== Descripción General 
+El sistema se basa en una arquitectura de microservicios utilizando tecnologías heterogéneas como Spring Boot, Python y React. Se desplegará mediante contenedores Docker en entornos Linux.
+
+*Funciones del Producto*
+
+* Registro y gestión de perfiles nutricionales.
+
+* Monitoreo de ingesta calórica y evolución de peso.
+
+* Vinculación segura mediante códigos QR o numéricos.
+
+* Agenda de citas con prevención de dobles reservas.
+
+* Notificaciones automatizadas por correo electrónico.
+
 == Contexto
 [desc-contexto]
 Este diagrama muestra los límites del sistema y su interacción con entidades externas (usuarios, otros sistemas, bases de datos externas).
@@ -15,7 +36,41 @@ Definición de los diferentes perfiles de usuario que interactúan con el sistem
 * *Nutricionista*: Profesional que realiza seguimiento y asigna planes.
 * *Administrador*: Gestión de usuarios y configuración global del sistema.
 
-== Casos de uso (análisis)
+== Requisitos funcionales
+[req-func]
+Listado de capacidades que el sistema debe proveer.
+
+*Para el Paciente (Uso Ágil/Móvil)*
+
+* Autogestión de Perfil: Registro de datos biométricos (peso, estatura, edad) y definición de objetivos personales.
+
+* Vinculación Dinámica: Capacidad de establecer una relación profesional con un nutriólogo mediante el escaneo de un código QR único.
+
+* Registro Multimodal de Alimentos: Búsqueda en catálogo local o externo (Open Food Facts) para registrar ingesta calórica diaria.
+
+* Gestión de Citas: Consulta de disponibilidad en tiempo real y reservación de espacios de atención.
+
+* Visualización de Progreso: Acceso a reportes gráficos de evolución de peso y cumplimiento calórico por periodos.
+
+*Para el Nutriólogo (Uso Operativo/Web-Escritorio)*
+
+* Gestión de Invitaciones: Generación de códigos QR o tokens temporales para vincular nuevos pacientes a su cartera.
+
+* Control de Agenda: Configuración de días de consulta, horarios y límites de cupos concurrentes.
+
+* Supervisión de Expediente: Consulta detallada de diarios alimenticios, fotos de progreso y métricas de pacientes vinculados.
+
+* Emisión de Observaciones: Registro de retroalimentación técnica y ajustes nutricionales visibles para el paciente.
+
+*Para el Administrador (Uso de Gestión/Web)*
+
+* Gestión de Usuarios y Roles: Administrar altas, bajas y permisos de acceso para asegurar la integridad del sistema.
+
+* Gestión de Catálogos: Actualizar la base de datos interna de alimentos y parámetros de referencia nutricional.
+
+* Monitoreo de Salud del Sistema: Supervisar el estado de los microservicios y la conectividad con servicios externos.
+
+== Casos de uso
 Descripción funcional de las interacciones principales.
 
 [cols="1,1,1,3"]
@@ -37,21 +92,86 @@ Descripción funcional de las interacciones principales.
 | CU-14 | Monitorear Salud del Sistema | Administrador | Supervisar el estado de los microservicios y la conectividad con servicios externos.
 |===
 
-== Prototipo de UI (baja fidelidad)
-Enlace o descripción de los bocetos iniciales de la interfaz.
+== Preocupaciones de los Stakeholders
 
-// TODO: Agregar prototipo de UI
+* Pacientes:
 
-== Requisitos funcionales
-[req-func]
-Listado de capacidades que el sistema debe proveer.
+** Privacidad: "¿Quién puede ver mis fotos de progreso y mi peso?".
+** Usabilidad: "Si registrar una comida me toma más de un minuto, dejaré de usar la app".
 
-1. 
+* Nutriólogos:
+
+** Eficiencia: "¿Me ahorrará tiempo de consulta o tendré que capturar más datos manualmente?".
+** Integridad: "¿Cómo puedo estar seguro de que no habrá dos personas agendadas al mismo tiempo?".
+
+* Académicos (Universidad Veracruzana):
+
+** Arquitectura: "¿El sistema realmente demuestra desacoplamiento y heterogeneidad tecnológica?".
+** Calidad: "¿La cobertura de pruebas asegura que el sistema es robusto ante fallos parciales?".
 
 == Requisitos no funcionales
 [req-no-func]
 Restricciones y calidades técnicas del sistema.
 
-*
-*
-*
+=== Limitaciones y restricciones
+
+Dependencia Externa: El catálogo nutricional extendido depende totalmente de la disponibilidad y estructura de datos de Open Food Facts.
+
+Alcance Multiplataforma: El acceso móvil tendrá funciones limitadas de reporte comparado con la versión web/escritorio.
+
+Entorno de Ejecución: El sistema debe operar estrictamente bajo contenedores y en sistemas operativos GNU/Linux.
+
+Tecnologías: Obligación de usar un stack específico: React + TypeScript, Spring Boot, Python y Electron.
+
+=== Atributos de calidad
+
+[cols="1,1,1,1"]
+|=== 
+| Prioridad | Atributo de Calidad | Escenario / Métrica Meta | Concern Satisfecho
+| Alta | Consistencia | Cero (0) dobles reservas exitosas detectadas en pruebas de concurrencia. | Integridad (Nutriólogo)
+| Alta | Seguridad | 100% de los accesos a recursos sensibles deben estar validados por roles (RBAC). | Privacidad (Paciente)
+| Media | Rendimiento | Tiempo de respuesta promedio por endpoint crítico ≤300 ms. | Usabilidad (Paciente)
+| Media | Disponibilidad | "Tolerancia a fallas parciales; si falla el servicio de imágenes, el registro de comida debe seguir operando." | Arquitectura (Académico)
+| Baja | Mantenibilidad | Cobertura de funcionalidad en la capa de servicios ≥70% mediante pruebas automatizadas. | Calidad (Académico)
+|=== 
+
+== Riesgos 
+
+*Riesgos de Alto Impacto y Alto Costo Técnico*
+
+Estos riesgos pueden invalidar el propósito del sistema o causar problemas legales/éticos graves.
+
+[cols="1,1,1"]
+|===
+| Riesgo | Impacto | Mitigación Propuesta 
+| Inconsistencia por Concurrencia (Dobles Reservas): Varios pacientes intentan reservar el mismo horario simultáneamente. | Negocio: Pérdida de confianza del nutriólogo y mala experiencia del paciente. | Implementar Bloqueo Pesimista o Transacciones Atómicas en el microservicio de Agenda para asegurar que el valor meta de "0 dobles reservas" se cumpla. 
+| Exposición de Datos Sensibles: Acceso no autorizado a expedientes clínicos, fotos de progreso o datos biográficos. | Negocio: Violación de privacidad y fallos de seguridad críticos. | Aplicar RBAC (Control de Acceso Basado en Roles) estricto y validación de tokens JWT en cada microservicio, no solo en el Gateway. 
+| Fallo Crítico de la Arquitectura Distribuida: Un microservicio esencial (como Auth) se cae, dejando inoperable todo el sistema. | Técnico: Interrupción total del servicio y dificultad de recuperación manual. | Implementar Tolerancia Parcial a Fallos y mecanismos de Health Check en Docker para el reinicio automático de contenedores. 
+|===
+
+*Riesgos de Impacto Medio (Operativos)*
+
+Riesgos que afectan la fluidez del uso diario o la calidad técnica esperada.
+[cols="1,1,1"]
+|===
+| Riesgo | Impacto | Mitigación Propuesta 
+| Inestabilidad de la API Externa (Open Food Facts): El servicio de terceros responde lento o cambia su formato de datos. | Técnico: Fallos en el registro alimenticio y degradación del rendimiento. | Aislar la integración en el microservicio de Catálogo (Python) y usar Caché Local para alimentos comunes, permitiendo consultas aunque la API externa falle. 
+| Baja Adherencia por Complejidad: El paciente encuentra difícil registrar alimentos y abandona la plataforma. | Negocio: El sistema deja de ser útil para el seguimiento nutricional. | Priorizar la Usabilidad Móvil con flujos de registro de "pocos pasos" y búsqueda predictiva en el catálogo. 
+| Deuda Técnica por Falta de Pruebas: No alcanzar el 70% de cobertura de código exigido. | Técnico: Aparición de bugs en producción y dificultad para escalar el sistema. | Integrar Pruebas Automatizadas en el flujo de desarrollo y usar herramientas de reporte de cobertura.
+|===
+
+*Riesgos Asumidos (Aceptables)*
+
+Situaciones que, aunque no son ideales, se deciden aceptar dado el contexto académico y el tiempo limitado de desarrollo.
+
+* Latencia en Redes Externas: Se acepta que la carga de imágenes pesadas en el media-service pueda ser más lenta que el texto, siempre que no bloquee el hilo principal del sistema.
+* Limitación de Funciones en Móvil: Se asume que el paciente no podrá generar reportes complejos ni realizar administración avanzada desde su teléfono, delegando eso a la versión Web/Desktop.
+* Compatibilidad Limitada de OS: El sistema solo garantiza funcionamiento óptimo en entornos basados en Linux/Docker, asumiendo que el despliegue en otros sistemas operativos podría requerir ajustes manuales.
+* Volatilidad de Datos no Normalizados: Se acepta que algunos campos de Open Food Facts puedan venir vacíos o incompletos, enfocándose solo en las métricas nutricionales críticas para el seguimiento.
+
+
+
+== Prototipo de UI (baja fidelidad)
+Enlace o descripción de los bocetos iniciales de la interfaz.
+
+// TODO: Agregar prototipo de UI

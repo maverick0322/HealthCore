@@ -1,61 +1,76 @@
 package com.healthcore.identity.application;
 
+import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
-import com.healthcore.identity.infrastructure.persistence.UserDocument;
-import com.healthcore.identity.infrastructure.persistence.UserRepository;
+import com.healthcore.identity.domain.exception.ConflictException;
+import com.healthcore.identity.domain.exception.UnauthorizedException;
+import com.healthcore.identity.domain.repository.UserRepository;
 import com.healthcore.identity.infrastructure.security.JwtUtil;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Optional;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class AuthService {
+
+    private static final String ACCESS_TOKEN_KEY = "accessToken";
+    private static final String REFRESH_TOKEN_KEY = "refreshToken";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-    }
-
     public User registerPatient(String email, String plainPassword) {
+        log.info("Attempting to register patient with email: {}", email);
+
         if (userRepository.findByEmail(email).isPresent()) {
-            throw new IllegalArgumentException("Email ya registrado en HealthCore");
+            log.warn("Registration rejected. Email already exists: {}", email);
+            throw new ConflictException("Email is already registered in HealthCore");
         }
 
-        String hashedPassword = passwordEncoder.encode(plainPassword);
+        User newUser = User.builder()
+                .email(email)
+                .passwordHash(passwordEncoder.encode(plainPassword))
+                .role(Role.PATIENT)
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .build();
 
-        UserDocument newUserDoc = new UserDocument();
-        newUserDoc.setEmail(email);
-        newUserDoc.setPasswordHash(hashedPassword);
-        newUserDoc.setRole(User.Role.PATIENT);
-        newUserDoc.setActive(true);
-        newUserDoc.setCreatedAt(LocalDateTime.now());
+        User savedUser = userRepository.save(newUser);
+        log.info("Patient registered successfully with ID: {}", savedUser.getId());
 
-        UserDocument savedDoc = userRepository.save(newUserDoc);
-        return new User(savedDoc.getId(), savedDoc.getEmail(), savedDoc.getPasswordHash(), savedDoc.getRole(), savedDoc.isActive(), savedDoc.getCreatedAt());
+        return savedUser;
     }
 
     public Map<String, String> login(String email, String plainPassword) {
-        UserDocument user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("Credenciales inválidas"));
+        log.info("Authentication attempt for user: {}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.warn("Authentication failed. User not found for email: {}", email);
+                    return new UnauthorizedException("Invalid credentials");
+                });
 
         if (!passwordEncoder.matches(plainPassword, user.getPasswordHash())) {
-            throw new IllegalArgumentException("Credenciales inválidas");
+            log.warn("Authentication failed. Password mismatch for email: {}", email);
+            throw new UnauthorizedException("Invalid credentials");
         }
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
 
+        log.debug("JWT tokens generated successfully for user: {}", email);
+
         return Map.of(
-                "accessToken", accessToken,
-                "refreshToken", refreshToken
+                ACCESS_TOKEN_KEY, accessToken,
+                REFRESH_TOKEN_KEY, refreshToken
         );
     }
 }

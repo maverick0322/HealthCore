@@ -1,0 +1,50 @@
+package com.healthcore.identity.infrastructure.persistence;
+
+import com.healthcore.identity.domain.User;
+import com.healthcore.identity.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+public class UserRepositoryAdapter implements UserRepository {
+
+    private final SpringDataMongoUserRepository mongoRepository;
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return mongoRepository.findByEmail(email)
+                .map(this::toDomain);
+    }
+
+    @Override
+    public User save(User user) {
+        UserDocument document = toDocument(user);
+        UserDocument savedDocument = mongoRepository.save(document);
+        return toDomain(savedDocument);
+    }
+
+    private User toDomain(UserDocument doc) {
+        return User.builder()
+                .id(doc.getId())
+                .email(doc.getEmail())
+                .passwordHash(doc.getPasswordHash())
+                .role(doc.getRole())
+                .isActive(doc.isActive())
+                .createdAt(doc.getCreatedAt())
+                .build();
+    }
+
+    private UserDocument toDocument(User user) {
+        return UserDocument.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .passwordHash(user.getPasswordHash())
+                .role(user.getRole())
+                .isActive(user.isActive())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+}

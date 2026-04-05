@@ -4,32 +4,7 @@ Este documento define las reglas arquitectónicas, convenciones de codificación
 
 ---
 
-## 1. Introducción
-
-### 1.1 Propósito
-Establecer un conjunto de normas obligatorias para todos los desarrolladores del equipo, facilitando la colaboración, revisión de código y el mantenimiento del software, así como asegurar la calidad mediante herramientas automatizadas.
-
-### 1.2 Alcance
-Aplica a todo el código fuente, pruebas, configuración y documentación técnica de los microservicios desarrollados con:
-- Java 21 (LTS)
-- Spring Boot 3.x
-- MongoDB (con Spring Data MongoDB)
-- Maven como herramienta de construcción
-- SonarQube para análisis estático de código
-
-### 1.3 Referencias
-Este estándar se basa en:
-- [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
-- [Spring Boot Reference Documentation](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/)
-- [Spring Data MongoDB Reference](https://docs.spring.io/spring-data/mongodb/docs/current/reference/html/)
-- [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/)
-- [REST API Design Rulebook](https://www.oreilly.com/library/view/rest-api-design/9781449317904/)
-- [SonarQube Documentation](https://docs.sonarqube.org/latest/)
-- [Maven Apache](https://maven.apache.org/guides/index.html)
-
----
-
-## 2. Principios Generales (Clean Code)
+## 1. Principios Generales (Clean Code)
 
 - **Consistencia**: El código debe verse como si hubiera sido escrito por una sola persona.
 - **Legibilidad**: El código se escribe para ser leído por humanos, no solo para que la máquina lo ejecute.
@@ -44,144 +19,313 @@ Este estándar se basa en:
 
 ---
 
-## 3. Arquitectura de Software
+## 2. Propósito
+Garantizar la consistencia, legibilidad, seguridad y mantenibilidad del código fuente entre todos los miembros del equipo, facilitando la integración continua y el cumplimiento del análisis estático (SonarQube).
 
-Se implementará **Arquitectura Hexagonal (Ports and Adapters)** para aislar la lógica de negocio de los frameworks y detalles de infraestructura.
+## 3. Idioma
+Todo el código fuente, base de datos y documentación interna debe aplicar el principio **English First**.
+* **Correcto**: `PatientService`, `findByEmail`, `// Checks if user exists`
+* **Incorrecto**: `ServicioPaciente`, `buscarPorCorreo`, `// Revisa si existe`
 
-**Estructura de Paquetes Estándar:**
-```text
-com.healthcore.servicename/
-├── domain/           # Entidades puras (Java Records/Classes), Enums, Excepciones de negocio (Cero Spring/Mongo)
-├── application/      # Casos de uso (Services) que orquestan las entidades del dominio
-├── infrastructure/   # Implementaciones de repositorios (MongoDB), adaptadores externos, configs
-└── interfaces/       # Controladores REST (Controllers), DTOs, WebSockets, gRPC endpoints
-```
+## 4. Reglas de nombramiento
 
----
+### 4.1. Clases
+Deben usar `UpperCamelCase` y ser sustantivos descriptivos.
+* **Correcto**:
+  ```java
+  public class UserAuthenticationService { ... }
+  ```
+* **Incorrecto**:
+  ```java
+  public class authenticate_user { ... } // Snake case y verbo
+  ```
 
-## 4. Estilo de Código y Nomenclatura
+### 4.2. Interfaces
+Deben usar `UpperCamelCase`. En Java no se usa el prefijo "I".
+* **Correcto**:
+  ```java
+  public interface PatientRepository { ... }
+  ```
+* **Incorrecto**:
+  ```java
+  public interface IPatientRepository { ... }
+  ```
 
-- **Indentación**: 4 espacios (no tabs).
-- **Clases/Interfaces**: `UpperCamelCase` (Sustantivos, ej: `UserRepository`).
-- **Métodos**: `lowerCamelCase` (Verbos, ej: `findUserById`).
-- **Variables**: `lowerCamelCase`. Nombres expresivos (prohibido usar `x`, `lst`, `data`).
-- **Constantes**: `UPPER_SNAKE_CASE` (`public static final`).
-- **Paquetes**: Todo en minúsculas, sin guiones (`com.healthcore.identity.domain`).
+### 4.3. Paquetes
+ Deben ir en minúsculas y sin guiones o caracteres especiales.
+* **Correcto**:
+  ```java
+  package com.healthcore.identity.domain;
+  ```
+* **Incorrecto**:
+  ```java
+  package com.HealthCore.Identity-Service;
+  ```
 
-### 4.1 Erradicación de Números Mágicos
-Cualquier literal numérico o de texto que defina una regla debe ser extraído a una constante o `enum`.
+### 4.4. Variables
+Deben usar `lowerCamelCase` y tener nombres expresivos. Evitar abreviaturas ambiguas.
+* **Correcto**:
+  ```java
+  int loginAttempts = 0;
+  String userEmail = request.email();
+  ```
+* **Incorrecto**:
+  ```java
+  int x = 0;
+  String eml = request.email();
+  ```
 
-```java
-// CORRECTO
-public class SecurityConstants {
-    public static final int MAX_LOGIN_ATTEMPTS = 3;
-    public static final long TOKEN_EXPIRATION_MILLIS = 300000L;
-}
-```
+### 4.5. Constantes
+Deben usar `UPPER_SNAKE_CASE` y el modificador `public static final`. Prohibido usar "números mágicos" sueltos en el código.
+* **Correcto**:
+  ```java
+  public static final int MAX_LOGIN_RETRIES = 3;
+  ```
+* **Incorrecto**:
+  ```java
+  public int maxRetries = 3;
+  ```
 
-### 4.2 Política de Comentarios
-El código debe explicarse a sí mismo.
-1. **Javadoc (`/** ... */`)**: Requerido **únicamente** para contratos de interfaces (`public interface`) y APIs públicas. No documentar métodos autoexplicativos.
-2. **Comentarios de línea (`//`)**: Reservados **estrictamente** para explicar el *por qué* de una decisión de diseño inusual, nunca el *qué*.
+### 4.6. Métodos
+Deben usar `lowerCamelCase` y comenzar con un verbo claro que denote la acción.
+* **Correcto**:
+  ```java
+  public User calculateBmi(double weight, double height) { ... }
+  ```
+* **Incorrecto**:
+  ```java
+  public User BMI(double weight, double height) { ... }
+  ```
 
----
+### 4.7. Getters y Setters
+Se favorecerá el uso de `Records` (inmutables) o anotaciones de Lombok para evitar código repetitivo. Si se escriben manualmente, usar el estándar `getX` / `setX`.
+* **Correcto**:
+  ```java
+  public String getEmail() { return this.email; }
+  ```
+* **Incorrecto**:
+  ```java
+  public String email() { return this.email; } // En clases normales (no records)
+  ```
 
-## 5. Diseño de APIs REST y DTOs
+### 4.8. Manejadores de eventos
+Los métodos que responden a eventos asíncronos o de Spring deben llevar el prefijo `handle` o `on`.
+* **Correcto**:
+  ```java
+  @EventListener
+  public void handleUserRegisteredEvent(UserRegisteredEvent event) { ... }
+  ```
+* **Incorrecto**:
+  ```java
+  @EventListener
+  public void doRegistrationStuff(UserRegisteredEvent event) { ... }
+  ```
 
-### 5.1 Endpoints
-- Usar sustantivos en plural y en minúsculas: `GET /api/v1/patients`.
-- Versionar siempre en la URL.
+### 4.9. Uso de expresiones lambda y nombramiento de ámbitos reducidos
+En expresiones lambda, evitar bloques grandes de código. Si la lambda supera las 3 líneas, extraerla a un método privado.
+* **Correcto**:
+  ```java
+  users.stream().filter(User::isActive).collect(Collectors.toList());
+  ```
+* **Incorrecto**:
+  ```java
+  users.stream().filter(u -> {
+      boolean active = u.getStatus().equals("ACTIVE");
+      return active;
+  }).collect(Collectors.toList());
+  ```
 
-### 5.2 DTOs (Data Transfer Objects)
-Los modelos de base de datos (`@Document`) NUNCA deben exponerse al cliente.
-- Usar `record` de Java 21 para garantizar inmutabilidad.
-- Aplicar validaciones de `jakarta.validation`.
+### 4.10. Uso de nombres descriptivos concisos en lambdas
+Usar una o dos letras si el contexto es extremadamente obvio, de lo contrario, usar el nombre completo de la variable.
+* **Correcto**:
+  ```java
+  patients.forEach(patient -> log.info(patient.getName()));
+  ```
+* **Incorrecto**:
+  ```java
+  patients.forEach(p -> log.info(p.getName())); // Evitar si el cuerpo es largo
+  ```
 
-```java
-public record RegisterPatientRequest(
-    @NotBlank(message = "Email is required") 
-    @Email(message = "Invalid format") 
-    String email,
-    
-    @NotBlank 
-    @Size(min = 8, message = "Min 8 characters required") 
-    String password
-) {}
-```
+## 5. Estilo de código
 
----
+### 5.1. Indentación
+La indentación estricta será de **4 espacios** (no tabulaciones).
 
-## 6. Manejo de Excepciones
+### 5.2. Líneas y espacios en blanco
+Dejar una línea en blanco entre métodos y espacios alrededor de los operadores matemáticos y lógicos.
+* **Correcto**:
+  ```java
+  int total = a + b;
+  ```
+* **Incorrecto**:
+  ```java
+  int total=a+b;
+  ```
 
-Las arquitecturas robustas capturan errores en cascada (de lo específico a lo general).
+### 5.3. Uso de llaves
+Adoptamos el estilo "Egyptian brackets" (la llave de apertura va en la misma línea de la declaración).
+* **Correcto**:
+  ```java
+  if (isValid) {
+      process();
+  }
+  ```
+* **Incorrecto**:
+  ```java
+  if (isValid)
+  {
+      process();
+  }
+  ```
 
-### 6.1 Jerarquía Escalonada
-```java
-try {
-    return jwtUtil.parseToken(token);
-} catch (ExpiredJwtException e) {
-    // Nivel 1: Error de negocio específico
-    throw new UnauthorizedException("Token has expired");
-} catch (SignatureException e) {
-    // Nivel 2: Intento de vulneración
-    throw new ForbiddenException("Invalid signature");
-} catch (Exception e) {
-    // Nivel 3: Error sistémico general
-    throw new InternalServerException("Service unavailable");
-}
-```
+## 6. Comentarios
+El código limpio debe explicarse a sí mismo.
 
-### 6.2 Manejo Global
-Utilizar `@RestControllerAdvice` para interceptar excepciones de negocio en la capa de *interfaces* y devolver un JSON estándar con el código HTTP correcto (400, 401, 403, 404, 500).
+### 6.1. Comentarios de línea única
+Usar `//` exclusivamente para explicar el *por qué* de una decisión técnica, nunca el *qué*.
+* **Correcto**:
+  ```java
+  // Timeout is 10s because the external API is slow during peak hours
+  ```
+* **Incorrecto**:
+  ```java
+  // Loops through the list of users
+  ```
 
----
+### 6.2. Comentarios de bloque
+Usar `/* */` está prohibido para comentar bloques de código muerto. El código obsoleto se borra (Git guarda el historial).
 
-## 7. Pruebas Automatizadas (Testing)
+### 6.3. Comentarios de documentación
+Usar Javadoc `/** */` únicamente en interfaces, contratos y APIs públicas.
 
-Uso obligatorio de **JUnit 5, Mockito y AssertJ**.
+## 7. Estructuras de control
+Todas las estructuras deben llevar llaves `{}` incluso si contienen una sola línea.
 
-### 7.1 Pruebas Unitarias
-- **Nomenclatura**: `should_Action_When_Condition()`.
-- **Estructura**: Aplicar el patrón AAA (Arrange, Act, Assert).
+### 7.1. If-Else
+* **Correcto**:
+  ```java
+  if (condition) {
+      doSomething();
+  } else {
+      doOther();
+  }
+  ```
+* **Incorrecto**:
+  ```java
+  if(condition) doSomething(); else doOther();
+  ```
 
-```java
-@Test
-void shouldThrowException_WhenEmailAlreadyExists() {
-    // Arrange
-    String email = "test@healthcore.com";
-    when(repository.existsByEmail(email)).thenReturn(true);
+### 7.2. Else-If
+Alineado con la llave de cierre del `if` anterior.
 
-    // Act & Assert
-    assertThatThrownBy(() -> service.register(email))
-        .isInstanceOf(ConflictException.class)
-        .hasMessageContaining("Email already registered");
-}
-```
+### 7.3. Switch
+Favorecer el uso del Enhanced Switch de Java 21 para evitar errores de `break` olvidados.
+* **Correcto**:
+  ```java
+  int numLetters = switch (day) {
+      case MONDAY, FRIDAY, SUNDAY -> 6;
+      case TUESDAY -> 7;
+      default -> 0;
+  };
+  ```
 
-### 7.2 Pruebas de Integración (Base de Datos)
-Las pruebas que requieran MongoDB deben usar **Testcontainers** (`@Testcontainers`, `@Container`) para levantar instancias efímeras de Docker, garantizando un entorno reproducible en CI/CD.
+### 7.4. For
+* **Correcto**:
+  ```java
+  for (int i = 0; i < max; i++) { ... }
+  ```
 
----
+### 7.5. While
+* **Correcto**:
+  ```java
+  while (isRunning) { ... }
+  ```
 
-## 8. Rendimiento y Escalabilidad
+### 7.6. Do-While
+* **Correcto**:
+  ```java
+  do {
+      execute();
+  } while (condition);
+  ```
 
-- **Evitar N+1 Queries**: En MongoDB, usar agregaciones o refactorizar el modelo en lugar de cargar relaciones en bucles iterativos.
-- **Conexiones**: Usar `spring.data.mongodb.uri` para dejar que Spring Boot gestione el pool de conexiones (`maxPoolSize`). No abrir ni cerrar conexiones manualmente.
-- **Procesamiento Asíncrono**: Para tareas de fondo (ej. envío de correos), usar `@Async` con un `Executor` configurado correctamente.
-- **Caché**: Utilizar Spring Cache (`@Cacheable`) para endpoints de lectura frecuente y actualización escasa.
+## 8. Sufijos
 
----
+### 8.1. Capa gráfica
+En una API REST, la capa gráfica son las interfaces de comunicación. Deben llevar el sufijo correspondiente a su responsabilidad:
+* **Controladores**: `XController` (ej. `PatientController`).
+* **Entradas**: `XRequest` (ej. `LoginRequest`).
+* **Salidas**: `XResponse` (ej. `TrackingResponse`).
 
-## 9. Configuración CI/CD, Maven y SonarQube
+## 9. Manejo de excepciones
+El manejo debe ser escalonado, de la excepción más específica a la más general. 
+* **Correcto**:
+  ```java
+  try {
+      parse();
+  } catch (ExpiredJwtException e) {
+      throw new UnauthorizedException("Expired");
+  } catch (Exception e) {
+      throw new InternalServerException("System error");
+  }
+  ```
+* **Incorrecto**:
+  ```java
+  try {
+      parse();
+  } catch (Exception e) {
+      e.printStackTrace(); // Nunca usar printStackTrace
+  }
+  ```
 
-### 9.1 Gestión de Construcción (Maven)
-- Utilizar `spring-boot-starter-parent` como base.
-- Configurar plugins de calidad en la fase de validación: `jacoco-maven-plugin` (cobertura), `maven-checkstyle-plugin` y `spotbugs-maven-plugin`.
+## 10. Bitácora
+Usar `SLF4J` (con `@Slf4j` de Lombok). Los niveles se definen así:
 
-### 9.2 SonarQube (Quality Gate)
-Todo el código debe integrarse a SonarQube mediante: `mvn clean verify sonar:sonar`.
-El *Quality Gate* bloqueante de HealthCore exige:
-- **Cobertura de Pruebas**: ≥ 80% en lógica de negocio.
-- **Complejidad Ciclomática**: ≤ 10 por método.
-- **Vulnerabilidades y Bugs**: 0.
-- **Code Smells**: Resolución obligatoria de olores críticos/mayores.
+### 10.1. Fatal
+En SLF4J no existe "FATAL", se usa `log.error()` junto con alarmas de monitoreo para caídas totales del servicio (ej. pérdida de conexión a base de datos).
+### 10.2. Error
+Para fallos no esperados donde se rompe el flujo del usuario. Requiere imprimir el *stacktrace*.
+* **Ejemplo**: `log.error("Failed to process payment", e);`
+### 10.3. Warning (Advertencia)
+Situaciones anómalas que no detienen el sistema, o vulnerabilidades detectadas.
+* **Ejemplo**: `log.warn("Failed login attempt for user: {}", email);`
+### 10.4. Trace (Traza/Información)
+Para flujo normal del sistema (`log.info()`) y detalles para depuración (`log.debug()`).
+
+## 11. Pruebas
+Obligatorio aplicar JUnit 5, Mockito y el patrón AAA (Arrange, Act, Assert).
+* **Correcto**:
+  ```java
+  @Test
+  void shouldReturnUser_WhenIdExists() {
+      // Arrange
+      when(repository.findById(1)).thenReturn(mockUser);
+      // Act
+      User result = service.getUser(1);
+      // Assert
+      assertNotNull(result);
+  }
+  ```
+
+## 12. Seguridad
+
+### 12.1. Consultas parametrizadas
+Usar siempre los repositorios de Spring Data MongoDB o consultas parametrizadas explícitas para evitar inyecciones NoSQL.
+* **Incorrecto**: Concatenar Strings en consultas de base de datos.
+
+### 12.2. Políticas de contraseñas
+Las contraseñas nunca deben viajar legibles ni guardarse en texto plano. Usar siempre `BCryptPasswordEncoder`.
+
+### 12.3. Validación de entradas
+Usar `jakarta.validation` (`@Valid`, `@NotBlank`, `@Email`) en los DTOs de entrada antes de tocar la lógica de negocio.
+
+### 12.4. Códigos de mensajes
+Las respuestas de la API deben devolver códigos HTTP precisos (`200 OK`, `201 Created`, `401 Unauthorized`, `404 Not Found`, `500 Internal Server Error`).
+
+## 13. Declaración de uso de IA
+Se declara que para la configuración, revisión de estándares de la industria (OWASP, SonarQube) y estructuración de este documento se utilizó asistencia de Inteligencia Artificial como herramienta de co-pilotaje y optimización de arquitectura.
+
+## 14. Referencias
+* [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
+* [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/)
+* [RFC 7807 - Problem Details for HTTP APIs](https://datatracker.ietf.org/doc/html/rfc7807)

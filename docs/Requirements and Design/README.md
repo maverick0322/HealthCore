@@ -1,4 +1,4 @@
-# 📚 Technical Documentation (AsciiDoc)
+# 📚 Documentación Técnica (AsciiDoc)
 
 Esta carpeta contiene la documentación técnica avanzada del proyecto HealthCore (Requerimientos y Diseño), estructurada mediante un sistema de archivos modulares en **AsciiDoc**.
 

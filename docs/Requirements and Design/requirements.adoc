@@ -4,7 +4,7 @@
 
 == Contexto
 [desc-contexto]
-Incluir aquí el diagrama de contexto del sistema. Este diagrama muestra los límites del sistema y su interacción con entidades externas (usuarios, otros sistemas, bases de datos externas).
+Este diagrama muestra los límites del sistema y su interacción con entidades externas (usuarios, otros sistemas, bases de datos externas).
 
 image::context-diagram.png[Diagrama de Contexto, width=600]
 
@@ -18,18 +18,29 @@ Definición de los diferentes perfiles de usuario que interactúan con el sistem
 == Casos de uso (análisis)
 Descripción funcional de las interacciones principales.
 
-[cols="1,3"]
+[cols="1,1,1,3"]
 |===
-| Caso de Uso | Descripción Breve
-| Registrar Alimento | El paciente busca un alimento por código de barras o nombre y lo añade a su diario.
-| Consultar Plan | El paciente visualiza el plan nutricional asignado por su nutricionista.
-| Generar Reporte | El sistema consolida los datos de consumo semanal para su análisis.
+| ID | Caso de Uso | Actor | Descripción Breve
+| CU-01 | Gestionar Cuenta | Paciente | El paciente puede registrarse, iniciar sesión y recuperar su contraseña por correo electrónico.
+| CU-02 | Vincularse con Nutriólogo | Paciente | El paciente escanea un código QR generado por el nutriólogo para establecer una relación de seguimiento profesional y autorizar el acceso a sus datos.
+| CU-03 | Registrar Ingesta Alimenticia | Paciente | El paciente busca alimentos en el catálogo local o mediante la API de Open Food Facts para registrar su consumo diario.
+| CU-04 | Subir Evidencia Multimedia | Paciente | El paciente carga fotografías de sus comidas o progreso físico como apoyo visual para el nutriólogo.
+| CU-05 | Gestionar Citas | Paciente |Consultar horarios disponibles del nutriólogo vinculado y reservar, reprogramar o cancelar citas.
+| CU-06 | Consultar Progreso | Paciente | Visualizar gráficas de consumo calórico, evolución de peso y reportes de cumplimiento de metas.
+| CU-07 | Generar Invitación de Vinculación | Nutriólogo | El nutriólogo genera un código QR o alfanumérico temporal para que un nuevo paciente se vincule a su cartera.
+| CU-08 | Configurar Disponibilidad | Nutriólogo | El nutriólogo define sus horarios de atención y cupos máximos para la gestión de la agenda.
+| CU-09 | Supervisar Expediente | Nutriólogo | Acceder al historial alimenticio, evidencias fotográficas y gráficas de progreso de los pacientes vinculados.
+| CU-10 | Registrar Observaciones | Nutriólogo | Emitir comentarios técnicos y ajustes al plan nutricional basados en los registros del paciente.
+| CU-11 | Analizar Reportes Operativos | Nutriólogo | Consultar estadísticas de citas y niveles de adherencia de su grupo de pacientes.
+| CU-12 | Gestionar Usuario y Roles | Administrador | Administrar altas, bajas y permisos de acceso para asegurar la integridad del sistema.
+| CU-13 | Gestionar Catálogos | Administrador | Actualizar la base de datos interna de alimentos y parámetros de referencia nutricional.
+| CU-14 | Monitorear Salud del Sistema | Administrador | Supervisar el estado de los microservicios y la conectividad con servicios externos.
 |===
 
 == Prototipo de UI (baja fidelidad)
 Enlace o descripción de los bocetos iniciales de la interfaz.
 
-
+// TODO: Agregar prototipo de UI
 
 == Requisitos funcionales
 [req-func]

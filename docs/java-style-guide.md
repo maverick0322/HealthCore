@@ -27,9 +27,17 @@ Todo el código fuente, base de datos y documentación interna debe aplicar el p
 * **Correcto**: `PatientService`, `findByEmail`, `// Checks if user exists`
 * **Incorrecto**: `ServicioPaciente`, `buscarPorCorreo`, `// Revisa si existe`
 
-## 4. Reglas de nombramiento
+## 4. Estructura del proyecto (Arquitectura Hexagonal)
+Para garantizar la separación de responsabilidades y la inversión de dependencias (principios SOLID), los microservicios adoptarán la Arquitectura Hexagonal (Ports and Adapters). El código debe organizarse estrictamente en las siguientes capas, respetando la regla de dependencia hacia adentro (el dominio no conoce a la infraestructura):
 
-### 4.1. Clases
+* **`domain/`**: Entidades puras de Java, `records`, enumeradores y excepciones de negocio. **Regla de oro:** Cero dependencias de Spring Boot, MongoDB o web.
+* **`application/`**: Casos de uso (Services) que orquestan el dominio. Aquí se definen las interfaces (puertos) que indican qué necesita el sistema para funcionar.
+* **`infrastructure/`**: Implementaciones técnicas (adaptadores). Aquí viven los repositorios de Spring Data MongoDB, clientes gRPC/HTTP externos y configuraciones de seguridad.
+* **`interfaces/`**: Puntos de entrada de comunicación hacia el microservicio (Controladores REST, DTOs de entrada/salida y WebSockets).
+
+## 5. Reglas de nombramiento
+
+### 5.1. Clases
 Deben usar `UpperCamelCase` y ser sustantivos descriptivos.
 * **Correcto**:
   ```java
@@ -40,7 +48,7 @@ Deben usar `UpperCamelCase` y ser sustantivos descriptivos.
   public class authenticate_user { ... } // Snake case y verbo
   ```
 
-### 4.2. Interfaces
+### 5.2. Interfaces
 Deben usar `UpperCamelCase`. En Java no se usa el prefijo "I".
 * **Correcto**:
   ```java
@@ -51,7 +59,7 @@ Deben usar `UpperCamelCase`. En Java no se usa el prefijo "I".
   public interface IPatientRepository { ... }
   ```
 
-### 4.3. Paquetes
+### 5.3. Paquetes
  Deben ir en minúsculas y sin guiones o caracteres especiales.
 * **Correcto**:
   ```java
@@ -62,7 +70,7 @@ Deben usar `UpperCamelCase`. En Java no se usa el prefijo "I".
   package com.HealthCore.Identity-Service;
   ```
 
-### 4.4. Variables
+### 5.4. Variables
 Deben usar `lowerCamelCase` y tener nombres expresivos. Evitar abreviaturas ambiguas.
 * **Correcto**:
   ```java
@@ -75,7 +83,7 @@ Deben usar `lowerCamelCase` y tener nombres expresivos. Evitar abreviaturas ambi
   String eml = request.email();
   ```
 
-### 4.5. Constantes
+### 5.5. Constantes
 Deben usar `UPPER_SNAKE_CASE` y el modificador `public static final`. Prohibido usar "números mágicos" sueltos en el código.
 * **Correcto**:
   ```java
@@ -86,7 +94,7 @@ Deben usar `UPPER_SNAKE_CASE` y el modificador `public static final`. Prohibido 
   public int maxRetries = 3;
   ```
 
-### 4.6. Métodos
+### 5.6. Métodos
 Deben usar `lowerCamelCase` y comenzar con un verbo claro que denote la acción.
 * **Correcto**:
   ```java
@@ -97,7 +105,7 @@ Deben usar `lowerCamelCase` y comenzar con un verbo claro que denote la acción.
   public User BMI(double weight, double height) { ... }
   ```
 
-### 4.7. Getters y Setters
+### 5.7. Getters y Setters
 Se favorecerá el uso de `Records` (inmutables) o anotaciones de Lombok para evitar código repetitivo. Si se escriben manualmente, usar el estándar `getX` / `setX`.
 * **Correcto**:
   ```java
@@ -108,7 +116,7 @@ Se favorecerá el uso de `Records` (inmutables) o anotaciones de Lombok para evi
   public String email() { return this.email; } // En clases normales (no records)
   ```
 
-### 4.8. Manejadores de eventos
+### 5.8. Manejadores de eventos
 Los métodos que responden a eventos asíncronos o de Spring deben llevar el prefijo `handle` o `on`.
 * **Correcto**:
   ```java
@@ -121,7 +129,7 @@ Los métodos que responden a eventos asíncronos o de Spring deben llevar el pre
   public void doRegistrationStuff(UserRegisteredEvent event) { ... }
   ```
 
-### 4.9. Uso de expresiones lambda y nombramiento de ámbitos reducidos
+### 5.9. Uso de expresiones lambda y nombramiento de ámbitos reducidos
 En expresiones lambda, evitar bloques grandes de código. Si la lambda supera las 3 líneas, extraerla a un método privado.
 * **Correcto**:
   ```java
@@ -135,7 +143,7 @@ En expresiones lambda, evitar bloques grandes de código. Si la lambda supera la
   }).collect(Collectors.toList());
   ```
 
-### 4.10. Uso de nombres descriptivos concisos en lambdas
+### 5.10. Uso de nombres descriptivos concisos en lambdas
 Usar una o dos letras si el contexto es extremadamente obvio, de lo contrario, usar el nombre completo de la variable.
 * **Correcto**:
   ```java
@@ -146,12 +154,12 @@ Usar una o dos letras si el contexto es extremadamente obvio, de lo contrario, u
   patients.forEach(p -> log.info(p.getName())); // Evitar si el cuerpo es largo
   ```
 
-## 5. Estilo de código
+## 6. Estilo de código
 
-### 5.1. Indentación
+### 6.1. Indentación
 La indentación estricta será de **4 espacios** (no tabulaciones).
 
-### 5.2. Líneas y espacios en blanco
+### 6.2. Líneas y espacios en blanco
 Dejar una línea en blanco entre métodos y espacios alrededor de los operadores matemáticos y lógicos.
 * **Correcto**:
   ```java
@@ -162,7 +170,7 @@ Dejar una línea en blanco entre métodos y espacios alrededor de los operadores
   int total=a+b;
   ```
 
-### 5.3. Uso de llaves
+### 6.3. Uso de llaves
 Adoptamos el estilo "Egyptian brackets" (la llave de apertura va en la misma línea de la declaración).
 * **Correcto**:
   ```java
@@ -178,10 +186,10 @@ Adoptamos el estilo "Egyptian brackets" (la llave de apertura va en la misma lí
   }
   ```
 
-## 6. Comentarios
+## 7. Comentarios
 El código limpio debe explicarse a sí mismo.
 
-### 6.1. Comentarios de línea única
+### 7.1. Comentarios de línea única
 Usar `//` exclusivamente para explicar el *por qué* de una decisión técnica, nunca el *qué*.
 * **Correcto**:
   ```java
@@ -192,16 +200,16 @@ Usar `//` exclusivamente para explicar el *por qué* de una decisión técnica, 
   // Loops through the list of users
   ```
 
-### 6.2. Comentarios de bloque
+### 7.2. Comentarios de bloque
 Usar `/* */` está prohibido para comentar bloques de código muerto. El código obsoleto se borra (Git guarda el historial).
 
-### 6.3. Comentarios de documentación
+### 7.3. Comentarios de documentación
 Usar Javadoc `/** */` únicamente en interfaces, contratos y APIs públicas.
 
-## 7. Estructuras de control
+## 8. Estructuras de control
 Todas las estructuras deben llevar llaves `{}` incluso si contienen una sola línea.
 
-### 7.1. If-Else
+### 8.1. If-Else
 * **Correcto**:
   ```java
   if (condition) {
@@ -215,10 +223,10 @@ Todas las estructuras deben llevar llaves `{}` incluso si contienen una sola lí
   if(condition) doSomething(); else doOther();
   ```
 
-### 7.2. Else-If
+### 8.2. Else-If
 Alineado con la llave de cierre del `if` anterior.
 
-### 7.3. Switch
+### 8.3. Switch
 Favorecer el uso del Enhanced Switch de Java 21 para evitar errores de `break` olvidados.
 * **Correcto**:
   ```java
@@ -229,19 +237,19 @@ Favorecer el uso del Enhanced Switch de Java 21 para evitar errores de `break` o
   };
   ```
 
-### 7.4. For
+### 8.4. For
 * **Correcto**:
   ```java
   for (int i = 0; i < max; i++) { ... }
   ```
 
-### 7.5. While
+### 8.5. While
 * **Correcto**:
   ```java
   while (isRunning) { ... }
   ```
 
-### 7.6. Do-While
+### 8.6. Do-While
 * **Correcto**:
   ```java
   do {
@@ -249,15 +257,15 @@ Favorecer el uso del Enhanced Switch de Java 21 para evitar errores de `break` o
   } while (condition);
   ```
 
-## 8. Sufijos
+## 9. Sufijos
 
-### 8.1. Capa gráfica
+### 9.1. Capa gráfica
 En una API REST, la capa gráfica son las interfaces de comunicación. Deben llevar el sufijo correspondiente a su responsabilidad:
 * **Controladores**: `XController` (ej. `PatientController`).
 * **Entradas**: `XRequest` (ej. `LoginRequest`).
 * **Salidas**: `XResponse` (ej. `TrackingResponse`).
 
-## 9. Manejo de excepciones
+## 10. Manejo de excepciones
 El manejo debe ser escalonado, de la excepción más específica a la más general. 
 * **Correcto**:
   ```java
@@ -278,21 +286,21 @@ El manejo debe ser escalonado, de la excepción más específica a la más gener
   }
   ```
 
-## 10. Bitácora
+## 11. Bitácora
 Usar `SLF4J` (con `@Slf4j` de Lombok). Los niveles se definen así:
 
-### 10.1. Fatal
+### 11.1. Fatal
 En SLF4J no existe "FATAL", se usa `log.error()` junto con alarmas de monitoreo para caídas totales del servicio (ej. pérdida de conexión a base de datos).
-### 10.2. Error
+### 11.2. Error
 Para fallos no esperados donde se rompe el flujo del usuario. Requiere imprimir el *stacktrace*.
 * **Ejemplo**: `log.error("Failed to process payment", e);`
-### 10.3. Warning (Advertencia)
+### 11.3. Warning (Advertencia)
 Situaciones anómalas que no detienen el sistema, o vulnerabilidades detectadas.
 * **Ejemplo**: `log.warn("Failed login attempt for user: {}", email);`
-### 10.4. Trace (Traza/Información)
+### 11.4. Trace (Traza/Información)
 Para flujo normal del sistema (`log.info()`) y detalles para depuración (`log.debug()`).
 
-## 11. Pruebas
+## 12. Pruebas
 Obligatorio aplicar JUnit 5, Mockito y el patrón AAA (Arrange, Act, Assert).
 * **Correcto**:
   ```java
@@ -307,25 +315,25 @@ Obligatorio aplicar JUnit 5, Mockito y el patrón AAA (Arrange, Act, Assert).
   }
   ```
 
-## 12. Seguridad
+## 13. Seguridad
 
-### 12.1. Consultas parametrizadas
+### 13.1. Consultas parametrizadas
 Usar siempre los repositorios de Spring Data MongoDB o consultas parametrizadas explícitas para evitar inyecciones NoSQL.
 * **Incorrecto**: Concatenar Strings en consultas de base de datos.
 
-### 12.2. Políticas de contraseñas
+### 13.2. Políticas de contraseñas
 Las contraseñas nunca deben viajar legibles ni guardarse en texto plano. Usar siempre `BCryptPasswordEncoder`.
 
-### 12.3. Validación de entradas
+### 13.3. Validación de entradas
 Usar `jakarta.validation` (`@Valid`, `@NotBlank`, `@Email`) en los DTOs de entrada antes de tocar la lógica de negocio.
 
-### 12.4. Códigos de mensajes
+### 13.4. Códigos de mensajes
 Las respuestas de la API deben devolver códigos HTTP precisos (`200 OK`, `201 Created`, `401 Unauthorized`, `404 Not Found`, `500 Internal Server Error`).
 
-## 13. Declaración de uso de IA
+## 14. Declaración de uso de IA
 Se declara que para la configuración, revisión de estándares de la industria (OWASP, SonarQube) y estructuración de este documento se utilizó asistencia de Inteligencia Artificial como herramienta de co-pilotaje y optimización de arquitectura.
 
-## 14. Referencias
+## 15. Referencias
 * [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
 * [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/)
 * [RFC 7807 - Problem Details for HTTP APIs](https://datatracker.ietf.org/doc/html/rfc7807)

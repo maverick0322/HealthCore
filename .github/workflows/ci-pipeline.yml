@@ -26,6 +26,6 @@ jobs:
         working-directory: ./services/identity-service
         run: mvn clean test
 
-      #- name: Run Tests (Tracking Service)
-       # working-directory: ./services/tracking-service
-       # run: mvn clean test
+      - name: Run Tests (Tracking Service)
+        working-directory: ./services/tracking-service
+        run: mvn clean test

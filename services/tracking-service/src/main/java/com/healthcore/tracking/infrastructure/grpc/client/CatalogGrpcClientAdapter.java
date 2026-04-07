@@ -5,8 +5,10 @@ import com.healthcore.catalog.grpc.FoodResponse;
 import com.healthcore.catalog.grpc.NutritionalCatalogGrpc;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
 import com.healthcore.tracking.domain.model.FoodNutrients;
+import com.healthcore.tracking.domain.exception.ServiceUnavailableException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +32,10 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
         this.catalogStub = NutritionalCatalogGrpc.newBlockingStub(channel);
     }
 
+    public CatalogGrpcClientAdapter(NutritionalCatalogGrpc.NutritionalCatalogBlockingStub catalogStub) {
+        this.catalogStub = catalogStub;
+    }
+
     @Override
     public Optional<FoodNutrients> getNutrientsByBarcode(String barcode) {
         try {
@@ -41,7 +47,6 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
 
             FoodResponse response = catalogStub.getFoodItem(request);
 
-            // We map the gRPC response to our internal Domain model
             return Optional.of(FoodNutrients.builder()
                     .name(response.getName())
                     .brand(response.getBrand())
@@ -50,8 +55,13 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
                     .build());
 
         } catch (StatusRuntimeException e) {
-            log.error("gRPC call failed for barcode {}: {}", barcode, e.getStatus());
-            return Optional.empty();
+            if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
+                log.debug("Food with barcode {} not found in Catalog Service", barcode);
+                return Optional.empty();
+            }
+
+            log.error("Critical communication error with Catalog Service for barcode {}. Status: {}", barcode, e.getStatus().getCode());
+            throw new ServiceUnavailableException("Catalog Service is currently unavailable. Please try again later.");
         }
     }
 }

@@ -45,3 +45,11 @@ public class FoodCatalogService {
         return grpcClient.fetchFood(barcode);
     }
 }
+
+## 6. Diferencia Clave: Redis vs RabbitMQ
+Dado que usamos ambos en la infraestructura, es vital no confundirlos:
+
+Redis (Puerto 6379): Se usa para Lecturas Síncronas Ultrarrápidas. Es un almacén de datos (Ej. "Dime cuántas calorías tiene esto ¡YA!").
+
+RabbitMQ (Puerto 5672): Se usa para Escrituras Asíncronas. Es una oficina de correos (Ej. "Manda un correo de bienvenida cuando puedas, no me importa cuánto tardes").
+

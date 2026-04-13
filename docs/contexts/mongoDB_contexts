@@ -1,0 +1,56 @@
+# 🗄️ HealthCore: Estrategia de Persistencia con MongoDB
+
+## 1. Justificación de la Tecnología
+HealthCore utiliza **MongoDB 7.0** como motor de base de datos principal. La elección de una base de datos NoSQL orientada a documentos responde a la naturaleza de los datos de salud y nutrición:
+* **Esquema Flexible:** Los registros de alimentos y expedientes clínicos pueden variar en complejidad (algunos con fotos, otros con macros detallados); MongoDB permite evolucionar estos modelos sin migraciones costosas.
+* **Escalabilidad:** Facilita el crecimiento horizontal a medida que aumenta el número de pacientes y registros diarios.
+* **Integración con Spring Boot:** A través de *Spring Data MongoDB*, el mapeo de objetos Java a documentos BSON es prácticamente nativo.
+
+## 2. Patrón "Database per Service" (Aislamiento Lógico)
+Para evitar el antipatrón del "Monolito Distribuido", HealthCore implementa una separación estricta de datos. Aunque en el entorno de desarrollo compartimos un único contenedor de Docker, cada microservicio posee su propia base de datos lógica (esquema).
+
+### Mapa de Bases de Datos Lógicas:
+* `healthcore_identity`: Almacena credenciales, roles y estados de cuenta.
+* `healthcore_tracking`: Almacena logs diarios de alimentos, agua y cumplimiento de hábitos.
+* `healthcore_agenda`: Almacena la disponibilidad de los nutriólogos y el historial de citas.
+* `healthcore_clinical`: Almacena fichas biométricas, vinculaciones profesionales (`ProfessionalLink`) y observaciones técnicas.
+
+**Regla de Oro:** Ningún microservicio tiene credenciales para acceder a la base de datos de otro. La comunicación de datos cruzados se realiza exclusivamente mediante gRPC.
+
+## 3. Configuración de Conexión (Docker Network)
+La conexión se gestiona mediante variables de entorno en el archivo `docker-compose.yml`. El Hostname interno dentro de la red de Docker es `mongodb`.
+
+### Ejemplo de URIs de Conexión:
+```properties
+# En el microservicio de Identity
+SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_identity
+
+# En el microservicio de Tracking
+SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_tracking
+
+## 4. Modelado de Datos y Ciclo de Vida
+En lugar de tablas y filas, trabajamos con **Colecciones** y **Documentos**.
+
+### Integridad y Concurrencia (Optimistic Locking)
+Para el `agenda-service`, donde el riesgo de "dobles reservas" es alto, utilizamos el atributo `@Version` de Spring Data.
+* Cada documento de `Appointment` tiene un campo de versión.
+* Si dos pacientes intentan modificar el mismo slot de agenda simultáneamente, MongoDB rechazará la segunda transacción, garantizando la consistencia de la cita.
+
+### Relaciones Débiles
+Para mantener el desacoplamiento, no usamos "Foreign Keys" tradicionales entre servicios.
+* El `Tracking Service` guarda el `patientId` (UUID) como un simple String. 
+* Si requiere el nombre del paciente, invoca al `Identity Service` por gRPC usando ese ID.
+
+## 5. Persistencia y Volúmenes
+Los datos no residen dentro del contenedor (ya que son efímeros). Se utiliza un **Volumen Nombrado** de Docker para mapear los datos al disco duro del servidor Linux:
+
+```yaml
+volumes:
+  - mongo_data:/data/db
+```
+
+## 6. Herramientas de Administración
+Para la supervisión de los datos en tiempo real, el ecosistema incluye **Mongo-Express**, una interfaz web accesible en el puerto `8081`. Desde aquí, el equipo puede:
+* Visualizar las colecciones generadas por Spring Boot.
+* Realizar queries de depuración.
+* Validar que los eventos de RabbitMQ hayan impactado correctamente en las colecciones de destino.

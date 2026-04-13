@@ -57,3 +57,52 @@ class AgendaServiceTest {
         verify(appointmentRepository, never()).save(any());
     }
 }
+
+## 4. Guía de Pruebas de Integración con Testcontainers
+Cuando necesitamos probar un `Repository` para asegurar que las consultas de MongoDB (ej. búsquedas personalizadas) funcionan de verdad, usamos Testcontainers.
+
+```java
+@DataMongoTest // Carga solo el contexto de MongoDB
+@Testcontainers // Habilita el uso de contenedores Docker para la prueba
+class PatientRepositoryTest {
+
+    // Levantamos un Mongo 7.0 desechable solo para esta clase de pruebas
+    @Container
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0");
+
+    @DynamicPropertySource
+    static void setProperties(DynamicPropertyRegistry registry) {
+        // Le inyectamos la URL del Mongo desechable a Spring Boot
+        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
+    }
+
+    @Autowired
+    private PatientRepository patientRepository;
+
+    @Test
+    void shouldSaveAndFindPatientByEmail() {
+        // Esta prueba SÍ toca una base de datos real (la del contenedor desechable)
+        Patient patient = new Patient("Juan", "Perez", "juan@test.com");
+        patientRepository.save(patient);
+
+        Optional<Patient> found = patientRepository.findByEmail("juan@test.com");
+        assertTrue(found.isPresent());
+    }
+}
+```
+
+---
+
+## 5. Medición de Cobertura (JaCoCo)
+Para asegurarnos de cumplir el 70% requerido, hemos integrado el plugin **JaCoCo** (Java Code Coverage) en nuestro `pom.xml`.
+
+**¿Cómo verificar tu cobertura antes de hacer Commit?**
+1. Abre la terminal en el microservicio que modificaste.
+2. Ejecuta: `mvn clean test`
+3. JaCoCo generará un reporte visual. Abre en tu navegador el archivo: `target/site/jacoco/index.html`.
+4. Verás en verde las líneas de código que tus pruebas ejecutaron, en amarillo las ramas condicionales (Ifs) evaluadas a medias, y en rojo el código que jamás se probó.
+
+**Criterios de Aceptación del Equipo:**
+* **`controllers`:** Cobertura opcional (son solo pasarelas al servicio).
+* **`entities` / `dtos`:** No requieren pruebas lógicas (son POJOs sin lógica).
+* **`services`:** **Obligatorio ≥ 70%.** Aquí vive el negocio; aquí no se permiten descuidos.

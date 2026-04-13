@@ -1,5 +1,4 @@
 services:
-  # 1. El Motor de Base de Datos
   mongodb:
     image: mongo:7.0 
     container_name: healthcore-mongodb
@@ -9,7 +8,6 @@ services:
       - mongo_data:/data/db 
     restart: unless-stopped 
 
-  # 2. La Interfaz Gráfica
   mongo-express:
     image: mongo-express:latest
     container_name: healthcore-mongo-express
@@ -22,14 +20,12 @@ services:
     depends_on:
       - mongodb 
 
-  # 3. Nuestro API Gateway (NGINX)
   api-gateway:
-    image: nginx:alpine # Usamos la versión ligera de NGINX
+    image: nginx:alpine
     container_name: healthcore-api-gateway
     ports:
-      - "80:80" # El puerto por defecto de internet
+      - "80:80"
     volumes:
-      # Conectamos tu archivo de configuración hacia adentro del contenedor
       - ./services/api_gateway/nginx.conf:/etc/nginx/nginx.conf:ro 
     depends_on:
       - identity-service
@@ -51,7 +47,6 @@ services:
     depends_on:
       - mongodb
     environment:
-      # Apuntamos a la base de datos interna de Docker
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_identity
 
   tracking-service:
@@ -63,9 +58,7 @@ services:
       - mongodb
       - catalog-service
     environment:
-      # Apuntamos a la BD y al contenedor de Python
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_tracking
-      # Si tu código Java usa localhost para gRPC, tendrás que cambiarlo a esta variable de entorno en el futuro
       - GRPC_CATALOG_TARGET=catalog-service:50051
 
 volumes:

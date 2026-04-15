@@ -1,61 +1,138 @@
+# Configuración de página profesional
 page:
   layout: portrait
-  margin: [1in, 1in, 1in, 1in]
+  margin: [0.75in, 0.75in, 0.75in, 0.75in]
   size: A4
+
+# Encabezados y pies de página elegantes
 header:
-  height: 0.75in
-  line_width: 0.25
+  height: 0.6in
+  line_height: 1
+  font_size: 9
+  font_color: 666666
+  border_color: 4A90E2  # Azul corporativo
+  border_width: 0.5
   recto:
     right:
-      content: '{document-title}'
+      content: '{document-title} | {chapter-title}'
   verso:
     left:
-      content: '{document-title}'
+      content: '{document-title} | {chapter-title}'
+
 footer:
-  height: 0.75in
-  line_width: 0.25
+  height: 0.5in
+  font_size: 9
+  font_color: 999999
+  border_color: DDDDDD
+  border_width: 0.25
   recto:
     right:
       content: '{page-number}'
   verso:
     left:
       content: '{page-number}'
+
+# Fuentes limpias y modernas
+font:
+  catalog:
+    # Usar Times New Roman con variantes
+    Times-Roman:
+      normal: Times-Roman
+      bold: Times-Bold
+      italic: Times-Italic
+      bold_italic: Times-BoldItalic
+
 base:
-  font_color: #333333
-  font_family: Noto Serif
-  font_size: 11
-  line_height_length: 12
-  line_height: 1.15
+  font_family: Times-Roman
+  font_size: 10.5
+  line_height_length: 14
+  line_height: 1.3
+  font_color: 2C3E50  # Gris oscuro elegante
+
+# Títulos con jerarquía clara
 heading:
-  font_color: #1a1a1a
+  font_color: 1A5276  # Azul profundo
   font_style: bold
   h1_font_size: 24
-  h2_font_size: 20
-  h3_font_size: 16
-  h4_font_size: 14
+  h1_margin_top: 24
+  h1_margin_bottom: 12
+  h2_font_size: 18
+  h2_margin_top: 18
+  h2_margin_bottom: 8
+  h3_font_size: 14
+  h3_margin_top: 12
+  h3_margin_bottom: 6
+  h4_font_size: 12
+  h4_margin_top: 8
+  h4_margin_bottom: 4
+
+# Enlaces y referencias
 link:
-  font_color: #0066cc
+  font_color: 3498DB  # Azul claro
+  text_decoration: underline
+
+# Código y comandos
 code:
-  font_color: #aa1111
   font_family: Courier
-  background_color: #f5f5f5
-  border_color: #cccccc
-  border_radius: 5
-  border_width: 0.5
-  padding: [2, 3]
-table:
-  border_color: #dddddd
-  border_width: 0.5
-  head:
-    background_color: #f2f2f2
-    font_color: #1a1a1a
-    font_style: bold
-  body:
-    background_color: #ffffff
-    font_color: #333333
-caption:
-  font_color: #666666
   font_size: 9
+  font_color: C0392B  # Rojo sutil
+  background_color: F8F9F9
+  border_color: E5E7E9
+  border_width: 0.25
+  border_radius: 3
+  padding: [4, 6]
+
+# Tablas profesionales
+table:
+  border_color: D5D8DC
+  border_width: 0.5
+  cell_padding: 6
+  head:
+    background_color: 4A90E2
+    font_color: FFFFFF
+    font_style: bold
+    font_size: 10
+  body:
+    background_color: FFFFFF
+    font_color: 2C3E50
+    font_size: 9.5
+  foot:
+    background_color: F2F3F4
+    font_color: 7F8C8D
+    font_style: italic
+
+# Listas
+ulist:
+  marker_color: 4A90E2
+  indent: 20
+
+olist:
+  marker_color: 2C3E50
+  indent: 20
+
+# Advertencias y notas
+admonition:
+  border_width: 0.5
+  border_radius: 5
+  padding: [8, 12]
+  note:
+    background_color: E8F4FD
+    border_color: 3498DB
+  warning:
+    background_color: FEF9E7
+    border_color: F39C12
+  caution:
+    background_color: FDEDEC
+    border_color: E74C3C
+
+# Captiones
+caption:
+  font_color: 7F8C8D
+  font_size: 8.5
   font_style: italic
   align: center
-  side: bottom
+
+# Imágenes
+image:
+  align: center
+  target: '{imagesdir}/'

@@ -32,7 +32,8 @@ public class UserRepositoryAdapter implements UserRepository {
                 .email(doc.getEmail())
                 .passwordHash(doc.getPasswordHash())
                 .role(doc.getRole())
-                .isActive(doc.isActive())
+                .provider(doc.getProvider())
+                .enabled(doc.isEnabled())
                 .createdAt(doc.getCreatedAt())
                 .build();
     }
@@ -43,7 +44,8 @@ public class UserRepositoryAdapter implements UserRepository {
                 .email(user.getEmail())
                 .passwordHash(user.getPasswordHash())
                 .role(user.getRole())
-                .isActive(user.isActive())
+                .provider(user.getProvider())
+                .enabled(user.isEnabled())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

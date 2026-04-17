@@ -1,5 +1,6 @@
 package com.healthcore.identity.application;
 
+import com.healthcore.identity.domain.AuthProvider;
 import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.exception.ConflictException;
@@ -39,7 +40,8 @@ public class AuthService {
                 .email(email)
                 .passwordHash(passwordEncoder.encode(plainPassword))
                 .role(Role.PATIENT)
-                .isActive(true)
+                .provider(AuthProvider.LOCAL)
+                .enabled(true)
                 .createdAt(LocalDateTime.now())
                 .build();
 

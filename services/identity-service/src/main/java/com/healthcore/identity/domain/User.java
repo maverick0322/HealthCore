@@ -18,6 +18,7 @@ public class User {
     private String email;
     private String passwordHash;
     private Role role;
-    private boolean isActive;
+    private AuthProvider provider;
+    private boolean enabled;
     private LocalDateTime createdAt;
 }

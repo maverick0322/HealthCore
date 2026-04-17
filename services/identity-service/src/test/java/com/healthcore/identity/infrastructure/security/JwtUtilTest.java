@@ -16,7 +16,7 @@ class JwtUtilTest {
 
     @BeforeEach
     void setUp() {
-        jwtUtil = new JwtUtil(TEST_SECRET, 300000L, 86400000L);
+        jwtUtil = new JwtUtil(jwtProperties(TEST_SECRET, 300000L, 86400000L));
     }
 
     @Test
@@ -79,7 +79,7 @@ class JwtUtilTest {
     @Test
     void should_ThrowUnauthorizedException_When_TokenIsExpired() throws InterruptedException {
         // Arrange
-        JwtUtil fastExpiringJwtUtil = new JwtUtil(TEST_SECRET, 1L, 1L);
+        JwtUtil fastExpiringJwtUtil = new JwtUtil(jwtProperties(TEST_SECRET, 1L, 1L));
         String token = fastExpiringJwtUtil.generateAccessToken("slow@healthcore.com", Role.PATIENT.name());
 
         Thread.sleep(50);
@@ -88,5 +88,13 @@ class JwtUtilTest {
         assertThatThrownBy(() -> fastExpiringJwtUtil.extractEmail(token))
                 .isInstanceOf(UnauthorizedException.class)
                 .hasMessage("Token has expired");
+    }
+
+    private JwtProperties jwtProperties(String secret, long accessTokenValidity, long refreshTokenValidity) {
+        JwtProperties jwtProperties = new JwtProperties();
+        jwtProperties.setSecret(secret);
+        jwtProperties.setAccessTokenValidity(accessTokenValidity);
+        jwtProperties.setRefreshTokenValidity(refreshTokenValidity);
+        return jwtProperties;
     }
 }

@@ -1,6 +1,7 @@
 package com.healthcore.identity.infrastructure.persistence;
 
 import com.healthcore.identity.domain.Role;
+import com.healthcore.identity.domain.AuthProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,8 +34,11 @@ public class UserDocument {
     @Field("role")
     private Role role;
 
-    @Field("is_active")
-    private boolean isActive;
+    @Field("provider")
+    private AuthProvider provider;
+
+    @Field("enabled")
+    private boolean enabled;
 
     @CreatedDate
     @Field("created_at")

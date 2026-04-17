@@ -1,0 +1,10 @@
+jwt:
+  secret: TestSecretKeyForHealthCoreIdentityService2026!
+  access-token-validity: 300000
+  refresh-token-validity: 86400000
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/db_identity_test
+

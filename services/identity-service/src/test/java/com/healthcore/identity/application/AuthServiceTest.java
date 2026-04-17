@@ -1,5 +1,6 @@
 package com.healthcore.identity.application;
 
+import com.healthcore.identity.domain.AuthProvider;
 import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.exception.ConflictException;
@@ -66,7 +67,8 @@ class AuthServiceTest {
                 .email(email)
                 .passwordHash(encodedPassword)
                 .role(Role.PATIENT)
-                .isActive(true)
+                .provider(AuthProvider.LOCAL)
+                .enabled(true)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -79,7 +81,8 @@ class AuthServiceTest {
         assertThat(result.getId()).isEqualTo("12345");
         assertThat(result.getEmail()).isEqualTo(email);
         assertThat(result.getRole()).isEqualTo(Role.PATIENT);
-        assertThat(result.isActive()).isTrue();
+        assertThat(result.getProvider()).isEqualTo(AuthProvider.LOCAL);
+        assertThat(result.isEnabled()).isTrue();
 
         verify(userRepository).save(any(User.class));
     }

@@ -8,7 +8,6 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -23,14 +22,17 @@ public class JwtUtil {
     private final long accessTokenValidity;
     private final long refreshTokenValidity;
 
-    public JwtUtil(
-            @Value("${jwt.secret:ThisIsAVerySecureSecretKeyForHealthCore2026!}") String secret,
-            @Value("${jwt.access-token.validity:300000}") long accessTokenValidity,
-            @Value("${jwt.refresh-token.validity:86400000}") long refreshTokenValidity) {
+    public JwtUtil(JwtProperties jwtProperties) {
+        String secret = jwtProperties.getSecret();
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
 
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.accessTokenValidity = accessTokenValidity;
-        this.refreshTokenValidity = refreshTokenValidity;
+        if (secretBytes.length < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 bytes long");
+        }
+
+        this.key = Keys.hmacShaKeyFor(secretBytes);
+        this.accessTokenValidity = jwtProperties.getAccessTokenValidity();
+        this.refreshTokenValidity = jwtProperties.getRefreshTokenValidity();
     }
 
     public String generateAccessToken(String email, String role) {

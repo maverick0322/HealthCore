@@ -37,7 +37,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         OAuth2User oauth2User = oauthToken.getPrincipal();
         String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-        String email = extractEmail(oauth2User, registrationId);
+        String email = extractEmail(oauth2User);
         AuthProvider provider = AuthProvider.fromRegistrationId(registrationId);
 
         Map<String, String> tokens = authService.loginWithProvider(email, provider);
@@ -49,13 +49,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("OAuth2 login completed for provider: {} and email: {}", provider, email);
     }
 
-    private String extractEmail(OAuth2User oauth2User, String registrationId) {
+    private String extractEmail(OAuth2User oauth2User) {
         Object emailValue = oauth2User.getAttributes().get("email");
 
-        if (emailValue == null && "facebook".equalsIgnoreCase(registrationId)) {
-            // Facebook may not return email when permission was not granted.
-            throw new UnauthorizedException("Facebook account email is required for login");
-        }
 
         if (emailValue == null) {
             throw new UnauthorizedException("OAuth2 provider did not return a valid email");

@@ -4,6 +4,7 @@ import com.healthcore.identity.domain.exception.UnauthorizedException;
 
 public enum AuthProvider {
     LOCAL,
+    AUTH0,
     GOOGLE,
     FACEBOOK;
 
@@ -13,8 +14,7 @@ public enum AuthProvider {
         }
 
         return switch (registrationId.toLowerCase()) {
-            case "google" -> GOOGLE;
-            case "facebook" -> FACEBOOK;
+            case "auth0" -> AUTH0;
             default -> throw new UnauthorizedException("Unsupported OAuth2 provider");
         };
     }

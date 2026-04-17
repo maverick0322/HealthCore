@@ -164,19 +164,19 @@ class AuthServiceTest {
                 .id("oauth-1")
                 .email(email)
                 .role(Role.PATIENT)
-                .provider(AuthProvider.GOOGLE)
+                .provider(AuthProvider.AUTH0)
                 .enabled(true)
                 .emailVerified(true)
                 .build();
 
-        when(userRepository.findByEmailAndProvider(email, AuthProvider.GOOGLE)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndProvider(email, AuthProvider.AUTH0)).thenReturn(Optional.empty());
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
         when(jwtUtil.generateAccessToken(email, Role.PATIENT.name())).thenReturn("social-access");
         when(jwtUtil.generateRefreshToken(email)).thenReturn("social-refresh");
 
         // Act
-        Map<String, String> result = authService.loginWithProvider(email, AuthProvider.GOOGLE);
+        Map<String, String> result = authService.loginWithProvider(email, AuthProvider.AUTH0);
 
         // Assert
         assertThat(result).containsEntry("accessToken", "social-access");
@@ -192,11 +192,11 @@ class AuthServiceTest {
                 .provider(AuthProvider.LOCAL)
                 .build();
 
-        when(userRepository.findByEmailAndProvider(email, AuthProvider.GOOGLE)).thenReturn(Optional.empty());
+        when(userRepository.findByEmailAndProvider(email, AuthProvider.AUTH0)).thenReturn(Optional.empty());
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(localUser));
 
         // Act & Assert
-        assertThatThrownBy(() -> authService.loginWithProvider(email, AuthProvider.GOOGLE))
+        assertThatThrownBy(() -> authService.loginWithProvider(email, AuthProvider.AUTH0))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Email is already registered with a different authentication provider");
     }

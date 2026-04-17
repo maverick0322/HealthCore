@@ -48,6 +48,9 @@ services:
       - mongodb
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_identity
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ACCESS_TOKEN_VALIDITY_MS=300000
+      - JWT_REFRESH_TOKEN_VALIDITY_MS=86400000
 
   tracking-service:
     build: ./services/tracking-service

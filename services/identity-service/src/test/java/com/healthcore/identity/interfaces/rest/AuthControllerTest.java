@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -114,5 +115,40 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Invalid credentials"));
+    }
+
+    @Test
+    void should_Return200Ok_When_RefreshIsSuccessful() throws Exception {
+        // Arrange
+        RefreshRequest request = new RefreshRequest("refresh-token-123");
+        Map<String, String> tokens = Map.of(
+                "accessToken", "new-access-token",
+                "refreshToken", "new-refresh-token"
+        );
+
+        when(authService.refresh(request.refreshToken())).thenReturn(tokens);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("new-access-token"))
+                .andExpect(jsonPath("$.refreshToken").value("new-refresh-token"));
+    }
+
+    @Test
+    void should_Return401Unauthorized_When_VerificationCodeIsInvalid() throws Exception {
+        // Arrange
+        VerifyCodeRequest request = new VerifyCodeRequest("patient@healthcore.com", "123456");
+        doThrow(new UnauthorizedException("Invalid or expired verification code"))
+                .when(authService).verifyCode(request.email(), request.code());
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/auth/verify-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Invalid or expired verification code"));
     }
 }

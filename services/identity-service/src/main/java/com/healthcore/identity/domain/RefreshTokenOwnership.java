@@ -13,14 +13,15 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class RefreshTokenOwnership {
     private String id;
+    private String userId;
     private String email;
-    private String passwordHash;
-    private Role role;
-    private AuthProvider provider;
-    private boolean emailVerified;
-    private LocalDateTime verifiedAt;
-    private boolean enabled;
+    private String tokenHash;
+    private LocalDateTime expiresAt;
+    private boolean revoked;
+    private LocalDateTime revokedAt;
+    private String replacedByTokenHash;
     private LocalDateTime createdAt;
 }
+

@@ -8,7 +8,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.healthcore.identity.application.AuthService;
+import com.healthcore.identity.infrastructure.persistence.SpringDataMongoPasswordResetCodeRepository;
+import com.healthcore.identity.infrastructure.persistence.SpringDataMongoRefreshTokenRepository;
 import com.healthcore.identity.infrastructure.persistence.SpringDataMongoUserRepository;
+import com.healthcore.identity.infrastructure.persistence.SpringDataMongoVerificationCodeRepository;
 import com.healthcore.identity.infrastructure.persistence.UserRepositoryAdapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +31,15 @@ class IdentityServiceApplicationTests {
 
 	@MockitoBean
 	private SpringDataMongoUserRepository springDataMongoUserRepository;
+
+	@MockitoBean
+	private SpringDataMongoVerificationCodeRepository springDataMongoVerificationCodeRepository;
+
+	@MockitoBean
+	private SpringDataMongoPasswordResetCodeRepository springDataMongoPasswordResetCodeRepository;
+
+	@MockitoBean
+	private SpringDataMongoRefreshTokenRepository springDataMongoRefreshTokenRepository;
 
 	@Test
 	void contextLoads() {

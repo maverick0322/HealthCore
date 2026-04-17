@@ -5,7 +5,10 @@ import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.exception.ConflictException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
+import com.healthcore.identity.domain.repository.PasswordResetCodeRepository;
+import com.healthcore.identity.domain.repository.RefreshTokenRepository;
 import com.healthcore.identity.domain.repository.UserRepository;
+import com.healthcore.identity.domain.repository.VerificationCodeRepository;
 import com.healthcore.identity.infrastructure.security.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +35,15 @@ class AuthServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private VerificationCodeRepository verificationCodeRepository;
+
+    @Mock
+    private PasswordResetCodeRepository passwordResetCodeRepository;
+
+    @Mock
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
     private JwtUtil jwtUtil;
@@ -139,7 +151,7 @@ class AuthServiceTest {
 
         // Assert
         assertThat(result).hasSize(2);
-        assertThat(result.get("accessToken")).isEqualTo("mockedAccessToken");
-        assertThat(result.get("refreshToken")).isEqualTo("mockedRefreshToken");
+        assertThat(result).containsEntry("accessToken", "mockedAccessToken");
+        assertThat(result).containsEntry("refreshToken", "mockedRefreshToken");
     }
 }

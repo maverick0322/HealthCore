@@ -13,14 +13,12 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class PasswordResetCode {
     private String id;
+    private String userId;
     private String email;
-    private String passwordHash;
-    private Role role;
-    private AuthProvider provider;
-    private boolean emailVerified;
-    private LocalDateTime verifiedAt;
-    private boolean enabled;
+    private String codeHash;
+    private LocalDateTime expiresAt;
     private LocalDateTime createdAt;
 }
+

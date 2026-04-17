@@ -1,7 +1,5 @@
 package com.healthcore.identity.infrastructure.persistence;
 
-import com.healthcore.identity.domain.Role;
-import com.healthcore.identity.domain.AuthProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,35 +16,29 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "users")
-public class UserDocument {
+@Document(collection = "password_reset_codes")
+public class PasswordResetCodeDocument {
 
     @Id
     private String id;
 
-    @Indexed(unique = true)
+    @Field("user_id")
+    private String userId;
+
+    @Indexed
     @Field("email")
     private String email;
 
-    @Field("password_hash")
-    private String passwordHash;
+    @Field("code_hash")
+    private String codeHash;
 
-    @Field("role")
-    private Role role;
-
-    @Field("provider")
-    private AuthProvider provider;
-
-    @Field("email_verified")
-    private boolean emailVerified;
-
-    @Field("verified_at")
-    private LocalDateTime verifiedAt;
-
-    @Field("enabled")
-    private boolean enabled;
+    @Indexed(expireAfter = "0s")
+    @Field("expires_at")
+    private LocalDateTime expiresAt;
 
     @CreatedDate
     @Field("created_at")
     private LocalDateTime createdAt;
 }
+
+

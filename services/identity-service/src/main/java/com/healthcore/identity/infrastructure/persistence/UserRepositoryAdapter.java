@@ -1,5 +1,6 @@
 package com.healthcore.identity.infrastructure.persistence;
 
+import com.healthcore.identity.domain.AuthProvider;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,12 @@ public class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByEmailAndProvider(String email, AuthProvider provider) {
+        return mongoRepository.findByEmailAndProvider(email, provider)
+                .map(this::toDomain);
+    }
+
+    @Override
     public User save(User user) {
         UserDocument document = toDocument(user);
         UserDocument savedDocument = mongoRepository.save(document);
@@ -33,6 +40,8 @@ public class UserRepositoryAdapter implements UserRepository {
                 .passwordHash(doc.getPasswordHash())
                 .role(doc.getRole())
                 .provider(doc.getProvider())
+                .emailVerified(doc.isEmailVerified())
+                .verifiedAt(doc.getVerifiedAt())
                 .enabled(doc.isEnabled())
                 .createdAt(doc.getCreatedAt())
                 .build();
@@ -45,6 +54,8 @@ public class UserRepositoryAdapter implements UserRepository {
                 .passwordHash(user.getPasswordHash())
                 .role(user.getRole())
                 .provider(user.getProvider())
+                .emailVerified(user.isEmailVerified())
+                .verifiedAt(user.getVerifiedAt())
                 .enabled(user.isEnabled())
                 .createdAt(user.getCreatedAt())
                 .build();

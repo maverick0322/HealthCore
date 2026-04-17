@@ -154,4 +154,50 @@ class AuthServiceTest {
         assertThat(result).containsEntry("accessToken", "mockedAccessToken");
         assertThat(result).containsEntry("refreshToken", "mockedRefreshToken");
     }
+
+    @Test
+    void should_ProvisionSocialUser_And_ReturnTokens_When_FirstOAuth2Login() {
+        // Arrange
+        String email = "social@healthcore.com";
+
+        User savedUser = User.builder()
+                .id("oauth-1")
+                .email(email)
+                .role(Role.PATIENT)
+                .provider(AuthProvider.GOOGLE)
+                .enabled(true)
+                .emailVerified(true)
+                .build();
+
+        when(userRepository.findByEmailAndProvider(email, AuthProvider.GOOGLE)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        when(jwtUtil.generateAccessToken(email, Role.PATIENT.name())).thenReturn("social-access");
+        when(jwtUtil.generateRefreshToken(email)).thenReturn("social-refresh");
+
+        // Act
+        Map<String, String> result = authService.loginWithProvider(email, AuthProvider.GOOGLE);
+
+        // Assert
+        assertThat(result).containsEntry("accessToken", "social-access");
+        assertThat(result).containsEntry("refreshToken", "social-refresh");
+    }
+
+    @Test
+    void should_ThrowConflict_When_EmailAlreadyExistsWithDifferentProvider_DuringOAuth2Login() {
+        // Arrange
+        String email = "existing@healthcore.com";
+        User localUser = User.builder()
+                .email(email)
+                .provider(AuthProvider.LOCAL)
+                .build();
+
+        when(userRepository.findByEmailAndProvider(email, AuthProvider.GOOGLE)).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(localUser));
+
+        // Act & Assert
+        assertThatThrownBy(() -> authService.loginWithProvider(email, AuthProvider.GOOGLE))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("Email is already registered with a different authentication provider");
+    }
 }

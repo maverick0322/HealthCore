@@ -97,6 +97,20 @@ public class AuthService {
         );
     }
 
+    public Map<String, String> loginWithProvider(String email, AuthProvider provider) {
+        User user = userRepository.findByEmailAndProvider(email, provider)
+                .orElseGet(() -> provisionSocialUser(email, provider));
+
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+        persistRefreshToken(user, refreshToken);
+
+        return Map.of(
+                ACCESS_TOKEN_KEY, accessToken,
+                REFRESH_TOKEN_KEY, refreshToken
+        );
+    }
+
     public void verifyCode(String email, String code) {
         VerificationCode verificationCode = verificationCodeRepository
                 .findByEmailAndCodeHash(email, hashValue(code))
@@ -220,5 +234,28 @@ public class AuthService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Unable to hash sensitive value", e);
         }
+    }
+
+    private User provisionSocialUser(String email, AuthProvider provider) {
+        userRepository.findByEmail(email)
+                .filter(existing -> existing.getProvider() != provider)
+                .ifPresent(existing -> {
+                    throw new ConflictException("Email is already registered with a different authentication provider");
+                });
+
+        User newSocialUser = User.builder()
+                .email(email)
+                .passwordHash(null)
+                .role(Role.PATIENT)
+                .provider(provider)
+                .emailVerified(true)
+                .verifiedAt(LocalDateTime.now())
+                .enabled(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        User savedSocialUser = userRepository.save(newSocialUser);
+        log.info("Social user provisioned successfully for email: {} with provider: {}", email, provider);
+        return savedSocialUser;
     }
 }

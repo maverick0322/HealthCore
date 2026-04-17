@@ -57,7 +57,12 @@ class JwtUtilTest {
         String validToken = jwtUtil.generateAccessToken("victim@healthcore.com", Role.PATIENT.name());
 
         // Act
-        String tamperedToken = validToken.substring(0, validToken.length() - 1) + "X";
+        String[] tokenParts = validToken.split("\\.");
+        String signature = tokenParts[2];
+        char firstSignatureChar = signature.charAt(0);
+        char replacementChar = firstSignatureChar == 'a' ? 'b' : 'a';
+        String tamperedSignature = replacementChar + signature.substring(1);
+        String tamperedToken = tokenParts[0] + "." + tokenParts[1] + "." + tamperedSignature;
 
         // Assert
         assertThatThrownBy(() -> jwtUtil.extractEmail(tamperedToken))

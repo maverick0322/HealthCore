@@ -17,7 +17,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -40,7 +39,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String email = extractEmail(oauth2User);
         AuthProvider provider = AuthProvider.fromRegistrationId(registrationId);
 
-        Map<String, String> tokens = authService.loginWithProvider(email, provider);
+        AuthService.AuthTokens tokens = authService.loginWithProvider(email, provider);
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

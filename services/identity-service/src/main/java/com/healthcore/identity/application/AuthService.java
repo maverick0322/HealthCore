@@ -16,6 +16,8 @@ import com.healthcore.identity.infrastructure.security.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,9 +37,13 @@ public class AuthService {
 
     private static final String ACCESS_TOKEN_KEY = "accessToken";
     private static final String REFRESH_TOKEN_KEY = "refreshToken";
+    private static final String TOKEN_TYPE = "Bearer";
     private static final int VERIFICATION_CODE_TTL_MINUTES = 15;
     private static final int RESET_CODE_TTL_MINUTES = 15;
     private static final int REFRESH_TOKEN_TTL_HOURS = 24;
+    private static final long ACCESS_TOKEN_EXPIRES_IN_MS = 300_000L;
+    private static final long REFRESH_TOKEN_EXPIRES_IN_MS = 86_400_000L;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
     private final VerificationCodeRepository verificationCodeRepository;
@@ -45,6 +51,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final Environment environment;
 
     public User registerPatient(String email, String plainPassword) {
         log.info("Attempting to register patient with email: {}", email);
@@ -71,7 +78,7 @@ public class AuthService {
         return savedUser;
     }
 
-    public Map<String, String> login(String email, String plainPassword) {
+    public AuthTokens login(String email, String plainPassword) {
         log.info("Authentication attempt for user: {}", email);
 
         User user = userRepository.findByEmail(email)
@@ -91,13 +98,10 @@ public class AuthService {
 
         log.debug("JWT tokens generated successfully for user: {}", email);
 
-        return Map.of(
-                ACCESS_TOKEN_KEY, accessToken,
-                REFRESH_TOKEN_KEY, refreshToken
-        );
+        return buildTokenResponse(accessToken, refreshToken);
     }
 
-    public Map<String, String> loginWithProvider(String email, AuthProvider provider) {
+    public AuthTokens loginWithProvider(String email, AuthProvider provider) {
         User user = userRepository.findByEmailAndProvider(email, provider)
                 .orElseGet(() -> provisionSocialUser(email, provider));
 
@@ -105,10 +109,7 @@ public class AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
         persistRefreshToken(user, refreshToken);
 
-        return Map.of(
-                ACCESS_TOKEN_KEY, accessToken,
-                REFRESH_TOKEN_KEY, refreshToken
-        );
+        return buildTokenResponse(accessToken, refreshToken);
     }
 
     public void verifyCode(String email, String code) {
@@ -128,7 +129,7 @@ public class AuthService {
         log.info("Email verified successfully for user: {}", verificationCode.getEmail());
     }
 
-    public Map<String, String> refresh(String refreshToken) {
+    public AuthTokens refresh(String refreshToken) {
         String email = jwtUtil.extractEmail(refreshToken);
         String currentTokenHash = hashValue(refreshToken);
 
@@ -147,10 +148,23 @@ public class AuthService {
         refreshTokenRepository.revokeByTokenHash(currentOwnership.getTokenHash(), newTokenHash);
         persistRefreshToken(user, newRefreshToken);
 
-        return Map.of(
-                ACCESS_TOKEN_KEY, newAccessToken,
-                REFRESH_TOKEN_KEY, newRefreshToken
-        );
+        return buildTokenResponse(newAccessToken, newRefreshToken);
+    }
+
+    public User getCurrentUser(String accessToken) {
+        String email = jwtUtil.extractEmail(accessToken);
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+    }
+
+    public void logout(String refreshToken) {
+        String tokenHash = hashValue(refreshToken);
+        RefreshTokenOwnership tokenOwnership = refreshTokenRepository.findByTokenHash(tokenHash)
+                .filter(token -> !token.isRevoked())
+                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+
+        refreshTokenRepository.revokeByTokenHash(tokenOwnership.getTokenHash(), null);
+        log.info("Refresh token revoked for email: {}", tokenOwnership.getEmail());
     }
 
     public void requestPasswordReset(String email) {
@@ -175,7 +189,9 @@ public class AuthService {
 
         // Placeholder integration point for notifier adapter.
         log.info("Password reset code generated for user: {}", email);
-        log.debug("Password reset code for {} is {}", email, code);
+        if (shouldLogSensitiveCodes()) {
+            log.debug("Password reset code for {} is {}", email, code);
+        }
     }
 
     public void resetPassword(String email, String code, String newPassword) {
@@ -207,7 +223,9 @@ public class AuthService {
 
         // Placeholder integration point for notifier adapter.
         log.info("Verification code generated for user: {}", user.getEmail());
-        log.debug("Verification code for {} is {}", user.getEmail(), code);
+        if (shouldLogSensitiveCodes()) {
+            log.debug("Verification code for {} is {}", user.getEmail(), code);
+        }
     }
 
     private void persistRefreshToken(User user, String refreshToken) {
@@ -222,7 +240,7 @@ public class AuthService {
     }
 
     private String generateNumericCode() {
-        int randomValue = new SecureRandom().nextInt(900_000) + 100_000;
+        int randomValue = SECURE_RANDOM.nextInt(900_000) + 100_000;
         return String.valueOf(randomValue);
     }
 
@@ -257,5 +275,34 @@ public class AuthService {
         User savedSocialUser = userRepository.save(newSocialUser);
         log.info("Social user provisioned successfully for email: {} with provider: {}", email, provider);
         return savedSocialUser;
+    }
+
+    private boolean shouldLogSensitiveCodes() {
+        return environment != null && environment.acceptsProfiles(Profiles.of("dev", "local"));
+    }
+
+    private AuthTokens buildTokenResponse(String accessToken, String refreshToken) {
+        return new AuthTokens(
+                accessToken,
+                refreshToken,
+                TOKEN_TYPE,
+                ACCESS_TOKEN_EXPIRES_IN_MS,
+                REFRESH_TOKEN_EXPIRES_IN_MS
+        );
+    }
+
+    public record AuthTokens(
+            String accessToken,
+            String refreshToken,
+            String tokenType,
+            long accessTokenExpiresInMs,
+            long refreshTokenExpiresInMs
+    ) {
+        public Map<String, String> toLegacyMap() {
+            return Map.of(
+                    ACCESS_TOKEN_KEY, accessToken,
+                    REFRESH_TOKEN_KEY, refreshToken
+            );
+        }
     }
 }

@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,12 +146,12 @@ class AuthServiceTest {
         when(jwtUtil.generateRefreshToken(email)).thenReturn("mockedRefreshToken");
 
         // Act
-        Map<String, String> result = authService.login(email, rawPassword);
+        AuthService.AuthTokens result = authService.login(email, rawPassword);
 
         // Assert
-        assertThat(result).hasSize(2);
-        assertThat(result).containsEntry("accessToken", "mockedAccessToken");
-        assertThat(result).containsEntry("refreshToken", "mockedRefreshToken");
+        assertThat(result.accessToken()).isEqualTo("mockedAccessToken");
+        assertThat(result.refreshToken()).isEqualTo("mockedRefreshToken");
+        assertThat(result.tokenType()).isEqualTo("Bearer");
     }
 
     @Test
@@ -176,11 +175,12 @@ class AuthServiceTest {
         when(jwtUtil.generateRefreshToken(email)).thenReturn("social-refresh");
 
         // Act
-        Map<String, String> result = authService.loginWithProvider(email, AuthProvider.AUTH0);
+        AuthService.AuthTokens result = authService.loginWithProvider(email, AuthProvider.AUTH0);
 
         // Assert
-        assertThat(result).containsEntry("accessToken", "social-access");
-        assertThat(result).containsEntry("refreshToken", "social-refresh");
+        assertThat(result.accessToken()).isEqualTo("social-access");
+        assertThat(result.refreshToken()).isEqualTo("social-refresh");
+        assertThat(result.tokenType()).isEqualTo("Bearer");
     }
 
     @Test

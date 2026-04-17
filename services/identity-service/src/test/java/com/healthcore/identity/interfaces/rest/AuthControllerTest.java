@@ -14,11 +14,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Map;
-
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -86,9 +86,12 @@ class AuthControllerTest {
     void should_Return200Ok_And_Tokens_When_LoginIsSuccessful() throws Exception {
         // Arrange
         LoginRequest request = new LoginRequest("patient@healthcore.com", "password123");
-        Map<String, String> tokens = Map.of(
-                "accessToken", "mocked-access-token",
-                "refreshToken", "mocked-refresh-token"
+        AuthService.AuthTokens tokens = new AuthService.AuthTokens(
+                "mocked-access-token",
+                "mocked-refresh-token",
+                "Bearer",
+                300000L,
+                86400000L
         );
 
         when(authService.login(anyString(), anyString())).thenReturn(tokens);
@@ -99,7 +102,8 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("mocked-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("mocked-refresh-token"));
+                .andExpect(jsonPath("$.refreshToken").value("mocked-refresh-token"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"));
     }
 
     @Test
@@ -121,9 +125,12 @@ class AuthControllerTest {
     void should_Return200Ok_When_RefreshIsSuccessful() throws Exception {
         // Arrange
         RefreshRequest request = new RefreshRequest("refresh-token-123");
-        Map<String, String> tokens = Map.of(
-                "accessToken", "new-access-token",
-                "refreshToken", "new-refresh-token"
+        AuthService.AuthTokens tokens = new AuthService.AuthTokens(
+                "new-access-token",
+                "new-refresh-token",
+                "Bearer",
+                300000L,
+                86400000L
         );
 
         when(authService.refresh(request.refreshToken())).thenReturn(tokens);
@@ -134,7 +141,8 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("new-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("new-refresh-token"));
+                .andExpect(jsonPath("$.refreshToken").value("new-refresh-token"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"));
     }
 
     @Test
@@ -150,5 +158,40 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Invalid or expired verification code"));
+    }
+
+    @Test
+    void should_Return200Ok_When_LogoutIsSuccessful() throws Exception {
+        // Arrange
+        LogoutRequest request = new LogoutRequest("refresh-token-123");
+        doNothing().when(authService).logout(request.refreshToken());
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Logout completed successfully"));
+    }
+
+    @Test
+    void should_Return200Ok_When_MeEndpointHasValidBearerToken() throws Exception {
+        // Arrange
+        User currentUser = User.builder()
+                .email("patient@healthcore.com")
+                .role(Role.PATIENT)
+                .provider(com.healthcore.identity.domain.AuthProvider.AUTH0)
+                .emailVerified(true)
+                .enabled(true)
+                .build();
+
+        when(authService.getCurrentUser("access-token-123")).thenReturn(currentUser);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/auth/me")
+                        .header("Authorization", "Bearer access-token-123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("patient@healthcore.com"))
+                .andExpect(jsonPath("$.provider").value("AUTH0"));
     }
 }

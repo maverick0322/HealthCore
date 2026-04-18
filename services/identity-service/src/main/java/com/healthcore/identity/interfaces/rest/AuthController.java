@@ -33,6 +33,7 @@ public class AuthController {
             @ApiResponse(responseCode = "201", description = "User registered successfully",
                     content = @Content(schema = @Schema(implementation = RegisterResponse.class))),
             @ApiResponse(responseCode = "409", description = "Email already exists"),
+            @ApiResponse(responseCode = "429", description = "Too many requests"),
             @ApiResponse(responseCode = "400", description = "Validation error")
     })
     public ResponseEntity<RegisterResponse> registerPatient(@Valid @RequestBody RegisterRequest request) {
@@ -50,6 +51,7 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Authenticated successfully",
                     content = @Content(schema = @Schema(implementation = AuthTokensResponse.class))),
             @ApiResponse(responseCode = "401", description = "Invalid credentials"),
+            @ApiResponse(responseCode = "429", description = "Too many requests or temporary brute-force lock"),
             @ApiResponse(responseCode = "400", description = "Validation error")
     })
     public ResponseEntity<AuthTokensResponse> login(@Valid @RequestBody LoginRequest request) {

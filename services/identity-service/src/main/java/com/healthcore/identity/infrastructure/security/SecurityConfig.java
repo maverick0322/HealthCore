@@ -40,12 +40,17 @@ public class SecurityConfig {
     };
 
     private static final String[] DOCS_ENDPOINTS = {
+            "/api-docs",
             "/api-docs/**",
+            "/v3/api-docs",
             "/docs",
             "/docs/**",
             "/swagger-ui.html",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+            "/v3/api-docs.yaml",
+            "/webjars/**",
+            "/favicon.ico"
     };
 
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
@@ -78,6 +83,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
+            AuthRateLimitFilter authRateLimitFilter,
             JwtAuthenticationFilter jwtAuthenticationFilter,
             OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
             ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) throws Exception {
@@ -97,6 +103,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {

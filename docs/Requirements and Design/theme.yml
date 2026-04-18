@@ -4,21 +4,22 @@ page:
   margin: [0.75in, 0.75in, 0.75in, 0.75in]
   size: A4
 
-# Encabezados y pies de página elegantes
+# Encabezados elegantes
 header:
   height: 0.6in
   line_height: 1
   font_size: 9
   font_color: 666666
-  border_color: 4A90E2  # Azul corporativo
+  border_color: 4A90E2
   border_width: 0.5
   recto:
     right:
-      content: '{document-title} | {chapter-title}'
+      content: '{document-title}'
   verso:
     left:
-      content: '{document-title} | {chapter-title}'
+      content: '{document-title}'
 
+# Pies de página
 footer:
   height: 0.5in
   font_size: 9
@@ -32,26 +33,34 @@ footer:
     left:
       content: '{page-number}'
 
-# Fuentes limpias y modernas
+# Fuentes estándar de Prawn (funcionan en todas las plataformas)
 font:
   catalog:
-    # Usar Times New Roman con variantes
-    Times-Roman:
-      normal: Times-Roman
-      bold: Times-Bold
-      italic: Times-Italic
-      bold_italic: Times-BoldItalic
+    # Helvetica para texto principal
+    Helvetica:
+      normal: Helvetica
+      bold: Helvetica-Bold
+      italic: Helvetica-Oblique
+      bold_italic: Helvetica-BoldOblique
+    
+    # Courier para código
+    Courier:
+      normal: Courier
+      bold: Courier-Bold
+      italic: Courier-Oblique
+      bold_italic: Courier-BoldOblique
 
+# Estilos base
 base:
-  font_family: Times-Roman
+  font_family: Helvetica
   font_size: 10.5
   line_height_length: 14
   line_height: 1.3
-  font_color: 2C3E50  # Gris oscuro elegante
+  font_color: 2C3E50
 
-# Títulos con jerarquía clara
+# Jerarquía de títulos
 heading:
-  font_color: 1A5276  # Azul profundo
+  font_color: 1A5276
   font_style: bold
   h1_font_size: 24
   h1_margin_top: 24
@@ -66,16 +75,16 @@ heading:
   h4_margin_top: 8
   h4_margin_bottom: 4
 
-# Enlaces y referencias
+# Enlaces
 link:
-  font_color: 3498DB  # Azul claro
+  font_color: 3498DB
   text_decoration: underline
 
-# Código y comandos
+# Bloques de código
 code:
   font_family: Courier
   font_size: 9
-  font_color: C0392B  # Rojo sutil
+  font_color: C0392B
   background_color: F8F9F9
   border_color: E5E7E9
   border_width: 0.25
@@ -110,7 +119,7 @@ olist:
   marker_color: 2C3E50
   indent: 20
 
-# Advertencias y notas
+# Notas y advertencias
 admonition:
   border_width: 0.5
   border_radius: 5
@@ -135,4 +144,3 @@ caption:
 # Imágenes
 image:
   align: center
-  target: '{imagesdir}/'

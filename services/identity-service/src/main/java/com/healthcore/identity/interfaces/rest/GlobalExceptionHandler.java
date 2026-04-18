@@ -1,6 +1,7 @@
 package com.healthcore.identity.interfaces.rest;
 
 import com.healthcore.identity.domain.exception.ConflictException;
+import com.healthcore.identity.domain.exception.TooManyRequestsException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(buildErrorResponse("CONFLICT", ex.getMessage()));
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManyRequests(TooManyRequestsException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(buildErrorResponse("TOO_MANY_REQUESTS", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

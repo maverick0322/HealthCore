@@ -4,6 +4,7 @@ import com.healthcore.identity.domain.AuthProvider;
 import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.exception.ConflictException;
+import com.healthcore.identity.domain.exception.TooManyRequestsException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
 import com.healthcore.identity.domain.repository.PasswordResetCodeRepository;
 import com.healthcore.identity.domain.repository.RefreshTokenRepository;
@@ -46,6 +47,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtUtil jwtUtil;
+
+    @Mock
+    private LoginAttemptService loginAttemptService;
 
     @InjectMocks
     private AuthService authService;
@@ -121,9 +125,25 @@ class AuthServiceTest {
     }
 
     @Test
+    void should_CreateAdminUser_When_ProvisionedByAdmin() {
+        String email = "new.admin@healthcore.com";
+        String rawPassword = "password123";
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(rawPassword)).thenReturn("encodedPassword123");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = authService.createUserByAdmin(email, rawPassword, Role.ADMIN);
+
+        assertThat(result.getRole()).isEqualTo(Role.ADMIN);
+        assertThat(result.getProvider()).isEqualTo(AuthProvider.LOCAL);
+    }
+
+    @Test
     void should_ThrowUnauthorizedException_When_EmailNotFoundDuringLogin() {
         // Arrange
         String email = "ghost@healthcore.com";
+        when(loginAttemptService.isBlocked(email)).thenReturn(false);
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -142,6 +162,7 @@ class AuthServiceTest {
                 .passwordHash("correctHashedPassword")
                 .build();
 
+        when(loginAttemptService.isBlocked(email)).thenReturn(false);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(wrongPassword, existingUser.getPasswordHash())).thenReturn(false);
 
@@ -162,6 +183,7 @@ class AuthServiceTest {
                 .role(Role.PATIENT)
                 .build();
 
+        when(loginAttemptService.isBlocked(email)).thenReturn(false);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(rawPassword, existingUser.getPasswordHash())).thenReturn(true);
         when(jwtUtil.generateAccessToken(email, Role.PATIENT.name())).thenReturn("mockedAccessToken");
@@ -174,6 +196,17 @@ class AuthServiceTest {
         assertThat(result.accessToken()).isEqualTo("mockedAccessToken");
         assertThat(result.refreshToken()).isEqualTo("mockedRefreshToken");
         assertThat(result.tokenType()).isEqualTo("Bearer");
+        verify(loginAttemptService).recordSuccessfulAttempt(email);
+    }
+
+    @Test
+    void should_ThrowTooManyRequests_When_LoginIsBlocked() {
+        String email = "blocked@healthcore.com";
+        when(loginAttemptService.isBlocked(email)).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(email, "password123"))
+                .isInstanceOf(TooManyRequestsException.class)
+                .hasMessage("Too many failed login attempts. Please try again later.");
     }
 
     @Test

@@ -27,6 +27,14 @@ app:
       patient-password: ${APP_MANUALDB_SEED_PATIENT_PASSWORD:SeedPatient123!}
       nutritionist-email: ${APP_MANUALDB_SEED_NUTRITIONIST_EMAIL:nutritionist.seed@healthcore.com}
       nutritionist-password: ${APP_MANUALDB_SEED_NUTRITIONIST_PASSWORD:SeedNutritionist123!}
+  security:
+    rate-limit:
+      enabled: ${APP_SECURITY_RATE_LIMIT_ENABLED:true}
+      auth-requests-per-minute: ${APP_SECURITY_RATE_LIMIT_AUTH_REQUESTS_PER_MINUTE:30}
+    brute-force:
+      enabled: ${APP_SECURITY_BRUTE_FORCE_ENABLED:true}
+      max-failed-attempts: ${APP_SECURITY_BRUTE_FORCE_MAX_FAILED_ATTEMPTS:5}
+      lock-minutes: ${APP_SECURITY_BRUTE_FORCE_LOCK_MINUTES:15}
   openapi:
     title: ${APP_OPENAPI_TITLE:HealthCore Identity Service API}
     version: ${APP_OPENAPI_VERSION:1.0.0}

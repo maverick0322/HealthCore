@@ -1,5 +1,9 @@
 package com.healthcore.identity.interfaces.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.healthcore.identity.application.AuthService;
+import com.healthcore.identity.domain.Role;
+import com.healthcore.identity.domain.User;
 import com.healthcore.identity.infrastructure.persistence.SpringDataMongoPasswordResetCodeRepository;
 import com.healthcore.identity.infrastructure.persistence.SpringDataMongoRefreshTokenRepository;
 import com.healthcore.identity.infrastructure.persistence.SpringDataMongoUserRepository;
@@ -14,7 +18,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -26,6 +34,12 @@ class RoleEndpointSecurityTest {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private AuthService authService;
 
     @MockitoBean
     private SpringDataMongoUserRepository springDataMongoUserRepository;
@@ -96,6 +110,32 @@ class RoleEndpointSecurityTest {
     @Test
     void should_RejectProtectedRoleEndpoints_When_TokenIsMissing() throws Exception {
         mockMvc.perform(get("/api/v1/patients/home"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void should_AllowAdminProvisioningEndpoint_When_RoleIsAdmin() throws Exception {
+        String token = jwtUtil.generateAccessToken("admin@healthcore.com", "ADMIN");
+        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "password123", Role.PATIENT);
+        when(authService.createUserByAdmin(anyString(), anyString(), any()))
+                .thenReturn(User.builder().email("new.patient@healthcore.com").role(Role.PATIENT).build());
+
+        mockMvc.perform(post("/api/v1/admin/users")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void should_RejectAdminProvisioningEndpoint_When_RoleIsPatient() throws Exception {
+        String token = jwtUtil.generateAccessToken("patient@healthcore.com", "PATIENT");
+        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "password123", Role.PATIENT);
+
+        mockMvc.perform(post("/api/v1/admin/users")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
     }
 }

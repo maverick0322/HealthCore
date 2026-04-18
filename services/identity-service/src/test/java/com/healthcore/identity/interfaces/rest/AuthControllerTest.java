@@ -5,6 +5,7 @@ import com.healthcore.identity.application.AuthService;
 import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.exception.ConflictException;
+import com.healthcore.identity.domain.exception.TooManyRequestsException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
 import com.healthcore.identity.infrastructure.security.JwtUtil;
 import org.junit.jupiter.api.Test;
@@ -115,6 +116,19 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Invalid credentials"));
+    }
+
+    @Test
+    void should_Return429TooManyRequests_When_LoginIsTemporarilyBlocked() throws Exception {
+        LoginRequest request = new LoginRequest("blocked@healthcore.com", "password123");
+        when(authService.login(anyString(), anyString()))
+                .thenThrow(new TooManyRequestsException("Too many failed login attempts. Please try again later."));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("TOO_MANY_REQUESTS"));
     }
 
     @Test

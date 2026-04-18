@@ -11,6 +11,13 @@ JWT_SECRET=REPLACE_WITH_A_STRONG_SECRET_32B_OR_MORE
 JWT_ACCESS_TOKEN_VALIDITY_MS=300000
 JWT_REFRESH_TOKEN_VALIDITY_MS=86400000
 
+# Optional manual DB seed for local role testing
+APP_MANUALDB_SEED_ENABLED=true
+APP_MANUALDB_SEED_PATIENT_EMAIL=patient.seed@healthcore.com
+APP_MANUALDB_SEED_PATIENT_PASSWORD=SeedPatient123!
+APP_MANUALDB_SEED_NUTRITIONIST_EMAIL=nutritionist.seed@healthcore.com
+APP_MANUALDB_SEED_NUTRITIONIST_PASSWORD=SeedNutritionist123!
+
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_ID=YOUR_AUTH0_CLIENT_ID
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET=YOUR_AUTH0_CLIENT_SECRET
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE=openid,profile,email
@@ -66,7 +73,7 @@ After successful login, backend returns JSON:
 
 ## 5) REST endpoints for frontend
 
-Base URL: `http://localhost:8082/api/v1/auth`
+Auth base URL: `http://localhost:8082/api/v1/auth`
 
 - `POST /register`
 - `POST /login`
@@ -76,6 +83,30 @@ Base URL: `http://localhost:8082/api/v1/auth`
 - `POST /password-reset/confirm`
 - `GET /me`
 - `POST /logout`
+
+Role-scoped base URL: `http://localhost:8082/api/v1`
+
+- `GET /patients/home` (PATIENT only)
+- `GET /nutritionists/home` (NUTRITIONIST only)
+- `GET /admin/home` (ADMIN only)
+
+### Registration payload (role-aware)
+
+`POST /api/v1/auth/register`
+
+```json
+{
+  "email": "nutritionist1@healthcore.com",
+  "password": "StrongPass123!",
+  "role": "NUTRITIONIST"
+}
+```
+
+`role` is optional. If omitted, backend defaults to `PATIENT`. Self-registration as `ADMIN` is blocked.
+
+### Current user endpoint (`/me`)
+
+`GET /api/v1/auth/me` now uses the authenticated principal already loaded by JWT security filter. Frontend only needs a valid bearer access token; the controller no longer parses token claims directly.
 
 ## 6) OpenAPI / Swagger
 

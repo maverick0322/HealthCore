@@ -54,7 +54,12 @@ public class AuthService {
     private final Environment environment;
 
     public User registerPatient(String email, String plainPassword) {
-        log.info("Attempting to register patient with email: {}", email);
+        return registerLocalUser(email, plainPassword, Role.PATIENT);
+    }
+
+    public User registerLocalUser(String email, String plainPassword, Role requestedRole) {
+        Role role = sanitizeSelfRegistrationRole(requestedRole);
+        log.info("Attempting to register local user with email: {} and role: {}", email, role);
 
         if (userRepository.findByEmail(email).isPresent()) {
             log.warn("Registration rejected. Email already exists: {}", email);
@@ -64,7 +69,7 @@ public class AuthService {
         User newUser = User.builder()
                 .email(email)
                 .passwordHash(passwordEncoder.encode(plainPassword))
-                .role(Role.PATIENT)
+                .role(role)
                 .provider(AuthProvider.LOCAL)
                 .emailVerified(false)
                 .enabled(true)
@@ -73,7 +78,7 @@ public class AuthService {
 
         User savedUser = userRepository.save(newUser);
         createVerificationCode(savedUser);
-        log.info("Patient registered successfully with ID: {}", savedUser.getId());
+        log.info("Local user registered successfully with ID: {}", savedUser.getId());
 
         return savedUser;
     }
@@ -153,6 +158,10 @@ public class AuthService {
 
     public User getCurrentUser(String accessToken) {
         String email = jwtUtil.extractEmail(accessToken);
+        return getCurrentUserByEmail(email);
+    }
+
+    public User getCurrentUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
     }
@@ -279,6 +288,16 @@ public class AuthService {
 
     private boolean shouldLogSensitiveCodes() {
         return environment != null && environment.acceptsProfiles(Profiles.of("dev", "local"));
+    }
+
+    private Role sanitizeSelfRegistrationRole(Role requestedRole) {
+        Role role = requestedRole == null ? Role.PATIENT : requestedRole;
+
+        if (role == Role.ADMIN) {
+            throw new UnauthorizedException("Self-registration with ADMIN role is not allowed");
+        }
+
+        return role;
     }
 
     private AuthTokens buildTokenResponse(String accessToken, String refreshToken) {

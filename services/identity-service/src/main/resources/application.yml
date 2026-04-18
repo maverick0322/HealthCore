@@ -20,6 +20,13 @@ app:
   cors:
     # Comma-separated list for frontend origins (dev examples included)
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+  manualdb:
+    seed:
+      enabled: ${APP_MANUALDB_SEED_ENABLED:false}
+      patient-email: ${APP_MANUALDB_SEED_PATIENT_EMAIL:patient.seed@healthcore.com}
+      patient-password: ${APP_MANUALDB_SEED_PATIENT_PASSWORD:SeedPatient123!}
+      nutritionist-email: ${APP_MANUALDB_SEED_NUTRITIONIST_EMAIL:nutritionist.seed@healthcore.com}
+      nutritionist-password: ${APP_MANUALDB_SEED_NUTRITIONIST_PASSWORD:SeedNutritionist123!}
   openapi:
     title: ${APP_OPENAPI_TITLE:HealthCore Identity Service API}
     version: ${APP_OPENAPI_VERSION:1.0.0}

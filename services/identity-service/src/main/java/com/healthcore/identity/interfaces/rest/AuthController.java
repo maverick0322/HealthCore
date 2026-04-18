@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -27,7 +28,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    @Operation(summary = "Register local user", description = "Registers a new patient account using email and password.")
+    @Operation(summary = "Register local user", description = "Registers a new patient or nutritionist account using email and password.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "User registered successfully",
                     content = @Content(schema = @Schema(implementation = RegisterResponse.class))),
@@ -35,12 +36,12 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Validation error")
     })
     public ResponseEntity<RegisterResponse> registerPatient(@Valid @RequestBody RegisterRequest request) {
-        log.info("Received HTTP request to register new patient");
+        log.info("Received HTTP request to register new local user");
 
-        User newUser = authService.registerPatient(request.email(), request.password());
+        User newUser = authService.registerLocalUser(request.email(), request.password(), request.role());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new RegisterResponse("Patient registered successfully", newUser.getEmail()));
+                .body(new RegisterResponse("User registered successfully", newUser.getEmail()));
     }
 
     @PostMapping("/login")
@@ -114,16 +115,19 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    @Operation(summary = "Get current user", description = "Returns current authenticated user profile from access token.")
+    @Operation(summary = "Get current user", description = "Returns current authenticated user profile using the security principal extracted from JWT.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Current user returned",
                     content = @Content(schema = @Schema(implementation = CurrentUserResponse.class))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid token")
     })
-    public ResponseEntity<CurrentUserResponse> getCurrentUser(@RequestHeader("Authorization") String authorizationHeader) {
-        String accessToken = extractBearerToken(authorizationHeader);
-        User currentUser = authService.getCurrentUser(accessToken);
+    public ResponseEntity<CurrentUserResponse> getCurrentUser(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            throw new UnauthorizedException("Invalid token");
+        }
+
+        User currentUser = authService.getCurrentUserByEmail(authentication.getName());
         return ResponseEntity.ok(new CurrentUserResponse(
                 currentUser.getEmail(),
                 currentUser.getRole(),
@@ -145,12 +149,5 @@ public class AuthController {
     public ResponseEntity<MessageResponse> logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request.refreshToken());
         return ResponseEntity.ok(new MessageResponse("Logout completed successfully"));
-    }
-
-    private String extractBearerToken(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Invalid token");
-        }
-        return authorizationHeader.substring(7).trim();
     }
 }

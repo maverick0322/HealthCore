@@ -99,6 +99,28 @@ class AuthServiceTest {
     }
 
     @Test
+    void should_RegisterNutritionist_When_RoleIsNutritionist() {
+        String email = "nutritionist@healthcore.com";
+        String rawPassword = "password123";
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(rawPassword)).thenReturn("encodedPassword123");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = authService.registerLocalUser(email, rawPassword, Role.NUTRITIONIST);
+
+        assertThat(result.getRole()).isEqualTo(Role.NUTRITIONIST);
+        assertThat(result.getProvider()).isEqualTo(AuthProvider.LOCAL);
+    }
+
+    @Test
+    void should_RejectAdminSelfRegistration() {
+        assertThatThrownBy(() -> authService.registerLocalUser("admin@healthcore.com", "password123", Role.ADMIN))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("Self-registration with ADMIN role is not allowed");
+    }
+
+    @Test
     void should_ThrowUnauthorizedException_When_EmailNotFoundDuringLogin() {
         // Arrange
         String email = "ghost@healthcore.com";

@@ -1,18 +1,21 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { useForgotPassword } from "../hooks/useForgotPassword";
 
 export const ForgotPasswordPage = () => {
   const { t } = useTranslation("auth");
-  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const { handleForgotPassword, isLoading, error } = useForgotPassword();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API request here
-    navigate("/verify-code");
+    await handleForgotPassword(email);
   };
 
   return (
@@ -42,6 +45,13 @@ export const ForgotPasswordPage = () => {
             </p>
           </div>
 
+          {/* Error message */}
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300 mb-6">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium leading-none">
@@ -55,11 +65,22 @@ export const ForgotPasswordPage = () => {
                   placeholder={t("emailPlaceholder")}
                   className="h-12 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground transition-all duration-200" 
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
             </div>
-            <Button type="submit" className="w-full h-12 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm">
-              {t("sendInstructions")}
+            <Button
+              type="submit"
+              className="w-full h-12 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                t("sendInstructions")
+              )}
             </Button>
           </form>
 

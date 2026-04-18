@@ -19,7 +19,7 @@ jwt:
 app:
   cors:
     # Comma-separated list for frontend origins (dev examples included)
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,https://localhost:5173}
   manualdb:
     seed:
       enabled: ${APP_MANUALDB_SEED_ENABLED:false}

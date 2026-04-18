@@ -27,6 +27,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final AuthService authService;
     private final ObjectMapper objectMapper;
 
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.success-redirect-url:http://localhost:5173/oauth2/callback}")
+    private String redirectUrl;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -43,17 +46,19 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             AuthService.AuthTokens tokens = authService.loginWithProvider(email, provider);
 
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            objectMapper.writeValue(response.getWriter(), tokens);
+            String finalUrl = org.springframework.web.util.UriComponentsBuilder.fromUriString(redirectUrl)
+                    .queryParam("accessToken", tokens.accessToken())
+                    .queryParam("refreshToken", tokens.refreshToken())
+                    .build().toUriString();
 
             log.info("OAuth2 login completed for provider: {} and email: {}", provider, email);
+            response.sendRedirect(finalUrl);
         } catch (UnauthorizedException ex) {
             log.warn("OAuth2 login rejected: {}", ex.getMessage());
-            writeErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "UNAUTHORIZED", ex.getMessage());
+            writeErrorRedirect(response, "UNAUTHORIZED", ex.getMessage());
         } catch (Exception ex) {
             log.error("Unexpected OAuth2 success-handler error", ex);
-            writeErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Authentication processing failed");
+            writeErrorRedirect(response, "INTERNAL_ERROR", "Authentication processing failed");
         }
     }
 
@@ -73,14 +78,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         return email;
     }
 
-    private void writeErrorResponse(HttpServletResponse response, int status, String code, String message) throws IOException {
-        response.setStatus(status);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getWriter(), Map.of(
-                "code", code,
-                "message", message,
-                "error", message
-        ));
+    private void writeErrorRedirect(HttpServletResponse response, String code, String message) throws IOException {
+        String finalUrl = org.springframework.web.util.UriComponentsBuilder.fromUriString(redirectUrl)
+                .queryParam("error", code)
+                .queryParam("message", message)
+                .build().toUriString();
+        response.sendRedirect(finalUrl);
     }
 }
 

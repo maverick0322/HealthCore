@@ -5,11 +5,15 @@ import com.healthcore.identity.application.AuthService;
 import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.exception.ConflictException;
+import com.healthcore.identity.infrastructure.security.AuthSecurityProperties;
 import com.healthcore.identity.infrastructure.security.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(value = AdminUserManagementController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+@Import(AdminUserManagementControllerTest.TestConfig.class)
 class AdminUserManagementControllerTest {
 
     @Autowired
@@ -74,6 +79,14 @@ class AdminUserManagementControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Email is already registered in HealthCore"));
+    }
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        AuthSecurityProperties authSecurityProperties() {
+            return new AuthSecurityProperties();
+        }
     }
 }
 

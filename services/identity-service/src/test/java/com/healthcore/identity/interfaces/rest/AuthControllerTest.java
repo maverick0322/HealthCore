@@ -7,11 +7,15 @@ import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.exception.ConflictException;
 import com.healthcore.identity.domain.exception.TooManyRequestsException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
+import com.healthcore.identity.infrastructure.security.AuthSecurityProperties;
 import com.healthcore.identity.infrastructure.security.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -28,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(value = AuthController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+@Import(AuthControllerTest.TestConfig.class)
 class AuthControllerTest {
 
     @Autowired
@@ -195,5 +200,13 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("patient@healthcore.com"))
                 .andExpect(jsonPath("$.provider").value("AUTH0"));
+    }
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        AuthSecurityProperties authSecurityProperties() {
+            return new AuthSecurityProperties();
+        }
     }
 }

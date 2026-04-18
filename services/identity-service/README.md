@@ -17,6 +17,10 @@ SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE=openid,profile,email
 SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=https://YOUR_TENANT.us.auth0.com/
 
 APP_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+APP_OPENAPI_TITLE=HealthCore Identity Service API
+APP_OPENAPI_VERSION=1.0.0
+APP_OPENAPI_DESCRIPTION=Identity and access management endpoints
+APP_OPENAPI_SERVER_URL=http://localhost:8082
 ```
 
 ## 2) Auth0 app configuration
@@ -75,8 +79,10 @@ Base URL: `http://localhost:8082/api/v1/auth`
 
 ## 6) OpenAPI / Swagger
 
-- OpenAPI JSON: `http://localhost:8082/v3/api-docs`
-- Swagger UI: `http://localhost:8082/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8082/api-docs`
+- Swagger UI: `http://localhost:8082/docs`
+
+If the service is exposed behind an API Gateway, set `APP_OPENAPI_SERVER_URL` to the gateway base URL so frontend teams can call documented routes directly from Swagger.
 
 ## 7) Token refresh example
 

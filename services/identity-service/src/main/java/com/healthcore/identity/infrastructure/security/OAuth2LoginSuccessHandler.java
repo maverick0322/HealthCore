@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -30,22 +31,30 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
-        if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
-            throw new UnauthorizedException("Invalid OAuth2 authentication context");
+        try {
+            if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
+                throw new UnauthorizedException("Invalid OAuth2 authentication context");
+            }
+
+            OAuth2User oauth2User = oauthToken.getPrincipal();
+            String registrationId = oauthToken.getAuthorizedClientRegistrationId();
+            String email = extractEmail(oauth2User);
+            AuthProvider provider = AuthProvider.fromRegistrationId(registrationId);
+
+            AuthService.AuthTokens tokens = authService.loginWithProvider(email, provider);
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            objectMapper.writeValue(response.getWriter(), tokens);
+
+            log.info("OAuth2 login completed for provider: {} and email: {}", provider, email);
+        } catch (UnauthorizedException ex) {
+            log.warn("OAuth2 login rejected: {}", ex.getMessage());
+            writeErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "UNAUTHORIZED", ex.getMessage());
+        } catch (Exception ex) {
+            log.error("Unexpected OAuth2 success-handler error", ex);
+            writeErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Authentication processing failed");
         }
-
-        OAuth2User oauth2User = oauthToken.getPrincipal();
-        String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-        String email = extractEmail(oauth2User);
-        AuthProvider provider = AuthProvider.fromRegistrationId(registrationId);
-
-        AuthService.AuthTokens tokens = authService.loginWithProvider(email, provider);
-
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getWriter(), tokens);
-
-        log.info("OAuth2 login completed for provider: {} and email: {}", provider, email);
     }
 
     private String extractEmail(OAuth2User oauth2User) {
@@ -62,6 +71,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         return email;
+    }
+
+    private void writeErrorResponse(HttpServletResponse response, int status, String code, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        objectMapper.writeValue(response.getWriter(), Map.of(
+                "code", code,
+                "message", message,
+                "error", message
+        ));
     }
 }
 

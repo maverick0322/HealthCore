@@ -20,12 +20,18 @@ app:
   cors:
     # Comma-separated list for frontend origins (dev examples included)
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+  openapi:
+    title: ${APP_OPENAPI_TITLE:HealthCore Identity Service API}
+    version: ${APP_OPENAPI_VERSION:1.0.0}
+    description: ${APP_OPENAPI_DESCRIPTION:Identity and access management endpoints}
+    # Use gateway URL when this service is published behind API Gateway
+    server-url: ${APP_OPENAPI_SERVER_URL:http://localhost:8082}
 
 springdoc:
   api-docs:
-    path: /v3/api-docs
+    path: /api-docs
   swagger-ui:
-    path: /swagger-ui.html
+    path: /docs
 
 server:
   port: 8082

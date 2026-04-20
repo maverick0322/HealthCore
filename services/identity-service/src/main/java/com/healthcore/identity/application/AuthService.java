@@ -7,6 +7,7 @@ import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.VerificationCode;
 import com.healthcore.identity.domain.exception.ConflictException;
+import com.healthcore.identity.domain.exception.TooManyRequestsException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
 import com.healthcore.identity.domain.repository.PasswordResetCodeRepository;
 import com.healthcore.identity.domain.repository.RefreshTokenRepository;
@@ -38,6 +39,8 @@ public class AuthService {
     private static final String ACCESS_TOKEN_KEY = "accessToken";
     private static final String REFRESH_TOKEN_KEY = "refreshToken";
     private static final String TOKEN_TYPE = "Bearer";
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Invalid credentials";
+    private static final String TOO_MANY_LOGIN_ATTEMPTS_MESSAGE = "Too many failed login attempts. Please try again later.";
     private static final int VERIFICATION_CODE_TTL_MINUTES = 15;
     private static final int RESET_CODE_TTL_MINUTES = 15;
     private static final int REFRESH_TOKEN_TTL_HOURS = 24;
@@ -51,10 +54,16 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final LoginAttemptService loginAttemptService;
     private final Environment environment;
 
     public User registerPatient(String email, String plainPassword) {
-        log.info("Attempting to register patient with email: {}", email);
+        return registerLocalUser(email, plainPassword, Role.PATIENT);
+    }
+
+    public User registerLocalUser(String email, String plainPassword, Role requestedRole) {
+        Role role = sanitizeSelfRegistrationRole(requestedRole);
+        log.info("Attempting to register local user with email: {} and role: {}", email, role);
 
         if (userRepository.findByEmail(email).isPresent()) {
             log.warn("Registration rejected. Email already exists: {}", email);
@@ -64,7 +73,7 @@ public class AuthService {
         User newUser = User.builder()
                 .email(email)
                 .passwordHash(passwordEncoder.encode(plainPassword))
-                .role(Role.PATIENT)
+                .role(role)
                 .provider(AuthProvider.LOCAL)
                 .emailVerified(false)
                 .enabled(true)
@@ -73,24 +82,59 @@ public class AuthService {
 
         User savedUser = userRepository.save(newUser);
         createVerificationCode(savedUser);
-        log.info("Patient registered successfully with ID: {}", savedUser.getId());
+        log.info("Local user registered successfully with ID: {}", savedUser.getId());
+
+        return savedUser;
+    }
+
+    public User createUserByAdmin(String email, String plainPassword, Role requestedRole) {
+        Role role = requestedRole == null ? Role.PATIENT : requestedRole;
+        log.info("Admin provisioning local user with email: {} and role: {}", email, role);
+
+        if (userRepository.findByEmail(email).isPresent()) {
+            log.warn("Admin provisioning rejected. Email already exists: {}", email);
+            throw new ConflictException("Email is already registered in HealthCore");
+        }
+
+        User newUser = User.builder()
+                .email(email)
+                .passwordHash(passwordEncoder.encode(plainPassword))
+                .role(role)
+                .provider(AuthProvider.LOCAL)
+                .emailVerified(false)
+                .enabled(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        User savedUser = userRepository.save(newUser);
+        createVerificationCode(savedUser);
+        log.info("Admin provisioned user successfully with ID: {}", savedUser.getId());
 
         return savedUser;
     }
 
     public AuthTokens login(String email, String plainPassword) {
         log.info("Authentication attempt for user: {}", email);
+        String loginKey = normalizeLoginKey(email);
+
+        if (loginAttemptService.isBlocked(loginKey)) {
+            throw new TooManyRequestsException(TOO_MANY_LOGIN_ATTEMPTS_MESSAGE);
+        }
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("Authentication failed. User not found for email: {}", email);
-                    return new UnauthorizedException("Invalid credentials");
+                    loginAttemptService.recordFailedAttempt(loginKey);
+                    return new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
                 });
 
         if (!passwordEncoder.matches(plainPassword, user.getPasswordHash())) {
             log.warn("Authentication failed. Password mismatch for email: {}", email);
-            throw new UnauthorizedException("Invalid credentials");
+            loginAttemptService.recordFailedAttempt(loginKey);
+            throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
         }
+
+        loginAttemptService.recordSuccessfulAttempt(loginKey);
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
@@ -153,6 +197,10 @@ public class AuthService {
 
     public User getCurrentUser(String accessToken) {
         String email = jwtUtil.extractEmail(accessToken);
+        return getCurrentUserByEmail(email);
+    }
+
+    public User getCurrentUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
     }
@@ -279,6 +327,20 @@ public class AuthService {
 
     private boolean shouldLogSensitiveCodes() {
         return environment != null && environment.acceptsProfiles(Profiles.of("dev", "local"));
+    }
+
+    private String normalizeLoginKey(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
+    }
+
+    private Role sanitizeSelfRegistrationRole(Role requestedRole) {
+        Role role = requestedRole == null ? Role.PATIENT : requestedRole;
+
+        if (role == Role.ADMIN) {
+            throw new UnauthorizedException("Self-registration with ADMIN role is not allowed");
+        }
+
+        return role;
     }
 
     private AuthTokens buildTokenResponse(String accessToken, String refreshToken) {

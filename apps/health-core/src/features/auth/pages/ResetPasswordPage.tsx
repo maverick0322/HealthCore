@@ -1,30 +1,48 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { usePasswordStrength } from "../hooks/usePasswordStrength";
 import { PasswordStrengthIndicator } from "../components/PasswordStrengthIndicator";
+import { useResetPassword } from "../hooks/useResetPassword";
+
+interface LocationState {
+  email?: string;
+  code?: string;
+}
 
 export const ResetPasswordPage = () => {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state as LocationState) || {};
+  const email = state.email || '';
+  const code = state.code || '';
 
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
 
   const strength = usePasswordStrength(password);
+  const { handleResetPassword, isLoading, error, isSuccess } = useResetPassword();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPasswordMismatch(false);
+
+    if (password !== confirmPassword) {
+      setPasswordMismatch(true);
+      return;
+    }
+
     if (strength.isValidLength) {
-      // Simulate success
-      setIsSuccess(true);
+      await handleResetPassword(email, code, password);
     }
   };
 
@@ -51,6 +69,13 @@ export const ResetPasswordPage = () => {
                 </p>
               </div>
 
+              {/* Error message */}
+              {(error || passwordMismatch) && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300 mb-6">
+                  {passwordMismatch ? t("errorPasswordMismatch") : error}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm font-medium">
@@ -67,6 +92,7 @@ export const ResetPasswordPage = () => {
                       maxLength={15}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
                     />
                     <button
                       type="button"
@@ -97,6 +123,9 @@ export const ResetPasswordPage = () => {
                       placeholder="••••••••"
                       className="h-12 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground transition-all"
                       required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      disabled={isLoading}
                     />
                     <button
                       type="button"
@@ -108,8 +137,16 @@ export const ResetPasswordPage = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full h-12 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all active:scale-[0.98]">
-                  {t("updatePassword")}
+                <Button
+                  type="submit"
+                  className="w-full h-12 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all active:scale-[0.98]"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    t("updatePassword")
+                  )}
                 </Button>
               </form>
             </>

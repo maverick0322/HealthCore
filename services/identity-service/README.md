@@ -11,12 +11,30 @@ JWT_SECRET=REPLACE_WITH_A_STRONG_SECRET_32B_OR_MORE
 JWT_ACCESS_TOKEN_VALIDITY_MS=300000
 JWT_REFRESH_TOKEN_VALIDITY_MS=86400000
 
+# Optional manual DB seed for local role testing
+APP_MANUALDB_SEED_ENABLED=true
+APP_MANUALDB_SEED_PATIENT_EMAIL=patient.seed@healthcore.com
+APP_MANUALDB_SEED_PATIENT_PASSWORD=SeedPatient123!
+APP_MANUALDB_SEED_NUTRITIONIST_EMAIL=nutritionist.seed@healthcore.com
+APP_MANUALDB_SEED_NUTRITIONIST_PASSWORD=SeedNutritionist123!
+
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_ID=YOUR_AUTH0_CLIENT_ID
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET=YOUR_AUTH0_CLIENT_SECRET
 SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE=openid,profile,email
 SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=https://YOUR_TENANT.us.auth0.com/
 
 APP_CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+APP_OPENAPI_TITLE=HealthCore Identity Service API
+APP_OPENAPI_VERSION=1.0.0
+APP_OPENAPI_DESCRIPTION=Identity and access management endpoints
+APP_OPENAPI_SERVER_URL=http://localhost:8082
+
+# Security hardening
+APP_SECURITY_RATE_LIMIT_ENABLED=true
+APP_SECURITY_RATE_LIMIT_AUTH_REQUESTS_PER_MINUTE=30
+APP_SECURITY_BRUTE_FORCE_ENABLED=true
+APP_SECURITY_BRUTE_FORCE_MAX_FAILED_ATTEMPTS=5
+APP_SECURITY_BRUTE_FORCE_LOCK_MINUTES=15
 ```
 
 ## 2) Auth0 app configuration
@@ -62,7 +80,7 @@ After successful login, backend returns JSON:
 
 ## 5) REST endpoints for frontend
 
-Base URL: `http://localhost:8082/api/v1/auth`
+Auth base URL: `http://localhost:8082/api/v1/auth`
 
 - `POST /register`
 - `POST /login`
@@ -73,10 +91,58 @@ Base URL: `http://localhost:8082/api/v1/auth`
 - `GET /me`
 - `POST /logout`
 
+Role-scoped base URL: `http://localhost:8082/api/v1`
+
+- `GET /patients/home` (PATIENT only)
+- `GET /nutritionists/home` (NUTRITIONIST only)
+- `GET /admin/home` (ADMIN only)
+- `POST /admin/users` (ADMIN only)
+
+### Registration payload (role-aware)
+
+`POST /api/v1/auth/register`
+
+```json
+{
+  "email": "nutritionist1@healthcore.com",
+  "password": "StrongPass123!",
+  "role": "NUTRITIONIST"
+}
+```
+
+`role` is optional. If omitted, backend defaults to `PATIENT`. Self-registration as `ADMIN` is blocked.
+
+### Current user endpoint (`/me`)
+
+`GET /api/v1/auth/me` now uses the authenticated principal already loaded by JWT security filter. Frontend only needs a valid bearer access token; the controller no longer parses token claims directly.
+
+### Admin-managed local user provisioning
+
+`POST /api/v1/admin/users`
+
+```json
+{
+  "email": "new.admin@healthcore.com",
+  "password": "StrongPass123!",
+  "role": "ADMIN"
+}
+```
+
+This endpoint is restricted to users with `ADMIN` role and supports managed provisioning of `PATIENT`, `NUTRITIONIST`, and `ADMIN` local accounts.
+
+### Rate limiting and brute-force protection
+
+Authentication and recovery endpoints are protected with per-IP rate limiting. Login also has brute-force protection by login identifier, temporarily blocking repeated failed attempts and returning `429 TOO_MANY_REQUESTS`.
+
 ## 6) OpenAPI / Swagger
 
-- OpenAPI JSON: `http://localhost:8082/v3/api-docs`
-- Swagger UI: `http://localhost:8082/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8082/api-docs`
+- OpenAPI JSON (compat): `http://localhost:8082/v3/api-docs`
+- Swagger UI: `http://localhost:8082/docs`
+
+These documentation routes are public and should not redirect to Auth0 login.
+
+If the service is exposed behind an API Gateway, set `APP_OPENAPI_SERVER_URL` to the gateway base URL so frontend teams can call documented routes directly from Swagger.
 
 ## 7) Token refresh example
 

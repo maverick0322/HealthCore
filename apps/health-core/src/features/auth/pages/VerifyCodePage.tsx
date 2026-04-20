@@ -1,21 +1,36 @@
+import { useState } from "react";
 import { useTranslation, Trans } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
+import { Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
 } from "@/shared/ui/input-otp";
+import { useVerifyCode } from "../hooks/useVerifyCode";
+
+interface LocationState {
+  email?: string;
+  flow?: 'email-verification' | 'password-reset';
+}
 
 export const VerifyCodePage = () => {
   const { t } = useTranslation("auth");
-  const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state as LocationState) || {};
+  const email = state.email || '';
+  const flow = state.flow || 'email-verification';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [code, setCode] = useState("");
+  const { handleVerifyCode, isLoading, error } = useVerifyCode();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate successful verification
-    navigate("/reset-password");
+    if (code.length === 6) {
+      await handleVerifyCode(email, code, flow);
+    }
   };
 
   return (
@@ -42,13 +57,20 @@ export const VerifyCodePage = () => {
             </h1>
             <p className="text-muted-foreground text-sm text-center leading-relaxed">
               {t("verifySubtitle")}<br/>
-              <span className="font-medium text-foreground">usuario@ejemplo.com</span>
+              <span className="font-medium text-foreground">{email || '—'}</span>
             </p>
           </div>
 
+          {/* Error message */}
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300 mb-6 w-full">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex flex-col w-full gap-8">
             <div className="flex justify-center w-full">
-              <InputOTP maxLength={6}>
+              <InputOTP maxLength={6} value={code} onChange={setCode}>
                 <InputOTPGroup className="gap-2 sm:gap-4">
                   <InputOTPSlot index={0} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
                   <InputOTPSlot index={1} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
@@ -60,8 +82,16 @@ export const VerifyCodePage = () => {
               </InputOTP>
             </div>
 
-            <Button type="submit" className="w-full h-12 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
-              {t("verifyButton")}
+            <Button
+              type="submit"
+              className="w-full h-12 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+              disabled={isLoading || code.length !== 6}
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                t("verifyButton")
+              )}
             </Button>
           </form>
 

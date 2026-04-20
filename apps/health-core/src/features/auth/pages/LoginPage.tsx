@@ -4,13 +4,30 @@ import { Link } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { ENV } from "@/core/config/env";
+import { useLogin } from "../hooks/useLogin";
+import type { UserRole } from "../types/auth.types";
 
 export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<"paciente" | "nutriologo">("paciente");
   const { t } = useTranslation("auth");
+  const { handleLogin, isLoading, error } = useLogin();
+
+  // Map UI role to API role (stored for post-login routing, not sent to login API)
+  const _roleMap: Record<string, UserRole> = {
+    paciente: "PATIENT",
+    nutriologo: "NUTRITIONIST",
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleLogin({ email, password });
+  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-8 bg-background text-foreground font-sans relative transition-colors duration-500 ease-in-out">
@@ -76,7 +93,13 @@ export const LoginPage = () => {
           </div>
 
           <div className="space-y-3">
-            <Button variant="outline" className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium">
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
+              onClick={() => {
+                window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0`;
+              }}
+            >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -97,12 +120,6 @@ export const LoginPage = () => {
               </svg>
               {t("google")}
             </Button>
-            <Button variant="outline" className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium">
-              <svg className="w-5 h-5 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
-              </svg>
-              {t("facebook")}
-            </Button>
           </div>
 
           <div className="relative flex items-center py-2">
@@ -113,7 +130,14 @@ export const LoginPage = () => {
             <div className="flex-grow border-t border-border"></div>
           </div>
 
-          <form className="space-y-4 sm:space-y-5" onSubmit={(e) => e.preventDefault()}>
+          {/* Error message */}
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300">
+              {error}
+            </div>
+          )}
+
+          <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">{t("email")}</Label>
               <Input
@@ -122,6 +146,9 @@ export const LoginPage = () => {
                 placeholder={t("emailPlaceholder")}
                 className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-1.5 sm:space-y-2">
@@ -138,6 +165,9 @@ export const LoginPage = () => {
                   placeholder={t("passwordPlaceholder")}
                   className="h-11 sm:h-10 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
@@ -148,8 +178,16 @@ export const LoginPage = () => {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full h-11 sm:h-10 font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors mt-2 shadow-sm">
-              {t("submit")}
+            <Button
+              type="submit"
+              className="w-full h-11 sm:h-10 font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors mt-2 shadow-sm"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                t("submit")
+              )}
             </Button>
           </form>
         </div>

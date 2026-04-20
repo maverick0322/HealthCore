@@ -1,39 +1,69 @@
 import { createBrowserRouter } from "react-router-dom";
-import { SamplePage } from "@/features/sample/pages/SamplePage";
+import { ProtectedRoute } from "@/core/routes/ProtectedRoute";
+import { GuestRoute } from "@/core/routes/GuestRoute";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { SignUpPage } from "@/features/auth/pages/SignUpPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { VerifyCodePage } from "@/features/auth/pages/VerifyCodePage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { OAuth2CallbackPage } from "@/features/auth/pages/OAuth2CallbackPage";
 import { PatientOnboardingPage } from "@/features/onboarding/pages/PatientOnboardingPage";
+import { HomePage } from "@/features/dashboard/pages/HomePage";
+import { NotFoundPage } from "@/shared/components/NotFoundPage";
+import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
 
 export const appRouter = createBrowserRouter([
+  // ── Guest-only routes (redirect to / if already authenticated) ──
   {
-    path: "/",
-    element: <SamplePage />,
+    errorElement: <ErrorBoundaryPage />,
+    element: <GuestRoute />,
+    children: [
+      {
+        path: "/login",
+        element: <LoginPage />,
+      },
+      {
+        path: "/signup",
+        element: <SignUpPage />,
+      },
+      {
+        path: "/forgot-password",
+        element: <ForgotPasswordPage />,
+      },
+      {
+        path: "/verify-code",
+        element: <VerifyCodePage />,
+      },
+      {
+        path: "/reset-password",
+        element: <ResetPasswordPage />,
+      },
+    ],
   },
+  // ── Protected routes (redirect to /login if not authenticated) ──
   {
-    path: "/login",
-    element: <LoginPage />,
+    errorElement: <ErrorBoundaryPage />,
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: "/",
+        element: <HomePage />,
+      },
+      {
+        path: "/onboarding/patient",
+        element: <PatientOnboardingPage />,
+      },
+    ],
   },
+  // ── OAuth2 callback (outside guards — user arrives mid-auth flow) ──
   {
-    path: "/signup",
-    element: <SignUpPage />,
+    path: "/oauth2/callback",
+    element: <OAuth2CallbackPage />,
+    errorElement: <ErrorBoundaryPage />,
   },
+  // ── Catch-all 404 ──
   {
-    path: "/forgot-password",
-    element: <ForgotPasswordPage />,
-  },
-  {
-    path: "/verify-code",
-    element: <VerifyCodePage />,
-  },
-  {
-    path: "/reset-password",
-    element: <ResetPasswordPage />,
-  },
-  {
-    path: "/onboarding/patient",
-    element: <PatientOnboardingPage />,
+    path: "*",
+    element: <NotFoundPage />,
   },
 ]);

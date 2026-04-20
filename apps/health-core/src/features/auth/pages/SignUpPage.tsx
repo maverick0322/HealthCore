@@ -1,31 +1,49 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Checkbox } from "@/shared/ui/checkbox";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { ENV } from "@/core/config/env";
 import { usePasswordStrength } from "../hooks/usePasswordStrength";
 import { PasswordStrengthIndicator } from "../components/PasswordStrengthIndicator";
+import { useRegister } from "../hooks/useRegister";
+import type { UserRole } from "../types/auth.types";
 
 export const SignUpPage = () => {
-  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<"paciente" | "nutriologo">("paciente");
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
   const { t } = useTranslation("auth");
   const strength = usePasswordStrength(password);
+  const { handleRegister, isLoading, error } = useRegister();
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const roleMap: Record<string, UserRole> = {
+    paciente: "PATIENT",
+    nutriologo: "NUTRITIONIST",
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (role === "paciente") {
-      navigate("/onboarding/patient");
-    } else {
-      // Todo: Navigate to nutriologo onboarding
+    setPasswordMismatch(false);
+
+    if (password !== confirmPassword) {
+      setPasswordMismatch(true);
+      return;
     }
+
+    await handleRegister({
+      email,
+      password,
+      role: roleMap[role],
+    });
   };
 
   return (
@@ -96,8 +114,14 @@ export const SignUpPage = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <Button variant="outline" className="w-full flex items-center justify-center gap-2 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium">
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
+              onClick={() => {
+                window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0`;
+              }}
+            >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -116,13 +140,7 @@ export const SignUpPage = () => {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Google
-            </Button>
-            <Button variant="outline" className="w-full flex items-center justify-center gap-2 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium">
-              <svg className="w-5 h-5 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
-              </svg>
-              Facebook
+              {t("google")}
             </Button>
           </div>
 
@@ -134,19 +152,14 @@ export const SignUpPage = () => {
             <div className="flex-grow border-t border-border"></div>
           </div>
 
-          <form className="space-y-4 sm:space-y-5" onSubmit={handleSignUp}>
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="full-name" className="text-sm font-medium">{t("fullName")}</Label>
-              <Input
-                id="full-name"
-                name="full-name"
-                type="text"
-                placeholder={t("fullNamePlaceholder")}
-                className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground" 
-                required
-              />
+          {/* Error message */}
+          {(error || passwordMismatch) && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300">
+              {passwordMismatch ? t("errorPasswordMismatch") : error}
             </div>
-            
+          )}
+
+          <form className="space-y-4 sm:space-y-5" onSubmit={handleSignUp}>
             <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">{t("email")}</Label>
               <Input
@@ -155,6 +168,9 @@ export const SignUpPage = () => {
                 placeholder={t("emailPlaceholder")}
                 className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground" 
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
               />
             </div>
             
@@ -171,6 +187,7 @@ export const SignUpPage = () => {
                   maxLength={15}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
@@ -193,6 +210,9 @@ export const SignUpPage = () => {
                   placeholder={t("passwordPlaceholder")}
                   className="h-11 sm:h-10 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground"
                   required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
@@ -213,8 +233,16 @@ export const SignUpPage = () => {
               </label>
             </div>
 
-            <Button type="submit" className="w-full h-11 sm:h-10 font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors mt-2 shadow-sm">
-              {t("submitCreate")}
+            <Button
+              type="submit"
+              className="w-full h-11 sm:h-10 font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors mt-2 shadow-sm"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                t("submitCreate")
+              )}
             </Button>
           </form>
         </div>

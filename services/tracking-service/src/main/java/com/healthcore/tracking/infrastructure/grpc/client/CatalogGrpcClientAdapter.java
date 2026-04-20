@@ -11,6 +11,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
 
     private final NutritionalCatalogGrpc.NutritionalCatalogBlockingStub catalogStub;
 
+    @Autowired
     public CatalogGrpcClientAdapter(@Value("${grpc.catalog.target:localhost:50051}") String grpcTarget) {
         log.info("Initializing gRPC client for Catalog Service at: {}", grpcTarget);
 

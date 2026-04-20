@@ -67,6 +67,7 @@ services:
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_tracking
       - GRPC_CATALOG_TARGET=catalog-service:50051
+      - JWT_SECRET=${JWT_SECRET}
 
 volumes:
   mongo_data:

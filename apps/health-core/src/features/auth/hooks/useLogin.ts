@@ -17,11 +17,23 @@ export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async (data: LoginRequest) => {
+  const logout = useAuthStore((s) => s.logout);
+
+  const handleLogin = async (data: LoginRequest, expectedRole?: string) => {
     setError(null);
     setIsLoading(true);
     try {
       await login(data);
+      
+      if (expectedRole) {
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser && currentUser.role !== expectedRole) {
+          await logout();
+          setError(t('errorInvalidCredentials')); // Or a specific role mismatch error
+          return;
+        }
+      }
+
       navigate('/', { replace: true });
     } catch (err: unknown) {
       console.error('[useLogin] Login failed:', err);

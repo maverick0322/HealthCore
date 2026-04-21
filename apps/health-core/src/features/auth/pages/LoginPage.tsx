@@ -26,7 +26,7 @@ export const LoginPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleLogin({ email, password });
+    await handleLogin({ email, password }, _roleMap[role]);
   };
 
   return (
@@ -97,6 +97,7 @@ export const LoginPage = () => {
               variant="outline"
               className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
               onClick={() => {
+                sessionStorage.setItem("expectedRole", _roleMap[role]);
                 window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0`;
               }}
             >

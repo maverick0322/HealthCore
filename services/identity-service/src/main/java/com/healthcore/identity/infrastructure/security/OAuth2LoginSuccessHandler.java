@@ -27,7 +27,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final AuthService authService;
     private final ObjectMapper objectMapper;
 
-    @org.springframework.beans.factory.annotation.Value("${app.oauth2.success-redirect-url:http://localhost:5173/oauth2/callback}")
+    @org.springframework.beans.factory.annotation.Value("${app.oauth2.success-redirect-url:https://localhost:5173/oauth2/callback}")
     private String redirectUrl;
 
     @Override

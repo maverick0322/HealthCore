@@ -74,6 +74,9 @@ export const useAuthStore = create<AuthState>()(
           if (refreshToken) {
             await authService.logout({ refreshToken });
           }
+        } catch (error) {
+          // Ignore server-side logout errors (e.g. 401 already expired)
+          console.warn('[useAuthStore] Backend logout failed or token already invalid', error);
         } finally {
           get().clearSession();
         }

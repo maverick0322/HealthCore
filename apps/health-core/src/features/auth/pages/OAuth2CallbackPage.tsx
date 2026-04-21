@@ -42,6 +42,15 @@ export const OAuth2CallbackPage = () => {
 
       setTokens(tokens);
       fetchCurrentUser().then(() => {
+        const currentUser = useAuthStore.getState().user;
+        const expectedRole = sessionStorage.getItem("expectedRole");
+        if (expectedRole && currentUser && currentUser.role !== expectedRole) {
+          useAuthStore.getState().logout();
+          setError('El rol seleccionado no coincide con tu cuenta de Google.');
+          setTimeout(() => navigate('/login', { replace: true }), 3000);
+          return;
+        }
+        sessionStorage.removeItem("expectedRole");
         navigate('/', { replace: true });
       });
     } else {

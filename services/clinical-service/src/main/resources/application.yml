@@ -1,0 +1,19 @@
+server:
+  port: 8083 
+
+spring:
+  application:
+    name: clinical-service
+  
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/healthcore_clinical}
+  
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+
+grpc:
+  client:
+    identity-service:
+      address: ${GRPC_CLIENT_IDENTITY_ADDRESS:static://localhost:50051}
+      negotiation-type: plaintext

@@ -37,10 +37,12 @@ jobs:
       - name: Wait for Spring Boot to be ready behind Nginx
         run: |
           echo "Esperando a que el identity-service termine de arrancar..."
-          # Hacemos ping a la ruta de registro. 
-          # Nginx dará 502 mientras Spring Boot esté apagado.
           while true; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/v1/auth/register)
+           
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/v1/auth/register || echo "000")
+            
+            STATUS=${STATUS:-000}
+
             if [ "$STATUS" != "502" ] && [ "$STATUS" != "000" ]; then
               echo "¡El servicio está arriba! Código de respuesta: $STATUS"
               break

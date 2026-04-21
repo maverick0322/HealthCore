@@ -1,0 +1,44 @@
+package com.healthcore.identity.infrastructure.security;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.io.IOException;
+
+/**
+ * Custom failure handler for OAuth2 login attempts.
+ *
+ * Instead of redirecting to a local /login?error page (which doesn't exist in our API),
+ * this handler redirects the user back to the frontend's OAuth2 callback page
+ * with error parameters.
+ */
+@Slf4j
+@Component
+public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
+
+    @Value("${app.oauth2.success-redirect-url:https://localhost:5173/oauth2/callback}")
+    private String redirectUrl;
+
+    @Override
+    public void onAuthenticationFailure(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        AuthenticationException exception) throws IOException, ServletException {
+        log.warn("OAuth2 authentication failed: {}", exception.getMessage());
+
+        // Redirect back to frontend with error details
+        String finalUrl = UriComponentsBuilder.fromUriString(redirectUrl)
+                .queryParam("error", "OAUTH2_FAILURE")
+                .queryParam("message", exception.getMessage())
+                .build().toUriString();
+
+        log.debug("Redirecting user to: {}", finalUrl);
+        response.sendRedirect(finalUrl);
+    }
+}

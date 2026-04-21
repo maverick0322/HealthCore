@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -27,7 +27,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final AuthService authService;
     private final ObjectMapper objectMapper;
 
-    @org.springframework.beans.factory.annotation.Value("${app.oauth2.success-redirect-url:https://localhost:5173/oauth2/callback}")
+    @Value("${app.oauth2.success-redirect-url:https://localhost:5173/oauth2/callback}")
     private String redirectUrl;
 
     @Override

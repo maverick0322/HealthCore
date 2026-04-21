@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import type { AuthTokensResponse } from '@/features/auth/types/auth.types';
@@ -23,6 +24,7 @@ import type { AuthTokensResponse } from '@/features/auth/types/auth.types';
 export const OAuth2CallbackPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation('auth');
   const setTokens = useAuthStore((s) => s.setTokens);
   const fetchCurrentUser = useAuthStore((s) => s.fetchCurrentUser);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +32,15 @@ export const OAuth2CallbackPage = () => {
   useEffect(() => {
     const accessToken = searchParams.get('accessToken');
     const refreshToken = searchParams.get('refreshToken');
+    const urlError = searchParams.get('error');
+    const urlMessage = searchParams.get('message');
+
+    if (urlError) {
+      console.error(`OAuth2 login error: ${urlError} - ${urlMessage}`);
+      setError(t('oauth2CallbackError'));
+      setTimeout(() => navigate('/login', { replace: true }), 3000);
+      return;
+    }
 
     if (accessToken && refreshToken) {
       const tokens: AuthTokensResponse = {
@@ -46,7 +57,7 @@ export const OAuth2CallbackPage = () => {
         const expectedRole = sessionStorage.getItem("expectedRole");
         if (expectedRole && currentUser && currentUser.role !== expectedRole) {
           useAuthStore.getState().logout();
-          setError('El rol seleccionado no coincide con tu cuenta de Google.');
+          setError(t('oauth2RoleMismatch'));
           setTimeout(() => navigate('/login', { replace: true }), 3000);
           return;
         }
@@ -54,11 +65,11 @@ export const OAuth2CallbackPage = () => {
         navigate('/', { replace: true });
       });
     } else {
-      setError('OAuth2 authentication failed. No tokens received.');
+      setError(t('oauth2NoTokens'));
       // Redirect to login after a brief delay
       setTimeout(() => navigate('/login', { replace: true }), 3000);
     }
-  }, [searchParams, setTokens, fetchCurrentUser, navigate]);
+  }, [searchParams, setTokens, fetchCurrentUser, navigate, t]);
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 bg-background text-foreground">
@@ -72,14 +83,15 @@ export const OAuth2CallbackPage = () => {
             </svg>
           </div>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <p className="text-xs text-muted-foreground">Redirecting to login...</p>
+          <p className="text-xs text-muted-foreground">{t('oauth2Redirecting')}</p>
         </div>
       ) : (
         <div className="text-center space-y-4 animate-in fade-in duration-500">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">Completing sign-in...</p>
+          <p className="text-sm text-muted-foreground">{t('oauth2CallbackTitle')}</p>
         </div>
       )}
     </div>
   );
 };
+

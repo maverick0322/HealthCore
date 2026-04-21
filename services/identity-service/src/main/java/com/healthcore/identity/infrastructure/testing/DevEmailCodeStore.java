@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Profile({"dev", "local"})
 public class DevEmailCodeStore {
 
-    // Store maps: Email -> Code
     private final Map<String, String> verificationCodes = new ConcurrentHashMap<>();
     private final Map<String, String> passwordResetCodes = new ConcurrentHashMap<>();
 

@@ -184,7 +184,7 @@ public class AuthService {
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getEmail());
@@ -203,7 +203,7 @@ public class AuthService {
 
     public User getCurrentUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
     }
 
     public void logout(String refreshToken) {

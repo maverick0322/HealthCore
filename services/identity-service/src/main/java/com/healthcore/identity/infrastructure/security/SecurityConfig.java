@@ -87,6 +87,7 @@ public class SecurityConfig {
             AuthRateLimitFilter authRateLimitFilter,
             JwtAuthenticationFilter jwtAuthenticationFilter,
             OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+            OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
             ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) throws Exception {
         log.info("Initializing SecurityFilterChain for Identity Service...");
 
@@ -123,6 +124,7 @@ public class SecurityConfig {
         if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
             http.oauth2Login(oauth2 -> oauth2
                     .successHandler(oAuth2LoginSuccessHandler)
+                    .failureHandler(oAuth2LoginFailureHandler)
             );
             log.info("OAuth2 login integration enabled for configured providers");
         } else {

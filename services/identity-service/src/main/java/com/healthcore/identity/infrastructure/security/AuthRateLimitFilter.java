@@ -102,14 +102,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         objectMapper.writeValue(response.getWriter(), payload);
     }
 
-    private static class WindowCounter {
-        private final long windowStartedAtMillis;
-        private final AtomicInteger counter;
-
-        private WindowCounter(long windowStartedAtMillis, AtomicInteger counter) {
-            this.windowStartedAtMillis = windowStartedAtMillis;
-            this.counter = counter;
-        }
+    private record WindowCounter(long windowStartedAtMillis, AtomicInteger counter) {
     }
 }
 

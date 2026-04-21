@@ -1,0 +1,51 @@
+name: API Tests CI
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Start Services using Docker Compose
+        run: |
+          # Asegurarnos de que el JWT_SECRET esté disponible para Docker Compose
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > .env
+          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
+          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET=${{ secrets.AUTH0_CLIENT_SECRET }}" >> .env
+          echo "SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${{ secrets.AUTH0_ISSUER_URI }}" >> .env
+          
+          docker compose up -d mongodb api-gateway identity-service tracking-service
+          
+      - name: Wait for API Gateway to be ready
+        run: |
+          # Esperar hasta que el gateway devuelva al menos un 404 (indicando que nginx responde)
+          echo "Waiting for identity service to boot up..."
+          sleep 15
+          until $(curl --output /dev/null --silent --head --fail http://localhost:80/api/v1/auth/me || true); do
+            printf '.'
+            sleep 5
+          done
+          echo "Services are up!"
+
+      - name: Run Newman Tests
+        working-directory: ./postman
+        run: |
+          newman run healthCore_identity_service.postman_collection.json \
+            -e healthCore_local.postman_environment.json \
+            --bail

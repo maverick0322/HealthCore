@@ -34,6 +34,7 @@ public class SecurityConfig {
             "/api/v1/auth/refresh",
             "/api/v1/auth/password-reset/request",
             "/api/v1/auth/password-reset/confirm",
+            "/api/v1/test/**",
             "/oauth2/**",
             "/login/**",
             "/error"
@@ -92,8 +93,21 @@ public class SecurityConfig {
         http
                 // CSRF is disabled because we use stateless JWT authentication instead of session cookies
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write("{\"error\": \"Forbidden\", \"message\": \"" + accessDeniedException.getMessage() + "\"}");
+                        })
+                )
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .securityContext(context -> context.securityContextRepository(new org.springframework.security.web.context.NullSecurityContextRepository()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(DOCS_ENDPOINTS).permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()

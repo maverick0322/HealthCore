@@ -38,16 +38,20 @@ jobs:
         run: |
           echo "Esperando a que el identity-service termine de arrancar..."
           while true; do
-           
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/v1/auth/register || echo "000")
+            set +e 
+            
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/v1/auth/register)
+            
+            set -e
             
             STATUS=${STATUS:-000}
 
             if [ "$STATUS" != "502" ] && [ "$STATUS" != "000" ]; then
-              echo "¡El servicio está arriba! Código de respuesta: $STATUS"
+              echo "¡El servicio está arriba! Código de respuesta exacto: $STATUS"
               break
             fi
-            echo "Aún no... Nginx responde con $STATUS. Reintentando en 5 segundos..."
+            
+            echo "Aún no... Estado de red/Nginx: $STATUS. Reintentando en 5 segundos..."
             sleep 5
           done
 

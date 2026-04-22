@@ -21,6 +21,34 @@ This project is a collaborative effort dedicated to building a high-performance,
 
 To get the project running locally, please follow the **[Setup Guide](docs/setup.md)**.
 
+## 🐳 Backend con Docker Compose (raiz)
+
+El archivo `docker-compose.yml` en la raiz es la fuente principal para levantar el entorno backend.
+
+Servicios de Agenda incluidos:
+
+- `agenda-mongodb` (MongoDB dedicada): `localhost:27019` por defecto.
+- `agenda-mongo-express` (UI grafica de Agenda): `http://localhost:8084` por defecto.
+- `agenda-service` (Spring Boot): `http://localhost:8083` por defecto.
+
+Comandos utiles:
+
+```powershell
+docker compose up -d --build agenda-mongodb agenda-mongo-express agenda-service
+docker compose ps agenda-mongodb agenda-mongo-express agenda-service
+docker compose down
+```
+
+Variables de entorno recomendadas en `.env` (puedes copiar desde `.env.example`):
+
+- `AGENDA_SERVICE_PORT`
+- `AGENDA_MONGO_PORT`
+- `AGENDA_MONGO_DB`
+- `AGENDA_MONGO_EXPRESS_PORT`
+- `AGENDA_MONGO_EXPRESS_BASICAUTH`
+- `GRPC_CLIENT_CLINICAL_ADDRESS`
+- `AGENDA_CLINICAL_ALLOW_ALL`
+
 ## 🏗️ Architecture
 
 For a deep dive into our technology stack and the reasons behind our architecture, see **[Architecture & Decisions](docs/architecture.md)**.

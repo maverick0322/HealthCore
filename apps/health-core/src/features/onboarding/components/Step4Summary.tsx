@@ -21,14 +21,17 @@ export const Step4Summary = () => {
         weightKg: physical.weight,
         heightCm: physical.height,
         birthDate: calculatedBirthDate,
-        gender: physical.gender,               // <--- Dato real
-        activityLevel: physical.activityLevel, // <--- Dato real
+        gender: physical.gender,               
+        activityLevel: physical.activityLevel, 
       };
 
       await clinicalApi.createProfile(payload);
+      
       navigate("/");
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error("Error al enviar los datos clínicos:", error);
+      alert(`Falló la conexión con Java. Error: ${error.message || "Revisa la consola (F12)"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -62,7 +65,7 @@ export const Step4Summary = () => {
                 {physical.age} años, {physical.height}cm, {physical.weight}kg
               </p>
               <p className="text-muted-foreground text-sm mt-1">
-                {physical.gender === 'MALE' ? 'Hombre' : 'Mujer'} • {physical.activityLevel.replace('_', ' ')}
+                {t(`gender.${physical.gender}`)} • {t(`activityLevels.${physical.activityLevel}`)}
               </p>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>

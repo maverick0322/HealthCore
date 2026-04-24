@@ -5,6 +5,8 @@
     "age": "Age",
     "height": "Height (cm)",
     "weight": "Current Weight (kg)",
+    "gender": "Biological Gender",
+    "activityLevel": "Physical Activity Level",
     "next": "Next Step",
     "editLater": "You can edit this data later in your profile."
   },
@@ -12,22 +14,10 @@
     "title": "What is your main goal?",
     "subtitle": "Select the goal that best fits what you aim to achieve with us.",
     "goals": {
-      "weightLoss": {
-        "title": "Lose Weight",
-        "desc": "Reduce body fat in a healthy way"
-      },
-      "muscleGain": {
-        "title": "Gain Muscle Mass",
-        "desc": "Increase your strength and muscle volume"
-      },
-      "health": {
-        "title": "Improve Health",
-        "desc": "Optimize your habits and overall well-being"
-      },
-      "performance": {
-        "title": "Sports Performance",
-        "desc": "Take your energy and power to the next level"
-      }
+      "weightLoss": { "title": "Lose Weight", "desc": "Reduce body fat in a healthy way" },
+      "muscleGain": { "title": "Gain Muscle Mass", "desc": "Increase your strength and muscle volume" },
+      "health": { "title": "Improve Health", "desc": "Optimize your habits and overall well-being" },
+      "performance": { "title": "Sports Performance", "desc": "Take your energy and power to the next level" }
     },
     "continue": "Continue",
     "changeLater": "You can change this goal later in settings."
@@ -68,5 +58,17 @@
   },
   "stepper": {
     "step": "Step {{current}} of {{total}}"
+  },
+  "gender": {
+    "MALE": "Male",
+    "FEMALE": "Female",
+    "OTHER": "Other"
+  },
+  "activityLevels": {
+    "SEDENTARY": "Sedentary (Little or no exercise)",
+    "LIGHTLY_ACTIVE": "Light (1-3 days/week)",
+    "MODERATELY_ACTIVE": "Moderate (3-5 days/week)",
+    "VERY_ACTIVE": "Active (6-7 days/week)",
+    "EXTRA_ACTIVE": "Extra Active (Double workouts)"
   }
 }

@@ -48,5 +48,19 @@
       "editPlan": "Editar Plan Dietético",
       "newNote": "Añadir Nota"
     }
+  },
+  "agenda": {
+    "title": "Agenda",
+    "subtitle": "Gestiona tus citas y disponibilidad",
+    "newAppointment": "Nueva Cita",
+    "blockTime": "Bloquear Horario",
+    "availability": "Configurar Disponibilidad",
+    "noAppointments": "No hay citas programadas para este día.",
+    "today": "Hoy",
+    "selectDate": "Selecciona una fecha para ver el itinerario",
+    "details": {
+      "presential": "Presencial",
+      "online": "Online"
+    }
   }
 }

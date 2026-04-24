@@ -48,5 +48,19 @@
       "editPlan": "Edit Diet Plan",
       "newNote": "Add Note"
     }
+  },
+  "agenda": {
+    "title": "Schedule",
+    "subtitle": "Manage your appointments and availability",
+    "newAppointment": "New Appointment",
+    "blockTime": "Block Time",
+    "availability": "Configure Availability",
+    "noAppointments": "No appointments scheduled for this day.",
+    "today": "Today",
+    "selectDate": "Select a date to view the itinerary",
+    "details": {
+      "presential": "Presential",
+      "online": "Online"
+    }
   }
 }

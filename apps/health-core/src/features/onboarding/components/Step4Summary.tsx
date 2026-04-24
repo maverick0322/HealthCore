@@ -1,14 +1,37 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "@/shared/ui/button";
 import { usePatientOnboardingStore } from "../store/usePatientOnboardingStore";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { clinicalApi } from "@/features/clinical/infrastructure/clinicalApi";
+import type { CreateProfilePayload } from "@/features/clinical/domain/types";
 
 export const Step4Summary = () => {
   const { t } = useTranslation("onboarding");
   const { physical, goal, preferences, setStep } = usePatientOnboardingStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-  const handleFinish = () => {
-    // In the future this will submit to backend, then redirect
-    console.log("Submitting Onboarding Data: ", { physical, goal, preferences });
+  const handleFinish = async () => {
+    setIsSubmitting(true);
+    try {
+      const calculatedBirthDate = new Date(new Date().getFullYear() - physical.age, 0, 1).toISOString().split('T')[0];
+
+      const payload: CreateProfilePayload = {
+        weightKg: physical.weight,
+        heightCm: physical.height,
+        birthDate: calculatedBirthDate,
+        gender: physical.gender,               // <--- Dato real
+        activityLevel: physical.activityLevel, // <--- Dato real
+      };
+
+      await clinicalApi.createProfile(payload);
+      navigate("/");
+    } catch (error) {
+      console.error("Error al enviar los datos clínicos:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -37,6 +60,9 @@ export const Step4Summary = () => {
               <p className="text-muted-foreground text-sm font-medium uppercase tracking-wider">{t("step4.physicalData")}</p>
               <p className="text-foreground text-lg font-semibold mt-1">
                 {physical.age} años, {physical.height}cm, {physical.weight}kg
+              </p>
+              <p className="text-muted-foreground text-sm mt-1">
+                {physical.gender === 'MALE' ? 'Hombre' : 'Mujer'} • {physical.activityLevel.replace('_', ' ')}
               </p>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
@@ -89,9 +115,10 @@ export const Step4Summary = () => {
       <div className="flex flex-col items-center gap-4 w-full">
         <Button 
           onClick={handleFinish} 
+          disabled={isSubmitting}
           className="w-full flex items-center justify-center h-14 bg-primary text-primary-foreground text-lg font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 active:scale-[0.98]"
         >
-          {t("step4.finishBtn")}
+          {isSubmitting ? "Calculando metas..." : t("step4.finishBtn")}       
         </Button>
         <Button 
           variant="ghost" 

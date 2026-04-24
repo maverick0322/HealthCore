@@ -55,6 +55,26 @@ Cada microservicio expone su propia documentación interactiva utilizando Swagge
 - **Identity Service:** 👉 [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html)
 - **Agenda Service:** 👉 [http://localhost:8083/swagger-ui.html](http://localhost:8083/swagger-ui.html)
 
+## 💻 Entorno Desktop (Electron)
+
+HealthCore también cuenta con una versión de escritorio empaquetada con Electron. **No es necesario duplicar el código.** El entorno de escritorio está configurado para consumir el código de la aplicación web directamente.
+
+Para probar la versión de escritorio mientras desarrollas:
+
+1. Levanta el servidor de desarrollo de la app web normalmente:
+   ```powershell
+   cd apps/health-core
+   npm run dev
+   ```
+   *(Esto levantará Vite en el puerto 5173).*
+2. En otra terminal, navega al proyecto de escritorio y levanta Electron:
+   ```powershell
+   cd apps/health-core-desktop
+   npm install
+   npm run dev
+   ```
+El proyecto de Electron cargará automáticamente `http://localhost:5173` y mostrará la misma aplicación web dentro de una ventana nativa.
+
 ## ⚙️ Variables de entorno locales
 
 Para que el ecosistema funcione correctamente de forma local, debes tener un archivo `.env` en la raíz del proyecto. Puedes copiar el archivo de ejemplo:
@@ -67,6 +87,20 @@ Asegúrate de llenar variables críticas como `JWT_SECRET` y credenciales de OAu
 ---
 ## Sobre el frontend
  **Compatibility**: When installing new packages, remember to use `--legacy-peer-deps` due to current Vite 8 plugin resolution.
+
+### 📱 Pruebas en Dispositivos Móviles (PWA UI Testing)
+
+Para visualizar cómo se comporta la UI o probar la instalación de la PWA en un dispositivo móvil real sin complicaciones de red local o certificados, puedes exponer el frontend a internet usando un túnel temporal.
+
+1. Asegúrate de tener el frontend corriendo en modo desarrollo (`npm run dev` en `apps/health-core`).
+2. Abre una nueva terminal y ejecuta Ngrok o Localtunnel:
+   ```powershell
+   npx ngrok http 5173
+   # o alternativamente: npx localtunnel --port 5173
+   ```
+3. Abre el enlace HTTPS generado en el navegador de tu celular. Podrás ver la interfaz y el navegador te ofrecerá instalar la PWA.
+
+> **Nota:** Esta técnica tuneliza únicamente la interfaz de React. Como el backend (Identity, Agenda, Gateway) sigue estando local en tu máquina, las funcionalidades complejas como el inicio de sesión OAuth2 fallarán si interactúas desde el teléfono. Usa esto **solo** para validar vistas de UI y la correcta instalación de la PWA.
 ## 🌿 Flujo de Trabajo (Git Workflow)
 
 **NUNCA trabajes directamente en la rama `main`.**

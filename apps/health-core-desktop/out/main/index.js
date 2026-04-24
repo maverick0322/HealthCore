@@ -2,6 +2,9 @@
 const electron = require("electron");
 const path = require("path");
 const isDev = !electron.app.isPackaged;
+if (isDev) {
+  electron.app.commandLine.appendSwitch("ignore-certificate-errors");
+}
 function createWindow() {
   const mainWindow = new electron.BrowserWindow({
     width: 1280,

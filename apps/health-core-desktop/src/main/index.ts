@@ -3,6 +3,11 @@ import { join } from 'path'
 
 const isDev = !app.isPackaged
 
+if (isDev) {
+  // Ignore certificate errors for the self-signed cert in development
+  app.commandLine.appendSwitch('ignore-certificate-errors')
+}
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,

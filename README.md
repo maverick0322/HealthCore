@@ -52,7 +52,7 @@ docker compose down
 
 Cada microservicio expone su propia documentación interactiva utilizando Swagger/OpenAPI. Una vez que hayas levantado el ecosistema con Docker Compose, puedes consultar los endpoints en las siguientes URLs:
 
-- **Identity Service:** 👉 [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html)
+- **Identity Service:** 👉 [http://localhost:8082/docs](http://localhost:8082/docs)
 - **Agenda Service:** 👉 [http://localhost:8083/swagger-ui.html](http://localhost:8083/swagger-ui.html)
 
 ## 💻 Entorno Desktop (Electron)

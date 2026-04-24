@@ -9,6 +9,7 @@ import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 import { OAuth2CallbackPage } from "@/features/auth/pages/OAuth2CallbackPage";
 import { PatientOnboardingPage } from "@/features/onboarding/pages/PatientOnboardingPage";
 import { HomePage } from "@/features/dashboard/pages/HomePage";
+import { PatientProfilePage } from "@/features/patient/pages/PatientProfilePage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
 
@@ -52,6 +53,10 @@ export const appRouter = createBrowserRouter([
       {
         path: "/onboarding/patient",
         element: <PatientOnboardingPage />,
+      },
+      {
+        path: "/profile",
+        element: <PatientProfilePage />,
       },
     ],
   },

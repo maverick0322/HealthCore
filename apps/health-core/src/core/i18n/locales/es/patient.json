@@ -1,0 +1,77 @@
+{
+  "profile": {
+    "title": "Mi Perfil",
+    "subtitle": "Gestiona tu información personal y datos de salud",
+    "editProfile": "Editar Perfil",
+    "saveChanges": "Guardar Cambios",
+    "cancel": "Cancelar",
+    "logout": "Cerrar Sesión",
+    "backToDashboard": "Volver al Dashboard",
+    "personalInfo": "Información Personal",
+    "healthData": "Datos de Salud",
+    "preferences": "Preferencias",
+    "accountSettings": "Configuración de Cuenta",
+    "name": "Nombre completo",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "birthDate": "Fecha de nacimiento",
+    "gender": "Género",
+    "age": "Edad",
+    "years": "años",
+    "height": "Estatura",
+    "weight": "Peso actual",
+    "bmi": "IMC",
+    "bmiCategory": "Categoría IMC",
+    "mainGoal": "Objetivo principal",
+    "activityLevel": "Nivel de actividad",
+    "dietType": "Tipo de dieta",
+    "allergies": "Alergias e intolerancias",
+    "provider": "Proveedor de autenticación",
+    "memberSince": "Miembro desde",
+    "emailVerified": "Correo verificado",
+    "notSpecified": "No especificado",
+    "noAllergies": "Sin alergias registradas",
+    "bmiCategories": {
+      "underweight": "Bajo peso",
+      "normal": "Normal",
+      "overweight": "Sobrepeso",
+      "obese": "Obesidad"
+    },
+    "goals": {
+      "WEIGHT_LOSS": "Perder Peso",
+      "MUSCLE_GAIN": "Ganar Masa Muscular",
+      "HEALTH": "Mejorar Salud",
+      "PERFORMANCE": "Rendimiento Deportivo"
+    },
+    "genderLabels": {
+      "MALE": "Hombre",
+      "FEMALE": "Mujer",
+      "OTHER": "Otro"
+    },
+    "activityLevels": {
+      "SEDENTARY": "Sedentario",
+      "LIGHTLY_ACTIVE": "Ligero",
+      "MODERATELY_ACTIVE": "Moderado",
+      "VERY_ACTIVE": "Intenso",
+      "EXTRA_ACTIVE": "Atleta"
+    },
+    "diets": {
+      "omnivore": "Omnívora",
+      "vegetarian": "Vegetariana",
+      "vegan": "Vegana",
+      "keto": "Keto",
+      "paleo": "Paleo"
+    },
+    "allergyItems": {
+      "gluten": "Gluten",
+      "lactose": "Lactosa",
+      "nuts": "Frutos Secos",
+      "seafood": "Mariscos",
+      "egg": "Huevo"
+    },
+    "statsSection": "Estadísticas rápidas",
+    "completeProfile": "Completa tu perfil",
+    "completeProfileDesc": "Agrega tu información de salud para personalizar tu experiencia.",
+    "goToOnboarding": "Completar configuración"
+  }
+}

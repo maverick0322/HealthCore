@@ -5,6 +5,8 @@ import authEs from "./locales/es/auth.json";
 import authEn from "./locales/en/auth.json";
 import onboardingEs from "./locales/es/onboarding.json";
 import onboardingEn from "./locales/en/onboarding.json";
+import patientEs from "./locales/es/patient.json";
+import patientEn from "./locales/en/patient.json";
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'es', name: 'Español' },
@@ -18,10 +20,12 @@ export const resources = {
   es: {
     auth: authEs,
     onboarding: onboardingEs,
+    patient: patientEs,
   },
   en: {
     auth: authEn,
     onboarding: onboardingEn,
+    patient: patientEn,
   },
 } as const;
 
@@ -29,9 +33,9 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: localStorage.getItem("language") || "es", 
+    lng: localStorage.getItem("language") || "es",
     fallbackLng: "es",
-    ns: ["auth", "onboarding"],
+    ns: ["auth", "onboarding", "patient"],
     defaultNS,
 
     interpolation: {

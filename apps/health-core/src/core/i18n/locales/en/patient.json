@@ -1,0 +1,77 @@
+{
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your personal information and health data",
+    "editProfile": "Edit Profile",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "logout": "Log Out",
+    "backToDashboard": "Back to Dashboard",
+    "personalInfo": "Personal Information",
+    "healthData": "Health Data",
+    "preferences": "Preferences",
+    "accountSettings": "Account Settings",
+    "name": "Full name",
+    "email": "Email address",
+    "phone": "Phone",
+    "birthDate": "Date of birth",
+    "gender": "Gender",
+    "age": "Age",
+    "years": "years",
+    "height": "Height",
+    "weight": "Current weight",
+    "bmi": "BMI",
+    "bmiCategory": "BMI Category",
+    "mainGoal": "Main goal",
+    "activityLevel": "Activity level",
+    "dietType": "Diet type",
+    "allergies": "Allergies & intolerances",
+    "provider": "Authentication provider",
+    "memberSince": "Member since",
+    "emailVerified": "Email verified",
+    "notSpecified": "Not specified",
+    "noAllergies": "No allergies registered",
+    "bmiCategories": {
+      "underweight": "Underweight",
+      "normal": "Normal",
+      "overweight": "Overweight",
+      "obese": "Obese"
+    },
+    "goals": {
+      "WEIGHT_LOSS": "Weight Loss",
+      "MUSCLE_GAIN": "Muscle Gain",
+      "HEALTH": "Improve Health",
+      "PERFORMANCE": "Athletic Performance"
+    },
+    "genderLabels": {
+      "MALE": "Male",
+      "FEMALE": "Female",
+      "OTHER": "Other"
+    },
+    "activityLevels": {
+      "SEDENTARY": "Sedentary",
+      "LIGHTLY_ACTIVE": "Light",
+      "MODERATELY_ACTIVE": "Moderate",
+      "VERY_ACTIVE": "Intense",
+      "EXTRA_ACTIVE": "Athlete"
+    },
+    "diets": {
+      "omnivore": "Omnivore",
+      "vegetarian": "Vegetarian",
+      "vegan": "Vegan",
+      "keto": "Keto",
+      "paleo": "Paleo"
+    },
+    "allergyItems": {
+      "gluten": "Gluten",
+      "lactose": "Lactose",
+      "nuts": "Nuts",
+      "seafood": "Seafood",
+      "egg": "Egg"
+    },
+    "statsSection": "Quick stats",
+    "completeProfile": "Complete your profile",
+    "completeProfileDesc": "Add your health information to personalize your experience.",
+    "goToOnboarding": "Complete setup"
+  }
+}

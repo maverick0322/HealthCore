@@ -15,6 +15,10 @@ import {
   AlertCircle,
   CheckCircle2,
   ArrowRight,
+  Pencil,
+  KeyRound,
+  BellOff,
+  ChevronRight,
 } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
@@ -22,6 +26,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { usePatientOnboardingStore } from "@/features/onboarding/store/usePatientOnboardingStore";
+
+import { PatientNav } from "@/features/patient/components/PatientNav";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -102,21 +108,27 @@ export const PatientProfilePage = () => {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
+      {/* ── Responsive Nav (sidebar desktop / bottom bar mobile) ── */}
+      <PatientNav />
+
       {/* ── Top Controls ───────────────────────────────────────── */}
-      <SettingsBar />
+      <div className="md:pl-56">
+        <SettingsBar />
+      </div>
 
       {/* ── Header Banner ──────────────────────────────────────── */}
-      <div className="relative bg-primary/10 border-b border-border overflow-hidden">
+      <div className="relative bg-primary/10 border-b border-border overflow-hidden md:pl-56">
         {/* Decorative background blob */}
         <div
           aria-hidden
           className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-primary/20 blur-3xl pointer-events-none"
         />
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-10 pb-8">
+          {/* Only show 'Back to Dashboard' on mobile since desktop has sidebar nav */}
           <button
             id="btn-back-dashboard"
             onClick={() => navigate("/")}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 md:hidden"
           >
             <ChevronLeft size={16} />
             {t("profile.backToDashboard")}
@@ -151,7 +163,7 @@ export const PatientProfilePage = () => {
       </div>
 
       {/* ── Main Content ───────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6 pb-20 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
         {/* ── Quick Stats Row ──────────────────────────────────── */}
         {hasHealthData && (
@@ -310,6 +322,50 @@ export const PatientProfilePage = () => {
           </Card>
         )}
 
+        {/* ── Account Actions Card ──────────────────────────────── */}
+        <Card id="card-account-actions">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Pencil size={16} className="text-primary" />
+              {t("profile.actionsSection")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 pb-2">
+            {/* Edit health data */}
+            {hasHealthData && (
+              <ActionRow
+                id="btn-edit-health-data"
+                icon={<ShieldCheck size={16} className="text-primary" />}
+                label={t("profile.editHealthData")}
+              />
+            )}
+            {/* Edit preferences */}
+            {hasHealthData && (
+              <ActionRow
+                id="btn-edit-preferences"
+                icon={<Leaf size={16} className="text-primary" />}
+                label={t("profile.editPreferences")}
+              />
+            )}
+            {/* Change password — only for LOCAL provider */}
+            {(!user?.provider || user.provider === "LOCAL") && (
+              <ActionRow
+                id="btn-change-password"
+                icon={<KeyRound size={16} className="text-primary" />}
+                label={t("profile.changePassword")}
+                desc={t("profile.changePasswordDesc")}
+              />
+            )}
+            {/* Disable notifications */}
+            <ActionRow
+              id="btn-disable-notifications"
+              icon={<BellOff size={16} className="text-primary" />}
+              label={t("profile.disableNotifications")}
+              desc={t("profile.notificationsDesc")}
+            />
+          </CardContent>
+        </Card>
+
         {/* ── Logout ───────────────────────────────────────────── */}
         <Button
           id="btn-logout"
@@ -376,4 +432,39 @@ const ProfileRow = ({ label, value }: ProfileRowProps) => (
       {value ?? <span className="text-muted-foreground/60">—</span>}
     </span>
   </div>
+);
+
+interface ActionRowProps {
+  id: string;
+  icon: React.ReactNode;
+  label: string;
+  desc?: string;
+}
+
+/**
+ * Tappable row for account actions (non-functional — UI only).
+ * Styled as a list item with a trailing chevron to communicate interactivity.
+ */
+const ActionRow = ({ id, icon, label, desc }: ActionRowProps) => (
+  <button
+    id={id}
+    type="button"
+    className="w-full flex items-center gap-3 py-3 px-1 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left group"
+    disabled
+    aria-label={label}
+  >
+    <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+      {icon}
+    </span>
+    <div className="flex-1 min-w-0">
+      <p className="text-sm font-medium leading-snug">{label}</p>
+      {desc && (
+        <p className="text-xs text-muted-foreground truncate">{desc}</p>
+      )}
+    </div>
+    <ChevronRight
+      size={16}
+      className="text-muted-foreground flex-shrink-0 group-hover:translate-x-0.5 transition-transform"
+    />
+  </button>
 );

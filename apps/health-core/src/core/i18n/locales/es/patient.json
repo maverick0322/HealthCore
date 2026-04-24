@@ -121,7 +121,8 @@
     "navDashboard": "Dashboard",
     "navHistory": "Historial",
     "navPlan": "Plan",
-    "navProfile": "Perfil"
+    "navProfile": "Perfil",
+    "navAppointments": "Citas"
   },
   "history": {
     "title": "Historial Nutricional",
@@ -157,5 +158,24 @@
     "filterBreakfast": "Desayuno",
     "filterLunch": "Comida",
     "filterDinner": "Cena"
+  },
+  "appointments": {
+    "title": "Mis Citas",
+    "subtitle": "Gestiona tus consultas nutricionales",
+    "scheduleNew": "Agendar nueva cita",
+    "selectDate": "Selecciona una fecha",
+    "selectTime": "Selecciona un horario",
+    "doctor": "Nutrióloga asignada",
+    "confirmAppointment": "Confirmar Cita",
+    "history": "Historial de Citas",
+    "upcoming": "Próximas",
+    "past": "Pasadas",
+    "status": {
+      "scheduled": "Programada",
+      "completed": "Completada",
+      "cancelled": "Cancelada"
+    },
+    "noAvailableTimes": "No hay horarios disponibles para esta fecha.",
+    "appointmentConfirmed": "Cita confirmada exitosamente."
   }
 }

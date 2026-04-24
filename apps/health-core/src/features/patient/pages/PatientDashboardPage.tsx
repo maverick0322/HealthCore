@@ -155,7 +155,7 @@ export const PatientDashboardPage = () => {
           aria-hidden
           className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
         />
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-8 pb-6 flex items-center justify-between">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
               {t("dashboard.greeting", { name: displayName })}
@@ -175,7 +175,7 @@ export const PatientDashboardPage = () => {
       </div>
 
       {/* ── Scrollable content ───────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-6 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-6 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
         {/* ── Calories + Macros ──────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -325,7 +325,7 @@ export const PatientDashboardPage = () => {
                 variant="outline"
                 size="sm"
                 className="w-full gap-1.5 text-xs"
-                disabled
+                onClick={() => navigate("/appointments/patient")}
               >
                 <Plus size={13} />
                 {t("dashboard.scheduleAppointment")}

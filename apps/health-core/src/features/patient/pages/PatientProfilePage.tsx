@@ -123,7 +123,7 @@ export const PatientProfilePage = () => {
           aria-hidden
           className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-primary/20 blur-3xl pointer-events-none"
         />
-        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 pt-10 pb-8">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-8">
           {/* Only show 'Back to Dashboard' on mobile since desktop has sidebar nav */}
           <button
             id="btn-back-dashboard"
@@ -163,7 +163,7 @@ export const PatientProfilePage = () => {
       </div>
 
       {/* ── Main Content ───────────────────────────────────────── */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6 pb-20 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6 pb-20 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
         {/* ── Quick Stats Row ──────────────────────────────────── */}
         {hasHealthData && (

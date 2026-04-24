@@ -121,7 +121,8 @@
     "navDashboard": "Dashboard",
     "navHistory": "History",
     "navPlan": "Plan",
-    "navProfile": "Profile"
+    "navProfile": "Profile",
+    "navAppointments": "Appointments"
   },
   "history": {
     "title": "Nutritional History",
@@ -157,5 +158,24 @@
     "filterBreakfast": "Breakfast",
     "filterLunch": "Lunch",
     "filterDinner": "Dinner"
+  },
+  "appointments": {
+    "title": "My Appointments",
+    "subtitle": "Manage your nutritional consultations",
+    "scheduleNew": "Schedule new appointment",
+    "selectDate": "Select a date",
+    "selectTime": "Select a time",
+    "doctor": "Assigned Nutritionist",
+    "confirmAppointment": "Confirm Appointment",
+    "history": "Appointment History",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "status": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "noAvailableTimes": "No available times for this date.",
+    "appointmentConfirmed": "Appointment successfully confirmed."
   }
 }

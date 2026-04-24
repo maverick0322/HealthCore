@@ -11,6 +11,7 @@ import { PatientOnboardingPage } from "@/features/onboarding/pages/PatientOnboar
 import { HomePage } from "@/features/dashboard/pages/HomePage";
 import { PatientDashboardPage } from "@/features/patient/pages/PatientDashboardPage";
 import { PatientHistoryPage } from "@/features/patient/pages/PatientHistoryPage";
+import { PatientAppointmentsPage } from "@/features/patient/pages/PatientAppointmentsPage";
 import { PatientProfilePage } from "@/features/patient/pages/PatientProfilePage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
@@ -59,6 +60,10 @@ export const appRouter = createBrowserRouter([
       {
         path: "/history/patient",
         element: <PatientHistoryPage />,
+      },
+      {
+        path: "/appointments/patient",
+        element: <PatientAppointmentsPage />,
       },
       {
         path: "/onboarding/patient",

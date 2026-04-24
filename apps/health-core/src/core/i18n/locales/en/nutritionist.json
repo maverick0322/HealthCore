@@ -1,0 +1,28 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "patients": "My Patients",
+    "agenda": "Schedule",
+    "reports": "Reports",
+    "profile": "Profile"
+  },
+  "dashboard": {
+    "greeting": "Hello, Lic. {{name}}",
+    "greetingSubtitle": "Here is a summary of your activity today.",
+    "activePatients": "Active Patients",
+    "appointmentsToday": "Appointments Today",
+    "pendingReviews": "Pending Reviews",
+    "nextAppointments": "Upcoming Appointments",
+    "recentActivity": "Recent Activity",
+    "viewAll": "View all",
+    "noAppointments": "No more appointments scheduled for today.",
+    "patient": "Patient",
+    "time": "Time",
+    "type": "Type",
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "completed": "Completed"
+    }
+  }
+}

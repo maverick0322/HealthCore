@@ -7,6 +7,8 @@ import onboardingEs from "./locales/es/onboarding.json";
 import onboardingEn from "./locales/en/onboarding.json";
 import patientEs from "./locales/es/patient.json";
 import patientEn from "./locales/en/patient.json";
+import nutritionistEs from "./locales/es/nutritionist.json";
+import nutritionistEn from "./locales/en/nutritionist.json";
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'es', name: 'Español' },
@@ -21,11 +23,13 @@ export const resources = {
     auth: authEs,
     onboarding: onboardingEs,
     patient: patientEs,
+    nutritionist: nutritionistEs,
   },
   en: {
     auth: authEn,
     onboarding: onboardingEn,
     patient: patientEn,
+    nutritionist: nutritionistEn,
   },
 } as const;
 
@@ -35,7 +39,7 @@ i18n
     resources,
     lng: localStorage.getItem("language") || "es",
     fallbackLng: "es",
-    ns: ["auth", "onboarding", "patient"],
+    ns: ["auth", "onboarding", "patient", "nutritionist"],
     defaultNS,
 
     interpolation: {

@@ -1,0 +1,28 @@
+{
+  "nav": {
+    "dashboard": "Inicio",
+    "patients": "Mis Pacientes",
+    "agenda": "Agenda",
+    "reports": "Reportes",
+    "profile": "Perfil"
+  },
+  "dashboard": {
+    "greeting": "Hola, Lic. {{name}}",
+    "greetingSubtitle": "Aquí tienes un resumen de tu actividad de hoy.",
+    "activePatients": "Pacientes Activos",
+    "appointmentsToday": "Citas Hoy",
+    "pendingReviews": "Revisiones Pendientes",
+    "nextAppointments": "Próximas Citas",
+    "recentActivity": "Actividad Reciente",
+    "viewAll": "Ver todas",
+    "noAppointments": "No tienes más citas programadas para hoy.",
+    "patient": "Paciente",
+    "time": "Hora",
+    "type": "Tipo",
+    "status": {
+      "confirmed": "Confirmada",
+      "pending": "Pendiente",
+      "completed": "Completada"
+    }
+  }
+}

@@ -14,6 +14,7 @@ import { PatientHistoryPage } from "@/features/patient/pages/PatientHistoryPage"
 import { PatientAppointmentsPage } from "@/features/patient/pages/PatientAppointmentsPage";
 import { PatientPlanPage } from "@/features/patient/pages/PatientPlanPage";
 import { PatientProfilePage } from "@/features/patient/pages/PatientProfilePage";
+import { NutritionistDashboardPage } from "@/features/nutritionist/pages/NutritionistDashboardPage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
 
@@ -73,6 +74,11 @@ export const appRouter = createBrowserRouter([
       {
         path: "/onboarding/patient",
         element: <PatientOnboardingPage />,
+      },
+      // ── NUTRITIONIST ROUTES ──
+      {
+        path: "/dashboard/nutritionist",
+        element: <NutritionistDashboardPage />,
       },
       {
         path: "/profile",

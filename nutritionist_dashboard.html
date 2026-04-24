@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NutriTrack - Panel de Control</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8AA382",
+                        "background-light": "#F9FAFB",
+                        "background-dark": "#181b17",
+                        "border-muted": "#E5E7EB",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-item-active {
+            background-color: rgba(138, 163, 130, 0.1);
+            color: #8AA382;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="flex min-h-screen">
+<!-- Sidebar -->
+<aside class="w-64 bg-white dark:bg-zinc-900 border-r border-border-muted dark:border-zinc-800 flex flex-col sticky top-0 h-screen">
+<div class="p-6 flex items-center gap-3">
+<div class="bg-primary size-8 rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">nutrition</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-none tracking-tight">NutriTrack</h1>
+<p class="text-xs text-slate-500">Nutrición Inteligente</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1 mt-4">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-xl sidebar-item-active font-medium text-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+                    Dashboard
+                </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 font-medium text-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+                    Pacientes
+                </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 font-medium text-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+                    Citas
+                </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 font-medium text-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+                    Recursos
+                </a>
+</nav>
+<div class="p-4 border-t border-border-muted dark:border-zinc-800">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800 font-medium text-sm transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+                    Configuración
+                </a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col">
+<!-- Header -->
+<header class="h-16 border-b border-border-muted dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
+<h2 class="text-xl font-semibold">Panel de Control</h2>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white"></span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-[1px] bg-border-muted dark:bg-zinc-800 mx-1"></div>
+<div class="flex items-center gap-3 pl-2">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-medium">Dr. Carlos Ruiz</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Nutriólogo Clínico</p>
+</div>
+<div class="size-9 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
+<img class="size-full object-cover" data-alt="Retrato profesional de un nutriólogo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxh38bu-wc0iRk0K4lg8N5Mxs8cwLFMxYM6BItZNWu7vtQJ0H8mgaSHaKGpM7yVL24gRMrGF8I4JiHSEmplDYFrt1ZIp1OoADiWEVsnjcQpVuYoAb3KjuGNRC4riKFT2NwE-oA8eQMyhYegCLRmpYzffhjg6Y9Y1GSwsmoZIJPoERGIdl5TwnA9hHsxqa9p9vjfz1BcHQo6llzamRsrwo0fZ1EykC1erWNx9OrkZ1b942JDAdJ01Dhn5YT_IBh52VotX5plGLS8mc"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Grid Content -->
+<div class="p-8 space-y-6">
+<!-- Metric Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-border-muted dark:border-zinc-800 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-sm font-medium text-slate-500">Pacientes Activos</p>
+<span class="material-symbols-outlined text-primary">person_check</span>
+</div>
+<p class="text-3xl font-bold mt-2">42</p>
+<p class="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span> +12% este mes
+                        </p>
+</div>
+<div class="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-border-muted dark:border-zinc-800 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-sm font-medium text-slate-500">Citas esta semana</p>
+<span class="material-symbols-outlined text-primary">calendar_month</span>
+</div>
+<p class="text-3xl font-bold mt-2">15</p>
+<p class="text-xs text-slate-400 font-medium mt-1">4 pendientes hoy</p>
+</div>
+<div class="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-border-muted dark:border-zinc-800 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-sm font-medium text-slate-500">Nuevos registros</p>
+<span class="material-symbols-outlined text-primary">person_add</span>
+</div>
+<p class="text-3xl font-bold mt-2">8</p>
+<p class="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span> +2 desde ayer
+                        </p>
+</div>
+</div>
+<!-- Bento Body -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Próximas Citas -->
+<div class="lg:col-span-7 bg-white dark:bg-zinc-900 rounded-xl border border-border-muted dark:border-zinc-800 shadow-sm flex flex-col">
+<div class="p-6 border-b border-border-muted dark:border-zinc-800 flex justify-between items-center">
+<h3 class="font-semibold text-lg">Resumen de Agenda</h3>
+<button class="text-sm text-primary font-medium hover:underline">Ver calendario</button>
+</div>
+<div class="p-4 space-y-4">
+<!-- Cita 1 -->
+<div class="flex items-center justify-between p-4 rounded-xl border border-slate-50 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/30">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-full overflow-hidden border border-slate-200">
+<img class="size-full object-cover" data-alt="Paciente Ana García sonriendo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKc5_bBUjbux0b5zQlfTfBAid7nDqcApdp7VnlDfJZFxup3ShShBWpUJ2J0VYwrijqWAK0S806tJFygnXjLQom8URNs5o3sY60gA2tGt7LLz2MLKvrgfSnVVCndP92mXx0IbUAEz3jCHXfjax7fljHtfLKp17ttKOOk_rPXOGrHK3PoMDZJYI_VFwnyy8n7HiaeRlKUZOmdP6L8HT-6hlO4HlO5HtHqLSLToz1WhuiTVae78DOF0qVNXm3XBRCI1Ro5R6t-VX9d_I"/>
+</div>
+<div>
+<p class="font-semibold">Ana García</p>
+<p class="text-sm text-slate-500">10:00 AM • Seguimiento</p>
+</div>
+</div>
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-sm shadow-primary/20">
+<span class="material-symbols-outlined text-sm">play_arrow</span>
+                                    Iniciar Sesión
+                                </button>
+</div>
+<!-- Cita 2 -->
+<div class="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-zinc-800 transition-colors">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-full overflow-hidden border border-slate-200">
+<img class="size-full object-cover" data-alt="Paciente Juan Pérez perfil" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVwumBP_MbHIrkzFdcYIdW88Emm6JZyew0lmXJz2rF-n1DTX-VCRjkTTUNFU3mk_dzzUiFYHUaZ5Pq5b3FS0wzqKhHJm1ZOJMCLzpQqvpJ52sDEDSGUo_UfhiQpT9i-9DURhbDJ8qFMPmrixXmbcfaAprEtN0AdWKD5Ysa7ly93fNQdy5-Invf37tgS7HxNiXVRt_xqQjkdRmYvQpZepkBZA34Tgotev29IK15ytStH2gsJmRmyJJiqvT5xI-QxReBCeRwYxRcues"/>
+</div>
+<div>
+<p class="font-semibold">Juan Pérez</p>
+<p class="text-sm text-slate-500">11:30 AM • Primera vez</p>
+</div>
+</div>
+<button class="bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2">
+                                    Ver Perfil
+                                </button>
+</div>
+<!-- Cita 3 -->
+<div class="flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-zinc-800 transition-colors">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-full overflow-hidden border border-slate-200">
+<img class="size-full object-cover" data-alt="Paciente Laura Smith retrato" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1cszcsq5NiRbuCU5Tns2_Ky91Zx5F-ZqzXOdOB_L__wDwdiJHjDWS9aJ8EzFfTNWCFIMii3mESooyitQ3QMOD6ewga0ZEmpz-T_Y9dIvVCFrAjcNKeM2TlueI7rPfzu-IbQfdJ61SVqdrxWyFVlY1xOnDaJyVxSmI4iS1-rPaKm4jczjQQHqkUwtEdZjJkXXkxYAbc13SamgIDQPsVBdmwRZldTIKRsiM_GegESG6g9bI1VhS2d2bq8tmh3piTVVORhgQt4TM4QI"/>
+</div>
+<div>
+<p class="font-semibold">Laura Smith</p>
+<p class="text-sm text-slate-500">01:00 PM • Control Mensual</p>
+</div>
+</div>
+<button class="bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2">
+                                    Ver Perfil
+                                </button>
+</div>
+</div>
+</div>
+<!-- Actividad Reciente -->
+<div class="lg:col-span-5 bg-white dark:bg-zinc-900 rounded-xl border border-border-muted dark:border-zinc-800 shadow-sm flex flex-col">
+<div class="p-6 border-b border-border-muted dark:border-zinc-800">
+<h3 class="font-semibold text-lg">Actividad Reciente</h3>
+</div>
+<div class="p-6 overflow-y-auto max-h-[400px] space-y-6">
+<div class="flex gap-4 relative">
+<div class="absolute left-4 top-10 bottom-[-24px] w-[1px] bg-border-muted dark:bg-zinc-800"></div>
+<div class="size-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shrink-0 z-10">
+<span class="material-symbols-outlined text-[18px]">restaurant</span>
+</div>
+<div>
+<p class="text-sm text-slate-800 dark:text-slate-200"><span class="font-semibold">Ana García</span> registró su almuerzo.</p>
+<p class="text-xs text-slate-500 mt-0.5">Hace 15 min</p>
+</div>
+</div>
+<div class="flex gap-4 relative">
+<div class="absolute left-4 top-10 bottom-[-24px] w-[1px] bg-border-muted dark:bg-zinc-800"></div>
+<div class="size-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shrink-0 z-10">
+<span class="material-symbols-outlined text-[18px]">add_a_photo</span>
+</div>
+<div>
+<p class="text-sm text-slate-800 dark:text-slate-200"><span class="font-semibold">Juan Pérez</span> subió una foto de progreso.</p>
+<p class="text-xs text-slate-500 mt-0.5">Hace 1 hora</p>
+</div>
+</div>
+<div class="flex gap-4 relative">
+<div class="size-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center shrink-0 z-10">
+<span class="material-symbols-outlined text-[18px]">scale</span>
+</div>
+<div>
+<p class="text-sm text-slate-800 dark:text-slate-200"><span class="font-semibold">Laura Smith</span> actualizó su peso actual.</p>
+<p class="text-xs text-slate-500 mt-0.5">Hace 3 horas</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Gráfico de Cumplimiento -->
+<div class="lg:col-span-12 bg-white dark:bg-zinc-900 rounded-xl border border-border-muted dark:border-zinc-800 shadow-sm p-6">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div>
+<h3 class="font-semibold text-lg">Cumplimiento de Metas</h3>
+<p class="text-sm text-slate-500">Promedio grupal de adherencia al plan alimenticio</p>
+</div>
+<div class="flex gap-2">
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-muted dark:border-zinc-800 text-xs font-medium">
+<span class="size-2 rounded-full bg-primary"></span> Cumplimiento %
+                                </div>
+</div>
+</div>
+<!-- Gráfico de barras sutil simulado con Tailwind -->
+<div class="flex items-end justify-between gap-2 h-48 px-4">
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg h-[65%] group-hover:bg-primary transition-all relative">
+<span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">65%</span>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">Lun</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg h-[82%] group-hover:bg-primary transition-all relative">
+<span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">82%</span>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">Mar</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg h-[45%] group-hover:bg-primary transition-all relative">
+<span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">45%</span>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">Mié</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg h-[90%] group-hover:bg-primary transition-all relative">
+<span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">90%</span>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">Jue</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg h-[75%] group-hover:bg-primary transition-all relative">
+<span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">75%</span>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">Vie</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg h-[55%] group-hover:bg-primary transition-all relative">
+<span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">55%</span>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">Sáb</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg h-[30%] group-hover:bg-primary transition-all relative">
+<span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">30%</span>
+</div>
+<span class="text-[10px] text-slate-400 font-medium">Dom</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

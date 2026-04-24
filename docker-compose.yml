@@ -31,6 +31,7 @@ services:
       - identity-service
       - tracking-service
       - agenda-service
+      - clinical-service
     restart: unless-stopped
 
   catalog-service:
@@ -118,6 +119,48 @@ services:
     ports:
       - "${AGENDA_SERVICE_PORT:-8083}:8080"
 
+  clinical-mongodb:
+    image: mongo:7.0
+    container_name: healthcore-clinical-mongodb
+    restart: unless-stopped
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_DATABASE: healthcore_clinical
+    volumes:
+      - clinical_mongo_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  clinical-mongo-express:
+    image: mongo-express:latest
+    container_name: healthcore-clinical-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8085:8081" 
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://clinical-mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      clinical-mongodb:
+        condition: service_healthy
+
+  clinical-service:
+    build: ./services/clinical-service
+    container_name: healthcore-clinical-service
+    restart: unless-stopped
+    depends_on:
+      clinical-mongodb:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://clinical-mongodb:27017/healthcore_clinical
+      SERVER_PORT: 8083
+      JWT_SECRET: ${JWT_SECRET}
+
 volumes:
   mongo_data:
   agenda_mongo_data:
+  clinical_mongo_data:

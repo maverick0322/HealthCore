@@ -25,16 +25,17 @@ export const useVerifyCode = () => {
     setError(null);
     setIsLoading(true);
     try {
-      await authService.verifyCode({ email, code });
-
-      if (flow === 'email-verification') {
-        navigate('/login', { replace: true });
-      } else {
+      if (flow === 'password-reset') {
+        // Backend does not support pre-verifying password reset codes, so skip
         navigate('/reset-password', {
           state: { email, code },
           replace: true,
         });
+        return;
       }
+
+      await authService.verifyCode({ email, code });
+      navigate('/login', { replace: true });
     } catch (err: unknown) {
       console.error('[useVerifyCode] Verification failed:', err);
       if (axios.isAxiosError(err)) {

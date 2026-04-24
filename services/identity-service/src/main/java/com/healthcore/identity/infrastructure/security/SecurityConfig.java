@@ -34,6 +34,7 @@ public class SecurityConfig {
             "/api/v1/auth/refresh",
             "/api/v1/auth/password-reset/request",
             "/api/v1/auth/password-reset/confirm",
+            "/api/v1/test/**",
             "/oauth2/**",
             "/login/**",
             "/error"
@@ -86,14 +87,28 @@ public class SecurityConfig {
             AuthRateLimitFilter authRateLimitFilter,
             JwtAuthenticationFilter jwtAuthenticationFilter,
             OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+            OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
             ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) throws Exception {
         log.info("Initializing SecurityFilterChain for Identity Service...");
 
         http
                 // CSRF is disabled because we use stateless JWT authentication instead of session cookies
                 .csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write("{\"error\": \"Forbidden\", \"message\": \"" + accessDeniedException.getMessage() + "\"}");
+                        })
+                )
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .securityContext(context -> context.securityContextRepository(new org.springframework.security.web.context.NullSecurityContextRepository()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(DOCS_ENDPOINTS).permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
@@ -109,6 +124,7 @@ public class SecurityConfig {
         if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
             http.oauth2Login(oauth2 -> oauth2
                     .successHandler(oAuth2LoginSuccessHandler)
+                    .failureHandler(oAuth2LoginFailureHandler)
             );
             log.info("OAuth2 login integration enabled for configured providers");
         } else {

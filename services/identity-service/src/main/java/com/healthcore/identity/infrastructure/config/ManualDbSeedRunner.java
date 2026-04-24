@@ -35,10 +35,17 @@ public class ManualDbSeedRunner implements CommandLineRunner {
     @Value("${app.manualdb.seed.nutritionist-password:SeedNutritionist123!}")
     private String nutritionistPassword;
 
+    @Value("${app.manualdb.seed.admin-email:admin@healthcore.com}")
+    private String adminEmail;
+
+    @Value("${app.manualdb.seed.admin-password:AdminSecureP@ss123!}")
+    private String adminPassword;
+
     @Override
     public void run(String... args) {
         seedLocalUserIfMissing(patientEmail, patientPassword, Role.PATIENT);
         seedLocalUserIfMissing(nutritionistEmail, nutritionistPassword, Role.NUTRITIONIST);
+        seedLocalUserIfMissing(adminEmail, adminPassword, Role.ADMIN);
     }
 
     private void seedLocalUserIfMissing(String email, String rawPassword, Role role) {

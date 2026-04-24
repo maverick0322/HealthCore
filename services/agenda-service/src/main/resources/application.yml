@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: agenda-service
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/healthcore_agenda}
+
+grpc:
+  client:
+    clinical:
+      address: ${GRPC_CLIENT_CLINICAL_ADDRESS:static://clinical-service:50051}
+
+agenda:
+  clinical:
+    allow-all: ${AGENDA_CLINICAL_ALLOW_ALL:true}
+  confirmation:
+    reconcile-delay-ms: ${AGENDA_CONFIRMATION_RECONCILE_DELAY_MS:30000}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:}

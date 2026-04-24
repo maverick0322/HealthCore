@@ -3,13 +3,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
-import basicSsl from '@vitejs/plugin-basic-ssl'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    basicSsl(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
@@ -44,9 +41,10 @@ export default defineConfig({
   },
   server: {
     host: true, // expose to local network for phone testing
+    allowedHosts: true, // permite cualquier host (como localtunnel)
     proxy: {
       '/api': {
-        target: 'http://localhost:8082',
+        target: 'http://localhost:80',
         changeOrigin: true,
         secure: false,
       },

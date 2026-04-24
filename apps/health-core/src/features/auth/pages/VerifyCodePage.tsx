@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useTranslation, Trans } from "react-i18next";
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Loader2 } from "lucide-react";
@@ -25,6 +25,26 @@ export const VerifyCodePage = () => {
 
   const [code, setCode] = useState("");
   const { handleVerifyCode, isLoading, error } = useVerifyCode();
+  const [timeLeft, setTimeLeft] = useState(60);
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleResend = async () => {
+    // In a real scenario, call authService resend endpoint based on flow
+    setTimeLeft(60);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,15 +55,15 @@ export const VerifyCodePage = () => {
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-8 bg-background text-foreground font-sans relative transition-colors duration-500 ease-in-out">
-      
+
       {/* Global Settings */}
       <SettingsBar />
 
       <div className="w-full max-w-[480px] space-y-6 sm:space-y-8 animate-in fade-in zoom-in-95 duration-500">
-        
+
         {/* Card Form */}
         <div className="bg-card text-card-foreground p-8 sm:p-10 rounded-xl sm:rounded-2xl border border-border shadow-md transition-colors duration-500 flex flex-col items-center">
-          
+
           {/* Logo Section */}
           <div className="flex flex-col items-center mb-8">
             <div className="mb-8 p-4 bg-primary/10 rounded-full text-primary shadow-inner">
@@ -56,7 +76,7 @@ export const VerifyCodePage = () => {
               {t("verifyAccount")}
             </h1>
             <p className="text-muted-foreground text-sm text-center leading-relaxed">
-              {t("verifySubtitle")}<br/>
+              {t("verifySubtitle")}<br />
               <span className="font-medium text-foreground">{email || '—'}</span>
             </p>
           </div>
@@ -98,8 +118,14 @@ export const VerifyCodePage = () => {
           {/* Footer Info */}
           <div className="mt-8 flex flex-col items-center gap-3 w-full">
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground w-full">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span><Trans i18nKey="resendCode" t={t} values={{ time: "00:59" }} /></span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+              {timeLeft > 0 ? (
+                <span>{t("resendCode", { time: formatTime(timeLeft) })}</span>
+              ) : (
+                <button type="button" onClick={handleResend} className="font-medium text-primary hover:underline underline-offset-4 transition-colors">
+                  {t("resendCode", { time: "" }).replace(/\s*\(disponible en\s*\)|\(available in\s*\)/ig, "").trim()}
+                </button>
+              )}
             </div>
             <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline underline-offset-4 transition-colors">
               {t("changeEmail")}

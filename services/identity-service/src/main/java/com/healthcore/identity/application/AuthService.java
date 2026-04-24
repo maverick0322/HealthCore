@@ -56,6 +56,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final LoginAttemptService loginAttemptService;
     private final Environment environment;
+    private final java.util.Optional<com.healthcore.identity.infrastructure.testing.DevEmailCodeStore> devEmailCodeStore;
 
     public User registerPatient(String email, String plainPassword) {
         return registerLocalUser(email, plainPassword, Role.PATIENT);
@@ -183,7 +184,7 @@ public class AuthService {
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getEmail());
@@ -202,7 +203,7 @@ public class AuthService {
 
     public User getCurrentUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
     }
 
     public void logout(String refreshToken) {
@@ -238,7 +239,13 @@ public class AuthService {
         // Placeholder integration point for notifier adapter.
         log.info("Password reset code generated for user: {}", email);
         if (shouldLogSensitiveCodes()) {
-            log.debug("Password reset code for {} is {}", email, code);
+            log.info("--------------------------------------------------");
+            log.info("DEVELOPMENT MODE: Password Reset Code for {}", email);
+            log.info("Code: {}", code);
+            log.info("--------------------------------------------------");
+            
+            // Save to testing store if available
+            devEmailCodeStore.ifPresent(store -> store.savePasswordResetCode(email, code));
         }
     }
 
@@ -272,7 +279,13 @@ public class AuthService {
         // Placeholder integration point for notifier adapter.
         log.info("Verification code generated for user: {}", user.getEmail());
         if (shouldLogSensitiveCodes()) {
-            log.debug("Verification code for {} is {}", user.getEmail(), code);
+            log.info("--------------------------------------------------");
+            log.info("DEVELOPMENT MODE: Verification Code for {}", user.getEmail());
+            log.info("Code: {}", code);
+            log.info("--------------------------------------------------");
+            
+            // Save to testing store if available
+            devEmailCodeStore.ifPresent(store -> store.saveVerificationCode(user.getEmail(), code));
         }
     }
 

@@ -30,6 +30,7 @@ services:
     depends_on:
       - identity-service
       - tracking-service
+      - agenda-service
     restart: unless-stopped
 
   catalog-service:
@@ -47,6 +48,8 @@ services:
     depends_on:
       - mongodb
     environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - LOGGING_LEVEL_COM_HEALTHCORE=DEBUG
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_identity
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ACCESS_TOKEN_VALIDITY_MS=${JWT_ACCESS_TOKEN_VALIDITY_MS:-300000}
@@ -55,6 +58,7 @@ services:
       - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET=${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET}
       - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE=${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE:-openid,profile,email}
       - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI}
+      - APP_MANUALDB_SEED_ENABLED=true
 
   tracking-service:
     build: ./services/tracking-service
@@ -69,5 +73,51 @@ services:
       - GRPC_CATALOG_TARGET=catalog-service:50051
       - JWT_SECRET=${JWT_SECRET}
 
+  agenda-mongodb:
+    image: mongo:7.0
+    container_name: healthcore-agenda-mongodb
+    restart: unless-stopped
+    ports:
+      - "${AGENDA_MONGO_PORT:-27019}:27017"
+    environment:
+      MONGO_INITDB_DATABASE: ${AGENDA_MONGO_DB:-healthcore_agenda}
+    volumes:
+      - agenda_mongo_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  agenda-mongo-express:
+    image: mongo-express:latest
+    container_name: healthcore-agenda-mongo-express
+    restart: unless-stopped
+    ports:
+      - "${AGENDA_MONGO_EXPRESS_PORT:-8084}:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://agenda-mongodb:27017/
+      ME_CONFIG_BASICAUTH: ${AGENDA_MONGO_EXPRESS_BASICAUTH:-false}
+    depends_on:
+      agenda-mongodb:
+        condition: service_healthy
+
+  agenda-service:
+    build: ./services/agenda-service
+    container_name: healthcore-agenda-service
+    restart: unless-stopped
+    depends_on:
+      agenda-mongodb:
+        condition: service_healthy
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://agenda-mongodb:27017/${AGENDA_MONGO_DB:-healthcore_agenda}
+      GRPC_CLIENT_CLINICAL_ADDRESS: ${GRPC_CLIENT_CLINICAL_ADDRESS:-static://clinical-service:50051}
+      AGENDA_CLINICAL_ALLOW_ALL: ${AGENDA_CLINICAL_ALLOW_ALL:-true}
+      SERVICE_NAME: ${AGENDA_SERVICE_NAME:-AGENDA-SVC}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "${AGENDA_SERVICE_PORT:-8083}:8080"
+
 volumes:
   mongo_data:
+  agenda_mongo_data:

@@ -20,6 +20,7 @@
     "clsx": "^2.1.1",
     "i18next": "^25.10.5",
     "input-otp": "^1.4.2",
+    "localtunnel": "^2.0.2",
     "lucide-react": "^0.577.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",

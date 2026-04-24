@@ -1,0 +1,66 @@
+name: API Tests CI
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Start Services using Docker Compose
+        run: |
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" > .env
+          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
+          echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET=${{ secrets.AUTH0_CLIENT_SECRET }}" >> .env
+          echo "SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${{ secrets.AUTH0_ISSUER_URI }}" >> .env
+          
+          docker compose up -d mongodb api-gateway identity-service tracking-service
+          
+      - name: Wait for Spring Boot to be ready behind Nginx
+        run: |
+          echo "Esperando a que el identity-service termine de arrancar..."
+          while true; do
+            set +e 
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/v1/auth/register)
+            set -e
+            
+            STATUS=${STATUS:-000}
+
+            # LISTA BLANCA: Solo avanzamos si Spring Boot nos responde con un error de lógica (400, 401 o 405)
+            if [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "405" ]; then
+              echo "¡El servicio está 100% arriba! Código de respuesta exacto: $STATUS"
+              break
+            fi
+            
+            echo "Aún no... Estado de red/Nginx: $STATUS. Reintentando en 5 segundos..."
+            sleep 5
+          done
+
+      - name: Run Newman Tests
+        working-directory: ./postman
+        run: |
+          newman run healthCore_identity_service.postman_collection.json \
+            -e healthCore_local.postman_environment.json \
+            --bail
+
+      - name: Print Docker Logs on Failure
+        if: failure()
+        run: docker compose logs identity-service

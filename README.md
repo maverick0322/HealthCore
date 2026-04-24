@@ -21,18 +21,86 @@ This project is a collaborative effort dedicated to building a high-performance,
 
 To get the project running locally, please follow the **[Setup Guide](docs/setup.md)**.
 
-## 🏗️ Architecture
+## 🐳 Ecosistema Backend con Docker Compose
 
-For a deep dive into our technology stack and the reasons behind our architecture, see **[Architecture & Decisions](docs/architecture.md)**.
+La forma oficial y recomendada de levantar todo el ecosistema backend (bases de datos, microservicios, frontend web y gateway) es a través de Docker Compose. Ya no es necesario levantar servicios individuales o configurar entornos virtuales manualmente.
+
+**Servicios principales incluidos:**
+- `api-gateway` (NGINX): Punto de entrada principal (`localhost:80`)
+- `identity-service` (Spring Boot): Gestión de usuarios y Auth (`localhost:8082`)
+- `agenda-service` (Spring Boot): Gestión de citas y disponibilidad (`localhost:8083`)
+- `tracking-service` (Spring Boot): Diarios y seguimiento de pacientes (`localhost:8080`)
+- `catalog-service` (Python/FastAPI/gRPC): Búsqueda de información nutricional (`localhost:50051`)
+- Bases de datos (MongoDB) y UIs administrativas (Mongo Express).
+
+**Levantar todo el ecosistema:**
+```powershell
+docker compose up -d --build
+```
+
+**Ver el estado de los contenedores:**
+```powershell
+docker compose ps
+```
+
+**Apagar el ecosistema:**
+```powershell
+docker compose down
+```
+
+## 📖 Documentación de la API (Swagger)
+
+Cada microservicio expone su propia documentación interactiva utilizando Swagger/OpenAPI. Una vez que hayas levantado el ecosistema con Docker Compose, puedes consultar los endpoints en las siguientes URLs:
+
+- **Identity Service:** 👉 [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html)
+- **Agenda Service:** 👉 [http://localhost:8083/swagger-ui.html](http://localhost:8083/swagger-ui.html)
+
+## 💻 Entorno Desktop (Electron)
+
+HealthCore también cuenta con una versión de escritorio empaquetada con Electron. **No es necesario duplicar el código.** El entorno de escritorio está configurado para consumir el código de la aplicación web directamente.
+
+Para probar la versión de escritorio mientras desarrollas:
+
+1. Levanta el servidor de desarrollo de la app web normalmente:
+   ```powershell
+   cd apps/health-core
+   npm run dev
+   ```
+   *(Esto levantará Vite en el puerto 5173).*
+2. En otra terminal, navega al proyecto de escritorio y levanta Electron:
+   ```powershell
+   cd apps/health-core-desktop
+   npm install
+   npm run dev
+   ```
+El proyecto de Electron cargará automáticamente `http://localhost:5173` y mostrará la misma aplicación web dentro de una ventana nativa.
+
+## ⚙️ Variables de entorno locales
+
+Para que el ecosistema funcione correctamente de forma local, debes tener un archivo `.env` en la raíz del proyecto. Puedes copiar el archivo de ejemplo:
+
+```powershell
+cp .env.example .env
+```
+Asegúrate de llenar variables críticas como `JWT_SECRET` y credenciales de OAuth2 (Auth0) si planeas probar los flujos de autenticación completos.
 
 ---
+## Sobre el frontend
+ **Compatibility**: When installing new packages, remember to use `--legacy-peer-deps` due to current Vite 8 plugin resolution.
 
-## 📜 Developer Guidelines
+### 📱 Pruebas en Dispositivos Móviles (PWA UI Testing)
 
-1. **Follow Clean Architecture**: Ensure logic is separated into `core`, `features`, and `shared`.
-2. **Use Aliases**: Always use `@/` for internal imports.
-3. **Compatibility**: When installing new packages, remember to use `--legacy-peer-deps` due to current Vite 8 plugin resolution.
+Para visualizar cómo se comporta la UI o probar la instalación de la PWA en un dispositivo móvil real sin complicaciones de red local o certificados, puedes exponer el frontend a internet usando un túnel temporal.
 
+1. Asegúrate de tener el frontend corriendo en modo desarrollo (`npm run dev` en `apps/health-core`).
+2. Abre una nueva terminal y ejecuta Ngrok o Localtunnel:
+   ```powershell
+   npx ngrok http 5173
+   # o alternativamente: npx localtunnel --port 5173
+   ```
+3. Abre el enlace HTTPS generado en el navegador de tu celular. Podrás ver la interfaz y el navegador te ofrecerá instalar la PWA.
+
+> **Nota:** Esta técnica tuneliza únicamente la interfaz de React. Como el backend (Identity, Agenda, Gateway) sigue estando local en tu máquina, las funcionalidades complejas como el inicio de sesión OAuth2 fallarán si interactúas desde el teléfono. Usa esto **solo** para validar vistas de UI y la correcta instalación de la PWA.
 ## 🌿 Flujo de Trabajo (Git Workflow)
 
 **NUNCA trabajes directamente en la rama `main`.**
@@ -46,65 +114,9 @@ For a deep dive into our technology stack and the reasons behind our architectur
 * **`[PERF]`**: Para optimización, describe lo que optimizaste en el commit.
 * **`[REFACTOR]`**: para refactorización, describe lo que refactorizaste en el commit.
 3. Revisamos en qué rama nos encontramos: `git branch`
-3. Revisamos qué archivos hemos modificado: `git status`
-4. Añade todos los cambios trabajados en memoria: `git add .`
-5. Guarda los cambios: `git commit -m "feat: agregué X componente"`
-6. Sube tu rama: `git push -u origin feature/nombre-de-tu-tarea`
+4. Revisamos qué archivos hemos modificado: `git status`
+5. Añade todos los cambios trabajados en memoria: `git add .`
+6. Guarda los cambios: `git commit -m "feat: agregué X componente"`
+7. Sube tu rama: `git push -u origin feature/nombre-de-tu-tarea`
 8. Ve a GitHub y abre un **Pull Request** para revisión, agrega una descripción clara y crea el pull request.
-7. Cuando se apruebe el merge regresa a la rama principal y actualízala: `git checkout main` y luego `git pull origin main`
-
-# 🚀 Guía de Pruebas Locales: Ecosistema Backend (HealthCore)
-
-Actualmente, el ecosistema cuenta con dos microservicios comunicados a través de un puente de alto rendimiento **gRPC**. Para probar la extracción de datos nutricionales desde la base de datos mundial, sigue estos pasos:
-
-## 📋 Prerrequisitos
-* **Java 21** instalado.
-* **Python 3.10+** instalado.
-* **Maven** configurado (o usar el wrapper/IDE).
-* Entorno de desarrollo recomendado: IntelliJ IDEA (para Java) y VS Code (para Python).
-
----
-
-## 🐍 Paso 1: Levantar el Catálogo de Alimentos (Python)
-Este servicio se conecta a *Open Food Facts* y expone los datos mediante gRPC.
-
-1. Abre una terminal y navega a la carpeta del servicio:
-   `cd services/catalog-service`
-2. Activa el entorno virtual (Windows):
-   `venv\Scripts\activate`
-   *(Si alguien no tiene las dependencias, puede instalarlas con: `pip install fastapi uvicorn requests pydantic grpcio grpcio-tools` dentro del entorno virtual)*
-   *(Si alguien no tiene las el entorno virtual instalado, puede instalarlas con: `pyhton -n venv venv` )*
-3. Levanta el servidor **gRPC**:
-   `python -m src.grpc_server`
-   ✅ *Deberías ver el mensaje: 🚀 Servidor gRPC de Catalog-Service iniciado en el puerto 50051...*
-
----
-
-## ☕ Paso 2: Levantar el Tracking Service (Java / Spring Boot)
-Este servicio actúa como cliente gRPC y será el encargado de gestionar los diarios de los pacientes.
-
-1. Abre la carpeta `services/tracking-service` en **IntelliJ IDEA**.
-2. **Importante:** Haz clic en recargar Maven (Load Maven Changes) y luego ejecuta el ciclo `compile` desde el panel derecho de Maven. Esto autogenerará las clases de comunicación binaria a partir del archivo `.proto`.
-3. Ejecuta la clase principal `TrackingServiceApplication.java` (botón de Play en IntelliJ).
-
-⚠️ **Nota esperada:** Verás un error en la consola indicando `MongoSocketOpenException: Connection refused`. **Es completamente normal** en esta etapa, ya que aún no hemos levantado la base de datos MongoDB. El servidor web arrancará de todos modos en el puerto 8080.
-
----
-
-## 🌉 Paso 3: Probar el Puente gRPC (El momento de la verdad)
-Con ambos servidores corriendo (Python en el puerto 50051 y Java en el 8080), vamos a pedirle a Java que busque un producto y este viajará a Python en milisegundos para traerlo.
-
-1. Abre tu navegador web.
-2. Pega la siguiente URL (puedes cambiar los números finales por cualquier código de barras real):
-   `http://localhost:8080/api/v1/tracking/test-grpc/7501045403915`
-
-🎉 **Resultado esperado:**
-Deberías ver un JSON en tu navegador con los macronutrientes extraídos, similar a esto:
-
-{
-  "mensaje": "¡Conexión gRPC Java -> Python exitosa!",
-  "marca": "Dolores",
-  "calorias": 80.0,
-  "producto": "Atún en agua",
-  "origen": "Open Food Facts"
-}
+9. Cuando se apruebe el merge regresa a la rama principal y actualízala: `git checkout main` y luego `git pull origin main`

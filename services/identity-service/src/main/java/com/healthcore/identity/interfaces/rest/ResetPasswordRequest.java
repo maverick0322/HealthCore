@@ -11,7 +11,7 @@ public record ResetPasswordRequest(
         String email,
 
         @NotBlank(message = "Reset code is required")
-        @Pattern(regexp = "^[0-9]{6}$", message = "Reset code must contain 6 digits")
+        @Pattern(regexp = "^\\d{6}$", message = "Reset code must contain 6 digits")
         String code,
 
         @NotBlank(message = "New password is required")

@@ -110,7 +110,7 @@ class RoleEndpointSecurityTest {
     @Test
     void should_RejectProtectedRoleEndpoints_When_TokenIsMissing() throws Exception {
         mockMvc.perform(get("/api/v1/patients/home"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

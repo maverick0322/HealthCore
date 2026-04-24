@@ -111,7 +111,7 @@ export const PatientHistoryPage = () => {
           aria-hidden
           className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
         />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-6">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
             {t("history.title")}
           </h1>

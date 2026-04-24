@@ -1,4 +1,5 @@
-import { Moon, Sun, Globe } from "lucide-react";
+import { Moon, Sun, Globe, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { useSettingsStore } from "@/core/store/useSettingsStore";
 import { SUPPORTED_LANGUAGES } from "@/core/i18n";
@@ -10,6 +11,7 @@ import {
 } from "@/shared/ui/dropdown-menu";
 
 export const SettingsBar = ({ className }: { className?: string }) => {
+  const navigate = useNavigate();
   const { theme, setTheme, language, setLanguage } = useSettingsStore();
 
   const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -57,6 +59,16 @@ export const SettingsBar = ({ className }: { className?: string }) => {
       >
         {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         <span className="sr-only">Alternar Tema</span>
+      </Button>
+
+      <Button 
+        variant="outline" 
+        size="icon" 
+        onClick={() => navigate("/profile")} 
+        className="rounded-full w-10 h-10 border-border bg-card hover:bg-muted text-foreground transition-all duration-300 shadow-sm"
+      >
+        <Settings className="w-5 h-5" />
+        <span className="sr-only">Configuración</span>
       </Button>
     </div>
   );

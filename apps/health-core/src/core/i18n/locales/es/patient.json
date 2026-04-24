@@ -177,5 +177,26 @@
     },
     "noAvailableTimes": "No hay horarios disponibles para esta fecha.",
     "appointmentConfirmed": "Cita confirmada exitosamente."
+  },
+  "plan": {
+    "title": "Plan Nutricional",
+    "subtitle": "Tu dieta diaria y distribución de alimentos",
+    "dailyGoals": "Metas Diarias",
+    "calories": "Calorías",
+    "protein": "Proteína",
+    "carbs": "Carbohidratos",
+    "fat": "Grasas",
+    "meals": "Comidas del Día",
+    "breakfast": "Desayuno",
+    "lunch": "Comida",
+    "dinner": "Cena",
+    "snack": "Snack",
+    "ingredients": "Ingredientes",
+    "instructions": "Instrucciones",
+    "markAsEaten": "Marcar como consumido",
+    "eaten": "Consumido",
+    "substitutions": "Intercambios permitidos",
+    "waterGoal": "Meta de hidratación: {{count}} vasos",
+    "downloadPdf": "Descargar PDF"
   }
 }

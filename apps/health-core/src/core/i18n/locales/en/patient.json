@@ -177,5 +177,26 @@
     },
     "noAvailableTimes": "No available times for this date.",
     "appointmentConfirmed": "Appointment successfully confirmed."
+  },
+  "plan": {
+    "title": "Nutritional Plan",
+    "subtitle": "Your daily diet and food distribution",
+    "dailyGoals": "Daily Goals",
+    "calories": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbohydrates",
+    "fat": "Fat",
+    "meals": "Meals of the Day",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack",
+    "ingredients": "Ingredients",
+    "instructions": "Instructions",
+    "markAsEaten": "Mark as eaten",
+    "eaten": "Eaten",
+    "substitutions": "Allowed substitutions",
+    "waterGoal": "Hydration goal: {{count}} glasses",
+    "downloadPdf": "Download PDF"
   }
 }

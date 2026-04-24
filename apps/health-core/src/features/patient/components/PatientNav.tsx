@@ -4,7 +4,7 @@ import { LayoutDashboard, UtensilsCrossed, History, User, Leaf, CalendarDays } f
 
 const NAV_ITEMS = [
   { id: "nav-dashboard", labelKey: "dashboard.navDashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard/patient" },
-  { id: "nav-plan",      labelKey: "dashboard.navPlan",      icon: <UtensilsCrossed size={20} />, path: "/plan" },
+  { id: "nav-plan",      labelKey: "dashboard.navPlan",      icon: <UtensilsCrossed size={20} />, path: "/plan/patient" },
   { id: "nav-appointments", labelKey: "dashboard.navAppointments", icon: <CalendarDays size={20} />, path: "/appointments/patient" },
   { id: "nav-history",   labelKey: "dashboard.navHistory",   icon: <History size={20} />,         path: "/history/patient" },
   { id: "nav-profile",   labelKey: "dashboard.navProfile",   icon: <User size={20} />,            path: "/profile" },

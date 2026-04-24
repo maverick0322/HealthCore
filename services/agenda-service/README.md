@@ -1,74 +1,58 @@
-# Agenda Service - Iteracion 1 (Paciente)
+# Agenda Service
 
-Base inicial del `agenda-service` enfocada en operaciones del paciente con:
+El `agenda-service` gestiona la disponibilidad de los nutriólogos y las citas médicas de los pacientes de la plataforma HealthCore.
 
-- Reserva de citas contra slots predefinidos/editables (modelo hibrido con `TimeSlotOrigin`).
-- Prevencion de dobles reservas con `@Version` (optimistic locking) y un indice defensivo unico (`nutritionistId + startTime`).
-- Flujo de creacion en `PENDING` y confirmacion asincrona resiliente.
-- Validacion de vinculo paciente-nutriologo via cliente de Clinical Service (stub inicial).
-- Ejecucion estandar en Docker Compose (`agenda-service` + `agenda-mongodb`).
-- Configuracion principal en `application.yml` y logs por `logback-spring.xml`.
+## Funcionalidades principales
 
-## Endpoints incluidos
+- **Gestión del Paciente (CU-05):** Permite reservar, cancelar, consultar y **reprogramar** citas en base a los horarios disponibles de su nutriólogo asociado.
+- **Gestión del Nutriólogo (CU-08):** Permite **configurar su disponibilidad**, generar horarios (slots) en bloque, desactivar horarios (respetando la regla de 24 horas) y visualizar su agenda de citas.
+- **Manejo de Concurrencia:** Prevención de dobles reservas usando `Optimistic Locking` (`@Version` en MongoDB) y control transaccional simulado mediante `TimeSlotVersion`.
+- **Integración Clínica (Stub):** Validación del vínculo paciente-nutriólogo mediante gRPC. (Actualmente utilizando un Stub a la espera de la implementación final del `.proto`).
+- **Arquitectura Limpia:** Separación estricta entre API, Dominio y Aplicación.
 
-- `GET /api/v1/agenda/availability/{nutritionistId}?from=...&to=...`
-- `POST /api/v1/agenda/appointments`
-- `PATCH /api/v1/agenda/appointments/{id}/cancel`
-- `GET /api/v1/agenda/appointments/me`
+## Documentación de la API (Swagger)
 
-> Seguridad: los endpoints requieren `Authorization: Bearer <JWT>` (excepto Swagger/OpenAPI).
+La API está completamente documentada utilizando OpenAPI/Swagger. Cuando el servicio está levantado localmente a través de Docker Compose, puedes consultar la documentación interactiva en:
+👉 **[http://localhost:8083/swagger-ui.html](http://localhost:8083/swagger-ui.html)**
 
-## Variables de entorno
+## Endpoints
 
-```properties
-SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/healthcore_agenda
-GRPC_CLIENT_CLINICAL_ADDRESS=static://clinical-service:50051
-AGENDA_CLINICAL_ALLOW_ALL=true
-AGENDA_CONFIRMATION_RECONCILE_DELAY_MS=30000
-JWT_SECRET=<provisto-por-docker-compose-raiz>
-AGENDA_SERVICE_PORT=8080
-AGENDA_SERVICE_NAME=AGENDA-SVC
-```
+### Paciente (`/api/v1/agenda`)
+- `GET /availability/{nutritionistId}?from=...&to=...`: Consultar disponibilidad.
+- `POST /appointments`: Crear una nueva cita.
+- `PATCH /appointments/{id}/cancel`: Cancelar una cita.
+- `PUT /appointments/{id}/reschedule`: Reprogramar una cita.
+- `GET /appointments/me`: Listar citas del paciente actual.
 
-## Docker Compose
+### Nutriólogo (`/api/v1/agenda/nutritionist`)
+- `POST /slots/generate`: Generar horarios en bloque.
+- `GET /slots?from=...&to=...`: Consultar mis horarios.
+- `PATCH /slots/{id}/deactivate`: Desactivar un horario (aplica política de > 24 hrs y cancelación automática).
+- `GET /appointments?from=...&to=...`: Consultar citas de mis pacientes.
 
-Fuente principal recomendada: `docker-compose.yml` en la raiz del repositorio.
+> **Seguridad:** Todos los endpoints (excepto Swagger) requieren el header `Authorization: Bearer <JWT>`.
 
-Servicios de Agenda en la raiz:
+## Ejecución y Docker Compose
 
-- `agenda-mongodb`: MongoDB dedicada del microservicio.
-- `agenda-mongo-express`: UI grafica para explorar la base de Agenda.
-- `agenda-service`: microservicio corriendo en contenedor.
+La fuente principal para ejecutar este servicio es el `docker-compose.yml` en la raíz del repositorio.
 
-Levantar Agenda desde la raiz:
-
+**Levantar el servicio:**
 ```powershell
-docker compose up -d --build agenda-mongodb agenda-mongo-express agenda-service
+docker compose up -d --build agenda-service
 ```
+El contenedor expone el servicio en el puerto `8083` de tu host, dirigido al puerto interno `8080` de Tomcat.
 
-Apagar contenedores:
+**Dependencias:**
+- `agenda-mongodb`: Base de datos aislada.
+- `agenda-mongo-express`: Interfaz gráfica (`http://localhost:8084`).
 
+## Pruebas (TDD & AAA)
+
+La suite de pruebas persigue un mínimo de 70% de cobertura, enfocándose en la filosofía AAA (Arrange, Act, Assert) con aserciones individuales:
+- `NutritionistAvailabilityServiceTest` y `PatientAppointmentServiceTest` (Pruebas unitarias de dominio).
+- `NutritionistAgendaControllerTest` y `PatientAgendaControllerTest` (Pruebas de integración con MockMvc).
+
+Para correr los tests en un entorno aislado con maven:
 ```powershell
-docker compose down
+docker run --rm -v "%cd%:/app" -w /app maven:3.9.9-eclipse-temurin-21 ./mvnw clean test
 ```
-
-## Estado de integraciones
-
-- `ClinicalServiceClient` esta implementado como `StubClinicalServiceClient` para esta iteracion.
-- La integracion gRPC real se conecta en la siguiente iteracion al agregar contratos `.proto` y clases generadas.
-
-## Pruebas (TDD)
-
-Se agregaron pruebas para el flujo paciente en:
-
-- `src/test/java/com/healthcore/agenda_service/application/PatientAppointmentServiceTest.java`
-- `src/test/java/com/healthcore/agenda_service/api/PatientAgendaControllerTest.java`
-
-## Configuracion y logs
-
-- `src/main/resources/application.yml` es la fuente de configuracion.
-- `src/main/resources/logback-spring.xml` aplica el patron de logs de equipo y soporta `SERVICE_NAME` por variable de entorno.
-
-
-
-

@@ -1,35 +1,70 @@
 import grpc
+import logging
 from src.interfaces import catalog_pb2
 from src.interfaces import catalog_pb2_grpc
-from src.infrastructure.open_food_facts_client import OpenFoodFactsClient
+from src.application.catalog_use_case import CatalogUseCase
+from src.domain.exceptions import FoodNotFoundError, ExternalServiceError
+
+logger = logging.getLogger(__name__)
 
 class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
     
-    def __init__(self):
-        self.off_client = OpenFoodFactsClient()
+    def __init__(self, use_case: CatalogUseCase):
+        self._use_case = use_case
 
     def GetFoodItem(self, request, context):
-        print(f"[gRPC] Recibida petición para el código: {request.barcode}")
+        safe_barcode = request.barcode.strip() if request.barcode else ""
+        logger.info(f"Recibida petición gRPC para el código: '{safe_barcode}'")
         
-        product = self.off_client.get_product_by_barcode(request.barcode)
-
-        if not product:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details('Producto no encontrado en la base de datos mundial')
+        if not safe_barcode:
+            msg = "El código de barras proporcionado está vacío o es inválido."
+            logger.warning(msg)
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            context.set_details(msg)
             return catalog_pb2.FoodResponse()
 
-        return catalog_pb2.FoodResponse(
-            barcode=product.barcode,
-            name=product.name,
-            brand=product.brand or "Sin marca",
-            image_url=product.image_url or "",
-            calories_per_100g=product.nutrition.calories,
-            proteins_per_100g=product.nutrition.proteins,
-            carbs_per_100g=product.nutrition.carbohydrates,
-            fats_per_100g=product.nutrition.fats,
-            source="Open Food Facts" 
-        )
+        try:
+            product = self._use_case.find_food(safe_barcode)
+
+            return catalog_pb2.FoodResponse(
+                barcode=product.barcode,
+                name=product.name,
+                brand=product.brand or "Sin marca",
+                image_url=product.image_url or "",
+                calories_per_100g=product.nutrition.calories,
+                proteins_per_100g=product.nutrition.proteins,
+                carbs_per_100g=product.nutrition.carbohydrates,
+                fats_per_100g=product.nutrition.fats,
+                source="Open Food Facts" 
+            )
+
+        except FoodNotFoundError as e:
+            logger.warning(f"Búsqueda sin resultados: {e}")
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details(str(e))
+            return catalog_pb2.FoodResponse()
+            
+        except ExternalServiceError as e:
+            logger.error(f"Fallo en dependencia externa: {e}")
+            context.set_code(grpc.StatusCode.UNAVAILABLE)
+            context.set_details(str(e))
+            return catalog_pb2.FoodResponse()
+
+        except ValueError as e:
+            logger.error(f"Error de validación interna procesando el código {safe_barcode}: {e}")
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            context.set_details("Los datos del producto tienen un formato numérico inválido.")
+            return catalog_pb2.FoodResponse()
+
+        except Exception as e:
+            logger.exception(f"Error interno crítico y no controlado procesando el código {safe_barcode}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Ocurrió un error interno crítico en el servidor de catálogo. Intente más tarde.")
+            return catalog_pb2.FoodResponse()
 
     def SearchFood(self, request, context):
-        print(f"[gRPC] Búsqueda solicitada: {request.query}")
-        return catalog_pb2.SearchResponse(items=[])
+        logger.info(f"Búsqueda gRPC solicitada: {request.query}")
+        
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Búsqueda por texto aún no implementada en esta versión.')
+        return catalog_pb2.SearchResponse()

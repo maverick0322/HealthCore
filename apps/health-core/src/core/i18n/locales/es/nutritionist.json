@@ -24,5 +24,29 @@
       "pending": "Pendiente",
       "completed": "Completada"
     }
+  },
+  "patients": {
+    "title": "Mis Pacientes",
+    "subtitle": "Gestiona y da seguimiento a tus pacientes.",
+    "searchPlaceholder": "Buscar paciente por nombre...",
+    "filters": {
+      "all": "Todos",
+      "active": "Activos",
+      "pendingReview": "Revisión Pendiente"
+    },
+    "viewFile": "Ver Expediente",
+    "lastVisit": "Última visita: {{date}}",
+    "file": {
+      "back": "Volver a Pacientes",
+      "tabOverview": "Resumen General",
+      "tabPlan": "Plan Asignado",
+      "tabHistory": "Historial y Notas",
+      "age": "Edad",
+      "weight": "Peso Actual",
+      "height": "Altura",
+      "objective": "Objetivo",
+      "editPlan": "Editar Plan Dietético",
+      "newNote": "Añadir Nota"
+    }
   }
 }

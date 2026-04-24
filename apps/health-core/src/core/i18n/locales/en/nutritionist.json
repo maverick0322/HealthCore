@@ -24,5 +24,29 @@
       "pending": "Pending",
       "completed": "Completed"
     }
+  },
+  "patients": {
+    "title": "My Patients",
+    "subtitle": "Manage and track your patients.",
+    "searchPlaceholder": "Search patient by name...",
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "pendingReview": "Pending Review"
+    },
+    "viewFile": "View File",
+    "lastVisit": "Last visit: {{date}}",
+    "file": {
+      "back": "Back to Patients",
+      "tabOverview": "Overview",
+      "tabPlan": "Assigned Plan",
+      "tabHistory": "History & Notes",
+      "age": "Age",
+      "weight": "Current Weight",
+      "height": "Height",
+      "objective": "Objective",
+      "editPlan": "Edit Diet Plan",
+      "newNote": "Add Note"
+    }
   }
 }

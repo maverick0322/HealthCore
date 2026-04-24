@@ -64,29 +64,42 @@ public class JwtValidationFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
             String role = claims.get(ROLE_CLAIM, String.class);
 
+            String authority = (role != null && !role.trim().isEmpty()) ? ROLE_PREFIX + role : ROLE_PREFIX + "USER";
+
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    email, null, Collections.singletonList(new SimpleGrantedAuthority(ROLE_PREFIX + role))
+                    email, null, Collections.singletonList(new SimpleGrantedAuthority(authority))
             );
             SecurityContextHolder.getContext().setAuthentication(auth);
             log.debug("JWT successfully validated for user: {}", email);
 
+            filterChain.doFilter(request, response);
+
         } catch (ExpiredJwtException e) {
-            log.warn("Security warning: JWT token has expired. Message: {}", e.getMessage());
+            log.warn("Security warning: JWT token has expired.");
             SecurityContextHolder.clearContext();
+            sendUnauthorizedError(response, "El token ha expirado. Por favor, inicie sesión nuevamente.");
 
-        } catch (SignatureException e) {
-            log.error("Security alert: Invalid JWT signature. Possible tampering detected: {}", e.getMessage());
+        } catch (SignatureException | MalformedJwtException e) {
+            log.error("Security alert: Invalid JWT signature or malformed token.");
             SecurityContextHolder.clearContext();
+            sendUnauthorizedError(response, "Token de seguridad inválido o corrupto.");
 
-        } catch (MalformedJwtException | UnsupportedJwtException | IllegalArgumentException e) {
-            log.warn("Security warning: Malformed or corrupt JWT token: {}", e.getMessage());
+        } catch (UnsupportedJwtException | IllegalArgumentException e) {
+            log.error("Security alert: Unsupported JWT or Illegal Argument.");
             SecurityContextHolder.clearContext();
+            sendUnauthorizedError(response, "Token de seguridad inválido o corrupto.");
 
         } catch (Exception e) {
             log.error("Security error: Unexpected error validating token", e);
             SecurityContextHolder.clearContext();
+            sendUnauthorizedError(response, "Error interno de autenticación.");
         }
+    }
 
-        filterChain.doFilter(request, response);
+    private void sendUnauthorizedError(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"status\": 401, \"error\": \"Unauthorized\", \"message\": \"" + message + "\"}");
     }
 }

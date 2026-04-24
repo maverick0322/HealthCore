@@ -28,7 +28,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
         log.info("Initializing gRPC client for Catalog Service at: {}", grpcTarget);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(grpcTarget)
-                .usePlaintext() // Fine for dev, should be TLS for prod
+                .usePlaintext()
                 .build();
 
         this.catalogStub = NutritionalCatalogGrpc.newBlockingStub(channel);
@@ -53,6 +53,9 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
                     .name(response.getName())
                     .brand(response.getBrand())
                     .calories(response.getCaloriesPer100G())
+                    .proteins(response.getProteinsPer100G())
+                    .carbohydrates(response.getCarbsPer100G())
+                    .fats(response.getFatsPer100G())
                     .source(response.getSource())
                     .build());
 

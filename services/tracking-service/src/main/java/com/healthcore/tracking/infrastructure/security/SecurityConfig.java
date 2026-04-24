@@ -19,6 +19,13 @@ public class SecurityConfig {
 
     private final JwtValidationFilter jwtValidationFilter;
 
+    private static final String[] WHITE_LIST_URL = {
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/api/v1/tracking/health"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         log.info("Initializing SecurityFilterChain for Tracking Service...");
@@ -28,10 +35,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // All endpoints in tracking-service require authentication
-                        .anyRequest().authenticated()
+                        .requestMatchers(WHITE_LIST_URL).permitAll()
+                        .anyRequest().authenticated() // All endpoints in tracking-service require authentication
                 )
-                // We add our filter before Spring tries to authenticate
                 .addFilterBefore(jwtValidationFilter, UsernamePasswordAuthenticationFilter.class);
 
         log.debug("SecurityFilterChain configured successfully");

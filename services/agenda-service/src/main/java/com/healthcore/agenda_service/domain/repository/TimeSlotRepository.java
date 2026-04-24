@@ -12,5 +12,11 @@ public interface TimeSlotRepository extends MongoRepository<TimeSlot, String> {
         Instant from,
         Instant to
     );
+
+    List<TimeSlot> findByNutritionistIdAndStartTimeBetweenOrderByStartTime(
+        String nutritionistId,
+        Instant from,
+        Instant to
+    );
 }
 

@@ -15,5 +15,11 @@ public interface AppointmentRepository extends MongoRepository<Appointment, Stri
     );
 
     List<Appointment> findTop100ByStatusOrderByCreatedAtAsc(AppointmentStatus status);
+
+    List<Appointment> findByNutritionistIdAndStartTimeBetweenOrderByStartTime(
+        String nutritionistId,
+        Instant from,
+        Instant to
+    );
 }
 

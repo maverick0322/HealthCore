@@ -1,6 +1,5 @@
 package com.healthcore.identity.infrastructure.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.healthcore.identity.application.AuthService;
 import com.healthcore.identity.domain.AuthProvider;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
@@ -17,7 +16,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Slf4j
 @Component
@@ -25,15 +23,14 @@ import java.util.Map;
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final AuthService authService;
-    private final ObjectMapper objectMapper;
 
     @Value("${app.oauth2.success-redirect-url:https://localhost:5173/oauth2/callback}")
     private String redirectUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+            HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
         try {
             if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
                 throw new UnauthorizedException("Invalid OAuth2 authentication context");
@@ -65,7 +62,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private String extractEmail(OAuth2User oauth2User) {
         Object emailValue = oauth2User.getAttributes().get("email");
 
-
         if (emailValue == null) {
             throw new UnauthorizedException("OAuth2 provider did not return a valid email");
         }
@@ -86,4 +82,3 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.sendRedirect(finalUrl);
     }
 }
-

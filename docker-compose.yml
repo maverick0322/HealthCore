@@ -116,7 +116,7 @@ services:
       SERVICE_NAME: ${AGENDA_SERVICE_NAME:-AGENDA-SVC}
       JWT_SECRET: ${JWT_SECRET}
     ports:
-      - "${AGENDA_SERVICE_PORT:-8083}:8083"
+      - "${AGENDA_SERVICE_PORT:-8083}:8080"
 
 volumes:
   mongo_data:

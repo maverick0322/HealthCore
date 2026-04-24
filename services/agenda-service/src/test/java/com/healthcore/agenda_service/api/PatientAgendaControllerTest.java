@@ -1,6 +1,5 @@
 package com.healthcore.agenda_service.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.healthcore.agenda_service.application.CreateAppointmentCommand;
 import com.healthcore.agenda_service.application.PatientAppointmentService;
 import com.healthcore.agenda_service.domain.Appointment;
@@ -32,9 +31,6 @@ class PatientAgendaControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @MockitoBean
     private PatientAppointmentService service;
@@ -97,6 +93,31 @@ class PatientAgendaControllerTest {
     void patchCancel_shouldCancelAppointment() throws Exception {
         mockMvc.perform(patch("/api/v1/agenda/appointments/app-1/cancel").with(csrf()))
             .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(username = "patient-1")
+    void putReschedule_shouldRescheduleAppointment() throws Exception {
+        Appointment updated = Appointment.builder()
+            .id("app-1")
+            .slotId("slot-2")
+            .patientId("patient-1")
+            .nutritionistId("nutri-1")
+            .status(AppointmentStatus.PENDING)
+            .startTime(Instant.parse("2026-04-22T11:00:00Z"))
+            .endTime(Instant.parse("2026-04-22T11:30:00Z"))
+            .build();
+
+        when(service.rescheduleAppointment(eq("patient-1"), eq("app-1"), eq(new CreateAppointmentCommand("slot-2", 1L))))
+            .thenReturn(updated);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/agenda/appointments/app-1/reschedule")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"newSlotId\":\"slot-2\",\"newSlotVersion\":1}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value("app-1"))
+            .andExpect(jsonPath("$.slotId").value("slot-2"));
     }
 }
 

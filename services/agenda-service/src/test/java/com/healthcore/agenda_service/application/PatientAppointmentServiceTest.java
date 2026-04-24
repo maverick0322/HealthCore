@@ -144,4 +144,52 @@ class PatientAppointmentServiceTest {
         assertThat(availability).hasSize(1);
         assertThat(availability.getFirst().getId()).isEqualTo("slot-1");
     }
+
+    @Test
+    void rescheduleAppointment_shouldUpdateAppointmentSlotAndStatus() {
+        Appointment appointment = Appointment.builder()
+            .id("app-1")
+            .slotId("slot-1")
+            .patientId("patient-1")
+            .nutritionistId("nutri-1")
+            .startTime(slot.getStartTime())
+            .endTime(slot.getEndTime())
+            .status(AppointmentStatus.CONFIRMED)
+            .build();
+            
+        TimeSlot newSlot = TimeSlot.builder()
+            .id("slot-2")
+            .nutritionistId("nutri-1")
+            .startTime(Instant.parse("2026-04-22T11:00:00Z"))
+            .endTime(Instant.parse("2026-04-22T11:30:00Z"))
+            .reserved(false)
+            .active(true)
+            .version(1L)
+            .origin(TimeSlotOrigin.PREDEFINED)
+            .build();
+
+        var command = new CreateAppointmentCommand("slot-2", 1L);
+
+        when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findById("slot-2")).thenReturn(Optional.of(newSlot));
+        when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(true);
+        when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(i -> i.getArgument(0));
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(i -> i.getArgument(0));
+
+        Appointment result = service.rescheduleAppointment("patient-1", "app-1", command);
+
+        assertThat(result.getSlotId()).isEqualTo("slot-2");
+    }
+
+    @Test
+    void rescheduleAppointment_shouldThrowForbiddenIfWrongPatient() {
+        Appointment appointment = Appointment.builder().id("app-1").patientId("other-patient").build();
+        when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+
+        var command = new CreateAppointmentCommand("slot-2", 1L);
+
+        assertThatThrownBy(() -> service.rescheduleAppointment("patient-1", "app-1", command))
+            .isInstanceOf(ForbiddenOperationException.class);
+    }
 }

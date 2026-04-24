@@ -104,6 +104,58 @@ public class PatientAppointmentService {
             List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)
         );
     }
+
+    public Appointment rescheduleAppointment(String patientId, String appointmentId, CreateAppointmentCommand command) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+            .orElseThrow(() -> new NotFoundException("Cita no encontrada"));
+
+        if (!appointment.getPatientId().equals(patientId)) {
+            throw new ForbiddenOperationException("No puedes reprogramar una cita de otro paciente");
+        }
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
+            throw new ConflictException("No puedes reprogramar una cita cancelada");
+        }
+
+        TimeSlot oldSlot = timeSlotRepository.findById(appointment.getSlotId())
+            .orElseThrow(() -> new NotFoundException("Slot anterior no encontrado"));
+
+        TimeSlot newSlot = timeSlotRepository.findById(command.slotId())
+            .orElseThrow(() -> new NotFoundException("Nuevo slot no encontrado"));
+
+        if (!newSlot.isActive() || newSlot.isReserved()) {
+            throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
+        }
+        if (!Objects.equals(newSlot.getVersion(), command.slotVersion())) {
+            throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
+        }
+        if (!clinicalServiceClient.validateLink(patientId, newSlot.getNutritionistId())) {
+            throw new ForbiddenOperationException("No existe vinculo activo con el nutriologo");
+        }
+
+        try {
+            oldSlot.setReserved(false);
+            oldSlot.setReservedByPatientId(null);
+            timeSlotRepository.save(oldSlot);
+
+            newSlot.setReserved(true);
+            newSlot.setReservedByPatientId(patientId);
+            timeSlotRepository.save(newSlot);
+        } catch (OptimisticLockingFailureException ex) {
+            throw new ConflictException("Conflicto al actualizar los horarios, por favor intenta de nuevo");
+        }
+
+        appointment.setSlotId(newSlot.getId());
+        appointment.setNutritionistId(newSlot.getNutritionistId());
+        appointment.setStartTime(newSlot.getStartTime());
+        appointment.setEndTime(newSlot.getEndTime());
+        appointment.setUpdatedAt(Instant.now());
+        appointment.setStatus(AppointmentStatus.PENDING);
+        
+        Appointment updated = appointmentRepository.save(appointment);
+        appointmentConfirmationService.confirmAppointmentAsync(updated.getId());
+        
+        return updated;
+    }
 }
 
 

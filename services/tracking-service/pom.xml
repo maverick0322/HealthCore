@@ -109,6 +109,10 @@
             <version>2.2.30</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
     </dependencies>
 
 	<build>

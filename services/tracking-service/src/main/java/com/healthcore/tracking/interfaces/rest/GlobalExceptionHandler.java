@@ -1,7 +1,9 @@
 package com.healthcore.tracking.interfaces.rest;
 
-import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
 import com.healthcore.tracking.domain.exception.ExternalCatalogUnavailableException;
+import com.healthcore.tracking.domain.exception.InvalidDomainDataException;
+import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
+import com.healthcore.tracking.domain.exception.TrackingDomainException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,42 +11,70 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
+/**
+ * Global centralized exception handler for the REST layer.
+ * Intercepts Domain and Infrastructure exceptions and maps them to standard HTTP status codes.
+ * Ensures no stack traces or sensitive implementation details leak to the client.
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Standardized error response payload.
+     */
+    public record ApiErrorResponse(
+            LocalDateTime timestamp,
+            int status,
+            String error,
+            String message
+    ) {}
+
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFoundException(ResourceNotFoundException ex) {
-        log.warn("Recurso no encontrado: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                "timestamp", LocalDateTime.now(),
-                "status", 404,
-                "error", "Not Found",
-                "message", ex.getMessage()
-        ));
+    public ResponseEntity<ApiErrorResponse> handleNotFoundException(ResourceNotFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidDomainDataException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidDomainDataException(InvalidDomainDataException ex) {
+        log.warn("Domain validation failed: {}", ex.getMessage());
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(ExternalCatalogUnavailableException.class)
-    public ResponseEntity<Map<String, Object>> handleServiceUnavailableException(ExternalCatalogUnavailableException ex) {
-        log.error("Servicio remoto no disponible: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
-                "timestamp", LocalDateTime.now(),
-                "status", 503,
-                "error", "Service Unavailable",
-                "message", ex.getMessage()
-        ));
+    public ResponseEntity<ApiErrorResponse> handleServiceUnavailableException(ExternalCatalogUnavailableException ex) {
+        log.error("Upstream service unavailable: {}", ex.getMessage());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
+    /**
+     * Fallback for any other custom domain exception we might add in the future.
+     */
+    @ExceptionHandler(TrackingDomainException.class)
+    public ResponseEntity<ApiErrorResponse> handleGenericDomainException(TrackingDomainException ex) {
+        log.error("Unexpected domain rule violation: {}", ex.getMessage());
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+    }
+
+    /**
+     * Ultimate fallback for unhandled internal bugs (NullPointer, DB connection drops, etc).
+     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneralError(Exception ex) {
-        log.error("Error interno del servidor", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "timestamp", LocalDateTime.now(),
-                "status", 500,
-                "error", "Internal Server Error",
-                "message", "Ocurrió un error inesperado en el servidor de seguimiento."
-        ));
+    public ResponseEntity<ApiErrorResponse> handleGeneralError(Exception ex) {
+        // We log the full stack trace for internal debugging, but DO NOT return it.
+        log.error("Critical internal server error encountered.", ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected internal error occurred in the Tracking Service. Please try again later.");
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message) {
+        ApiErrorResponse errorPayload = new ApiErrorResponse(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message
+        );
+        return ResponseEntity.status(status).body(errorPayload);
     }
 }

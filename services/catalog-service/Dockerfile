@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiamos nuestro código
 COPY src ./src
+COPY tests/ ./tests/
+COPY pytest.ini .coveragerc ./
 
 # Exponemos el puerto gRPC
 EXPOSE 50051

@@ -3,87 +3,74 @@ import requests
 from typing import List, Optional, Dict, Any
 from src.domain.entities import FoodItem, NutritionalValues
 from src.domain.ports import FoodCatalogPort
-from src.domain.exceptions import FoodNotFoundError, ExternalServiceError
+from src.domain.exceptions import ExternalServiceUnavailableError, InvalidDomainDataError
 
 logger = logging.getLogger(__name__)
 
+# ADAPTER PATTERN (Driven/Secondary Adapter): Implements the FoodCatalogPort to decouple our domain from external HTTP APIs.
+# By depending on the Port abstraction rather than this specific implementation, we protect our core system from upstream changes.
+# If OpenFoodFacts deprecates their API, we only rewrite this file, leaving the rest of the application completely untouched.
 class OpenFoodFactsAdapter(FoodCatalogPort):
     
     BASE_URL: str = "https://world.openfoodfacts.org/api/v0/product/"
     SEARCH_URL: str = "https://world.openfoodfacts.org/cgi/search.pl"
+    
+    DEFAULT_HEADERS: Dict[str, str] = {
+        "User-Agent": "NutriTrack_Project/1.0 (estudiante@healthcore.com)"
+    }
 
-    def get_product_by_barcode(self, barcode: str) -> FoodItem:
+    def get_product_by_barcode(self, barcode: str) -> Optional[FoodItem]:
         url = f"{self.BASE_URL}{barcode}.json"
-        headers = {"User-Agent": "HealthCore/1.0 - Academic Project - Python"}
 
         try:
-            logger.debug(f"Consultando API externa: {url}")
-            response = requests.get(url, headers=headers, timeout=10.0)
+            logger.debug(f"Querying external API for barcode: {barcode}")
+            response = requests.get(url, headers=self.DEFAULT_HEADERS, timeout=10.0)
 
-            if response.status_code != 200:
-                logger.error(f"El servidor rechazó la conexión. HTTP {response.status_code}")
-                raise ExternalServiceError(f"HTTP Error {response.status_code}")
+            if response.status_code in [502, 503, 504]:
+                logger.error(f"Upstream API unavailable (HTTP {response.status_code}).")
+                raise ExternalServiceUnavailableError(f"HTTP {response.status_code}")
 
+            response.raise_for_status()
             data = response.json()
             
+            # Open Food Facts returns status: 0 if the barcode is not in their DB
             if data.get("status") != 1:
-                logger.warning(f"Producto {barcode} no encontrado en Open Food Facts.")
-                raise FoodNotFoundError(f"El código {barcode} no existe en la base mundial.")
+                logger.info(f"Barcode {barcode} not found in external catalog.")
+                # We return None to let the Application Use Case handle the Domain Exception
+                return None
 
             product_data = data.get("product", {})
-            nutriments = product_data.get("nutriments", {})
-
-            def parse_nutrient(key: str) -> float:
-                try:
-                    val = nutriments.get(key)
-                    return float(val) if val is not None and str(val).strip() != "" else 0.0
-                except (ValueError, TypeError):
-                    return 0.0
-
-            nutrition = NutritionalValues(
-                calories=parse_nutrient("energy-kcal_100g"),
-                proteins=parse_nutrient("proteins_100g"),
-                carbohydrates=parse_nutrient("carbohydrates_100g"),
-                fats=parse_nutrient("fat_100g")
-            )
+            food_item = self._map_to_food_item(product_data)
             
-            product_name = product_data.get("product_name", "Desconocido")
-            logger.info(f"¡Éxito! Encontrado: {product_name}")
+            if not food_item:
+                raise InvalidDomainDataError("External catalog returned malformed or incomplete product data.")
 
-            return FoodItem(
-                barcode=barcode,
-                name=product_name,
-                brand=product_data.get("brands", "Sin marca"),
-                image_url=product_data.get("image_url"),
-                nutrition=nutrition
-            )
+            logger.info(f"Success! Found: {food_item.name}")
+            return food_item
 
         except requests.exceptions.Timeout as e:
-            logger.error(f"Timeout en la API externa: {e}")
-            raise ExternalServiceError("La API externa tardó demasiado en responder.")
+            logger.error(f"Timeout querying barcode '{barcode}': {e}")
+            raise ExternalServiceUnavailableError("La API externa tardó demasiado en responder.")
             
         except requests.exceptions.ConnectionError as e:
-            logger.error(f"Fallo de conexión (DNS/Red) con Open Food Facts: {e}")
-            raise ExternalServiceError("No se pudo establecer conexión con el catálogo externo.")
+            logger.error(f"Connection error querying barcode '{barcode}': {e}")
+            raise ExternalServiceUnavailableError("No se pudo establecer conexión con el catálogo externo.")
+            
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP Error {e.response.status_code} querying barcode '{barcode}': {e}")
+            raise ExternalServiceUnavailableError(f"El catálogo externo rechazó la petición (HTTP {e.response.status_code}).")
             
         except requests.exceptions.JSONDecodeError as e:
-            logger.error(f"La API externa no devolvió un JSON válido: {e}")
-            raise ExternalServiceError("Error procesando la respuesta del catálogo externo.")
+            logger.error(f"Invalid JSON response for barcode '{barcode}': {e}")
+            raise ExternalServiceUnavailableError("Error procesando la respuesta del catálogo externo.")
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error general de red conectando con la API: {e}")
-            raise ExternalServiceError("Error de comunicación con el catálogo externo.")
-            
-        except ValueError as e:
-            logger.exception("Error de validación de datos al construir la entidad FoodItem")
-            raise ExternalServiceError("Los datos devueltos por el catálogo tienen un formato inválido.")
-            
-        except Exception as e:
-            logger.exception(f"Error interno crítico inesperado procesando el código {barcode}")
-            raise ExternalServiceError("Ocurrió un error inesperado en el servidor al procesar el alimento.")
-        
+            logger.error(f"General network error querying barcode '{barcode}': {e}")
+            raise ExternalServiceUnavailableError("Fallo inesperado de red durante la búsqueda.")
+
+
     def search_products_by_name(self, query: str) -> List[FoodItem]:
-        """Orquesta la búsqueda de productos manejando exclusivamente la capa HTTP."""
+        """Orchestrates product search handling exclusively HTTP layer concerns."""
         params = {
             "search_terms": query,
             "search_simple": "1",
@@ -91,23 +78,21 @@ class OpenFoodFactsAdapter(FoodCatalogPort):
             "json": "1",
             "page_size": "5"
         }
-        headers = {"User-Agent": "NutriTrack_Project/1.0 (estudiante@healthcore.com)"}
 
         try:
-            logger.debug(f"Consultando API de búsqueda: {query}")
-            response = requests.get(self.SEARCH_URL, params=params, headers=headers, timeout=10.0)
+            logger.debug(f"Querying search API: {query}")
+            response = requests.get(self.SEARCH_URL, params=params, headers=self.DEFAULT_HEADERS, timeout=10.0)
 
             if response.status_code in [502, 503, 504]:
-                logger.warning(f"La API falló (HTTP {response.status_code}). Activando modo offline temporal.")
+                logger.warning(f"Upstream API unavailable (HTTP {response.status_code}). Activating fallback.")
                 return self._get_fallback_response(query)
 
             response.raise_for_status()
-
             data = response.json()
             products_data = data.get("products", [])
             
             if not products_data:
-                logger.warning(f"No se encontraron resultados para: {query}")
+                logger.info(f"No results found for query: '{query}'")
                 return [] 
 
             results = []
@@ -116,37 +101,32 @@ class OpenFoodFactsAdapter(FoodCatalogPort):
                 if food_item:
                     results.append(food_item)
 
-            logger.info(f"Éxito: Se encontraron {len(results)} resultados para '{query}'")
+            logger.info(f"Success: Retrieved {len(results)} results for '{query}'")
             return results
 
-        # --- Bloque Defensivo de Excepciones Detalladas ---
         except requests.exceptions.Timeout as e:
-            logger.error(f"Timeout buscando '{query}': {e}")
-            raise ExternalServiceError("La búsqueda tardó demasiado en responder.")
+            logger.error(f"Timeout searching '{query}': {e}")
+            raise ExternalServiceUnavailableError("La búsqueda tardó demasiado en responder.")
             
         except requests.exceptions.ConnectionError as e:
-            logger.error(f"Error de conexión (DNS/Red) buscando '{query}': {e}")
-            raise ExternalServiceError("No se pudo establecer conexión con el catálogo externo.")
+            logger.error(f"Connection error searching '{query}': {e}")
+            raise ExternalServiceUnavailableError("No se pudo establecer conexión con el catálogo externo.")
             
         except requests.exceptions.HTTPError as e:
-            logger.error(f"Error HTTP {e.response.status_code} buscando '{query}': {e}")
-            raise ExternalServiceError(f"El catálogo externo rechazó la petición (HTTP {e.response.status_code}).")
+            logger.error(f"HTTP Error {e.response.status_code} searching '{query}': {e}")
+            raise ExternalServiceUnavailableError(f"El catálogo externo rechazó la petición (HTTP {e.response.status_code}).")
             
         except requests.exceptions.JSONDecodeError as e:
-            logger.error(f"El servidor no devolvió un JSON válido buscando '{query}': {e}")
-            raise ExternalServiceError("Error procesando la respuesta del catálogo externo.")
+            logger.error(f"Invalid JSON response searching '{query}': {e}")
+            raise ExternalServiceUnavailableError("Error procesando la respuesta del catálogo externo.")
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error general de red conectando con la API de búsqueda: {e}")
-            raise ExternalServiceError("Fallo inesperado de red durante la búsqueda.")
-            
-        except Exception as e:
-            logger.exception(f"Error interno crítico inesperado procesando la búsqueda de '{query}'")
-            raise ExternalServiceError("Ocurrió un error interno en el servidor al buscar alimentos.")
+            logger.error(f"General network error searching '{query}': {e}")
+            raise ExternalServiceUnavailableError("Fallo inesperado de red durante la búsqueda.")
 
 
     def _map_to_food_item(self, item: Dict[str, Any]) -> Optional[FoodItem]:
-        """Evalúa un diccionario raw y construye una entidad FoodItem si cumple los requisitos."""
+        """Evaluates a raw dictionary and constructs a FoodItem entity if requirements are met."""
         barcode = item.get("code") or item.get("_id")
         product_name = item.get("product_name")
         
@@ -173,7 +153,7 @@ class OpenFoodFactsAdapter(FoodCatalogPort):
         )
 
     def _safe_extract_nutrient(self, nutriments: Dict[str, Any], key: str) -> float:
-        """Aísla la lógica de conversión y limpieza de datos numéricos corruptos."""
+        """Isolates conversion logic and cleans corrupt numerical data."""
         try:
             val = nutriments.get(key)
             return float(val) if val is not None and str(val).strip() != "" else 0.0
@@ -181,7 +161,7 @@ class OpenFoodFactsAdapter(FoodCatalogPort):
             return 0.0
 
     def _get_fallback_response(self, query: str) -> List[FoodItem]:
-        """Aísla los datos hardcodeados del paracaídas de resiliencia."""
+        """Isolates hardcoded fallback data for resilience."""
         return [
             FoodItem(
                 barcode="7622300710606",

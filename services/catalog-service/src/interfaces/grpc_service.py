@@ -3,90 +3,99 @@ import logging
 from src.interfaces import catalog_pb2
 from src.interfaces import catalog_pb2_grpc
 from src.application.catalog_use_case import CatalogUseCase
-from src.domain.exceptions import FoodNotFoundError, ExternalServiceError
+from src.domain.entities import FoodItem
+from src.domain.exceptions import (
+    FoodNotFoundError, 
+    ExternalServiceUnavailableError, 
+    InvalidDomainDataError,
+    CatalogDomainException
+)
 
 logger = logging.getLogger(__name__)
 
+# ADAPTER PATTERN (Driving/Primary Adapter): Isolates the gRPC delivery mechanism from the core domain.
+# This ensures that our business logic remains completely agnostic to the network protocol,
+# allowing us to seamlessly swap or add new interfaces in the future without modifying core rules.
 class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
+    """
+    gRPC Delivery mechanism. 
+    Acts purely as an adapter between the network protocol and the application use cases.
+    """
     
+    _DEFAULT_SOURCE = "Open Food Facts"
+
     def __init__(self, use_case: CatalogUseCase):
         self._use_case = use_case
 
     def GetFoodItem(self, request, context):
-        safe_barcode = request.barcode.strip() if request.barcode else ""
-        logger.info(f"Recibida petición gRPC para el código: '{safe_barcode}'")
+        logger.info(f"Processing GetFoodItem RPC for barcode: '{request.barcode}'")
         
-        if not safe_barcode:
-            msg = "El código de barras proporcionado está vacío o es inválido."
-            logger.warning(msg)
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(msg)
-            return catalog_pb2.FoodResponse()
-
         try:
-            product = self._use_case.find_food(safe_barcode)
+            product = self._use_case.find_food(request.barcode)
+            return self._map_to_grpc_response(product)
 
-            return catalog_pb2.FoodResponse(
-                barcode=product.barcode,
-                name=product.name,
-                brand=product.brand or "Sin marca",
-                image_url=product.image_url or "",
-                calories_per_100g=product.nutrition.calories,
-                proteins_per_100g=product.nutrition.proteins,
-                carbs_per_100g=product.nutrition.carbohydrates,
-                fats_per_100g=product.nutrition.fats,
-                source="Open Food Facts" 
-            )
-
-        except FoodNotFoundError as e:
-            logger.warning(f"Búsqueda sin resultados: {e}")
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-            context.set_details(str(e))
-            return catalog_pb2.FoodResponse()
+        except InvalidDomainDataError as e:
+            logger.warning(f"Validation failed for GetFoodItem: {e}")
+            return self._handle_grpc_error(context, grpc.StatusCode.INVALID_ARGUMENT, str(e), catalog_pb2.FoodResponse())
             
-        except ExternalServiceError as e:
-            logger.error(f"Fallo en dependencia externa: {e}")
-            context.set_code(grpc.StatusCode.UNAVAILABLE)
-            context.set_details(str(e))
-            return catalog_pb2.FoodResponse()
-
-        except ValueError as e:
-            logger.error(f"Error de validación interna procesando el código {safe_barcode}: {e}")
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details("Los datos del producto tienen un formato numérico inválido.")
-            return catalog_pb2.FoodResponse()
-
+        except FoodNotFoundError as e:
+            logger.warning(f"Barcode not found: {e}")
+            return self._handle_grpc_error(context, grpc.StatusCode.NOT_FOUND, str(e), catalog_pb2.FoodResponse())
+            
+        except ExternalServiceUnavailableError as e:
+            logger.error(f"Upstream provider failure: {e}")
+            return self._handle_grpc_error(context, grpc.StatusCode.UNAVAILABLE, str(e), catalog_pb2.FoodResponse())
+            
         except Exception as e:
-            logger.exception(f"Error interno crítico y no controlado procesando el código {safe_barcode}")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details("Ocurrió un error interno crítico en el servidor de catálogo. Intente más tarde.")
-            return catalog_pb2.FoodResponse()
+            logger.exception("Unhandled critical error in GetFoodItem RPC.")
+            return self._handle_grpc_error(context, grpc.StatusCode.INTERNAL, "Internal server error.", catalog_pb2.FoodResponse())
+
 
     def SearchFood(self, request, context):
-        query = request.query.strip() if request.query else ""
-        logger.info(f"Iniciando búsqueda gRPC para: '{query}'")
+        logger.info(f"Processing SearchFood RPC for query: '{request.query}'")
         
         try:
-            products = self._use_case.search_food(query)
-
-            grpc_results = [
-                catalog_pb2.FoodResponse(
-                    barcode=p.barcode,
-                    name=p.name,
-                    brand=p.brand,
-                    image_url=p.image_url,
-                    calories_per_100g=p.nutrition.calories,
-                    proteins_per_100g=p.nutrition.proteins,
-                    carbs_per_100g=p.nutrition.carbohydrates,
-                    fats_per_100g=p.nutrition.fats,
-                    source="Open Food Facts"
-                ) for p in products
-            ]
-
+            products = self._use_case.search_food(request.query)
+            
+            # Map domain entities to gRPC messages using the helper method
+            grpc_results = [self._map_to_grpc_response(p) for p in products]
             return catalog_pb2.SearchResponse(items=grpc_results)
 
+        except InvalidDomainDataError as e:
+            logger.warning(f"Validation failed for SearchFood: {e}")
+            return self._handle_grpc_error(context, grpc.StatusCode.INVALID_ARGUMENT, str(e), catalog_pb2.SearchResponse())
+            
+        except ExternalServiceUnavailableError as e:
+            logger.error(f"Upstream provider failure during search: {e}")
+            return self._handle_grpc_error(context, grpc.StatusCode.UNAVAILABLE, str(e), catalog_pb2.SearchResponse())
+            
         except Exception as e:
-            logger.error(f"Error crítico en SearchFood: {e}")
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details("Error interno al buscar alimentos.")
-            return catalog_pb2.SearchResponse()
+            logger.exception("Unhandled critical error in SearchFood RPC.")
+            return self._handle_grpc_error(context, grpc.StatusCode.INTERNAL, "Internal server error.", catalog_pb2.SearchResponse())
+        
+
+    def _map_to_grpc_response(self, product: FoodItem) -> catalog_pb2.FoodResponse:
+        """
+        Isolates the data transformation logic from Domain Entity to gRPC Protobuf.
+        Prevents code duplication across multiple RPC methods.
+        """
+        return catalog_pb2.FoodResponse(
+            barcode=product.barcode,
+            name=product.name,
+            brand=product.brand,
+            image_url=product.image_url or "",
+            calories_per_100g=product.nutrition.calories,
+            proteins_per_100g=product.nutrition.proteins,
+            carbs_per_100g=product.nutrition.carbohydrates,
+            fats_per_100g=product.nutrition.fats,
+            source=self._DEFAULT_SOURCE 
+        )
+
+    def _handle_grpc_error(self, context, status_code: grpc.StatusCode, detail: str, empty_response_obj):
+        """
+        Centralizes the mutation of the gRPC context to reduce cyclomatic complexity 
+        in the main RPC methods.
+        """
+        context.set_code(status_code)
+        context.set_details(detail)
+        return empty_response_obj

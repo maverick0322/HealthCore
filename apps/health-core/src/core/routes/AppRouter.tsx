@@ -11,6 +11,7 @@ import { PatientOnboardingPage } from "@/features/onboarding/pages/PatientOnboar
 import { HomePage } from "@/features/dashboard/pages/HomePage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
+import { LogFoodPage } from "@/features/tracking/pages/LogFoodPage";
 
 export const appRouter = createBrowserRouter([
   // ── Guest-only routes (redirect to / if already authenticated) ──
@@ -52,6 +53,10 @@ export const appRouter = createBrowserRouter([
       {
         path: "/onboarding/patient",
         element: <PatientOnboardingPage />,
+      },
+      {
+        path: "/tracking/log-food",
+        element: <LogFoodPage />,
       },
     ],
   },

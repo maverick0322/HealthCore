@@ -63,8 +63,30 @@ class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
             return catalog_pb2.FoodResponse()
 
     def SearchFood(self, request, context):
-        logger.info(f"Búsqueda gRPC solicitada: {request.query}")
+        query = request.query.strip() if request.query else ""
+        logger.info(f"Iniciando búsqueda gRPC para: '{query}'")
         
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Búsqueda por texto aún no implementada en esta versión.')
-        return catalog_pb2.SearchResponse()
+        try:
+            products = self._use_case.search_food(query)
+
+            grpc_results = [
+                catalog_pb2.FoodResponse(
+                    barcode=p.barcode,
+                    name=p.name,
+                    brand=p.brand,
+                    image_url=p.image_url,
+                    calories_per_100g=p.nutrition.calories,
+                    proteins_per_100g=p.nutrition.proteins,
+                    carbs_per_100g=p.nutrition.carbohydrates,
+                    fats_per_100g=p.nutrition.fats,
+                    source="Open Food Facts"
+                ) for p in products
+            ]
+
+            return catalog_pb2.SearchResponse(items=grpc_results)
+
+        except Exception as e:
+            logger.error(f"Error crítico en SearchFood: {e}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details("Error interno al buscar alimentos.")
+            return catalog_pb2.SearchResponse()

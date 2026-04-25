@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 from src.domain.entities import FoodItem
 
 class FoodCatalogPort(ABC):
@@ -6,4 +7,8 @@ class FoodCatalogPort(ABC):
     
     @abstractmethod
     def get_product_by_barcode(self, barcode: str) -> FoodItem:
+        pass
+
+    @abstractmethod
+    def search_products_by_name(self, query: str) -> List[FoodItem]:
         pass

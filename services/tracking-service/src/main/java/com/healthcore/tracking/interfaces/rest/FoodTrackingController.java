@@ -2,6 +2,7 @@ package com.healthcore.tracking.interfaces.rest;
 
 import com.healthcore.tracking.domain.exception.NotFoundException;
 import com.healthcore.tracking.domain.model.FoodLog;
+import com.healthcore.tracking.domain.model.FoodNutrients;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
 import com.healthcore.tracking.infrastructure.persistence.FoodLogRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +23,9 @@ import java.util.Map;
 public class FoodTrackingController {
 
     private final FoodCatalogPort catalogPort;
-    private final FoodLogRepository repository; // ¡Inyectamos el repositorio de MongoDB!
+    private final FoodLogRepository repository;
+    private final double portionSize = 100.0; // Standard portion size in grams
 
-    // 1. Mantenemos tu endpoint original para consultas puras (Sin guardar)
     @GetMapping("/catalog/{barcode}")
     public ResponseEntity<Map<String, Object>> getFoodFromCatalog(@PathVariable String barcode) {
         log.info("Request received to check food catalog for barcode: {}", barcode);
@@ -37,19 +38,17 @@ public class FoodTrackingController {
                 .orElseThrow(() -> new NotFoundException("Food item not found in catalog"));
     }
 
-    // 2. Actualizamos el POST para usar el DTO y guardar en MongoDB
     @PostMapping("/logs/food")
     public ResponseEntity<Map<String, Object>> logFoodConsumption(
             @RequestBody FoodLogRequest request,
-            @AuthenticationPrincipal String userId) { // Spring inyecta el email/ID del JWT aquí
+            @AuthenticationPrincipal String userId) {
 
         log.info("Usuario {} registrando {} gramos del producto {}", userId, request.getGrams(), request.getBarcode());
 
         return catalogPort.getNutrientsByBarcode(request.getBarcode())
                 .map(nutrients -> {
-                    double multiplier = request.getGrams() / 100.0;
+                    double multiplier = request.getGrams() / portionSize;
 
-                    // Construimos la entidad con los cálculos
                     FoodLog logEntry = FoodLog.builder()
                             .userId(userId)
                             .barcode(request.getBarcode())
@@ -62,7 +61,6 @@ public class FoodTrackingController {
                             .consumedAt(LocalDateTime.now())
                             .build();
 
-                    // ¡Guardamos en la Base de Datos!
                     repository.save(logEntry);
 
                     return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
@@ -74,7 +72,6 @@ public class FoodTrackingController {
                 .orElseThrow(() -> new NotFoundException("El código de barras no existe en el catálogo externo."));
     }
 
-    // 3. Añadimos el nuevo endpoint para consultar lo consumido en el día actual (CU-06)
     @GetMapping("/logs/today")
     public ResponseEntity<List<FoodLog>> getTodayLogs(@AuthenticationPrincipal String userId) {
         log.info("Consultando historial de hoy para el usuario {}", userId);
@@ -85,5 +82,17 @@ public class FoodTrackingController {
         List<FoodLog> todayLogs = repository.findByUserIdAndConsumedAtBetween(userId, startOfDay, endOfDay);
 
         return ResponseEntity.ok(todayLogs);
+    }
+
+    @GetMapping("/catalog/search")
+    public ResponseEntity<List<FoodNutrients>> searchCatalog(@RequestParam("query") String query) {
+        log.info("Request received to search catalog with query: {}", query);
+        
+        if (query == null || query.trim().length() < 3) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<FoodNutrients> results = catalogPort.searchFoodByName(query);
+        return ResponseEntity.ok(results);
     }
 }

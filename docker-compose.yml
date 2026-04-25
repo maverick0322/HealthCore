@@ -40,7 +40,7 @@ services:
     ports:
       - "50051:50051"
     restart: unless-stopped
-
+  
   identity-service:
     build: ./services/identity-service
     container_name: healthcore-identity-service
@@ -74,6 +74,7 @@ services:
       - GRPC_CATALOG_TARGET=catalog-service:50051
       - JWT_SECRET=${JWT_SECRET}
 
+  
   agenda-mongodb:
     image: mongo:7.0
     container_name: healthcore-agenda-mongodb

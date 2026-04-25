@@ -23,6 +23,7 @@ import { NutritionistAvailabilityPage } from "@/features/nutritionist/pages/Nutr
 import { NutritionistProfilePage } from "@/features/nutritionist/pages/NutritionistProfilePage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
+import { LogFoodPage } from "@/features/tracking/pages/LogFoodPage";
 
 export const appRouter = createBrowserRouter([
   // ── Guest-only routes (redirect to / if already authenticated) ──
@@ -113,6 +114,10 @@ export const appRouter = createBrowserRouter([
       {
         path: "/profile",
         element: <PatientProfilePage />,
+      },
+      {
+        path: "/tracking/log-food",
+        element: <LogFoodPage />,
       },
     ],
   },

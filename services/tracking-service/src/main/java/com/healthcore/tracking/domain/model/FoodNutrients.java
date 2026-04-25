@@ -11,8 +11,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FoodNutrients {
 
+    private String barcode;
     private String name;
     private String brand;
+    private String imageUrl;
     private double calories;
     private double proteins;
     private double carbohydrates;

@@ -11,6 +11,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Main security configuration for the Tracking Service.
+ * Implements a stateless architecture relying exclusively on JWT validation.
+ */
 @Slf4j
 @Configuration
 @EnableWebSecurity
@@ -19,7 +23,8 @@ public class SecurityConfig {
 
     private final JwtValidationFilter jwtValidationFilter;
 
-    private static final String[] WHITE_LIST_URL = {
+    // Defines endpoints that bypass JWT validation (e.g., Swagger and Actuators/Health)
+    private static final String[] WHITE_LIST_URLS = {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
@@ -31,16 +36,18 @@ public class SecurityConfig {
         log.info("Initializing SecurityFilterChain for Tracking Service...");
 
         http
-                // CSRF disabled because we use stateless JWT tokens
+                // Disable CSRF since we do not use session cookies
                 .csrf(AbstractHttpConfigurer::disable)
+                // Enforce stateless session management for pure REST APIs
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(WHITE_LIST_URL).permitAll()
-                        .anyRequest().authenticated() // All endpoints in tracking-service require authentication
+                        .requestMatchers(WHITE_LIST_URLS).permitAll()
+                        .anyRequest().authenticated()
                 )
+                // Inject our custom JWT filter before the standard Spring Username/Password filter
                 .addFilterBefore(jwtValidationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        log.debug("SecurityFilterChain configured successfully");
+        log.debug("SecurityFilterChain configured successfully.");
 
         return http.build();
     }

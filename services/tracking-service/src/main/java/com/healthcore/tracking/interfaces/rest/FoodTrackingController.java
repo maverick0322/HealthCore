@@ -4,7 +4,6 @@ import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
 import com.healthcore.tracking.domain.model.FoodLog;
 import com.healthcore.tracking.domain.model.FoodNutrients;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
-import com.healthcore.tracking.infrastructure.persistence.FoodLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

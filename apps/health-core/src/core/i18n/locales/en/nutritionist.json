@@ -73,5 +73,30 @@
     "exportDesc": "Select a patient to download their clinical history and progress.",
     "downloadPdf": "Download PDF",
     "downloadCsv": "Export CSV"
+  },
+  "availability": {
+    "title": "Availability",
+    "subtitle": "Configure your weekly working hours.",
+    "addShift": "Add Shift",
+    "save": "Save Changes",
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your public and professional information.",
+    "specialty": "Specialty",
+    "license": "Professional License",
+    "bio": "Professional Bio",
+    "consultationType": "Consultation Type",
+    "editProfile": "Edit Profile",
+    "saveProfile": "Save Profile"
   }
 }

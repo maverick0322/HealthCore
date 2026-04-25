@@ -19,6 +19,8 @@ import { NutritionistPatientsPage } from "@/features/nutritionist/pages/Nutritio
 import { NutritionistPatientFilePage } from "@/features/nutritionist/pages/NutritionistPatientFilePage";
 import { NutritionistAgendaPage } from "@/features/nutritionist/pages/NutritionistAgendaPage";
 import { NutritionistReportsPage } from "@/features/nutritionist/pages/NutritionistReportsPage";
+import { NutritionistAvailabilityPage } from "@/features/nutritionist/pages/NutritionistAvailabilityPage";
+import { NutritionistProfilePage } from "@/features/nutritionist/pages/NutritionistProfilePage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
 
@@ -97,8 +99,16 @@ export const appRouter = createBrowserRouter([
         element: <NutritionistAgendaPage />,
       },
       {
+        path: "/agenda/nutritionist/availability",
+        element: <NutritionistAvailabilityPage />,
+      },
+      {
         path: "/reports/nutritionist",
         element: <NutritionistReportsPage />,
+      },
+      {
+        path: "/profile/nutritionist",
+        element: <NutritionistProfilePage />,
       },
       {
         path: "/profile",

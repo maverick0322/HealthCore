@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { 
   CalendarDays, 
@@ -45,6 +46,7 @@ const APPOINTMENTS_DB: Record<number, any[]> = {
 
 export const NutritionistAgendaPage = () => {
   const { t } = useTranslation("nutritionist");
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<number>(24);
 
   const currentAppointments = APPOINTMENTS_DB[selectedDate] || [];
@@ -81,7 +83,7 @@ export const NutritionistAgendaPage = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="hidden sm:flex gap-1.5 rounded-full">
+            <Button variant="outline" size="sm" className="hidden sm:flex gap-1.5 rounded-full" onClick={() => navigate("/agenda/nutritionist/availability")}>
               <Settings size={14} />
               {t("agenda.availability")}
             </Button>
@@ -129,7 +131,7 @@ export const NutritionistAgendaPage = () => {
               </CardContent>
             </Card>
 
-            <Button variant="outline" className="w-full gap-2 lg:hidden">
+            <Button variant="outline" className="w-full gap-2 lg:hidden" onClick={() => navigate("/agenda/nutritionist/availability")}>
               <Settings size={16} />
               {t("agenda.availability")}
             </Button>

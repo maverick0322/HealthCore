@@ -73,5 +73,30 @@
     "exportDesc": "Selecciona un paciente para descargar su historial clínico y progreso.",
     "downloadPdf": "Descargar PDF",
     "downloadCsv": "Exportar CSV"
+  },
+  "availability": {
+    "title": "Disponibilidad",
+    "subtitle": "Configura tus horarios de atención semanales.",
+    "addShift": "Añadir turno",
+    "save": "Guardar Cambios",
+    "days": {
+      "monday": "Lunes",
+      "tuesday": "Martes",
+      "wednesday": "Miércoles",
+      "thursday": "Jueves",
+      "friday": "Viernes",
+      "saturday": "Sábado",
+      "sunday": "Domingo"
+    }
+  },
+  "profile": {
+    "title": "Mi Perfil",
+    "subtitle": "Gestiona tu información pública y profesional.",
+    "specialty": "Especialidad",
+    "license": "Cédula Profesional",
+    "bio": "Biografía Profesional",
+    "consultationType": "Tipo de Consulta",
+    "editProfile": "Editar Perfil",
+    "saveProfile": "Guardar Perfil"
   }
 }

@@ -31,7 +31,6 @@ class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
         logger.info(f"Processing GetFoodItem RPC for barcode: '{request.barcode}'")
         
         try:
-            # We trust the Use Case to sanitize and validate the raw string
             product = self._use_case.find_food(request.barcode)
             return self._map_to_grpc_response(product)
 
@@ -83,7 +82,7 @@ class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
         return catalog_pb2.FoodResponse(
             barcode=product.barcode,
             name=product.name,
-            brand=product.brand, # Guaranteed by Domain to be "Generic" if null
+            brand=product.brand,
             image_url=product.image_url or "",
             calories_per_100g=product.nutrition.calories,
             proteins_per_100g=product.nutrition.proteins,

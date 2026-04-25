@@ -1,9 +1,15 @@
 import logging
-from fastapi import FastAPI, HTTPException, Path, Depends
+from typing import List, Annotated
+from fastapi import FastAPI, HTTPException, Path, Query, Depends
+
 from src.infrastructure.open_food_facts_client import OpenFoodFactsAdapter
 from src.application.catalog_use_case import CatalogUseCase
 from src.domain.entities import FoodItem
-from src.domain.exceptions import FoodNotFoundError, ExternalServiceError
+from src.domain.exceptions import (
+    FoodNotFoundError, 
+    ExternalServiceUnavailableError, 
+    InvalidDomainDataError
+)
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -12,61 +18,110 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="HealthCore - Catalog Service", 
-    description="API REST y microservicio de catálogo de alimentos",
+    title="HealthCore - Catalog Service (REST)", 
+    description="API REST component of the Food Catalog Microservice",
     version="1.0.0"
 )
 
-# ------------------------------------------------------------------------
-# Dependency Container (Inversion of Control for FastAPI)
-# ------------------------------------------------------------------------
+
 def get_catalog_use_case() -> CatalogUseCase:
-    """
-    Proveedor de dependencias. FastAPI llamará a esta función para inyectar 
-    el Caso de Uso en las rutas. Ideal para mockear en pruebas unitarias.
-    """
+    """Dependency Provider for FastAPI."""
     try:
         catalog_adapter = OpenFoodFactsAdapter()
         return CatalogUseCase(catalog_port=catalog_adapter)
-    except Exception as e:
-        logger.critical(f"Fallo al inicializar las dependencias del catálogo: {e}")
-        raise HTTPException(status_code=500, detail="Error interno de configuración del servidor.")
+    except Exception:
+        logger.critical("Dependency Injection failed during FastAPI startup.", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server configuration error.")
+
+UseCaseDep = Annotated[CatalogUseCase, Depends(get_catalog_use_case)]
+
+# OpenAPI Documentation Dictionaries
+COMMON_RESPONSES = {
+    500: {"description": "Internal Server Error - Unexpected critical failure."},
+    503: {"description": "Service Unavailable - Upstream catalog (OpenFoodFacts) is down."}
+}
+
+GET_PRODUCT_RESPONSES = {
+    **COMMON_RESPONSES,
+    400: {"description": "Bad Request - Invalid barcode format or empty string."},
+    404: {"description": "Not Found - The requested barcode does not exist in the catalog."}
+}
+
+SEARCH_RESPONSES = {
+    **COMMON_RESPONSES,
+    400: {"description": "Bad Request - Search query cannot be empty or just whitespace."}
+}
 
 
-# ------------------------------------------------------------------------
-# (Endpoints)
-# ------------------------------------------------------------------------
 @app.get("/api/v1/catalog/health", tags=["Monitoring"])
 def health_check():
-    return {"status": "success", "message": "¡El Catálogo (FastAPI) está vivo!"}
+    return {"status": "success", "message": "Catalog REST API is up and running!"}
 
 
-@app.get("/api/v1/catalog/products/{barcode}", response_model=FoodItem, tags=["Catalog"])
+@app.get(
+    "/api/v1/catalog/products/{barcode}", 
+    response_model=FoodItem, 
+    tags=["Catalog"],
+    responses=GET_PRODUCT_RESPONSES 
+)
 def get_product(
-    barcode: str = Path(..., title="Código de Barras", min_length=3, max_length=20),
-    use_case: CatalogUseCase = Depends(get_catalog_use_case)
+    barcode: Annotated[str, Path(title="Barcode", min_length=1)],
+    use_case: UseCaseDep
 ):
-    safe_barcode = barcode.strip()
-    logger.info(f"Petición REST recibida para el código: '{safe_barcode}'")
+    logger.info(f"Processing REST GET request for barcode: '{barcode}'")
     
     try:
-        return use_case.find_food(safe_barcode)
+        return use_case.find_food(barcode)
+        
+    except InvalidDomainDataError as e:
+        logger.warning(f"REST Validation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
         
     except FoodNotFoundError as e:
-        logger.warning(f"Búsqueda REST sin resultados: {e}")
+        logger.warning(f"REST Search yielded no results: {e}")
         raise HTTPException(status_code=404, detail=str(e))
         
-    except ExternalServiceError as e:
-        logger.error(f"Fallo en dependencia externa vía REST: {e}")
+    except ExternalServiceUnavailableError as e:
+        logger.error(f"Upstream provider failure via REST: {e}")
         raise HTTPException(status_code=503, detail=str(e))
         
-    except ValueError as e:
-        logger.error(f"Error de validación de datos para el código {safe_barcode}: {e}")
-        raise HTTPException(status_code=400, detail="El formato de datos del producto es inválido.")
-        
-    except Exception as e:
-        logger.exception(f"Error interno crítico en API REST procesando el código {safe_barcode}")
+    except Exception:
+        logger.exception("Unhandled critical error in REST get_product endpoint.")
         raise HTTPException(
             status_code=500, 
-            detail="Ocurrió un error interno crítico en el servidor. Intente más tarde."
+            detail="An internal server error occurred. Please try again later."
+        )
+
+
+@app.get(
+    "/api/v1/catalog/search", 
+    response_model=List[FoodItem], 
+    tags=["Catalog"],
+    responses=SEARCH_RESPONSES
+)
+def search_products(
+    query: Annotated[str, Query(title="Search Query", min_length=1)],
+    use_case: UseCaseDep
+):
+    """
+    Text-based search endpoint to ensure feature parity with the gRPC interface.
+    """
+    logger.info(f"Processing REST GET request to search: '{query}'")
+    
+    try:
+        return use_case.search_food(query)
+        
+    except InvalidDomainDataError as e:
+        logger.warning(f"REST Validation failed for search: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    except ExternalServiceUnavailableError as e:
+        logger.error(f"Upstream provider failure during REST search: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+        
+    except Exception:
+        logger.exception("Unhandled critical error in REST search_products endpoint.")
+        raise HTTPException(
+            status_code=500, 
+            detail="An internal server error occurred. Please try again later."
         )

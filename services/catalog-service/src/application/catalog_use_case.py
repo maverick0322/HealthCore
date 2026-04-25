@@ -32,7 +32,7 @@ class CatalogUseCase:
         product = self._catalog_port.get_product_by_barcode(clean_barcode)
         
         if not product:
-            # We transform the absence of data (None) into a formal domain exception
+            # We transform the absence of data into a formal domain exception
             # so the outer layers (gRPC) can map it to a NOT_FOUND status code.
             logger.warning(f"Barcode '{clean_barcode}' yielded no results from the catalog port.")
             raise FoodNotFoundError(identifier=clean_barcode)
@@ -47,9 +47,7 @@ class CatalogUseCase:
             InvalidDomainDataError: If the search query is empty.
         """
         clean_query = self._sanitize_input(query, "Search query")
-        
         logger.info(f"Initiating text search for: '{clean_query}'")
-        
         results = self._catalog_port.search_products_by_name(clean_query)
         
         if not results:

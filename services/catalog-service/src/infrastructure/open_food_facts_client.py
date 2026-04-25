@@ -40,7 +40,6 @@ class OpenFoodFactsAdapter(FoodCatalogPort):
                 return None
 
             product_data = data.get("product", {})
-
             food_item = self._map_to_food_item(product_data)
             
             if not food_item:

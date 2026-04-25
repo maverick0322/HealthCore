@@ -3,7 +3,7 @@ package com.healthcore.tracking.infrastructure.grpc.client;
 import com.healthcore.catalog.grpc.FoodRequest;
 import com.healthcore.catalog.grpc.FoodResponse;
 import com.healthcore.catalog.grpc.NutritionalCatalogGrpc;
-import com.healthcore.tracking.domain.exception.ServiceUnavailableException;
+import com.healthcore.tracking.domain.exception.ExternalCatalogUnavailableException;
 import com.healthcore.tracking.domain.model.FoodNutrients;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -73,7 +73,7 @@ class CatalogGrpcClientAdapterTest {
         when(catalogStubMock.getFoodItem(any(FoodRequest.class))).thenThrow(unavailableException);
 
         // Act & Assert
-        assertThrows(ServiceUnavailableException.class, () -> {
+        assertThrows(ExternalCatalogUnavailableException.class, () -> {
             adapter.getNutrientsByBarcode("12345");
         });
     }

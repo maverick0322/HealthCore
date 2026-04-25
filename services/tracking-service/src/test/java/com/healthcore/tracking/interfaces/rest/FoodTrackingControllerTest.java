@@ -1,6 +1,5 @@
 package com.healthcore.tracking.interfaces.rest;
 
-import com.healthcore.tracking.domain.exception.NotFoundException;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
 import com.healthcore.tracking.domain.model.FoodNutrients;
 import org.junit.jupiter.api.Test;

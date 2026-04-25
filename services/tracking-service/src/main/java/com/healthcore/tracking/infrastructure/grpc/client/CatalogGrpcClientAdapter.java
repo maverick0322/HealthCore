@@ -7,7 +7,7 @@ import com.healthcore.catalog.grpc.SearchResponse;
 import com.healthcore.catalog.grpc.NutritionalCatalogGrpc;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
 import com.healthcore.tracking.domain.model.FoodNutrients;
-import com.healthcore.tracking.domain.exception.ServiceUnavailableException;
+import com.healthcore.tracking.domain.exception.ExternalCatalogUnavailableException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -65,7 +65,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
             if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
                 return Optional.empty();
             }
-            throw new ServiceUnavailableException("Catalog Service is currently unavailable.");
+            throw new ExternalCatalogUnavailableException("Catalog Service is currently unavailable.");
         }
     }
 

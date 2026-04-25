@@ -1,7 +1,7 @@
 package com.healthcore.tracking.interfaces.rest;
 
-import com.healthcore.tracking.domain.exception.NotFoundException;
-import com.healthcore.tracking.domain.exception.ServiceUnavailableException;
+import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
+import com.healthcore.tracking.domain.exception.ExternalCatalogUnavailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +15,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFoundException(NotFoundException ex) {
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFoundException(ResourceNotFoundException ex) {
         log.warn("Recurso no encontrado: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "timestamp", LocalDateTime.now(),
@@ -26,8 +26,8 @@ public class GlobalExceptionHandler {
         ));
     }
 
-    @ExceptionHandler(ServiceUnavailableException.class)
-    public ResponseEntity<Map<String, Object>> handleServiceUnavailableException(ServiceUnavailableException ex) {
+    @ExceptionHandler(ExternalCatalogUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleServiceUnavailableException(ExternalCatalogUnavailableException ex) {
         log.error("Servicio remoto no disponible: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
                 "timestamp", LocalDateTime.now(),

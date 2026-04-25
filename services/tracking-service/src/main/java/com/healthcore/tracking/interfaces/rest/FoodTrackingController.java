@@ -1,6 +1,6 @@
 package com.healthcore.tracking.interfaces.rest;
 
-import com.healthcore.tracking.domain.exception.NotFoundException;
+import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
 import com.healthcore.tracking.domain.model.FoodLog;
 import com.healthcore.tracking.domain.model.FoodNutrients;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
@@ -35,7 +35,7 @@ public class FoodTrackingController {
                         "status", "success",
                         "data", nutrients
                 )))
-                .orElseThrow(() -> new NotFoundException("Food item not found in catalog"));
+                .orElseThrow(() -> new ResourceNotFoundException("Food item not found in catalog"));
     }
 
     @PostMapping("/logs/food")
@@ -69,7 +69,7 @@ public class FoodTrackingController {
                             "data", logEntry
                     ));
                 })
-                .orElseThrow(() -> new NotFoundException("El código de barras no existe en el catálogo externo."));
+                .orElseThrow(() -> new ResourceNotFoundException("El código de barras no existe en el catálogo externo."));
     }
 
     @GetMapping("/logs/today")

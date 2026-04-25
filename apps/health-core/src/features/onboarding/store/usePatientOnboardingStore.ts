@@ -2,11 +2,15 @@ import { create } from 'zustand';
 
 export type GoalType = 'weight-loss' | 'muscle-gain' | 'health' | 'performance';
 export type DietType = 'omnivore' | 'vegetarian' | 'vegan' | 'keto' | 'paleo';
+export type GenderType = 'MALE' | 'FEMALE';
+export type ActivityLevelType = 'SEDENTARY' | 'LIGHTLY_ACTIVE' | 'MODERATELY_ACTIVE' | 'VERY_ACTIVE' | 'EXTRA_ACTIVE';
 
 interface PhysicalData {
   age: number;
   height: number;
   weight: number;
+  gender: GenderType;          
+  activityLevel: ActivityLevelType;
 }
 
 interface Preferences {
@@ -40,6 +44,8 @@ const initialState = {
     age: 25,
     height: 175,
     weight: 72.5,
+    gender: 'MALE' as GenderType,           
+    activityLevel: 'SEDENTARY' as ActivityLevelType
   },
   goal: 'weight-loss' as GoalType,
   preferences: {

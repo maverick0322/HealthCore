@@ -34,7 +34,7 @@ export const useLogin = () => {
         }
       }
 
-      navigate('/', { replace: true });
+      navigate('/onboarding/patient', { replace: true });
     } catch (err: unknown) {
       console.error('[useLogin] Login failed:', err);
       if (axios.isAxiosError(err)) {

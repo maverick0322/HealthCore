@@ -5,9 +5,7 @@ from src.domain.entities import FoodItem, NutritionalValues
 from src.domain.ports import FoodCatalogPort
 from src.application.catalog_use_case import CatalogUseCase
 
-# =========================================================================
-# DOMAIN FIXTURES (Datos de prueba reutilizables)
-# =========================================================================
+# DOMAIN FIXTURES (Reusable test data for domain entities)
 
 @pytest.fixture
 def valid_nutritional_values() -> NutritionalValues:
@@ -30,10 +28,7 @@ def valid_food_item(valid_nutritional_values) -> FoodItem:
         nutrition=valid_nutritional_values
     )
 
-# =========================================================================
 # INFRASTRUCTURE & APPLICATION FIXTURES (Mocks)
-# =========================================================================
-
 @pytest.fixture
 def mock_catalog_port() -> FoodCatalogPort:
     """

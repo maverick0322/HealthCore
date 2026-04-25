@@ -1,0 +1,6 @@
+[run]
+omit =
+    src/main.py
+    src/grpc_server.py
+    src/interfaces/catalog_pb2.py
+    src/interfaces/catalog_pb2_grpc.py

@@ -38,7 +38,7 @@ export const NutritionistProfilePage = () => {
         </div>
       </div>
 
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
         
         {/* Profile Card */}
         <Card className="border-border/50 shadow-sm overflow-hidden">

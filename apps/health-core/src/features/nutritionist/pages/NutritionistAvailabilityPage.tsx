@@ -80,7 +80,7 @@ export const NutritionistAvailabilityPage = () => {
         </div>
       </div>
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 pb-24 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <Card className="border-border/50 shadow-sm overflow-hidden">
           <CardContent className="p-0 divide-y divide-border/50">
             {DAYS_OF_WEEK.map((day) => {

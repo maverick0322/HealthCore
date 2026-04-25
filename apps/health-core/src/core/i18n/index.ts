@@ -13,8 +13,6 @@ import nutritionistEn from "./locales/en/nutritionist.json";
 export const SUPPORTED_LANGUAGES = [
   { code: 'es', name: 'Español' },
   { code: 'en', name: 'English' },
-  // { code: 'zh', name: '中文' },
-  // { code: 'ko', name: '한국어' },
 ];
 
 export const defaultNS = "auth";

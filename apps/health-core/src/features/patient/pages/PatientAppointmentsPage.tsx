@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  CalendarDays,
   Clock,
   UserCircle,
   Video,
@@ -101,7 +99,7 @@ export const PatientAppointmentsPage = () => {
 
       {/* ── Main Content ───────────────────────────────────────── */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-24 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
-        
+
         {/* Doctor Info Card */}
         <Card className="bg-card">
           <CardContent className="p-4 sm:p-6 flex items-center gap-4">
@@ -121,7 +119,7 @@ export const PatientAppointmentsPage = () => {
 
         {/* Desktop grid layout for scheduling & history */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
+
           {/* ── Column 1: Schedule New Appointment ── */}
           <div className="space-y-6">
             <Card>
@@ -132,7 +130,7 @@ export const PatientAppointmentsPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-6">
-                
+
                 {/* Date Selection */}
                 <div>
                   <h3 className="text-sm font-medium mb-3">{t("appointments.selectDate")}</h3>
@@ -145,13 +143,12 @@ export const PatientAppointmentsPage = () => {
                           setSelectedDate(d.date);
                           setSelectedTime(null);
                         }}
-                        className={`flex flex-col items-center min-w-[4rem] p-2 rounded-xl border transition-all ${
-                          !d.available
+                        className={`flex flex-col items-center min-w-[4rem] p-2 rounded-xl border transition-all ${!d.available
                             ? "opacity-40 cursor-not-allowed bg-muted/30 border-transparent"
                             : selectedDate === d.date
-                            ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                            : "bg-card border-border hover:border-primary/50"
-                        }`}
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                              : "bg-card border-border hover:border-primary/50"
+                          }`}
                       >
                         <span className="text-[10px] uppercase font-semibold">{d.dayName.substring(0, 3)}</span>
                         <span className="text-lg font-bold mt-1">{d.day}</span>
@@ -168,11 +165,10 @@ export const PatientAppointmentsPage = () => {
                       <button
                         key={time}
                         onClick={() => setSelectedTime(time)}
-                        className={`py-2 rounded-lg text-sm font-medium transition-all border ${
-                          selectedTime === time
+                        className={`py-2 rounded-lg text-sm font-medium transition-all border ${selectedTime === time
                             ? "bg-primary/10 text-primary border-primary shadow-sm"
                             : "bg-background border-border hover:border-primary/50 text-foreground"
-                        }`}
+                          }`}
                       >
                         {time}
                       </button>
@@ -180,8 +176,8 @@ export const PatientAppointmentsPage = () => {
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   disabled={!selectedDate || !selectedTime}
                 >
                   {t("appointments.confirmAppointment")}
@@ -216,7 +212,7 @@ export const PatientAppointmentsPage = () => {
                           <StatusIcon status={app.status} />
                           <span className={
                             app.status === "completed" ? "text-emerald-500" :
-                            app.status === "cancelled" ? "text-destructive" : ""
+                              app.status === "cancelled" ? "text-destructive" : ""
                           }>
                             {t(`appointments.status.${app.status}`)}
                           </span>

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   UtensilsCrossed,
@@ -107,18 +106,18 @@ function MacroPill({ label, value, colorClass }: { label: string; value: string;
   );
 }
 
-function MealCard({ meal, index, toggleEaten }: { meal: any; index: number; toggleEaten: (id: string) => void }) {
+function MealCard({ meal, toggleEaten }: { meal: any; toggleEaten: (id: string) => void }) {
   const { t } = useTranslation("patient");
   const [expanded, setExpanded] = useState(false);
 
   return (
     <Card className={`overflow-hidden transition-all duration-300 ${meal.eaten ? 'border-primary/50 bg-primary/5' : ''}`}>
       {/* Card Header (Always visible) */}
-      <div 
+      <div
         className="p-4 sm:p-5 flex items-start gap-4 cursor-pointer hover:bg-muted/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <button 
+        <button
           onClick={(e) => { e.stopPropagation(); toggleEaten(meal.id); }}
           className="mt-1 flex-shrink-0 focus:outline-none focus-visible:ring-2 ring-primary rounded-full"
         >
@@ -128,7 +127,7 @@ function MealCard({ meal, index, toggleEaten }: { meal: any; index: number; togg
             <Circle size={24} className="text-muted-foreground hover:text-primary transition-colors" />
           )}
         </button>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start mb-1">
             <div>
@@ -141,7 +140,7 @@ function MealCard({ meal, index, toggleEaten }: { meal: any; index: number; togg
               {meal.time}
             </span>
           </div>
-          
+
           <div className="flex flex-wrap gap-3 mt-3 text-xs">
             <span className="font-semibold text-primary">{meal.macros.kcal} {t("plan.calories")}</span>
             <span className="text-muted-foreground">{meal.macros.p}g P</span>
@@ -156,14 +155,13 @@ function MealCard({ meal, index, toggleEaten }: { meal: any; index: number; togg
       </div>
 
       {/* Expanded Content */}
-      <div 
-        className={`grid transition-all duration-300 ease-in-out ${
-          expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
       >
         <div className="overflow-hidden">
           <div className="p-4 sm:p-5 pt-0 border-t border-border/50 space-y-4 bg-muted/10">
-            
+
             {/* Ingredients */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -202,7 +200,7 @@ function MealCard({ meal, index, toggleEaten }: { meal: any; index: number; togg
                 </p>
               </div>
             )}
-            
+
           </div>
         </div>
       </div>
@@ -253,9 +251,9 @@ export const PatientPlanPage = () => {
 
       {/* ── Main Content ───────────────────────────────────────── */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-24 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
+
           {/* Left Column: Daily Goals & Summary (Sticky on Desktop) */}
           <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             <Card>
@@ -266,7 +264,7 @@ export const PatientPlanPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-5 space-y-5">
-                
+
                 {/* Calories main metric */}
                 <div className="flex items-end gap-2 border-b border-border/50 pb-4">
                   <span className="text-4xl font-black tracking-tighter text-primary">
@@ -314,12 +312,11 @@ export const PatientPlanPage = () => {
               {t("plan.meals")}
             </h2>
             <div className="space-y-4">
-              {meals.map((meal, idx) => (
-                <MealCard 
-                  key={meal.id} 
-                  meal={meal} 
-                  index={idx} 
-                  toggleEaten={toggleEaten} 
+              {meals.map((meal) => (
+                <MealCard
+                  key={meal.id}
+                  meal={meal}
+                  toggleEaten={toggleEaten}
                 />
               ))}
             </div>

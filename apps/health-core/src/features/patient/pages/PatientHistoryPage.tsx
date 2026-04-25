@@ -1,12 +1,9 @@
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   TrendingDown,
   Flame,
   PieChart,
   Target,
-  Calendar,
-  UtensilsCrossed,
   Award,
   CalendarDays,
   ListFilter,
@@ -16,8 +13,6 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { PatientNav } from "@/features/patient/components/PatientNav";
-import { useAuthStore } from "@/features/auth/store/useAuthStore";
-import { usePatientOnboardingStore } from "@/features/onboarding/store/usePatientOnboardingStore";
 
 // ── Dummy data ─────────────────────────────────────────────────────────────
 
@@ -56,7 +51,7 @@ const HISTORY_DUMMY = {
 function MacroDonut({ p, c, f }: { p: number; c: number; f: number }) {
   const r = 50;
   const circ = 2 * Math.PI * r;
-  
+
   // Calculate stroke-dasharrays based on percentages
   const pDash = (p / 100) * circ;
   const cDash = (c / 100) * circ;
@@ -89,9 +84,7 @@ function MacroDonut({ p, c, f }: { p: number; c: number; f: number }) {
  * All data is hardcoded dummy content for the current UI presentation sprint.
  */
 export const PatientHistoryPage = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation("patient");
-  const user = useAuthStore((s) => s.user);
 
   const weightLost = HISTORY_DUMMY.weightStart - HISTORY_DUMMY.weightCurrent;
   const weightRemaining = HISTORY_DUMMY.weightCurrent - HISTORY_DUMMY.weightTarget;
@@ -123,7 +116,7 @@ export const PatientHistoryPage = () => {
 
       {/* ── Main Content ───────────────────────────────────────── */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
-        
+
         {/* Adherence & Streak Row */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-primary/5 border-primary/20">

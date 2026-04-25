@@ -15,7 +15,8 @@ import java.io.IOException;
 /**
  * Custom failure handler for OAuth2 login attempts.
  *
- * Instead of redirecting to a local /login?error page (which doesn't exist in our API),
+ * Instead of redirecting to a local /login?error page (which doesn't exist in
+ * our API),
  * this handler redirects the user back to the frontend's OAuth2 callback page
  * with error parameters.
  */
@@ -28,11 +29,10 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException, ServletException {
+            HttpServletResponse response,
+            AuthenticationException exception) throws IOException, ServletException {
         log.warn("OAuth2 authentication failed: {}", exception.getMessage());
 
-        // Redirect back to frontend with error details
         String finalUrl = UriComponentsBuilder.fromUriString(redirectUrl)
                 .queryParam("error", "OAUTH2_FAILURE")
                 .queryParam("message", exception.getMessage())

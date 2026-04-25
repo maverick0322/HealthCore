@@ -12,10 +12,10 @@ export const NutritionistPatientFilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation("nutritionist");
-  
+
   const [activeTab, setActiveTab] = useState<"overview" | "plan" | "history">("overview");
 
-  // Dummy patient data based on ID (normally fetched from API)
+  // Dummy patient data based on ID 
   const patient = {
     id,
     name: id === "1" ? "Carlos Gómez" : id === "2" ? "María López" : "Paciente Demo",
@@ -47,16 +47,16 @@ export const NutritionistPatientFilePage = () => {
           className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
         />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6 flex flex-col">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => navigate("/patients/nutritionist")}
             className="w-fit mb-4 text-muted-foreground hover:text-foreground -ml-2"
           >
             <ArrowLeft size={16} className="mr-1.5" />
             {t("patients.file.back")}
           </Button>
-          
+
           <div className="flex items-center gap-5">
             <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-lg border-4 border-background">
               {patient.name.charAt(0)}
@@ -80,25 +80,22 @@ export const NutritionistPatientFilePage = () => {
           <div className="flex items-center gap-6 mt-8 overflow-x-auto hide-scrollbar border-b border-border/50 pb-px">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
-                activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+              className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${activeTab === "overview" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
             >
               {t("patients.file.tabOverview")}
             </button>
             <button
               onClick={() => setActiveTab("plan")}
-              className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
-                activeTab === "plan" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+              className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${activeTab === "plan" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
             >
               {t("patients.file.tabPlan")}
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
-                activeTab === "history" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+              className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${activeTab === "history" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
             >
               {t("patients.file.tabHistory")}
             </button>
@@ -107,7 +104,7 @@ export const NutritionistPatientFilePage = () => {
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        
+
         {activeTab === "overview" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="md:col-span-2">
@@ -171,45 +168,45 @@ export const NutritionistPatientFilePage = () => {
 
         {activeTab === "plan" && (
           <Card>
-             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <UtensilsCrossed size={18} className="text-primary" /> Distribución Actual
-                </CardTitle>
-                <Button variant="outline" size="sm" className="h-8">
-                  {t("patients.file.editPlan")}
-                </Button>
-              </CardHeader>
-              <CardContent className="pt-8 pb-12 flex flex-col items-center justify-center text-muted-foreground min-h-[300px]">
-                 <UtensilsCrossed size={48} className="mb-4 opacity-20" />
-                 <p className="text-sm font-medium">Aquí iría el editor de dietas o el plan asignado.</p>
-                 <p className="text-xs opacity-70 mt-1">Conecta con los macros y menú del paciente.</p>
-              </CardContent>
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+              <CardTitle className="text-base flex items-center gap-2">
+                <UtensilsCrossed size={18} className="text-primary" /> Distribución Actual
+              </CardTitle>
+              <Button variant="outline" size="sm" className="h-8">
+                {t("patients.file.editPlan")}
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-8 pb-12 flex flex-col items-center justify-center text-muted-foreground min-h-[300px]">
+              <UtensilsCrossed size={48} className="mb-4 opacity-20" />
+              <p className="text-sm font-medium">Aquí iría el editor de dietas o el plan asignado.</p>
+              <p className="text-xs opacity-70 mt-1">Conecta con los macros y menú del paciente.</p>
+            </CardContent>
           </Card>
         )}
 
         {activeTab === "history" && (
           <Card>
-             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FileText size={18} className="text-primary" /> Historial de Consultas
-                </CardTitle>
-                <Button size="sm" className="h-8">
-                  {t("patients.file.newNote")}
-                </Button>
-              </CardHeader>
-              <CardContent className="pt-5">
-                <div className="relative border-l-2 border-border/50 ml-3 space-y-6">
-                  {patient.notes.map((note, idx) => (
-                    <div key={idx} className="relative pl-6">
-                      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-background border-2 border-primary" />
-                      <p className="text-xs font-bold text-muted-foreground mb-1">{note.date}</p>
-                      <div className="bg-muted/30 p-3 rounded-lg border border-border/50 text-sm text-foreground/90 leading-relaxed">
-                        {note.content}
-                      </div>
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText size={18} className="text-primary" /> Historial de Consultas
+              </CardTitle>
+              <Button size="sm" className="h-8">
+                {t("patients.file.newNote")}
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-5">
+              <div className="relative border-l-2 border-border/50 ml-3 space-y-6">
+                {patient.notes.map((note, idx) => (
+                  <div key={idx} className="relative pl-6">
+                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-background border-2 border-primary" />
+                    <p className="text-xs font-bold text-muted-foreground mb-1">{note.date}</p>
+                    <div className="bg-muted/30 p-3 rounded-lg border border-border/50 text-sm text-foreground/90 leading-relaxed">
+                      {note.content}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
           </Card>
         )}
 

@@ -31,33 +31,34 @@ public class NutritionistAvailabilityService {
     private final AppointmentRepository appointmentRepository;
 
     public List<TimeSlot> generateTimeSlots(String nutritionistId, GenerateSlotsCommand command) {
-        log.info("Generating slots for nutritionist {} from {} to {}", nutritionistId, command.startDate(), command.endDate());
+        log.info("Generating slots for nutritionist {} from {} to {}", nutritionistId, command.startDate(),
+                command.endDate());
         List<TimeSlot> createdSlots = new ArrayList<>();
-        
+
         LocalDate currentDate = command.startDate();
         while (!currentDate.isAfter(command.endDate())) {
             LocalTime currentTime = command.startTime();
-            while (currentTime.plusMinutes(command.durationMinutes()).isBefore(command.endTime()) || 
-                   currentTime.plusMinutes(command.durationMinutes()).equals(command.endTime())) {
-                
+            while (currentTime.plusMinutes(command.durationMinutes()).isBefore(command.endTime()) ||
+                    currentTime.plusMinutes(command.durationMinutes()).equals(command.endTime())) {
+
                 Instant startInstant = currentDate.atTime(currentTime).toInstant(ZoneOffset.UTC);
                 Instant endInstant = startInstant.plus(command.durationMinutes(), ChronoUnit.MINUTES);
-                
+
                 TimeSlot slot = TimeSlot.builder()
-                    .nutritionistId(nutritionistId)
-                    .startTime(startInstant)
-                    .endTime(endInstant)
-                    .active(true)
-                    .reserved(false)
-                    .origin(TimeSlotOrigin.PREDEFINED)
-                    .build();
-                
+                        .nutritionistId(nutritionistId)
+                        .startTime(startInstant)
+                        .endTime(endInstant)
+                        .active(true)
+                        .reserved(false)
+                        .origin(TimeSlotOrigin.PREDEFINED)
+                        .build();
+
                 createdSlots.add(slot);
                 currentTime = currentTime.plusMinutes(command.durationMinutes());
             }
             currentDate = currentDate.plusDays(1);
         }
-        
+
         try {
             return timeSlotRepository.saveAll(createdSlots);
         } catch (DuplicateKeyException ex) {
@@ -69,7 +70,7 @@ public class NutritionistAvailabilityService {
     public void deactivateTimeSlot(String nutritionistId, String slotId) {
         log.info("Deactivating slot {} for nutritionist {}", slotId, nutritionistId);
         TimeSlot slot = timeSlotRepository.findById(slotId)
-            .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
 
         if (!slot.getNutritionistId().equals(nutritionistId)) {
             throw new ConflictException("No tienes permisos para desactivar este slot");
@@ -81,20 +82,17 @@ public class NutritionistAvailabilityService {
         }
 
         if (slot.isReserved()) {
-            // Find the associated appointment. For simplicity in this iteration we fetch all or we can use a custom query.
-            // A better way is to add findBySlotIdAndStatusNotIn to the repo, but let's just do a stream since it's a bounded dataset or add the method.
-            // Let's add findBySlotId to AppointmentRepository. Actually, I can use a simple loop.
-            List<Appointment> nutritionistAppointments = appointmentRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(
-                nutritionistId, 
-                slot.getStartTime().minus(1, ChronoUnit.DAYS), 
-                slot.getEndTime().plus(1, ChronoUnit.DAYS)
-            );
-            
+            List<Appointment> nutritionistAppointments = appointmentRepository
+                    .findByNutritionistIdAndStartTimeBetweenOrderByStartTime(
+                            nutritionistId,
+                            slot.getStartTime().minus(1, ChronoUnit.DAYS),
+                            slot.getEndTime().plus(1, ChronoUnit.DAYS));
+
             Appointment appointment = nutritionistAppointments.stream()
-                .filter(a -> a.getSlotId().equals(slotId) && a.getStatus() != AppointmentStatus.CANCELLED)
-                .findFirst()
-                .orElse(null);
-            
+                    .filter(a -> a.getSlotId().equals(slotId) && a.getStatus() != AppointmentStatus.CANCELLED)
+                    .findFirst()
+                    .orElse(null);
+
             if (appointment != null) {
                 log.info("Cancelling appointment {} due to slot deactivation", appointment.getId());
                 appointment.setStatus(AppointmentStatus.CANCELLED);

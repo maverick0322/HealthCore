@@ -28,9 +28,9 @@ export const NutritionistNav = () => {
         <div className="p-6">
           <div className="flex items-center gap-2 text-primary font-bold text-xl tracking-tight">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-              N
+              H
             </div>
-            NutriTrack
+            HealthCore
           </div>
         </div>
 

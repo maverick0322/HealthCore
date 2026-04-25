@@ -54,7 +54,7 @@
     "preferences": "Preferences",
     "finishBtn": "Finish and see my Dashboard",
     "editBtn": "Edit my data",
-    "secure": "Your data is secure with NutriTrack"
+    "secure": "Your data is secure with HealthCore"
   },
   "stepper": {
     "step": "Step {{current}} of {{total}}"

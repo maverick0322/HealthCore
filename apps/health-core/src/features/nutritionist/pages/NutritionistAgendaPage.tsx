@@ -188,9 +188,14 @@ export const NutritionistAgendaPage = () => {
                             </Button>
                           )}
                           {apt.status !== "completed" && (
-                            <Button size="sm" className="h-8 text-xs">
-                              Iniciar
-                            </Button>
+                            <>
+                              <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive hover:bg-destructive/10">
+                                Cancelar
+                              </Button>
+                              <Button size="sm" className="h-8 text-xs">
+                                Iniciar
+                              </Button>
+                            </>
                           )}
                           {apt.status === "completed" && (
                             <span className="flex items-center gap-1.5 text-emerald-500 text-sm font-semibold">

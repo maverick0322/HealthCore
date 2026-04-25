@@ -62,5 +62,16 @@
       "presential": "Presencial",
       "online": "Online"
     }
+  },
+  "reports": {
+    "title": "Reportes y Exportación",
+    "subtitle": "Genera y descarga reportes del progreso de tus pacientes.",
+    "activePatients": "Pacientes Activos",
+    "consultations": "Consultas Mensuales",
+    "reportsGenerated": "Reportes Generados",
+    "exportTitle": "Exportar Datos de Pacientes",
+    "exportDesc": "Selecciona un paciente para descargar su historial clínico y progreso.",
+    "downloadPdf": "Descargar PDF",
+    "downloadCsv": "Exportar CSV"
   }
 }

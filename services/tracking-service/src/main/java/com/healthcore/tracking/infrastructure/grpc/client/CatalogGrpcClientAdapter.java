@@ -16,6 +16,7 @@ import io.grpc.StatusRuntimeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -50,6 +51,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
     }
 
     @Override
+    @Cacheable(value = "foodNutrients", key = "#barcode", unless = "#result.isEmpty()")
     public Optional<FoodNutrients> getNutrientsByBarcode(String barcode) {
         try {
             log.debug("Initiating gRPC call to fetch nutrients for barcode.");
@@ -72,6 +74,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
     }
 
     @Override
+    @Cacheable(value = "foodSearch", key = "#query", unless = "#result.isEmpty()")
     public List<FoodNutrients> searchFoodByName(String query) {
         try {
             log.debug("Initiating gRPC call to search food by name.");
@@ -113,7 +116,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
 
     /**
      * Translates gRPC status codes into specific Domain exceptions.
-     * Prevents infrastructure-specific objects (StatusRuntimeException) from leaking into the Application layer.
+     * Prevents infrastructure-specific objects from leaking into the Application layer.
      */
     private RuntimeException translateGrpcException(StatusRuntimeException e, String operation) {
         Status.Code code = e.getStatus().getCode();

@@ -61,6 +61,13 @@ services:
       - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI}
       - APP_MANUALDB_SEED_ENABLED=true
 
+  redis:
+    image: redis:7-alpine
+    container_name: healthcore-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
   tracking-service:
     build: ./services/tracking-service
     container_name: healthcore-tracking-service
@@ -69,9 +76,12 @@ services:
     depends_on:
       - mongodb
       - catalog-service
+      - redis
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_tracking
       - GRPC_CATALOG_TARGET=catalog-service:50051
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET}
 
   

@@ -15,6 +15,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # ==========================================
+      # 1. ENTORNO JAVA (Identity & Tracking)
+      # ==========================================
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -26,6 +29,24 @@ jobs:
         working-directory: ./services/identity-service
         run: mvn clean test
 
-      - name: Run Tests (Tracking Service)
+      - name: Run Tests & Coverage (Tracking Service)
         working-directory: ./services/tracking-service
         run: mvn clean test
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # Acelera el pipeline guardando las librerías en caché
+
+      - name: Install dependencies (Catalog Service)
+        working-directory: ./services/catalog-service
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Si tienes dependencias de test separadas, instálalas aquí también
+          # pip install pytest pytest-cov grpcio-testing
+
+      - name: Run Tests & Coverage (Catalog Service)
+        working-directory: ./services/catalog-service
+        run: pytest --cov=. --cov-report=term-missing

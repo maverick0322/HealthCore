@@ -2,21 +2,28 @@ package com.healthcore.tracking.infrastructure.grpc.client;
 
 import com.healthcore.catalog.grpc.FoodRequest;
 import com.healthcore.catalog.grpc.FoodResponse;
+import com.healthcore.catalog.grpc.SearchRequest;
+import com.healthcore.catalog.grpc.SearchResponse;
 import com.healthcore.catalog.grpc.NutritionalCatalogGrpc;
-import com.healthcore.tracking.domain.exception.ServiceUnavailableException;
+import com.healthcore.tracking.domain.exception.ExternalCatalogUnavailableException;
+import com.healthcore.tracking.domain.exception.InvalidDomainDataException;
 import com.healthcore.tracking.domain.model.FoodNutrients;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,16 +36,26 @@ class CatalogGrpcClientAdapterTest {
 
     @BeforeEach
     void setUp() {
+        // CRITICAL: Since our production code uses deadlines, we must mock the builder pattern
+        // so it returns the mock itself instead of null when setting the timeout.
+        when(catalogStubMock.withDeadlineAfter(anyLong(), any(TimeUnit.class))).thenReturn(catalogStubMock);
+
         adapter = new CatalogGrpcClientAdapter(catalogStubMock);
     }
 
+    // =========================================================================
+    // TESTS FOR getNutrientsByBarcode
+    // =========================================================================
+
     @Test
-    void should_ReturnFoodNutrients_When_GrpcCallIsSuccessful() {
+    @DisplayName("Should map and return FoodNutrients when gRPC call is successful")
+    void getNutrientsByBarcode_Success() {
         // Arrange
         FoodResponse mockResponse = FoodResponse.newBuilder()
+                .setBarcode("12345")
                 .setName("Manzana Fresca")
                 .setBrand("Local")
-                .setCaloriesPer100G(52)
+                .setCaloriesPer100G(52.0F)
                 .setSource("USDA")
                 .build();
 
@@ -51,10 +68,12 @@ class CatalogGrpcClientAdapterTest {
         assertTrue(result.isPresent());
         assertEquals("Manzana Fresca", result.get().getName());
         assertEquals(52.0, result.get().getCalories());
+        assertEquals("USDA", result.get().getSource());
     }
 
     @Test
-    void should_ReturnEmptyOptional_When_GrpcReturnsNotFound() {
+    @DisplayName("Should return empty Optional when gRPC status is NOT_FOUND")
+    void getNutrientsByBarcode_ReturnsEmptyOnNotFound() {
         // Arrange
         StatusRuntimeException notFoundException = new StatusRuntimeException(Status.NOT_FOUND);
         when(catalogStubMock.getFoodItem(any(FoodRequest.class))).thenThrow(notFoundException);
@@ -67,14 +86,73 @@ class CatalogGrpcClientAdapterTest {
     }
 
     @Test
-    void should_ThrowServiceUnavailableException_When_GrpcReturnsUnavailable() {
+    @DisplayName("Should throw InvalidDomainDataException when gRPC status is INVALID_ARGUMENT")
+    void getNutrientsByBarcode_ThrowsInvalidDomainDataOnInvalidArgument() {
         // Arrange
-        StatusRuntimeException unavailableException = new StatusRuntimeException(Status.UNAVAILABLE);
-        when(catalogStubMock.getFoodItem(any(FoodRequest.class))).thenThrow(unavailableException);
+        StatusRuntimeException invalidException = new StatusRuntimeException(Status.INVALID_ARGUMENT);
+        when(catalogStubMock.getFoodItem(any(FoodRequest.class))).thenThrow(invalidException);
 
         // Act & Assert
-        assertThrows(ServiceUnavailableException.class, () -> {
-            adapter.getNutrientsByBarcode("12345");
-        });
+        assertThrows(InvalidDomainDataException.class, () -> adapter.getNutrientsByBarcode("  "));
+    }
+
+    @Test
+    @DisplayName("Should throw ExternalCatalogUnavailableException on timeout (DEADLINE_EXCEEDED)")
+    void getNutrientsByBarcode_ThrowsUnavailableOnTimeout() {
+        // Arrange
+        StatusRuntimeException timeoutException = new StatusRuntimeException(Status.DEADLINE_EXCEEDED);
+        when(catalogStubMock.getFoodItem(any(FoodRequest.class))).thenThrow(timeoutException);
+
+        // Act & Assert
+        ExternalCatalogUnavailableException ex = assertThrows(ExternalCatalogUnavailableException.class,
+                () -> adapter.getNutrientsByBarcode("12345"));
+        assertTrue(ex.getMessage().contains("timed out"));
+    }
+
+    @Test
+    @DisplayName("Should throw ExternalCatalogUnavailableException on generic unexpected Exception")
+    void getNutrientsByBarcode_ThrowsUnavailableOnGenericException() {
+        // Arrange
+        when(catalogStubMock.getFoodItem(any(FoodRequest.class))).thenThrow(new RuntimeException("Server on fire"));
+
+        // Act & Assert
+        assertThrows(ExternalCatalogUnavailableException.class, () -> adapter.getNutrientsByBarcode("12345"));
+    }
+
+    @Test
+    @DisplayName("Should return mapped list of FoodNutrients on successful search")
+    void searchFoodByName_Success() {
+        // Arrange
+        FoodResponse item1 = FoodResponse.newBuilder().setBarcode("111").setName("Oreo").build();
+        FoodResponse item2 = FoodResponse.newBuilder().setBarcode("222").setName("Oreo Mini").build();
+
+        SearchResponse mockResponse = SearchResponse.newBuilder()
+                .addItems(item1)
+                .addItems(item2)
+                .build();
+
+        when(catalogStubMock.searchFood(any(SearchRequest.class))).thenReturn(mockResponse);
+
+        // Act
+        List<FoodNutrients> results = adapter.searchFoodByName("Oreo");
+
+        // Assert
+        assertEquals(2, results.size());
+        assertEquals("Oreo", results.get(0).getName());
+        assertEquals("Oreo Mini", results.get(1).getName());
+    }
+
+    @Test
+    @DisplayName("Should return empty list when gRPC search returns NOT_FOUND")
+    void searchFoodByName_ReturnsEmptyListOnNotFound() {
+        // Arrange
+        StatusRuntimeException notFoundException = new StatusRuntimeException(Status.NOT_FOUND);
+        when(catalogStubMock.searchFood(any(SearchRequest.class))).thenThrow(notFoundException);
+
+        // Act
+        List<FoodNutrients> results = adapter.searchFoodByName("GhostProduct");
+
+        // Assert
+        assertTrue(results.isEmpty());
     }
 }

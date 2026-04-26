@@ -10,6 +10,7 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
@@ -30,7 +31,9 @@ class JwtValidationFilterTest {
 
     @BeforeEach
     void setUp() {
-        jwtValidationFilter = new JwtValidationFilter(TEST_SECRET);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        jwtValidationFilter = new JwtValidationFilter(TEST_SECRET, objectMapper);
         key = Keys.hmacShaKeyFor(TEST_SECRET.getBytes(StandardCharsets.UTF_8));
 
         request = new MockHttpServletRequest();
@@ -94,6 +97,10 @@ class JwtValidationFilterTest {
 
         // Assert
         assertNull(SecurityContextHolder.getContext().getAuthentication());
+
+        assertEquals(401, response.getStatus());
+        assertEquals("application/json;charset=UTF-8", response.getContentType());
+        assertTrue(response.getContentAsString().contains("Token has expired"));
     }
 
     @Test

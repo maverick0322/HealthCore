@@ -48,6 +48,9 @@ services:
       - "8082:8082"
     depends_on:
       - mongodb
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - LOGGING_LEVEL_COM_HEALTHCORE=DEBUG
@@ -60,6 +63,7 @@ services:
       - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE=${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE:-openid,profile,email}
       - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI}
       - APP_MANUALDB_SEED_ENABLED=true
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine

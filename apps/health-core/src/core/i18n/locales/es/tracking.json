@@ -1,0 +1,22 @@
+{
+  "searchPlaceholder": "Buscar alimentos (ej. Manzana, Pollo)...",
+  "searchResults": "Resultados de la búsqueda",
+  "kcalPer100g": "{{cal}} kcal / 100g",
+  "mealType": "Tipo de Comida",
+  "meals": {
+    "breakfast": "Desayuno",
+    "lunch": "Comida",
+    "dinner": "Cena",
+    "snack": "Snack"
+  },
+  "date": "Fecha",
+  "time": "Hora",
+  "portionSize": "Tamaño de Porción",
+  "portions": "{{count}} porciones",
+  "foodPhoto": "Foto del Platillo",
+  "uploadPhoto": "Subir foto del platillo",
+  "registerFood": "Registrar Alimento",
+  "saving": "Guardando...",
+  "successTitle": "¡Alimento Registrado!",
+  "successMessage": "Se ha guardado en tu diario de hoy."
+}

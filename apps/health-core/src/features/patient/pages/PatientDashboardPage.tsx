@@ -400,7 +400,7 @@ export const PatientDashboardPage = () => {
               id="btn-add-food"
               className="w-full mt-3 gap-2"
               size="sm"
-              disabled
+              onClick={() => navigate("/tracking/log-food")}
             >
               <Plus size={14} />
               {t("dashboard.addFood")}

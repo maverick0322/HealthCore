@@ -2,6 +2,7 @@ package com.healthcore.tracking.domain.model;
 
 import lombok.Builder;
 import lombok.Getter;
+import java.io.Serializable;
 
 /**
  * Value Object representing the nutritional profile of a food item per 100g.
@@ -9,7 +10,7 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-public class FoodNutrients {
+public class FoodNutrients implements  Serializable {
     private final String barcode;
     private final String name;
     private final String brand;

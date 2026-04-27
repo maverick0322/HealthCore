@@ -51,7 +51,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
     }
 
     @Override
-    @Cacheable(value = "foodNutrients", key = "#barcode", unless = "#result.isEmpty()")
+    @Cacheable(value = "foodNutrients", key = "#barcode", unless = "#result == null")
     public Optional<FoodNutrients> getNutrientsByBarcode(String barcode) {
         try {
             log.debug("Initiating gRPC call to fetch nutrients for barcode.");

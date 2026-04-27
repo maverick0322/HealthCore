@@ -122,7 +122,8 @@
     "navHistory": "Historial",
     "navPlan": "Plan",
     "navProfile": "Perfil",
-    "navAppointments": "Citas"
+    "navAppointments": "Citas",
+    "navTracking": "Registro"
   },
   "history": {
     "title": "Historial Nutricional",

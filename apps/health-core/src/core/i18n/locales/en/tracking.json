@@ -1,0 +1,22 @@
+{
+  "searchPlaceholder": "Search food (e.g. Apple, Chicken)...",
+  "searchResults": "Search Results",
+  "kcalPer100g": "{{cal}} kcal / 100g",
+  "mealType": "Meal Type",
+  "meals": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack"
+  },
+  "date": "Date",
+  "time": "Time",
+  "portionSize": "Portion Size",
+  "portions": "{{count}} portions",
+  "foodPhoto": "Food Photo",
+  "uploadPhoto": "Upload food photo",
+  "registerFood": "Log Food",
+  "saving": "Saving...",
+  "successTitle": "Food Logged!",
+  "successMessage": "It has been saved to your diary for today."
+}

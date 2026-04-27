@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ScanLine, Plus, Loader2 } from 'lucide-react';
 import { trackingService } from '../services/trackingService';
+import { useTranslation } from 'react-i18next';
 
 export interface FoodItemData {
   barcode: string;
@@ -14,6 +15,7 @@ interface FoodSearchProps {
 }
 
 export const FoodSearch: React.FC<FoodSearchProps> = ({ onFoodSelect }) => {
+  const { t } = useTranslation('tracking');
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<FoodItemData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,23 +26,23 @@ export const FoodSearch: React.FC<FoodSearchProps> = ({ onFoodSelect }) => {
         setIsLoading(true);
         try {
           const response = await trackingService.searchFood(searchTerm);
-          
+
           const mappedResults = response.map((item: any) => ({
             barcode: item.barcode,
             name: item.name,
-            cal: item.caloriesPer100g, 
+            cal: item.caloriesPer100g,
             img: item.imageUrl || 'https://via.placeholder.com/150?text=Sin+Foto'
           }));
-          
+
           setResults(mappedResults);
         } catch (error) {
           console.error("Error buscando alimentos:", error);
-          setResults([]); 
+          setResults([]);
         } finally {
           setIsLoading(false);
         }
       } else {
-        setResults([]); 
+        setResults([]);
       }
     }, 500); // 500ms debounce
 
@@ -55,12 +57,12 @@ export const FoodSearch: React.FC<FoodSearchProps> = ({ onFoodSelect }) => {
           <div className="absolute left-4 flex items-center pointer-events-none text-slate-400">
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
           </div>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar alimentos (ej. Manzana, Pollo)..." 
-            className="w-full rounded-xl border-none bg-white dark:bg-slate-800 py-4 pl-12 pr-14 text-base shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-slate-100" 
+            placeholder="Buscar alimentos (ej. Manzana, Pollo)..."
+            className="w-full rounded-xl border-none bg-white dark:bg-slate-800 py-4 pl-12 pr-14 text-base shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-primary outline-none transition-all dark:text-slate-100"
           />
           <button className="absolute right-3 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-primary/20 hover:text-primary transition-colors">
             <ScanLine className="w-5 h-5" />
@@ -72,11 +74,11 @@ export const FoodSearch: React.FC<FoodSearchProps> = ({ onFoodSelect }) => {
       {results.length > 0 && (
         <div className="flex flex-col gap-2 mb-8">
           <div className="flex items-center justify-between px-2 mb-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Resultados de la búsqueda</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('searchResults')}</h3>
           </div>
 
           {results.map((item) => (
-            <div 
+            <div
               key={item.barcode}
               onClick={() => onFoodSelect(item)}
               className="group flex items-center justify-between gap-4 rounded-xl bg-white dark:bg-slate-800 p-3 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:ring-primary/50 cursor-pointer transition-all"

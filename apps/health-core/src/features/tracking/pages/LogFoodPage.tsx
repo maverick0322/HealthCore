@@ -1,40 +1,47 @@
-import React, { useState } from 'react';
-import { Bell, Apple } from 'lucide-react'; // Apple funciona genial como ícono de nutrición
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FoodSearch, type FoodItemData } from '../components/FoodSearch';
 import { FoodLogForm } from '../components/FoodLogForm';
+import { PatientNav } from '@/features/patient/components/PatientNav';
+import { SettingsBar } from '@/shared/components/SettingsBar';
 
 export const LogFoodPage = () => {
+  const { t } = useTranslation('tracking');
   const [selectedFood, setSelectedFood] = useState<FoodItemData | null>(null);
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark font-sans">
-      
-      {/* Top Navigation Bar */}
-      <header className="flex items-center justify-between border-b border-primary/10 bg-white dark:bg-[#181b17] px-6 py-4 sticky top-0 z-10 shadow-sm transition-colors">        
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white">
-            <Apple className="w-6 h-6" />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">HealthCore</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
-          <div className="h-10 w-10 rounded-full border-2 border-primary/20 bg-slate-200 overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
-            {/* Foto de perfil placeholder */}
-            <img alt="Perfil" className="h-full w-full object-cover" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" />
-          </div>
-        </div>
-      </header>
+    <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
+      {/* ── Responsive Nav (sidebar desktop / bottom bar mobile) ── */}
+      <PatientNav />
 
-      {/* Main Content */}
-      <main className="flex flex-1 flex-col px-4 py-6 md:px-20 lg:px-40 max-w-5xl mx-auto w-full">
+      {/* ── Top Controls ─────────────────────────────────────────── */}
+      <div className="md:pl-56">
+        <SettingsBar />
+      </div>
+
+      {/* ── Header ───────────────────────────────────────────────── */}
+      <div className="relative bg-primary/10 border-b border-border overflow-hidden md:pl-56">
+        <div
+          aria-hidden
+          className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            {t('registerFood')}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {t('searchPlaceholder')}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Scrollable content ───────────────────────────────────── */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-20 md:pb-6 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
         
-        {/* 1. Componente de Búsqueda */}
+        {/* 1. Search Component */}
         <FoodSearch onFoodSelect={(food) => setSelectedFood(food)} />
 
-        {/* 2. Drawer de Formulario */}
+        {/* 2. Form Drawer */}
         {selectedFood && (
           <FoodLogForm 
             selectedBarcode={selectedFood.barcode} 

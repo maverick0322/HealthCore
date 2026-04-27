@@ -122,7 +122,8 @@
     "navHistory": "History",
     "navPlan": "Plan",
     "navProfile": "Profile",
-    "navAppointments": "Appointments"
+    "navAppointments": "Appointments",
+    "navTracking": "Log Food"
   },
   "history": {
     "title": "Nutritional History",

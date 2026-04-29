@@ -8,6 +8,17 @@ services:
       - mongo_data:/data/db
     restart: unless-stopped
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: healthcore-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-healthcore}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-healthcore}
+    restart: unless-stopped
+
   mongo-express:
     image: mongo-express:latest
     container_name: healthcore-mongo-express
@@ -48,6 +59,7 @@ services:
       - "8082:8082"
     depends_on:
       - mongodb
+      - rabbitmq
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -55,6 +67,10 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - LOGGING_LEVEL_COM_HEALTHCORE=DEBUG
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_identity
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-healthcore}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASS:-healthcore}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ACCESS_TOKEN_VALIDITY_MS=${JWT_ACCESS_TOKEN_VALIDITY_MS:-300000}
       - JWT_REFRESH_TOKEN_VALIDITY_MS=${JWT_REFRESH_TOKEN_VALIDITY_MS:-86400000}
@@ -63,6 +79,23 @@ services:
       - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE=${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE:-openid,profile,email}
       - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI}
       - APP_MANUALDB_SEED_ENABLED=true
+    restart: unless-stopped
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: healthcore-notification-service
+    depends_on:
+      - rabbitmq
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=${RABBITMQ_USER:-healthcore}
+      - SPRING_RABBITMQ_PASSWORD=${RABBITMQ_PASS:-healthcore}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
+      - RESEND_FROM_NAME=${RESEND_FROM_NAME}
+    ports:
+      - "8086:8086"
     restart: unless-stopped
 
   redis:

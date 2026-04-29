@@ -26,8 +26,8 @@ Expone los endpoints públicos consumidos directamente por la aplicación Web/M�
 | :--- | :--- | :--- | :--- | :--- |
 | `POST` | `/register` | Registra un nuevo usuario y encripta su contraseña (BCrypt). | `{"email": "x@x.com", "password": "...", "role": "PATIENT"}` | `201 Created` |
 | `POST` | `/login` | Valida credenciales y emite tokens de sesión. | `{"email": "x@x.com", "password": "..."}` | `200 OK` + `{ "accessToken": "eyJ...", "refreshToken": "..." }` |
-| `POST` | `/forgot-password` | Genera y envía un código de recuperación por correo. | `{"email": "x@x.com"}` | `200 OK` |
-| `POST` | `/verify-code` | Valida el código temporal para restaurar contraseña. | `{"email": "x@x.com", "code": "123456"}` | `200 OK` + Token temporal |
+| `POST` | `/password-reset/request` | Genera y envía un código de recuperación por correo. | `{"email": "x@x.com"}` | `200 OK` |
+| `POST` | `/password-reset/confirm` | Valida el código temporal para restaurar contraseña. | `{"email": "x@x.com", "code": "123456", "newPassword": "..."}` | `200 OK` |
 
 ## 5. El Flujo de Seguridad (JWT)
 1. El usuario envía credenciales a `/login`.
@@ -43,6 +43,10 @@ El `identity-service` es el origen del ciclo de vida del usuario. Cuando ocurre 
 * **Evento:** `UserRegisteredEvent`
 * **Payload:** `{ "userId": "UUID", "email": "x@x.com", "role": "PATIENT" }`
 * **Consumidores esperados:** `clinical-service` (para crear el expediente clínico vacío) y `agenda-service` (para perfiles de nutriólogos).
+
+* **Evento:** `PasswordResetRequestedEvent`
+* **Payload:** `{ "email": "x@x.com", "resetCode": "123456", "expiresAt": "2026-04-28T10:15:00Z" }`
+* **Consumidores esperados:** `notification-service` (para enviar correo de recuperación).
 
 ### B. Como Servidor gRPC (Síncrono)
 Otros microservicios conocen a los usuarios solo por su `UUID`. Cuando el `clinical-service` necesita mostrar el nombre real del paciente en el expediente, le pregunta a Identity vía gRPC.
@@ -62,3 +66,5 @@ JWT_EXPIRATION_MS=86400000 # 1 día
 # Broker de Mensajes
 SPRING_RABBITMQ_HOST=rabbitmq
 SPRING_RABBITMQ_PORT=5672
+SPRING_RABBITMQ_USERNAME=healthcore
+SPRING_RABBITMQ_PASSWORD=healthcore

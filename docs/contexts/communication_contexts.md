@@ -38,6 +38,36 @@ Cuando un microservicio necesita información de otro *inmediatamente* para pode
 
 Usamos RabbitMQ para acciones tipo "dispara y olvida" (*Fire-and-forget*). Cuando una acción en un servicio debe desencadenar consecuencias en otros, pero **no necesitamos esperar** a que terminen para responderle al usuario.
 
+### Contratos de Eventos (RabbitMQ)
+**Exchange:** `healthcore.identity.events` (tipo `topic`)
+
+1. **`UserRegisteredEvent`**
+   - **Routing key:** `identity.user.registered`
+   - **Payload:**
+     ```json
+     {
+       "userId": "UUID",
+       "email": "user@healthcore.com",
+       "role": "PATIENT",
+       "registeredAt": "2026-04-28T10:00:00Z"
+     }
+     ```
+   - **Consumidores esperados:** `clinical-service`, `agenda-service`, `notification-service`
+
+2. **`PasswordResetRequestedEvent`**
+   - **Routing key:** `identity.password.reset.requested`
+   - **Payload:**
+     ```json
+     {
+       "email": "user@healthcore.com",
+       "resetCode": "123456",
+       "expiresAt": "2026-04-28T10:15:00Z"
+     }
+     ```
+   - **Consumidores esperados:** `notification-service`
+
+**Notification Service (Resend):** Este consumidor usa el SDK oficial de Resend. Configura `RESEND_API_KEY`, `RESEND_FROM_EMAIL` y `RESEND_FROM_NAME` como variables de entorno (no se hardcodean).
+
 ### Casos de Uso en HealthCore:
 * **El Registro de Pacientes:** 1. El usuario se registra en `identity-service`.
   2. `Identity` guarda las credenciales y lanza un evento a RabbitMQ: *"¡Usuario Registrado (ID: 123)!"*.

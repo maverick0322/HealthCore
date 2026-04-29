@@ -1,5 +1,8 @@
 package com.healthcore.identity.application;
 
+import com.healthcore.identity.application.events.PasswordResetRequestedEvent;
+import com.healthcore.identity.application.events.UserRegisteredEvent;
+import com.healthcore.identity.application.ports.IdentityEventPublisher;
 import com.healthcore.identity.domain.AuthProvider;
 import com.healthcore.identity.domain.PasswordResetCode;
 import com.healthcore.identity.domain.RefreshTokenOwnership;
@@ -57,6 +60,7 @@ public class AuthService {
     private final LoginAttemptService loginAttemptService;
     private final Environment environment;
     private final java.util.Optional<com.healthcore.identity.infrastructure.testing.DevEmailCodeStore> devEmailCodeStore;
+    private final IdentityEventPublisher identityEventPublisher;
 
     public User registerPatient(String email, String plainPassword) {
         return registerLocalUser(email, plainPassword, Role.PATIENT);
@@ -83,6 +87,7 @@ public class AuthService {
 
         User savedUser = userRepository.save(newUser);
         createVerificationCode(savedUser);
+        publishUserRegistered(savedUser);
         log.info("Local user registered successfully with ID: {}", savedUser.getId());
 
         return savedUser;
@@ -109,6 +114,7 @@ public class AuthService {
 
         User savedUser = userRepository.save(newUser);
         createVerificationCode(savedUser);
+        publishUserRegistered(savedUser);
         log.info("Admin provisioned user successfully with ID: {}", savedUser.getId());
 
         return savedUser;
@@ -228,13 +234,16 @@ public class AuthService {
         String code = generateNumericCode();
 
         passwordResetCodeRepository.deleteByEmail(email);
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(RESET_CODE_TTL_MINUTES);
         passwordResetCodeRepository.save(PasswordResetCode.builder()
                 .userId(user.getId())
                 .email(email)
                 .codeHash(hashValue(code))
-                .expiresAt(LocalDateTime.now().plusMinutes(RESET_CODE_TTL_MINUTES))
+            .expiresAt(expiresAt)
                 .createdAt(LocalDateTime.now())
                 .build());
+
+        publishPasswordResetRequested(email, code, expiresAt);
 
         // Placeholder integration point for notifier adapter.
         log.info("Password reset code generated for user: {}", email);
@@ -334,12 +343,39 @@ public class AuthService {
                 .build();
 
         User savedSocialUser = userRepository.save(newSocialUser);
+        publishUserRegistered(savedSocialUser);
         log.info("Social user provisioned successfully for email: {} with provider: {}", email, provider);
         return savedSocialUser;
     }
 
     private boolean shouldLogSensitiveCodes() {
         return environment != null && environment.acceptsProfiles(Profiles.of("dev", "local"));
+    }
+
+    private void publishUserRegistered(User savedUser) {
+        try {
+            LocalDateTime createdAt = savedUser.getCreatedAt() == null ? LocalDateTime.now() : savedUser.getCreatedAt();
+            identityEventPublisher.publishUserRegistered(new UserRegisteredEvent(
+                    savedUser.getId(),
+                    savedUser.getEmail(),
+                    savedUser.getRole().name(),
+                    createdAt.toString()
+            ));
+        } catch (RuntimeException ex) {
+            log.warn("Failed to publish user registered event for userId={} email={}", savedUser.getId(), savedUser.getEmail(), ex);
+        }
+    }
+
+    private void publishPasswordResetRequested(String email, String code, LocalDateTime expiresAt) {
+        try {
+            identityEventPublisher.publishPasswordResetRequested(new PasswordResetRequestedEvent(
+                    email,
+                    code,
+                    expiresAt.toString()
+            ));
+        } catch (RuntimeException ex) {
+            log.warn("Failed to publish password reset event for email={}", email, ex);
+        }
     }
 
     private String normalizeLoginKey(String email) {

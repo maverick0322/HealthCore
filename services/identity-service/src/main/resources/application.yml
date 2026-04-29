@@ -4,6 +4,11 @@ spring:
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/db_identity}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 jwt:
   secret: ${JWT_SECRET}
@@ -17,6 +22,11 @@ jwt:
 # SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=https://YOUR_TENANT.us.auth0.com/
 
 app:
+  messaging:
+    exchange: ${APP_MESSAGING_EXCHANGE:healthcore.identity.events}
+    routing-keys:
+      user-registered: ${APP_MESSAGING_ROUTING_USER_REGISTERED:identity.user.registered}
+      password-reset-requested: ${APP_MESSAGING_ROUTING_PASSWORD_RESET_REQUESTED:identity.password.reset.requested}
   cors:
     # Comma-separated list for frontend origins (dev examples included)
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,https://localhost:5173}

@@ -1,0 +1,29 @@
+server:
+  port: ${SERVER_PORT:8086}
+
+spring:
+  application:
+    name: notification-service
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        missing-queues-fatal: false
+        default-requeue-rejected: false
+
+app:
+  messaging:
+    exchange: ${APP_MESSAGING_EXCHANGE:healthcore.identity.events}
+    queues:
+      welcome-email: ${APP_MESSAGING_QUEUE_WELCOME:notification.welcome.email}
+      password-reset-email: ${APP_MESSAGING_QUEUE_PASSWORD_RESET:notification.password.reset.email}
+    routing-keys:
+      user-registered: ${APP_MESSAGING_ROUTING_USER_REGISTERED:identity.user.registered}
+      password-reset-requested: ${APP_MESSAGING_ROUTING_PASSWORD_RESET_REQUESTED:identity.password.reset.requested}
+  resend:
+    api-key: ${RESEND_API_KEY}
+    from-email: ${RESEND_FROM_EMAIL}
+    from-name: ${RESEND_FROM_NAME}

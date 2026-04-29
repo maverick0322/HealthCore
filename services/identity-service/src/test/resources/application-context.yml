@@ -5,3 +5,10 @@ spring:
       - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
       - org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration
 
+app:
+  messaging:
+    exchange: identity.exchange.test
+    routing-keys:
+      user-registered: identity.user.registered.test
+      password-reset-requested: identity.password.reset.requested.test
+

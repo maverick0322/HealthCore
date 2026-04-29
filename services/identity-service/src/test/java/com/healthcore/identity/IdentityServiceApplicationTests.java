@@ -41,6 +41,9 @@ class IdentityServiceApplicationTests {
 	@MockitoBean
 	private SpringDataMongoRefreshTokenRepository springDataMongoRefreshTokenRepository;
 
+	@MockitoBean
+	private com.healthcore.identity.application.ports.IdentityEventPublisher identityEventPublisher;
+
 	@Test
 	void contextLoads() {
 		assertThat(authService).isNotNull();

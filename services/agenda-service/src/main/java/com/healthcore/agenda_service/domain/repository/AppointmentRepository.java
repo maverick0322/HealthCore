@@ -21,5 +21,7 @@ public interface AppointmentRepository extends MongoRepository<Appointment, Stri
         Instant from,
         Instant to
     );
+
+    List<Appointment> findByStatusAndStartTimeBetween(AppointmentStatus status, Instant from, Instant to);
 }
 

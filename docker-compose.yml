@@ -57,6 +57,7 @@ services:
     container_name: healthcore-identity-service
     ports:
       - "8082:8082"
+      - "9090:9090"
     depends_on:
       - mongodb
       - rabbitmq
@@ -86,6 +87,10 @@ services:
     container_name: healthcore-notification-service
     depends_on:
       - rabbitmq
+      - identity-service
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
@@ -94,6 +99,7 @@ services:
       - RESEND_API_KEY=${RESEND_API_KEY}
       - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
       - RESEND_FROM_NAME=${RESEND_FROM_NAME}
+      - GRPC_IDENTITY_TARGET=identity-service:9090
     ports:
       - "8086:8086"
     restart: unless-stopped
@@ -158,12 +164,18 @@ services:
     depends_on:
       agenda-mongodb:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://agenda-mongodb:27017/${AGENDA_MONGO_DB:-healthcore_agenda}
       GRPC_CLIENT_CLINICAL_ADDRESS: ${GRPC_CLIENT_CLINICAL_ADDRESS:-static://clinical-service:50051}
       AGENDA_CLINICAL_ALLOW_ALL: ${AGENDA_CLINICAL_ALLOW_ALL:-true}
       SERVICE_NAME: ${AGENDA_SERVICE_NAME:-AGENDA-SVC}
       JWT_SECRET: ${JWT_SECRET}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-healthcore}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-healthcore}
     ports:
       - "${AGENDA_SERVICE_PORT:-8083}:8080"
 

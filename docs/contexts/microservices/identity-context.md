@@ -53,6 +53,11 @@ Otros microservicios conocen a los usuarios solo por su `UUID`. Cuando el `clini
 * **Operación Protobuf:** `GetUserInfo(UserRequest) returns (UserResponse)`
 * **Datos expuestos:** Solo datos no sensibles (Nombre, Apellidos, Email). ¡NUNCA expone el password hash!
 
+Para notificaciones, Identity expone un directorio gRPC:
+* **Servicio:** `IdentityDirectory`
+* **Operación:** `GetUserContacts(UserContactsRequest) returns (UserContactsResponse)`
+* **Datos expuestos:** `userId`, `email`
+
 ## 7. Variables de Entorno Requeridas (`.env`)
 Para levantar este contenedor, Docker inyecta las siguientes variables:
 ```properties
@@ -68,3 +73,6 @@ SPRING_RABBITMQ_HOST=rabbitmq
 SPRING_RABBITMQ_PORT=5672
 SPRING_RABBITMQ_USERNAME=healthcore
 SPRING_RABBITMQ_PASSWORD=healthcore
+
+# gRPC
+GRPC_IDENTITY_PORT=9090

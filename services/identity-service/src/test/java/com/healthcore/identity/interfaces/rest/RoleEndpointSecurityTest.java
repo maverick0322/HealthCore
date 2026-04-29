@@ -42,6 +42,9 @@ class RoleEndpointSecurityTest {
     private AuthService authService;
 
     @MockitoBean
+    private com.healthcore.identity.application.ports.IdentityEventPublisher identityEventPublisher;
+
+    @MockitoBean
     private SpringDataMongoUserRepository springDataMongoUserRepository;
 
     @MockitoBean

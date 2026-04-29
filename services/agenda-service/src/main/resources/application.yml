@@ -4,6 +4,11 @@ spring:
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/healthcore_agenda}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 grpc:
   client:
@@ -15,6 +20,17 @@ agenda:
     allow-all: ${AGENDA_CLINICAL_ALLOW_ALL:true}
   confirmation:
     reconcile-delay-ms: ${AGENDA_CONFIRMATION_RECONCILE_DELAY_MS:30000}
+  reminders:
+    lead-time-hours: ${AGENDA_REMINDER_LEAD_TIME_HOURS:24}
+    delay-ms: ${AGENDA_REMINDER_DELAY_MS:86400000}
+
+app:
+  messaging:
+    exchange: ${APP_MESSAGING_AGENDA_EXCHANGE:healthcore.agenda.events}
+    routing-keys:
+      appointment-confirmed: ${APP_MESSAGING_ROUTING_APPOINTMENT_CONFIRMED:agenda.appointment.confirmed}
+      appointment-cancelled: ${APP_MESSAGING_ROUTING_APPOINTMENT_CANCELLED:agenda.appointment.cancelled}
+      appointment-reminder: ${APP_MESSAGING_ROUTING_APPOINTMENT_REMINDER:agenda.appointment.reminder}
 
 security:
   jwt:

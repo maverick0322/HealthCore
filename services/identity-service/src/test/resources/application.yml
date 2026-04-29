@@ -8,3 +8,6 @@ spring:
     mongodb:
       uri: mongodb://localhost:27017/db_identity_test
 
+grpc:
+  identity:
+    port: 0

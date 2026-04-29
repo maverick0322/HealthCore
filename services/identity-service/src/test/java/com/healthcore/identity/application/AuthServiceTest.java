@@ -51,6 +51,9 @@ class AuthServiceTest {
     @Mock
     private LoginAttemptService loginAttemptService;
 
+    @Mock
+    private com.healthcore.identity.application.ports.IdentityEventPublisher identityEventPublisher;
+
     @InjectMocks
     private AuthService authService;
 

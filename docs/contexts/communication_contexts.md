@@ -71,6 +71,51 @@ Usamos RabbitMQ para acciones tipo "dispara y olvida" (*Fire-and-forget*). Cuand
 
 **Notification Service (Resend):** Este consumidor usa el SDK oficial de Resend. Configura `RESEND_API_KEY`, `RESEND_FROM_EMAIL` y `RESEND_FROM_NAME` como variables de entorno (no se hardcodean).
 
+**Exchange:** `healthcore.agenda.events` (tipo `topic`)
+
+1. **`AppointmentConfirmedEvent`**
+   - **Routing key:** `agenda.appointment.confirmed`
+   - **Payload:**
+     ```json
+     {
+       "appointmentId": "UUID",
+       "patientId": "UUID",
+       "nutritionistId": "UUID",
+       "startTime": "2026-04-30T10:00:00Z",
+       "endTime": "2026-04-30T10:30:00Z"
+     }
+     ```
+   - **Consumidores esperados:** `notification-service`
+
+2. **`AppointmentCancelledEvent`**
+   - **Routing key:** `agenda.appointment.cancelled`
+   - **Payload:**
+     ```json
+     {
+       "appointmentId": "UUID",
+       "patientId": "UUID",
+       "nutritionistId": "UUID",
+       "startTime": "2026-04-30T10:00:00Z",
+       "endTime": "2026-04-30T10:30:00Z"
+     }
+     ```
+   - **Consumidores esperados:** `notification-service`
+
+3. **`AppointmentReminderEvent`**
+   - **Routing key:** `agenda.appointment.reminder`
+   - **Payload:**
+     ```json
+     {
+       "appointmentId": "UUID",
+       "patientId": "UUID",
+       "nutritionistId": "UUID",
+       "startTime": "2026-04-30T10:00:00Z",
+       "endTime": "2026-04-30T10:30:00Z"
+     }
+     ```
+   - **Consumidores esperados:** `notification-service`
+   - **Regla:** El scheduler del agenda-service publica recordatorios 24 horas antes, ejecutando una vez al dia.
+
 ### Casos de Uso en HealthCore:
 * **El Registro de Pacientes:** 1. El usuario se registra en `identity-service`.
   2. `Identity` guarda las credenciales y lanza un evento a RabbitMQ: *"¡Usuario Registrado (ID: 123)!"*.

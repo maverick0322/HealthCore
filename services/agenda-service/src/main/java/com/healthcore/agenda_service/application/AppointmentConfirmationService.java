@@ -1,5 +1,7 @@
 package com.healthcore.agenda_service.application;
 
+import com.healthcore.agenda_service.application.events.AppointmentConfirmedEvent;
+import com.healthcore.agenda_service.application.ports.AgendaEventPublisher;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
@@ -14,6 +16,7 @@ import java.time.Instant;
 public class AppointmentConfirmationService {
 
     private final AppointmentRepository appointmentRepository;
+    private final AgendaEventPublisher agendaEventPublisher;
 
     @Async
     public void confirmAppointmentAsync(String appointmentId) {
@@ -31,7 +34,15 @@ public class AppointmentConfirmationService {
 
                 appointment.setStatus(AppointmentStatus.CONFIRMED);
                 appointment.setUpdatedAt(Instant.now());
-                appointmentRepository.save(appointment);
+                Appointment saved = appointmentRepository.save(appointment);
+
+                agendaEventPublisher.publishAppointmentConfirmed(new AppointmentConfirmedEvent(
+                    saved.getId(),
+                    saved.getPatientId(),
+                    saved.getNutritionistId(),
+                    saved.getStartTime().toString(),
+                    saved.getEndTime().toString()
+                ));
                 return;
             } catch (InterruptedException interruptedException) {
                 Thread.currentThread().interrupt();

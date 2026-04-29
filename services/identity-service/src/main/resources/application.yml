@@ -60,3 +60,7 @@ springdoc:
 
 server:
   port: 8082
+
+grpc:
+  identity:
+    port: ${GRPC_IDENTITY_PORT:9090}

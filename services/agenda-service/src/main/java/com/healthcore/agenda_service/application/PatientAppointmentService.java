@@ -9,6 +9,8 @@ import com.healthcore.agenda_service.domain.exception.NotFoundException;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
 import com.healthcore.agenda_service.domain.repository.TimeSlotRepository;
 import com.healthcore.agenda_service.infrastructure.clinical.ClinicalServiceClient;
+import com.healthcore.agenda_service.application.events.AppointmentCancelledEvent;
+import com.healthcore.agenda_service.application.ports.AgendaEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ public class PatientAppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final ClinicalServiceClient clinicalServiceClient;
     private final AppointmentConfirmationService appointmentConfirmationService;
+    private final AgendaEventPublisher agendaEventPublisher;
 
     public List<TimeSlot> getAvailability(String nutritionistId, Instant from, Instant to) {
         return timeSlotRepository.findByNutritionistIdAndStartTimeBetweenAndActiveTrueOrderByStartTime(nutritionistId, from, to)
@@ -94,7 +97,15 @@ public class PatientAppointmentService {
 
         appointment.setStatus(AppointmentStatus.CANCELLED);
         appointment.setUpdatedAt(Instant.now());
-        appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.save(appointment);
+
+        agendaEventPublisher.publishAppointmentCancelled(new AppointmentCancelledEvent(
+            saved.getId(),
+            saved.getPatientId(),
+            saved.getNutritionistId(),
+            saved.getStartTime().toString(),
+            saved.getEndTime().toString()
+        ));
     }
 
     public List<Appointment> listMyUpcomingAppointments(String patientId) {

@@ -23,7 +23,15 @@ class NotificationEventListenerTest {
     @Test
     void handleUserRegisteredEventDelegatesToUseCase() {
         NotificationEventListener listener = new NotificationEventListener(sendWelcomeEmailUseCase, sendPasswordResetEmailUseCase);
-        UserRegisteredEvent event = new UserRegisteredEvent("user-123", "user@healthcore.com", "PATIENT", "2026-04-28T10:00:00Z");
+        UserRegisteredEvent event = new UserRegisteredEvent(
+            "user-123",
+            "user@healthcore.com",
+            "PATIENT",
+            "2026-04-28T10:00:00Z",
+            true,
+            "123456",
+            "2026-04-28T10:15:00Z"
+        );
 
         listener.handleUserRegisteredEvent(event);
 

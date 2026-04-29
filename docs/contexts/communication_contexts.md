@@ -49,7 +49,10 @@ Usamos RabbitMQ para acciones tipo "dispara y olvida" (*Fire-and-forget*). Cuand
        "userId": "UUID",
        "email": "user@healthcore.com",
        "role": "PATIENT",
-       "registeredAt": "2026-04-28T10:00:00Z"
+      "registeredAt": "2026-04-28T10:00:00Z",
+      "emailVerificationRequired": true,
+      "verificationCode": "123456",
+      "verificationExpiresAt": "2026-04-28T10:15:00Z"
      }
      ```
    - **Consumidores esperados:** `clinical-service`, `agenda-service`, `notification-service`

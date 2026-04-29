@@ -4,6 +4,9 @@ public record UserRegisteredEvent(
         String userId,
         String email,
         String role,
-        String registeredAt
+        String registeredAt,
+        boolean emailVerificationRequired,
+        String verificationCode,
+        String verificationExpiresAt
 ) {
 }

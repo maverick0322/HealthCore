@@ -86,8 +86,8 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(newUser);
-        createVerificationCode(savedUser);
-        publishUserRegistered(savedUser);
+        VerificationCodeDetails verificationCodeDetails = createVerificationCode(savedUser);
+        publishUserRegistered(savedUser, verificationCodeDetails, true);
         log.info("Local user registered successfully with ID: {}", savedUser.getId());
 
         return savedUser;
@@ -113,8 +113,8 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(newUser);
-        createVerificationCode(savedUser);
-        publishUserRegistered(savedUser);
+        VerificationCodeDetails verificationCodeDetails = createVerificationCode(savedUser);
+        publishUserRegistered(savedUser, verificationCodeDetails, true);
         log.info("Admin provisioned user successfully with ID: {}", savedUser.getId());
 
         return savedUser;
@@ -274,14 +274,15 @@ public class AuthService {
         log.info("Password reset completed for user: {}", passwordResetCode.getEmail());
     }
 
-    private void createVerificationCode(User user) {
+    private VerificationCodeDetails createVerificationCode(User user) {
         String code = generateNumericCode();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(VERIFICATION_CODE_TTL_MINUTES);
         verificationCodeRepository.deleteByEmail(user.getEmail());
         verificationCodeRepository.save(VerificationCode.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
                 .codeHash(hashValue(code))
-                .expiresAt(LocalDateTime.now().plusMinutes(VERIFICATION_CODE_TTL_MINUTES))
+                .expiresAt(expiresAt)
                 .createdAt(LocalDateTime.now())
                 .build());
 
@@ -296,6 +297,8 @@ public class AuthService {
             // Save to testing store if available
             devEmailCodeStore.ifPresent(store -> store.saveVerificationCode(user.getEmail(), code));
         }
+
+        return new VerificationCodeDetails(code, expiresAt);
     }
 
     private void persistRefreshToken(User user, String refreshToken) {
@@ -343,7 +346,7 @@ public class AuthService {
                 .build();
 
         User savedSocialUser = userRepository.save(newSocialUser);
-        publishUserRegistered(savedSocialUser);
+        publishUserRegistered(savedSocialUser, null, false);
         log.info("Social user provisioned successfully for email: {} with provider: {}", email, provider);
         return savedSocialUser;
     }
@@ -352,14 +355,17 @@ public class AuthService {
         return environment != null && environment.acceptsProfiles(Profiles.of("dev", "local"));
     }
 
-    private void publishUserRegistered(User savedUser) {
+    private void publishUserRegistered(User savedUser, VerificationCodeDetails verificationCodeDetails, boolean emailVerificationRequired) {
         try {
             LocalDateTime createdAt = savedUser.getCreatedAt() == null ? LocalDateTime.now() : savedUser.getCreatedAt();
             identityEventPublisher.publishUserRegistered(new UserRegisteredEvent(
                     savedUser.getId(),
                     savedUser.getEmail(),
                     savedUser.getRole().name(),
-                    createdAt.toString()
+                    createdAt.toString(),
+                    emailVerificationRequired,
+                    verificationCodeDetails == null ? null : verificationCodeDetails.code(),
+                    verificationCodeDetails == null ? null : verificationCodeDetails.expiresAt().toString()
             ));
         } catch (RuntimeException ex) {
             log.warn("Failed to publish user registered event for userId={} email={}", savedUser.getId(), savedUser.getEmail(), ex);
@@ -376,6 +382,9 @@ public class AuthService {
         } catch (RuntimeException ex) {
             log.warn("Failed to publish password reset event for email={}", email, ex);
         }
+    }
+
+    private record VerificationCodeDetails(String code, LocalDateTime expiresAt) {
     }
 
     private String normalizeLoginKey(String email) {

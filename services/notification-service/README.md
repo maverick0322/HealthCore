@@ -4,7 +4,7 @@
 Notification service consumes async events from RabbitMQ and sends transactional emails via Resend. It follows clean architecture with a clear split between domain, application, and infrastructure layers.
 
 ## Responsibilities
-- Send welcome emails on `UserRegisteredEvent`
+- Send welcome emails on `UserRegisteredEvent` (local/admin users receive a 6-digit verification code; social users receive a friendly welcome)
 - Send password reset codes on `PasswordResetRequestedEvent`
 
 ## Event Contracts

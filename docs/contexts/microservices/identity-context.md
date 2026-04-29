@@ -41,7 +41,7 @@ Expone los endpoints públicos consumidos directamente por la aplicación Web/M�
 ### A. Como Productor de Eventos (RabbitMQ)
 El `identity-service` es el origen del ciclo de vida del usuario. Cuando ocurre un registro exitoso, no hace peticiones síncronas para no hacer esperar al cliente. En su lugar, publica eventos asíncronos:
 * **Evento:** `UserRegisteredEvent`
-* **Payload:** `{ "userId": "UUID", "email": "x@x.com", "role": "PATIENT" }`
+* **Payload:** `{ "userId": "UUID", "email": "x@x.com", "role": "PATIENT", "registeredAt": "2026-04-28T10:00:00Z", "emailVerificationRequired": true, "verificationCode": "123456", "verificationExpiresAt": "2026-04-28T10:15:00Z" }`
 * **Consumidores esperados:** `clinical-service` (para crear el expediente clínico vacío) y `agenda-service` (para perfiles de nutriólogos).
 
 * **Evento:** `PasswordResetRequestedEvent`

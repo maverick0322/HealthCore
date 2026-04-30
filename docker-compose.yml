@@ -88,9 +88,6 @@ services:
     depends_on:
       - rabbitmq
       - identity-service
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672

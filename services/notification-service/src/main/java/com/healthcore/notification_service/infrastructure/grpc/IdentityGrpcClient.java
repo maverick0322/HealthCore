@@ -36,10 +36,10 @@ public class IdentityGrpcClient implements UserDirectoryPort {
     @Override
     public Map<String, String> getEmailsByUserIds(List<String> userIds) {
         try {
-            UserContactsRequest request = UserContactsRequest.newBuilder()
+                UserContactsRequest request = UserContactsRequest.newBuilder()
                     .addAllUserIds(userIds)
                     .build();
-            UserContactsResponse response = identityStub
+                UserContactsResponse response = identityStub
                     .withDeadlineAfter(GRPC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .getUserContacts(request);
 

@@ -1,10 +1,15 @@
 package com.healthcore.tracking.interfaces.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.healthcore.tracking.application.usecase.FoodTrackingUseCase;
 import com.healthcore.tracking.domain.exception.InvalidDomainDataException;
 import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
 import com.healthcore.tracking.domain.model.FoodNutrients;
+import com.healthcore.tracking.domain.model.MealItem;
+import com.healthcore.tracking.domain.model.MealLog;
+import com.healthcore.tracking.domain.model.MealType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         controllers = FoodTrackingController.class,
         excludeAutoConfiguration = {SecurityAutoConfiguration.class}
 )
-
 @TestPropertySource(properties = "jwt.secret=ThisIsAVerySecureSecretKeyForTestingTheFilter2026!")
 class FoodTrackingControllerTest {
 
@@ -42,15 +46,20 @@ class FoodTrackingControllerTest {
     @MockitoBean
     private FoodTrackingUseCase trackingUseCase;
 
+    @BeforeEach
+    void setUp() {
+        // Ensure ObjectMapper can serialize/deserialize LocalDateTime gracefully
+        objectMapper.registerModule(new JavaTimeModule());
+    }
+
     @Test
     @DisplayName("Should return 200 OK and food nutrients when barcode exists")
     void getFoodFromCatalog_Success() throws Exception {
         // Arrange
-        FoodNutrients mockNutrients = FoodNutrients.builder()
-                .name("Avena Integral")
-                .brand("Quaker")
-                .calories(389.0)
-                .build();
+        FoodNutrients mockNutrients = new FoodNutrients(
+                "75017618", "Avena Integral", "Quaker", null,
+                389.0, 16.9, 66.3, 6.9, 10.6, 2.0, 0.0, 429.0
+        );
 
         when(trackingUseCase.getFoodFromCatalog("75017618")).thenReturn(mockNutrients);
 
@@ -94,38 +103,55 @@ class FoodTrackingControllerTest {
     }
 
     @Test
-    @DisplayName("Should return 201 CREATED when food log is successfully processed")
-    void logFoodConsumption_Created() throws Exception {
+    @DisplayName("Should return 201 CREATED when meal log is successfully processed")
+    void logMealConsumption_Created() throws Exception {
         // Arrange
-        MealLogRequest requestBody = new MealLogRequest("75017618", 150.0);
+        MealLogRequest.FoodItemRequest foodItemRequest = new MealLogRequest.FoodItemRequest("75017618", 150.0);
+        MealLogRequest requestBody = new MealLogRequest(
+                MealType.BREAKFAST,
+                LocalDateTime.now(),
+                "avena-photo.jpg",
+                List.of(foodItemRequest)
+        );
 
-        FoodLog mockSavedLog = FoodLog.builder()
-                .userId("user-123")
+        MealItem mockItem = MealItem.builder()
                 .barcode("75017618")
                 .foodName("Avena Integral")
                 .consumedGrams(150.0)
-                .totalCalories(583.5)
-                .consumedAt(LocalDateTime.now())
+                .calories(583.5)
                 .build();
 
-        when(trackingUseCase.logFoodConsumption(any(), eq("75017618"), eq(150.0)))
+        MealLog mockSavedLog = MealLog.builder()
+                .userId("user-123")
+                .mealType(MealType.BREAKFAST)
+                .photoKey("avena-photo.jpg")
+                .consumedAt(requestBody.consumedAt())
+                .totalCalories(583.5)
+                .items(List.of(mockItem))
+                .build();
+
+        when(trackingUseCase.logMealConsumption(any(), eq(MealType.BREAKFAST), any(), any(), any()))
                 .thenReturn(mockSavedLog);
 
         // Act & Assert
-        mockMvc.perform(post("/api/v1/tracking/logs/food")
+        mockMvc.perform(post("/api/v1/tracking/logs/meal")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestBody)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.foodName").value("Avena Integral"))
-                .andExpect(jsonPath("$.totalCalories").value(583.5));
+                .andExpect(jsonPath("$.mealType").value("BREAKFAST"))
+                .andExpect(jsonPath("$.totalCalories").value(583.5))
+                .andExpect(jsonPath("$.items[0].foodName").value("Avena Integral")); // Asserting nested data
     }
 
     @Test
-    @DisplayName("Should return 200 OK and a list of logs for today")
+    @DisplayName("Should return 200 OK and a list of meal logs for today")
     void getTodayLogs_Success() throws Exception {
         // Arrange
-        FoodLog log1 = FoodLog.builder().foodName("Manzana").build();
-        FoodLog log2 = FoodLog.builder().foodName("Pera").build();
+        MealItem item1 = MealItem.builder().foodName("Manzana").build();
+        MealLog log1 = MealLog.builder().mealType(MealType.SNACK).items(List.of(item1)).build();
+
+        MealItem item2 = MealItem.builder().foodName("Pera").build();
+        MealLog log2 = MealLog.builder().mealType(MealType.LUNCH).items(List.of(item2)).build();
 
         when(trackingUseCase.getTodayLogs(any())).thenReturn(List.of(log1, log2));
 
@@ -134,7 +160,7 @@ class FoodTrackingControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].foodName").value("Manzana"))
-                .andExpect(jsonPath("$[1].foodName").value("Pera"));
+                .andExpect(jsonPath("$[0].items[0].foodName").value("Manzana"))
+                .andExpect(jsonPath("$[1].items[0].foodName").value("Pera"));
     }
 }

@@ -36,19 +36,13 @@ class CatalogGrpcClientAdapterTest {
 
     @BeforeEach
     void setUp() {
-        // CRITICAL: Since our production code uses deadlines, we must mock the builder pattern
-        // so it returns the mock itself instead of null when setting the timeout.
         when(catalogStubMock.withDeadlineAfter(anyLong(), any(TimeUnit.class))).thenReturn(catalogStubMock);
 
         adapter = new CatalogGrpcClientAdapter(catalogStubMock);
     }
 
-    // =========================================================================
-    // TESTS FOR getNutrientsByBarcode
-    // =========================================================================
-
     @Test
-    @DisplayName("Should map and return FoodNutrients when gRPC call is successful")
+    @DisplayName("Should map and return FoodNutrients including new micronutrients when gRPC call is successful")
     void getNutrientsByBarcode_Success() {
         // Arrange
         FoodResponse mockResponse = FoodResponse.newBuilder()
@@ -56,7 +50,11 @@ class CatalogGrpcClientAdapterTest {
                 .setName("Manzana Fresca")
                 .setBrand("Local")
                 .setCaloriesPer100G(52.0F)
-                .setSource("USDA")
+                .setProteinsPer100G(0.3F)
+                .setFiberGramsPer100G(2.4F)      // New Micro
+                .setSodiumMgPer100G(1.0F)        // New Micro
+                .setSugarGramsPer100G(10.0F)     // New Micro
+                .setPotassiumMgPer100G(107.0F)   // New Micro
                 .build();
 
         when(catalogStubMock.getFoodItem(any(FoodRequest.class))).thenReturn(mockResponse);
@@ -66,9 +64,16 @@ class CatalogGrpcClientAdapterTest {
 
         // Assert
         assertTrue(result.isPresent());
-        assertEquals("Manzana Fresca", result.get().getName());
-        assertEquals(52.0, result.get().getCalories());
-        assertEquals("USDA", result.get().getSource());
+        FoodNutrients nutrients = result.get();
+        assertEquals("Manzana Fresca", nutrients.name());
+        assertEquals("Local", nutrients.brand());
+        assertEquals(52.0, nutrients.calories(), 0.001);
+
+        // Assert new micronutrients mapping
+        assertEquals(2.4, nutrients.fiberGrams(), 0.001);
+        assertEquals(1.0, nutrients.sodiumMg(), 0.001);
+        assertEquals(10.0, nutrients.sugarGrams(), 0.001);
+        assertEquals(107.0, nutrients.potassiumMg(), 0.001);
     }
 
     @Test
@@ -138,8 +143,8 @@ class CatalogGrpcClientAdapterTest {
 
         // Assert
         assertEquals(2, results.size());
-        assertEquals("Oreo", results.get(0).getName());
-        assertEquals("Oreo Mini", results.get(1).getName());
+        assertEquals("Oreo", results.get(0).name());
+        assertEquals("Oreo Mini", results.get(1).name());
     }
 
     @Test

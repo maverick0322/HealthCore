@@ -6,6 +6,7 @@ import com.healthcore.notification_service.application.validation.EventValidatio
 import com.healthcore.notification_service.domain.events.AppointmentCancelledEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -32,7 +33,12 @@ public class SendAppointmentCancelledEmailUseCase {
 
         Locale locale = templateService.getLocale(event.locale());
         String subject = templateService.getMessage("appointment.cancelled.subject", locale);
-        String htmlBody = templateService.getMessage("appointment.cancelled.html", locale, event.appointmentId(), event.startTime());
+        
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("appointmentId", event.appointmentId());
+        variables.put("startTime", event.startTime());
+
+        String htmlBody = templateService.render("appointment-cancelled", variables, locale);
         String textBody = templateService.getMessage("appointment.cancelled.text", locale, event.appointmentId(), event.startTime());
 
         sendIfPresent(patientEmail, subject, htmlBody, textBody);

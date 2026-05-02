@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -35,11 +35,9 @@ public class VerificationCodeDocument {
 
     @Indexed(expireAfter = "0s")
     @Field("expires_at")
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
 
     @CreatedDate
     @Field("created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }
-
-

@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -18,7 +18,6 @@ public class PasswordResetCode {
     private String userId;
     private String email;
     private String codeHash;
-    private LocalDateTime expiresAt;
-    private LocalDateTime createdAt;
+    private Instant expiresAt;
+    private Instant createdAt;
 }
-

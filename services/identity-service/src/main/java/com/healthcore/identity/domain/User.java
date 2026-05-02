@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -20,7 +20,7 @@ public class User {
     private Role role;
     private AuthProvider provider;
     private boolean emailVerified;
-    private LocalDateTime verifiedAt;
+    private Instant verifiedAt;
     private boolean enabled;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

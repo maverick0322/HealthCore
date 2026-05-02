@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -41,12 +41,12 @@ public class UserDocument {
     private boolean emailVerified;
 
     @Field("verified_at")
-    private LocalDateTime verifiedAt;
+    private Instant verifiedAt;
 
     @Field("enabled")
     private boolean enabled;
 
     @CreatedDate
     @Field("created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

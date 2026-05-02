@@ -6,7 +6,9 @@ import com.healthcore.notification_service.domain.events.UserRegisteredEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 public class SendWelcomeEmailUseCase {
@@ -26,7 +28,13 @@ public class SendWelcomeEmailUseCase {
 
         Locale locale = templateService.getLocale(event.locale());
         String subject = templateService.getMessage("welcome.subject", locale);
-        String htmlBody = buildHtmlBody(event, locale);
+        
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("verificationRequired", event.emailVerificationRequired());
+        variables.put("verificationCode", event.verificationCode());
+        variables.put("verificationExpiresAt", event.verificationExpiresAt());
+
+        String htmlBody = templateService.render("welcome", variables, locale);
         String textBody = buildTextBody(event, locale);
 
         emailSender.send(new EmailMessage(event.email(), subject, htmlBody, textBody));
@@ -39,14 +47,6 @@ public class SendWelcomeEmailUseCase {
             EventValidation.requireNonBlank(event.verificationCode(), "verification code");
             EventValidation.requireFutureInstant(event.verificationExpiresAt(), "verification expiration", clock);
         }
-    }
-
-    private String buildHtmlBody(UserRegisteredEvent event, Locale locale) {
-        if (event.emailVerificationRequired()) {
-            return templateService.getMessage("welcome.verification.html", locale, 
-                event.verificationCode(), event.verificationExpiresAt());
-        }
-        return templateService.getMessage("welcome.ready.html", locale);
     }
 
     private String buildTextBody(UserRegisteredEvent event, Locale locale) {

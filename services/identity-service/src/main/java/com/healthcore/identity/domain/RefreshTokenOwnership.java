@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -18,10 +18,9 @@ public class RefreshTokenOwnership {
     private String userId;
     private String email;
     private String tokenHash;
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
     private boolean revoked;
-    private LocalDateTime revokedAt;
+    private Instant revokedAt;
     private String replacedByTokenHash;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }
-

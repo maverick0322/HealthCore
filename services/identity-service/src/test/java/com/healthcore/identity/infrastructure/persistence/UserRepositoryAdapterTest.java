@@ -9,7 +9,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,9 +35,9 @@ class UserRepositoryAdapterTest {
                 .role(Role.PATIENT)
                 .provider(AuthProvider.LOCAL)
                 .emailVerified(true)
-                .verifiedAt(LocalDateTime.now().minusDays(1))
+                .verifiedAt(Instant.now().minus(1, ChronoUnit.DAYS))
                 .enabled(true)
-                .createdAt(LocalDateTime.now().minusDays(2))
+                .createdAt(Instant.now().minus(2, ChronoUnit.DAYS))
                 .build();
 
         when(mongoRepository.findByEmail("user@healthcore.com")).thenReturn(Optional.of(document));
@@ -61,7 +62,7 @@ class UserRepositoryAdapterTest {
                 .provider(AuthProvider.LOCAL)
                 .emailVerified(false)
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
 
         UserDocument saved = UserDocument.builder()
@@ -84,4 +85,3 @@ class UserRepositoryAdapterTest {
         assertThat(result.getRole()).isEqualTo(Role.NUTRITIONIST);
     }
 }
-

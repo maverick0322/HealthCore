@@ -31,7 +31,7 @@ class SendPasswordResetEmailUseCaseTest {
         emailSender = new CapturingEmailSender();
         useCase = new SendPasswordResetEmailUseCase(emailSender, FIXED_CLOCK, templateService);
         
-        when(templateService.getLocale(any())).thenReturn(new Locale("es"));
+        when(templateService.getLocale(any())).thenReturn(Locale.of("es"));
         when(templateService.getMessage(eq("password.reset.subject"), any())).thenReturn("Password Reset Subject");
     }
 
@@ -49,7 +49,7 @@ class SendPasswordResetEmailUseCaseTest {
 
     @Test
     void sendSetsLocalizedHtmlBody() {
-        when(templateService.getMessage(eq("password.reset.html"), any(), any(), any())).thenReturn("html 123456");
+        when(templateService.render(eq("password-reset"), any(), any())).thenReturn("html 123456");
         useCase.send(createEvent());
         assertEquals("html 123456", emailSender.message.htmlBody());
     }

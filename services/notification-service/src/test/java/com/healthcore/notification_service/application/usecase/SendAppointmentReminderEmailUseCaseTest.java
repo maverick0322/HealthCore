@@ -32,7 +32,7 @@ class SendAppointmentReminderEmailUseCaseTest {
         userDirectoryPort = mock(UserDirectoryPort.class);
         useCase = new SendAppointmentReminderEmailUseCase(emailSender, userDirectoryPort, templateService);
 
-        when(templateService.getLocale(any())).thenReturn(new Locale("es"));
+        when(templateService.getLocale(any())).thenReturn(Locale.of("es"));
         when(templateService.getMessage(eq("appointment.reminder.subject"), any())).thenReturn("Reminder Subject");
         when(userDirectoryPort.getEmailsByUserIds(any())).thenReturn(Map.of("nutri-1", "nutri@healthcore.com"));
     }
@@ -51,7 +51,7 @@ class SendAppointmentReminderEmailUseCaseTest {
 
     @Test
     void sendSetsLocalizedHtmlBody() {
-        when(templateService.getMessage(eq("appointment.reminder.html"), any(), any())).thenReturn("html body");
+        when(templateService.render(eq("appointment-reminder"), any(), any())).thenReturn("html body");
         useCase.send(createEvent());
         assertEquals("html body", emailSender.messages.get(0).htmlBody());
     }

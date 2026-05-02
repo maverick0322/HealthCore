@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Slf4j
 @Component
@@ -60,13 +60,12 @@ public class ManualDbSeedRunner implements CommandLineRunner {
                 .role(role)
                 .provider(AuthProvider.LOCAL)
                 .emailVerified(true)
-                .verifiedAt(LocalDateTime.now())
+                .verifiedAt(Instant.now())
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
 
         userRepository.save(user);
         log.info("manualdb seed user created: {} ({})", email, role);
     }
 }
-

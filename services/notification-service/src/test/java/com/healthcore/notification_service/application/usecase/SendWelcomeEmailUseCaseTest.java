@@ -49,7 +49,7 @@ class SendWelcomeEmailUseCaseTest {
 
     @Test
     void sendSetsLocalizedHtmlBodyForVerification() {
-        when(templateService.getMessage(eq("welcome.verification.html"), any(), any(), any())).thenReturn("html 123456");
+        when(templateService.render(eq("welcome"), any(), any())).thenReturn("html 123456");
         useCase.send(createVerificationEvent());
         assertEquals("html 123456", emailSender.message.htmlBody());
     }
@@ -63,7 +63,7 @@ class SendWelcomeEmailUseCaseTest {
 
     @Test
     void sendSetsLocalizedHtmlBodyForSocialUser() {
-        when(templateService.getMessage(eq("welcome.ready.html"), any())).thenReturn("Your account is ready html");
+        when(templateService.render(eq("welcome"), any(), any())).thenReturn("Your account is ready html");
         useCase.send(createSocialEvent());
         assertEquals("Your account is ready html", emailSender.message.htmlBody());
     }

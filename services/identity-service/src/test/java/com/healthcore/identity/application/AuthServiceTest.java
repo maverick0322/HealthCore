@@ -22,7 +22,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -104,7 +105,7 @@ class AuthServiceTest {
                 .role(Role.PATIENT)
                 .provider(AuthProvider.LOCAL)
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
 
         when(userRepository.save(any(User.class))).thenReturn(expectedSavedUser);
@@ -292,7 +293,7 @@ class AuthServiceTest {
         RefreshTokenOwnership revoked = RefreshTokenOwnership.builder()
                 .tokenHash("hash")
                 .revoked(true)
-                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .expiresAt(Instant.now().plus(1, ChronoUnit.HOURS))
                 .build();
 
         when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
@@ -309,7 +310,7 @@ class AuthServiceTest {
         RefreshTokenOwnership expired = RefreshTokenOwnership.builder()
                 .tokenHash("hash")
                 .revoked(false)
-                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .expiresAt(Instant.now().minus(1, ChronoUnit.MINUTES))
                 .build();
 
         when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
@@ -326,7 +327,7 @@ class AuthServiceTest {
         RefreshTokenOwnership active = RefreshTokenOwnership.builder()
                 .tokenHash("hash")
                 .revoked(false)
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .expiresAt(Instant.now().plus(5, ChronoUnit.MINUTES))
                 .build();
 
         when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
@@ -346,7 +347,7 @@ class AuthServiceTest {
         VerificationCode expiredCode = VerificationCode.builder()
                 .email("patient@healthcore.com")
                 .codeHash("hash")
-                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .expiresAt(Instant.now().minus(1, ChronoUnit.MINUTES))
                 .build();
 
         when(verificationCodeRepository.findByEmailAndCodeHash(any(), any())).thenReturn(Optional.of(expiredCode));
@@ -372,7 +373,7 @@ class AuthServiceTest {
         PasswordResetCode stored = PasswordResetCode.builder()
                 .email(email)
                 .codeHash("hash")
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .expiresAt(Instant.now().plus(5, ChronoUnit.MINUTES))
                 .build();
         User user = User.builder().email(email).provider(AuthProvider.LOCAL).build();
 
@@ -392,7 +393,7 @@ class AuthServiceTest {
         RefreshTokenOwnership active = RefreshTokenOwnership.builder()
                 .tokenHash("hash")
                 .revoked(false)
-                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .expiresAt(Instant.now().plus(5, ChronoUnit.MINUTES))
                 .build();
 
         when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");

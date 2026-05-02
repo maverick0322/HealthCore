@@ -7,6 +7,11 @@ services:
     volumes:
       - mongo_data:/data/db
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -18,6 +23,11 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-healthcore}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-healthcore}
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   mongo-express:
     image: mongo-express:latest
@@ -29,7 +39,8 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
       ME_CONFIG_BASICAUTH: false
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
 
   api-gateway:
     image: nginx:alpine
@@ -39,10 +50,14 @@ services:
     volumes:
       - ./services/api_gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - identity-service
-      - tracking-service
-      - agenda-service
-      - clinical-service
+      identity-service:
+        condition: service_started
+      tracking-service:
+        condition: service_started
+      agenda-service:
+        condition: service_started
+      clinical-service:
+        condition: service_started
     restart: unless-stopped
 
   catalog-service:
@@ -59,8 +74,10 @@ services:
       - "8082:8082"
       - "9090:9090"
     depends_on:
-      - mongodb
-      - rabbitmq
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -86,8 +103,10 @@ services:
     build: ./services/notification-service
     container_name: healthcore-notification-service
     depends_on:
-      - rabbitmq
-      - identity-service
+      rabbitmq:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
@@ -107,6 +126,11 @@ services:
     ports:
       - "6379:6379"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   tracking-service:
     build: ./services/tracking-service
@@ -114,9 +138,12 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - mongodb
-      - catalog-service
-      - redis
+      mongodb:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_tracking
       - GRPC_CATALOG_TARGET=catalog-service:50051
@@ -162,7 +189,7 @@ services:
       agenda-mongodb:
         condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://agenda-mongodb:27017/${AGENDA_MONGO_DB:-healthcore_agenda}
       GRPC_CLIENT_CLINICAL_ADDRESS: ${GRPC_CLIENT_CLINICAL_ADDRESS:-static://clinical-service:50051}

@@ -6,7 +6,9 @@ import com.healthcore.notification_service.domain.events.PasswordResetRequestedE
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 public class SendPasswordResetEmailUseCase {
@@ -26,7 +28,12 @@ public class SendPasswordResetEmailUseCase {
 
         Locale locale = templateService.getLocale(event.locale());
         String subject = templateService.getMessage("password.reset.subject", locale);
-        String htmlBody = templateService.getMessage("password.reset.html", locale, event.resetCode(), event.expiresAt());
+        
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("resetCode", event.resetCode());
+        variables.put("expiresAt", event.expiresAt());
+
+        String htmlBody = templateService.render("password-reset", variables, locale);
         String textBody = templateService.getMessage("password.reset.text", locale, event.resetCode(), event.expiresAt());
 
         emailSender.send(new EmailMessage(event.email(), subject, htmlBody, textBody));

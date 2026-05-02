@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 
 @Repository
@@ -36,7 +36,7 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
         mongoRepository.findByTokenHash(tokenHash)
                 .ifPresent(document -> {
                     document.setRevoked(true);
-                    document.setRevokedAt(LocalDateTime.now());
+                    document.setRevokedAt(Instant.now());
                     document.setReplacedByTokenHash(replacedByTokenHash);
                     mongoRepository.save(document);
                 });
@@ -47,7 +47,7 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
         Query query = new Query(Criteria.where("token_hash").is(tokenHash).and("revoked").is(false));
         Update update = new Update()
                 .set("revoked", true)
-                .set("revoked_at", LocalDateTime.now())
+                .set("revoked_at", Instant.now())
                 .set("replaced_by_token_hash", replacedByTokenHash);
         return mongoTemplate.updateFirst(query, update, RefreshTokenDocument.class)
                 .getModifiedCount() > 0;

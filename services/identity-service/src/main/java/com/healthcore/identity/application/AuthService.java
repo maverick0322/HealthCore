@@ -31,7 +31,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
@@ -92,7 +94,7 @@ public class AuthService {
                 .provider(AuthProvider.LOCAL)
                 .emailVerified(false)
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
 
         User savedUser = userRepository.save(newUser);
@@ -121,7 +123,7 @@ public class AuthService {
                 .provider(AuthProvider.LOCAL)
                 .emailVerified(false)
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
 
         User savedUser = userRepository.save(newUser);
@@ -178,14 +180,14 @@ public class AuthService {
     public void verifyCode(String email, String code) {
         VerificationCode verificationCode = verificationCodeRepository
                 .findByEmailAndCodeHash(email, hashValue(code))
-                .filter(storedCode -> storedCode.getExpiresAt().isAfter(LocalDateTime.now()))
+                .filter(storedCode -> storedCode.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new UnauthorizedException("Invalid or expired verification code"));
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("Invalid verification request"));
 
         user.setEmailVerified(true);
-        user.setVerifiedAt(LocalDateTime.now());
+        user.setVerifiedAt(Instant.now());
         userRepository.save(user);
         verificationCodeRepository.deleteByEmail(email);
 
@@ -198,7 +200,7 @@ public class AuthService {
 
         RefreshTokenOwnership currentOwnership = refreshTokenRepository.findByTokenHash(currentTokenHash)
                 .filter(token -> !token.isRevoked())
-                .filter(token -> token.getExpiresAt().isAfter(LocalDateTime.now()))
+                .filter(token -> token.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
         User user = userRepository.findByEmail(email)
@@ -250,13 +252,13 @@ public class AuthService {
         String code = generateNumericCode();
 
         passwordResetCodeRepository.deleteByEmail(email);
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(RESET_CODE_TTL_MINUTES);
+        Instant expiresAt = Instant.now().plus(RESET_CODE_TTL_MINUTES, ChronoUnit.MINUTES);
         passwordResetCodeRepository.save(PasswordResetCode.builder()
                 .userId(user.getId())
                 .email(email)
                 .codeHash(hashValue(code))
             .expiresAt(expiresAt)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build());
 
         publishPasswordResetRequested(email, code, expiresAt, locale);
@@ -279,7 +281,7 @@ public class AuthService {
         validatePassword(newPassword, "New password is required");
         PasswordResetCode passwordResetCode = passwordResetCodeRepository
                 .findByEmailAndCodeHash(email, hashValue(code))
-                .filter(storedCode -> storedCode.getExpiresAt().isAfter(LocalDateTime.now()))
+                .filter(storedCode -> storedCode.getExpiresAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new UnauthorizedException("Invalid or expired password reset code"));
 
         User user = userRepository.findByEmailAndProvider(email, AuthProvider.LOCAL)
@@ -294,14 +296,14 @@ public class AuthService {
 
     private VerificationCodeDetails createVerificationCode(User user) {
         String code = generateNumericCode();
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(VERIFICATION_CODE_TTL_MINUTES);
+        Instant expiresAt = Instant.now().plus(VERIFICATION_CODE_TTL_MINUTES, ChronoUnit.MINUTES);
         verificationCodeRepository.deleteByEmail(user.getEmail());
         verificationCodeRepository.save(VerificationCode.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
                 .codeHash(hashValue(code))
                 .expiresAt(expiresAt)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build());
 
         // Placeholder integration point for notifier adapter.
@@ -324,9 +326,9 @@ public class AuthService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .tokenHash(hashValue(refreshToken))
-                .expiresAt(LocalDateTime.now().plusHours(REFRESH_TOKEN_TTL_HOURS))
+                .expiresAt(Instant.now().plus(REFRESH_TOKEN_TTL_HOURS, ChronoUnit.HOURS))
                 .revoked(false)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build());
     }
 
@@ -362,9 +364,9 @@ public class AuthService {
                 .role(Role.PATIENT)
                 .provider(provider)
                 .emailVerified(true)
-                .verifiedAt(LocalDateTime.now())
+                .verifiedAt(Instant.now())
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
 
         User savedSocialUser = userRepository.save(newSocialUser);
@@ -379,15 +381,15 @@ public class AuthService {
 
     private void publishUserRegistered(User savedUser, VerificationCodeDetails verificationCodeDetails, boolean emailVerificationRequired, String locale) {
         try {
-            LocalDateTime createdAt = savedUser.getCreatedAt() == null ? LocalDateTime.now() : savedUser.getCreatedAt();
+            Instant createdAt = savedUser.getCreatedAt() == null ? Instant.now() : savedUser.getCreatedAt();
             identityEventPublisher.publishUserRegistered(new UserRegisteredEvent(
                     savedUser.getId(),
                     savedUser.getEmail(),
                     savedUser.getRole().name(),
-                    createdAt.atOffset(java.time.ZoneOffset.UTC).toString(),
+                    createdAt.toString(),
                     emailVerificationRequired,
                     verificationCodeDetails == null ? null : verificationCodeDetails.code(),
-                    verificationCodeDetails == null ? null : verificationCodeDetails.expiresAt().atOffset(java.time.ZoneOffset.UTC).toString(),
+                    verificationCodeDetails == null ? null : verificationCodeDetails.expiresAt().toString(),
                     locale != null ? locale : "es"
             ));
         } catch (RuntimeException ex) {
@@ -395,12 +397,12 @@ public class AuthService {
         }
     }
 
-    private void publishPasswordResetRequested(String email, String code, LocalDateTime expiresAt, String locale) {
+    private void publishPasswordResetRequested(String email, String code, Instant expiresAt, String locale) {
         try {
             identityEventPublisher.publishPasswordResetRequested(new PasswordResetRequestedEvent(
                     email,
                     code,
-                    expiresAt.atOffset(java.time.ZoneOffset.UTC).toString(),
+                    expiresAt.toString(),
                     locale != null ? locale : "es"
             ));
         } catch (RuntimeException ex) {
@@ -408,7 +410,7 @@ public class AuthService {
         }
     }
 
-    private record VerificationCodeDetails(String code, LocalDateTime expiresAt) {
+    private record VerificationCodeDetails(String code, Instant expiresAt) {
     }
 
     private String normalizeLoginKey(String email) {

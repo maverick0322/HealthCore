@@ -6,6 +6,7 @@ import com.healthcore.notification_service.application.validation.EventValidatio
 import com.healthcore.notification_service.domain.events.AppointmentReminderEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -32,7 +33,11 @@ public class SendAppointmentReminderEmailUseCase {
 
         Locale locale = templateService.getLocale(event.locale());
         String subject = templateService.getMessage("appointment.reminder.subject", locale);
-        String htmlBody = templateService.getMessage("appointment.reminder.html", locale, event.startTime());
+        
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("startTime", event.startTime());
+
+        String htmlBody = templateService.render("appointment-reminder", variables, locale);
         String textBody = templateService.getMessage("appointment.reminder.text", locale, event.startTime());
 
         sendIfPresent(patientEmail, subject, htmlBody, textBody);

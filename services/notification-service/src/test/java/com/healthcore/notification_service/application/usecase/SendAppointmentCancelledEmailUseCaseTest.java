@@ -32,7 +32,7 @@ class SendAppointmentCancelledEmailUseCaseTest {
         userDirectoryPort = mock(UserDirectoryPort.class);
         useCase = new SendAppointmentCancelledEmailUseCase(emailSender, userDirectoryPort, templateService);
 
-        when(templateService.getLocale(any())).thenReturn(new Locale("es"));
+        when(templateService.getLocale(any())).thenReturn(Locale.of("es"));
         when(templateService.getMessage(eq("appointment.cancelled.subject"), any())).thenReturn("Cancelled Subject");
         when(userDirectoryPort.getEmailsByUserIds(any())).thenReturn(Map.of("patient-1", "patient@healthcore.com"));
     }
@@ -51,7 +51,7 @@ class SendAppointmentCancelledEmailUseCaseTest {
 
     @Test
     void sendSetsLocalizedHtmlBody() {
-        when(templateService.getMessage(eq("appointment.cancelled.html"), any(), any(), any())).thenReturn("html body");
+        when(templateService.render(eq("appointment-cancelled"), any(), any())).thenReturn("html body");
         useCase.send(createEvent());
         assertEquals("html body", emailSender.messages.get(0).htmlBody());
     }

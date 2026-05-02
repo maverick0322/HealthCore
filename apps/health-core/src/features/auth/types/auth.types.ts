@@ -20,6 +20,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   role?: UserRole;
+  locale?: string;
 }
 
 export interface RefreshRequest {
@@ -38,6 +39,7 @@ export interface VerifyCodeRequest {
 
 export interface PasswordResetRequest {
   email: string;
+  locale?: string;
 }
 
 export interface ResetPasswordRequest {
@@ -45,12 +47,14 @@ export interface ResetPasswordRequest {
   /** 6-digit numeric string */
   code: string;
   newPassword: string;
+  locale?: string;
 }
 
 export interface AdminCreateUserRequest {
   email: string;
   password: string;
   role: UserRole;
+  locale?: string;
 }
 
 // ── Responses ────────────────────────────────────────────────

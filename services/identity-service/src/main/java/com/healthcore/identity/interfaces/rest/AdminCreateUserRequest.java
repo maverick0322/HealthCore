@@ -19,7 +19,8 @@ public record AdminCreateUserRequest(
         String password,
 
         @NotNull(message = "Role is required")
-        Role role
+        Role role,
+
+        String locale
 ) {
 }
-

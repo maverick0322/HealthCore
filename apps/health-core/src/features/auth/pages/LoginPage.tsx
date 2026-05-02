@@ -15,7 +15,7 @@ export const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"paciente" | "nutriologo">("paciente");
-  const { t } = useTranslation("auth");
+  const { t, i18n } = useTranslation("auth");
   const { handleLogin, isLoading, error } = useLogin();
 
   // Map UI role to API role (stored for post-login routing, not sent to login API)
@@ -98,7 +98,7 @@ export const LoginPage = () => {
               className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
               onClick={() => {
                 sessionStorage.setItem("expectedRole", _roleMap[role]);
-                window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0`;
+                window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0?ui_locales=${i18n.language}`;
               }}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

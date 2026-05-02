@@ -11,7 +11,7 @@ import { authService } from '@/features/auth/services/authService';
  */
 export const useForgotPassword = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +19,7 @@ export const useForgotPassword = () => {
     setError(null);
     setIsLoading(true);
     try {
-      await authService.requestPasswordReset({ email });
+      await authService.requestPasswordReset({ email, locale: i18n.language });
       navigate('/verify-code', {
         state: { email, flow: 'password-reset' },
         replace: true,

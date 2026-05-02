@@ -50,10 +50,10 @@ class AuthControllerTest {
 
     @Test
     void should_Return201Created_When_RegistrationIsSuccessful() throws Exception {
-        RegisterRequest request = new RegisterRequest("new@healthcore.com", "StrongPass123!", Role.PATIENT);
+        RegisterRequest request = new RegisterRequest("new@healthcore.com", "StrongPass123!", Role.PATIENT, null);
         User mockUser = User.builder().email("new@healthcore.com").role(Role.PATIENT).build();
 
-        when(authService.registerLocalUser(anyString(), anyString(), any())).thenReturn(mockUser);
+        when(authService.registerLocalUser(anyString(), anyString(), any(), any())).thenReturn(mockUser);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -65,7 +65,7 @@ class AuthControllerTest {
 
     @Test
     void should_Return400BadRequest_When_EmailIsInvalid() throws Exception {
-        RegisterRequest badRequest = new RegisterRequest("not-an-email", "Weak1!", Role.PATIENT);
+        RegisterRequest badRequest = new RegisterRequest("not-an-email", "Weak1!", Role.PATIENT, null);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -77,8 +77,8 @@ class AuthControllerTest {
 
     @Test
     void should_Return409Conflict_When_EmailAlreadyExists() throws Exception {
-        RegisterRequest request = new RegisterRequest("existing@healthcore.com", "StrongPass123!", Role.PATIENT);
-        when(authService.registerLocalUser(anyString(), anyString(), any()))
+        RegisterRequest request = new RegisterRequest("existing@healthcore.com", "StrongPass123!", Role.PATIENT, null);
+        when(authService.registerLocalUser(anyString(), anyString(), any(), any()))
                 .thenThrow(new ConflictException("Email is already registered in HealthCore"));
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -189,7 +189,7 @@ class AuthControllerTest {
         User currentUser = User.builder()
                 .email("patient@healthcore.com")
                 .role(Role.PATIENT)
-                .provider(com.healthcore.identity.domain.AuthProvider.AUTH0)
+                .provider(com.healthcore.identity.domain.AuthProvider.LOCAL)
                 .emailVerified(true)
                 .enabled(true)
                 .build();
@@ -200,7 +200,7 @@ class AuthControllerTest {
                         .principal(new UsernamePasswordAuthenticationToken("patient@healthcore.com", null)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("patient@healthcore.com"))
-                .andExpect(jsonPath("$.provider").value("AUTH0"));
+                .andExpect(jsonPath("$.provider").value("LOCAL"));
     }
 
     @TestConfiguration

@@ -41,7 +41,8 @@ public class AppointmentConfirmationService {
                     saved.getPatientId(),
                     saved.getNutritionistId(),
                     saved.getStartTime().toString(),
-                    saved.getEndTime().toString()
+                    saved.getEndTime().toString(),
+                    saved.getLocale()
                 ));
                 return;
             } catch (InterruptedException interruptedException) {

@@ -77,7 +77,7 @@ public class PatientAgendaController {
         String patientId = currentPatientId(authentication);
         Appointment created = patientAppointmentService.createAppointment(
             patientId,
-            new CreateAppointmentCommand(request.slotId(), request.slotVersion())
+            new CreateAppointmentCommand(request.slotId(), request.slotVersion(), request.locale())
         );
         return toAppointmentResponse(created);
     }
@@ -118,7 +118,7 @@ public class PatientAgendaController {
         Appointment updated = patientAppointmentService.rescheduleAppointment(
             patientId,
             appointmentId,
-            new CreateAppointmentCommand(request.newSlotId(), request.newSlotVersion())
+            new CreateAppointmentCommand(request.newSlotId(), request.newSlotVersion(), request.locale())
         );
         return toAppointmentResponse(updated);
     }

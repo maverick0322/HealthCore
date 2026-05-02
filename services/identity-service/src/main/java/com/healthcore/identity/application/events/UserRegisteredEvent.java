@@ -7,6 +7,7 @@ public record UserRegisteredEvent(
         String registeredAt,
         boolean emailVerificationRequired,
         String verificationCode,
-        String verificationExpiresAt
+        String verificationExpiresAt,
+        String locale
 ) {
 }

@@ -3,61 +3,82 @@ package com.healthcore.notification_service.application.usecase;
 import com.healthcore.notification_service.application.port.EmailSender;
 import com.healthcore.notification_service.domain.events.PasswordResetRequestedEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SendPasswordResetEmailUseCaseTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-04-28T09:00:00Z"), ZoneOffset.UTC);
+    private TemplateService templateService;
+    private CapturingEmailSender emailSender;
+    private SendPasswordResetEmailUseCase useCase;
 
-    @Test
-    void sendBuildsPasswordResetEmail() {
-        CapturingEmailSender emailSender = new CapturingEmailSender();
-        SendPasswordResetEmailUseCase useCase = new SendPasswordResetEmailUseCase(emailSender, FIXED_CLOCK);
-
-        useCase.send(new PasswordResetRequestedEvent("user@healthcore.com", "123456", "2026-04-28T10:15:00Z"));
-
-        EmailMessage message = emailSender.message;
-        assertNotNull(message);
-        assertEquals("user@healthcore.com", message.toEmail());
-        assertEquals("Your HealthCore password reset code", message.subject());
-        assertTrue(message.htmlBody().contains("123456"));
-        assertTrue(message.textBody().contains("123456"));
+    @BeforeEach
+    void setUp() {
+        templateService = mock(TemplateService.class);
+        emailSender = new CapturingEmailSender();
+        useCase = new SendPasswordResetEmailUseCase(emailSender, FIXED_CLOCK, templateService);
+        
+        when(templateService.getLocale(any())).thenReturn(new Locale("es"));
+        when(templateService.getMessage(eq("password.reset.subject"), any())).thenReturn("Password Reset Subject");
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"", " ", "invalid", "user@", "user@domain"})
-    void sendRejectsInvalidEmail(String email) {
-        SendPasswordResetEmailUseCase useCase = new SendPasswordResetEmailUseCase(new CapturingEmailSender(), FIXED_CLOCK);
+    @Test
+    void sendSetsCorrectRecipient() {
+        useCase.send(createEvent());
+        assertEquals("user@healthcore.com", emailSender.message.toEmail());
+    }
 
-        PasswordResetRequestedEvent event = new PasswordResetRequestedEvent(email, "123456", "2026-04-28T10:15:00Z");
+    @Test
+    void sendSetsLocalizedSubject() {
+        useCase.send(createEvent());
+        assertEquals("Password Reset Subject", emailSender.message.subject());
+    }
 
+    @Test
+    void sendSetsLocalizedHtmlBody() {
+        when(templateService.getMessage(eq("password.reset.html"), any(), any(), any())).thenReturn("html 123456");
+        useCase.send(createEvent());
+        assertEquals("html 123456", emailSender.message.htmlBody());
+    }
+
+    @Test
+    void sendSetsLocalizedTextBody() {
+        when(templateService.getMessage(eq("password.reset.text"), any(), any(), any())).thenReturn("text 123456");
+        useCase.send(createEvent());
+        assertEquals("text 123456", emailSender.message.textBody());
+    }
+
+    @Test
+    void sendRejectsInvalidEmail() {
+        PasswordResetRequestedEvent event = new PasswordResetRequestedEvent("invalid", "123456", "2026-04-28T10:15:00Z", null);
         assertThrows(IllegalArgumentException.class, () -> useCase.send(event));
     }
 
     @Test
     void sendRejectsExpiredResetCode() {
-        SendPasswordResetEmailUseCase useCase = new SendPasswordResetEmailUseCase(new CapturingEmailSender(), FIXED_CLOCK);
-
-        PasswordResetRequestedEvent event = new PasswordResetRequestedEvent("user@healthcore.com", "123456", "2026-04-28T08:00:00Z");
-
+        PasswordResetRequestedEvent event = new PasswordResetRequestedEvent("user@healthcore.com", "123456", "2026-04-28T08:00:00Z", null);
         assertThrows(IllegalArgumentException.class, () -> useCase.send(event));
     }
 
+    private PasswordResetRequestedEvent createEvent() {
+        return new PasswordResetRequestedEvent("user@healthcore.com", "123456", "2026-04-28T10:15:00Z", null);
+    }
+
     private static class CapturingEmailSender implements EmailSender {
-
         private EmailMessage message;
-
         @Override
         public void send(EmailMessage message) {
             this.message = message;

@@ -4,71 +4,71 @@ import com.healthcore.notification_service.application.port.EmailSender;
 import com.healthcore.notification_service.application.port.UserDirectoryPort;
 import com.healthcore.notification_service.domain.events.AppointmentReminderEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SendAppointmentReminderEmailUseCaseTest {
 
-    @Test
-    void sendSkipsMissingEmails() {
-        CapturingEmailSender emailSender = new CapturingEmailSender();
-        UserDirectoryPort userDirectoryPort = Mockito.mock(UserDirectoryPort.class);
-        Mockito.when(userDirectoryPort.getEmailsByUserIds(List.of("patient-1", "nutri-1")))
-                .thenReturn(Map.of("nutri-1", "nutri@healthcore.com"));
+    private TemplateService templateService;
+    private CapturingEmailSender emailSender;
+    private UserDirectoryPort userDirectoryPort;
+    private SendAppointmentReminderEmailUseCase useCase;
 
-        SendAppointmentReminderEmailUseCase useCase = new SendAppointmentReminderEmailUseCase(emailSender, userDirectoryPort);
+    @BeforeEach
+    void setUp() {
+        templateService = mock(TemplateService.class);
+        emailSender = new CapturingEmailSender();
+        userDirectoryPort = mock(UserDirectoryPort.class);
+        useCase = new SendAppointmentReminderEmailUseCase(emailSender, userDirectoryPort, templateService);
 
-        useCase.send(new AppointmentReminderEvent(
-                "appt-1",
-                "patient-1",
-                "nutri-1",
-                "2026-04-30T10:00:00Z",
-                "2026-04-30T10:30:00Z"
-        ));
-
-        assertEquals(1, emailSender.messages.size());
-        EmailMessage message = emailSender.messages.get(0);
-        assertEquals("nutri@healthcore.com", message.toEmail());
-        assertEquals("Appointment reminder", message.subject());
-        assertTrue(message.htmlBody().contains("2026-04-30T10:00:00Z"));
-        assertTrue(message.textBody().contains("2026-04-30T10:30:00Z"));
+        when(templateService.getLocale(any())).thenReturn(new Locale("es"));
+        when(templateService.getMessage(eq("appointment.reminder.subject"), any())).thenReturn("Reminder Subject");
+        when(userDirectoryPort.getEmailsByUserIds(any())).thenReturn(Map.of("nutri-1", "nutri@healthcore.com"));
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "2026-04-30T10:00:00Z,2026-04-30T10:00:00Z",
-            "2026-04-30T11:00:00Z,2026-04-30T10:00:00Z"
-    })
-    void sendRejectsInvalidTimeRange(String startTime, String endTime) {
-        CapturingEmailSender emailSender = new CapturingEmailSender();
-        UserDirectoryPort userDirectoryPort = Mockito.mock(UserDirectoryPort.class);
-        SendAppointmentReminderEmailUseCase useCase = new SendAppointmentReminderEmailUseCase(emailSender, userDirectoryPort);
+    @Test
+    void sendSetsCorrectRecipient() {
+        useCase.send(createEvent());
+        assertEquals("nutri@healthcore.com", emailSender.messages.get(0).toEmail());
+    }
 
-        AppointmentReminderEvent event = new AppointmentReminderEvent(
-                "appt-1",
-                "patient-1",
-                "nutri-1",
-                startTime,
-                endTime
-        );
+    @Test
+    void sendSetsLocalizedSubject() {
+        useCase.send(createEvent());
+        assertEquals("Reminder Subject", emailSender.messages.get(0).subject());
+    }
 
-        assertThrows(IllegalArgumentException.class, () -> useCase.send(event));
+    @Test
+    void sendSetsLocalizedHtmlBody() {
+        when(templateService.getMessage(eq("appointment.reminder.html"), any(), any())).thenReturn("html body");
+        useCase.send(createEvent());
+        assertEquals("html body", emailSender.messages.get(0).htmlBody());
+    }
+
+    @Test
+    void sendSetsLocalizedTextBody() {
+        when(templateService.getMessage(eq("appointment.reminder.text"), any(), any())).thenReturn("text body");
+        useCase.send(createEvent());
+        assertEquals("text body", emailSender.messages.get(0).textBody());
+    }
+
+    private AppointmentReminderEvent createEvent() {
+        return new AppointmentReminderEvent("appt-1", "patient-1", "nutri-1", "2026-04-30T10:00:00Z", null);
     }
 
     private static class CapturingEmailSender implements EmailSender {
-
         private final List<EmailMessage> messages = new ArrayList<>();
-
         @Override
         public void send(EmailMessage message) {
             messages.add(message);

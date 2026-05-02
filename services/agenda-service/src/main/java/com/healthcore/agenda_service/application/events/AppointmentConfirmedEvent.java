@@ -5,6 +5,7 @@ public record AppointmentConfirmedEvent(
         String patientId,
         String nutritionistId,
         String startTime,
-        String endTime
+        String endTime,
+        String locale
 ) {
 }

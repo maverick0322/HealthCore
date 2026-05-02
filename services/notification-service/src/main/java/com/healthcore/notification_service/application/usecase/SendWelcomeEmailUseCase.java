@@ -6,24 +6,28 @@ import com.healthcore.notification_service.domain.events.UserRegisteredEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
 import java.time.Clock;
+import java.util.Locale;
 import java.util.Objects;
 
 public class SendWelcomeEmailUseCase {
 
     private final EmailSender emailSender;
     private final Clock clock;
+    private final TemplateService templateService;
 
-    public SendWelcomeEmailUseCase(EmailSender emailSender, Clock clock) {
+    public SendWelcomeEmailUseCase(EmailSender emailSender, Clock clock, TemplateService templateService) {
         this.emailSender = emailSender;
         this.clock = clock;
+        this.templateService = templateService;
     }
 
     public void send(UserRegisteredEvent event) {
         validate(event);
 
-        String subject = "Welcome to HealthCore";
-        String htmlBody = buildHtmlBody(event);
-        String textBody = buildTextBody(event);
+        Locale locale = templateService.getLocale(event.locale());
+        String subject = templateService.getMessage("welcome.subject", locale);
+        String htmlBody = buildHtmlBody(event, locale);
+        String textBody = buildTextBody(event, locale);
 
         emailSender.send(new EmailMessage(event.email(), subject, htmlBody, textBody));
     }
@@ -37,30 +41,19 @@ public class SendWelcomeEmailUseCase {
         }
     }
 
-    private String buildHtmlBody(UserRegisteredEvent event) {
+    private String buildHtmlBody(UserRegisteredEvent event, Locale locale) {
         if (event.emailVerificationRequired()) {
-            return String.format("""
-                    <p>Welcome to HealthCore!</p>
-                    <p>Your verification code is: <strong>%s</strong></p>
-                    <p>This code expires at %s.</p>
-                    """, event.verificationCode(), event.verificationExpiresAt());
+            return templateService.getMessage("welcome.verification.html", locale, 
+                event.verificationCode(), event.verificationExpiresAt());
         }
-
-        return """
-                <p>Welcome to HealthCore!</p>
-                <p>Your account is ready. You can sign in any time.</p>
-                """;
+        return templateService.getMessage("welcome.ready.html", locale);
     }
 
-    private String buildTextBody(UserRegisteredEvent event) {
+    private String buildTextBody(UserRegisteredEvent event, Locale locale) {
         if (event.emailVerificationRequired()) {
-            return String.format(
-                    "Welcome to HealthCore! Your verification code is %s. This code expires at %s.",
-                    event.verificationCode(),
-                    event.verificationExpiresAt()
-            );
+            return templateService.getMessage("welcome.verification.text", locale, 
+                event.verificationCode(), event.verificationExpiresAt());
         }
-
-        return "Welcome to HealthCore! Your account is ready. You can sign in any time.";
+        return templateService.getMessage("welcome.ready.text", locale);
     }
 }

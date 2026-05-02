@@ -33,7 +33,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(NutritionistAgendaController.class)
+@WebMvcTest(controllers = NutritionistAgendaController.class, properties = "jwt.secret=test-secret-key-at-least-32-characters-long")
+@org.springframework.test.context.ContextConfiguration(classes = com.healthcore.agenda_service.AgendaServiceApplication.class)
 @AutoConfigureMockMvc
 class NutritionistAgendaControllerTest {
 
@@ -45,6 +46,18 @@ class NutritionistAgendaControllerTest {
 
     @MockitoBean
     private NutritionistAvailabilityService nutritionistAvailabilityService;
+
+    @MockitoBean
+    private com.healthcore.agenda_service.domain.repository.AppointmentRepository appointmentRepository;
+
+    @MockitoBean
+    private com.healthcore.agenda_service.domain.repository.TimeSlotRepository timeSlotRepository;
+
+    @MockitoBean
+    private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
+
+    @MockitoBean
+    private com.healthcore.agenda_service.infrastructure.clinical.ClinicalServiceClient clinicalServiceClient;
 
     private TimeSlot slot;
     private Appointment appointment;
@@ -78,8 +91,8 @@ class NutritionistAgendaControllerTest {
     @WithMockUser(username = "nutri-1")
     void generateSlots_shouldReturnCreatedSlots() throws Exception {
         GenerateSlotsRequest request = new GenerateSlotsRequest(
-            LocalDate.parse("2026-04-25"),
-            LocalDate.parse("2026-04-25"),
+            LocalDate.parse("2026-05-10"),
+            LocalDate.parse("2026-05-10"),
             LocalTime.parse("10:00:00"),
             LocalTime.parse("11:00:00"),
             30

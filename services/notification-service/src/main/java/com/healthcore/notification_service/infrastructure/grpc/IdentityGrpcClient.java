@@ -29,6 +29,7 @@ public class IdentityGrpcClient implements UserDirectoryPort {
     private final IdentityDirectoryGrpc.IdentityDirectoryBlockingStub identityStub;
     private final ManagedChannel channel;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public IdentityGrpcClient(GrpcIdentityProperties grpcIdentityProperties) {
         this.channel = ManagedChannelBuilder.forTarget(grpcIdentityProperties.target())
                 .usePlaintext()

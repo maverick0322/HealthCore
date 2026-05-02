@@ -37,7 +37,7 @@ public class AdminUserManagementController {
             @ApiResponse(responseCode = "409", description = "Email already exists")
     })
     public ResponseEntity<RegisterResponse> createUser(@Valid @RequestBody AdminCreateUserRequest request) {
-        User createdUser = authService.createUserByAdmin(request.email(), request.password(), request.role());
+        User createdUser = authService.createUserByAdmin(request.email(), request.password(), request.role(), request.locale());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new RegisterResponse("User created successfully", createdUser.getEmail()));
     }

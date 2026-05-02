@@ -6,32 +6,28 @@ import com.healthcore.notification_service.domain.events.PasswordResetRequestedE
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
 import java.time.Clock;
+import java.util.Locale;
 import java.util.Objects;
 
 public class SendPasswordResetEmailUseCase {
 
     private final EmailSender emailSender;
     private final Clock clock;
+    private final TemplateService templateService;
 
-    public SendPasswordResetEmailUseCase(EmailSender emailSender, Clock clock) {
+    public SendPasswordResetEmailUseCase(EmailSender emailSender, Clock clock, TemplateService templateService) {
         this.emailSender = emailSender;
         this.clock = clock;
+        this.templateService = templateService;
     }
 
     public void send(PasswordResetRequestedEvent event) {
         validate(event);
 
-        String subject = "Your HealthCore password reset code";
-        String htmlBody = String.format("""
-                <p>We received a password reset request.</p>
-                <p>Your code is: <strong>%s</strong></p>
-                <p>This code expires at %s.</p>
-                """, event.resetCode(), event.expiresAt());
-        String textBody = String.format(
-                "We received a password reset request. Your code is %s. This code expires at %s.",
-                event.resetCode(),
-                event.expiresAt()
-        );
+        Locale locale = templateService.getLocale(event.locale());
+        String subject = templateService.getMessage("password.reset.subject", locale);
+        String htmlBody = templateService.getMessage("password.reset.html", locale, event.resetCode(), event.expiresAt());
+        String textBody = templateService.getMessage("password.reset.text", locale, event.resetCode(), event.expiresAt());
 
         emailSender.send(new EmailMessage(event.email(), subject, htmlBody, textBody));
     }

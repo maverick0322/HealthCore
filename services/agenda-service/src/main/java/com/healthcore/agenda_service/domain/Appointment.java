@@ -25,6 +25,7 @@ public class Appointment {
     private Instant startTime;
     private Instant endTime;
     private AppointmentStatus status;
+    private String locale;
     private Instant createdAt;
     private Instant updatedAt;
 

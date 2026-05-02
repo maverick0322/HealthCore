@@ -220,7 +220,15 @@ public class RabbitMessagingConfig {
 
     @Bean
     public MessageConverter messageConverter(ObjectMapper objectMapper) {
-        return new Jackson2JsonMessageConverter(objectMapper);
+        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter(objectMapper);
+        // Use INFERRED precedence so we trust the listener's target class type 
+        // regardless of __TypeId__ header from other services
+        org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper typeMapper = 
+            new org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper();
+        typeMapper.setTypePrecedence(org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence.INFERRED);
+        typeMapper.setTrustedPackages("*");
+        converter.setJavaTypeMapper(typeMapper);
+        return converter;
     }
 
     private Queue buildDurableQueueWithDlq(String queueName, MessagingProperties messagingProperties) {

@@ -9,7 +9,7 @@ import { authService } from '@/features/auth/services/authService';
  * Returns an `isSuccess` flag that the page can use to swap to a success view.
  */
 export const useResetPassword = () => {
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -22,7 +22,7 @@ export const useResetPassword = () => {
     setError(null);
     setIsLoading(true);
     try {
-      await authService.confirmPasswordReset({ email, code, newPassword });
+      await authService.confirmPasswordReset({ email, code, newPassword, locale: i18n.language });
       setIsSuccess(true);
     } catch (err: unknown) {
       console.error('[useResetPassword] Reset failed:', err);

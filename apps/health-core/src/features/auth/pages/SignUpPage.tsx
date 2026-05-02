@@ -21,7 +21,7 @@ export const SignUpPage = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<"paciente" | "nutriologo">("paciente");
   const [passwordMismatch, setPasswordMismatch] = useState(false);
-  const { t } = useTranslation("auth");
+  const { t, i18n } = useTranslation("auth");
   const strength = usePasswordStrength(password);
   const { handleRegister, isLoading, error } = useRegister();
 
@@ -120,7 +120,7 @@ export const SignUpPage = () => {
               className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
               onClick={() => {
                 sessionStorage.setItem("expectedRole", roleMap[role]);
-                window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0`;
+                window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0?ui_locales=${i18n.language}`;
               }}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

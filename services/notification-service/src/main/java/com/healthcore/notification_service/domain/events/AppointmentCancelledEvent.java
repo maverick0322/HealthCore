@@ -5,6 +5,6 @@ public record AppointmentCancelledEvent(
         String patientId,
         String nutritionistId,
         String startTime,
-        String endTime
+        String locale
 ) {
 }

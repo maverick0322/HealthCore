@@ -39,7 +39,7 @@ public class AuthController {
     public ResponseEntity<RegisterResponse> registerPatient(@Valid @RequestBody RegisterRequest request) {
         log.info("Received HTTP request to register new local user");
 
-        User newUser = authService.registerLocalUser(request.email(), request.password(), request.role());
+        User newUser = authService.registerLocalUser(request.email(), request.password(), request.role(), request.locale());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new RegisterResponse("User registered successfully", newUser.getEmail()));
@@ -98,7 +98,7 @@ public class AuthController {
     })
     public ResponseEntity<MessageResponse> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
         log.info("Received HTTP request to request password reset code");
-        authService.requestPasswordReset(request.email());
+        authService.requestPasswordReset(request.email(), request.locale());
         return ResponseEntity.ok(new MessageResponse("Password reset instructions sent if account exists"));
     }
 
@@ -112,7 +112,7 @@ public class AuthController {
     })
     public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         log.info("Received HTTP request to confirm password reset");
-        authService.resetPassword(request.email(), request.code(), request.newPassword());
+        authService.resetPassword(request.email(), request.code(), request.newPassword(), request.locale());
         return ResponseEntity.ok(new MessageResponse("Password reset completed successfully"));
     }
 

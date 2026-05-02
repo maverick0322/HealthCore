@@ -44,10 +44,10 @@ class AdminUserManagementControllerTest {
 
     @Test
     void should_Return201Created_When_AdminCreatesUser() throws Exception {
-        AdminCreateUserRequest request = new AdminCreateUserRequest("new.nutri@healthcore.com", "StrongPass123!", Role.NUTRITIONIST);
+        AdminCreateUserRequest request = new AdminCreateUserRequest("new.nutri@healthcore.com", "StrongPass123!", Role.NUTRITIONIST, null);
         User created = User.builder().email("new.nutri@healthcore.com").role(Role.NUTRITIONIST).build();
 
-        when(authService.createUserByAdmin(anyString(), anyString(), any())).thenReturn(created);
+        when(authService.createUserByAdmin(anyString(), anyString(), any(), any())).thenReturn(created);
 
         mockMvc.perform(post("/api/v1/admin/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -70,9 +70,9 @@ class AdminUserManagementControllerTest {
 
     @Test
     void should_Return409Conflict_When_EmailAlreadyExists() throws Exception {
-        AdminCreateUserRequest request = new AdminCreateUserRequest("existing@healthcore.com", "StrongPass123!", Role.PATIENT);
+        AdminCreateUserRequest request = new AdminCreateUserRequest("existing@healthcore.com", "StrongPass123!", Role.PATIENT, null);
 
-        when(authService.createUserByAdmin(anyString(), anyString(), any()))
+        when(authService.createUserByAdmin(anyString(), anyString(), any(), any()))
                 .thenThrow(new ConflictException("Email is already registered in HealthCore"));
 
         mockMvc.perform(post("/api/v1/admin/users")
@@ -90,5 +90,3 @@ class AdminUserManagementControllerTest {
         }
     }
 }
-
-

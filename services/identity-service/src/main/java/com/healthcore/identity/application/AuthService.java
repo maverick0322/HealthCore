@@ -71,10 +71,10 @@ public class AuthService {
     private final IdentityEventPublisher identityEventPublisher;
 
     public User registerPatient(String email, String plainPassword) {
-        return registerLocalUser(email, plainPassword, Role.PATIENT);
+        return registerLocalUser(email, plainPassword, Role.PATIENT, "es");
     }
 
-    public User registerLocalUser(String email, String plainPassword, Role requestedRole) {
+    public User registerLocalUser(String email, String plainPassword, Role requestedRole, String locale) {
         validateEmail(email, "Email is required");
         validatePassword(plainPassword, "Password is required");
         Role role = sanitizeSelfRegistrationRole(requestedRole);
@@ -97,13 +97,13 @@ public class AuthService {
 
         User savedUser = userRepository.save(newUser);
         VerificationCodeDetails verificationCodeDetails = createVerificationCode(savedUser);
-        publishUserRegistered(savedUser, verificationCodeDetails, true);
+        publishUserRegistered(savedUser, verificationCodeDetails, true, locale);
         log.info("Local user registered successfully with ID: {}", savedUser.getId());
 
         return savedUser;
     }
 
-    public User createUserByAdmin(String email, String plainPassword, Role requestedRole) {
+    public User createUserByAdmin(String email, String plainPassword, Role requestedRole, String locale) {
         validateEmail(email, "Email is required");
         validatePassword(plainPassword, "Password is required");
         Role role = requestedRole == null ? Role.PATIENT : requestedRole;
@@ -126,7 +126,7 @@ public class AuthService {
 
         User savedUser = userRepository.save(newUser);
         VerificationCodeDetails verificationCodeDetails = createVerificationCode(savedUser);
-        publishUserRegistered(savedUser, verificationCodeDetails, true);
+        publishUserRegistered(savedUser, verificationCodeDetails, true, locale);
         log.info("Admin provisioned user successfully with ID: {}", savedUser.getId());
 
         return savedUser;
@@ -237,7 +237,7 @@ public class AuthService {
         log.info("Refresh token revoked for email: {}", tokenOwnership.getEmail());
     }
 
-    public void requestPasswordReset(String email) {
+    public void requestPasswordReset(String email, String locale) {
         validateEmail(email, "Email is required");
         Optional<User> userOptional = userRepository.findByEmailAndProvider(email, AuthProvider.LOCAL);
 
@@ -259,7 +259,7 @@ public class AuthService {
                 .createdAt(LocalDateTime.now())
                 .build());
 
-        publishPasswordResetRequested(email, code, expiresAt);
+        publishPasswordResetRequested(email, code, expiresAt, locale);
 
         // Placeholder integration point for notifier adapter.
         log.info("Password reset code generated for user: {}", email);
@@ -274,7 +274,7 @@ public class AuthService {
         }
     }
 
-    public void resetPassword(String email, String code, String newPassword) {
+    public void resetPassword(String email, String code, String newPassword, String locale) {
         validateEmail(email, "Email is required");
         validatePassword(newPassword, "New password is required");
         PasswordResetCode passwordResetCode = passwordResetCodeRepository
@@ -368,7 +368,7 @@ public class AuthService {
                 .build();
 
         User savedSocialUser = userRepository.save(newSocialUser);
-        publishUserRegistered(savedSocialUser, null, false);
+        publishUserRegistered(savedSocialUser, null, false, "es");
         log.info("Social user provisioned successfully for email: {} with provider: {}", email, provider);
         return savedSocialUser;
     }
@@ -377,29 +377,31 @@ public class AuthService {
         return environment != null && environment.acceptsProfiles(Profiles.of("dev", "local"));
     }
 
-    private void publishUserRegistered(User savedUser, VerificationCodeDetails verificationCodeDetails, boolean emailVerificationRequired) {
+    private void publishUserRegistered(User savedUser, VerificationCodeDetails verificationCodeDetails, boolean emailVerificationRequired, String locale) {
         try {
             LocalDateTime createdAt = savedUser.getCreatedAt() == null ? LocalDateTime.now() : savedUser.getCreatedAt();
             identityEventPublisher.publishUserRegistered(new UserRegisteredEvent(
                     savedUser.getId(),
                     savedUser.getEmail(),
                     savedUser.getRole().name(),
-                    createdAt.toString(),
+                    createdAt.atOffset(java.time.ZoneOffset.UTC).toString(),
                     emailVerificationRequired,
                     verificationCodeDetails == null ? null : verificationCodeDetails.code(),
-                    verificationCodeDetails == null ? null : verificationCodeDetails.expiresAt().toString()
+                    verificationCodeDetails == null ? null : verificationCodeDetails.expiresAt().atOffset(java.time.ZoneOffset.UTC).toString(),
+                    locale != null ? locale : "es"
             ));
         } catch (RuntimeException ex) {
             log.warn("Failed to publish user registered event for userId={} email={}", savedUser.getId(), savedUser.getEmail(), ex);
         }
     }
 
-    private void publishPasswordResetRequested(String email, String code, LocalDateTime expiresAt) {
+    private void publishPasswordResetRequested(String email, String code, LocalDateTime expiresAt, String locale) {
         try {
             identityEventPublisher.publishPasswordResetRequested(new PasswordResetRequestedEvent(
                     email,
                     code,
-                    expiresAt.toString()
+                    expiresAt.atOffset(java.time.ZoneOffset.UTC).toString(),
+                    locale != null ? locale : "es"
             ));
         } catch (RuntimeException ex) {
             log.warn("Failed to publish password reset event for email={}", email, ex);

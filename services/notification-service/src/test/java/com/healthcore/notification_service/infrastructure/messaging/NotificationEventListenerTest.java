@@ -56,7 +56,8 @@ class NotificationEventListenerTest {
             "2026-04-28T10:00:00Z",
             true,
             "123456",
-            "2026-04-28T10:15:00Z"
+            "2026-04-28T10:15:00Z",
+            null
         );
 
         listener.handleUserRegisteredEvent(event);
@@ -73,7 +74,7 @@ class NotificationEventListenerTest {
             sendAppointmentCancelledEmailUseCase,
             sendAppointmentReminderEmailUseCase
         );
-        PasswordResetRequestedEvent event = new PasswordResetRequestedEvent("user@healthcore.com", "123456", "2026-04-28T10:15:00Z");
+        PasswordResetRequestedEvent event = new PasswordResetRequestedEvent("user@healthcore.com", "123456", "2026-04-28T10:15:00Z", null);
 
         listener.handlePasswordResetRequestedEvent(event);
 
@@ -94,7 +95,8 @@ class NotificationEventListenerTest {
             "patient-1",
             "nutri-1",
             "2026-04-30T10:00:00Z",
-            "2026-04-30T10:30:00Z"
+            "2026-04-30T10:30:00Z",
+            null
         );
 
         listener.handleAppointmentConfirmedEvent(event);
@@ -116,7 +118,7 @@ class NotificationEventListenerTest {
             "patient-2",
             "nutri-2",
             "2026-04-30T11:00:00Z",
-            "2026-04-30T11:30:00Z"
+            null
         );
 
         listener.handleAppointmentCancelledEvent(event);
@@ -138,7 +140,7 @@ class NotificationEventListenerTest {
             "patient-3",
             "nutri-3",
             "2026-04-30T12:00:00Z",
-            "2026-04-30T12:30:00Z"
+            null
         );
 
         listener.handleAppointmentReminderEvent(event);
@@ -162,7 +164,8 @@ class NotificationEventListenerTest {
             "2026-04-28T10:00:00Z",
             true,
             "123456",
-            "2026-04-28T10:15:00Z"
+            "2026-04-28T10:15:00Z",
+            null
         );
 
         doThrow(new IllegalStateException("boom")).when(sendWelcomeEmailUseCase).send(event);

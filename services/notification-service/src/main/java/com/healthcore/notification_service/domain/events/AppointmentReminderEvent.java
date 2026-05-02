@@ -5,6 +5,6 @@ public record AppointmentReminderEvent(
         String patientId,
         String nutritionistId,
         String startTime,
-        String endTime
+        String locale
 ) {
 }

@@ -12,7 +12,7 @@ import type { RegisterRequest } from '@/features/auth/types/auth.types';
  */
 export const useRegister = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
   const register = useAuthStore((s) => s.register);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export const useRegister = () => {
     setError(null);
     setIsLoading(true);
     try {
-      await register(data);
+      await register({ ...data, locale: i18n.language });
       navigate('/verify-code', {
         state: { email: data.email, flow: 'email-verification' },
         replace: true,

@@ -131,7 +131,7 @@ class AuthServiceTest {
         when(passwordEncoder.encode(rawPassword)).thenReturn("encodedPassword123");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = authService.registerLocalUser(email, rawPassword, Role.NUTRITIONIST);
+        User result = authService.registerLocalUser(email, rawPassword, Role.NUTRITIONIST, null);
 
         assertThat(result.getRole()).isEqualTo(Role.NUTRITIONIST);
         assertThat(result.getProvider()).isEqualTo(AuthProvider.LOCAL);
@@ -139,7 +139,7 @@ class AuthServiceTest {
 
     @Test
     void should_RejectAdminSelfRegistration() {
-        assertThatThrownBy(() -> authService.registerLocalUser("admin@healthcore.com", "StrongPass123!", Role.ADMIN))
+        assertThatThrownBy(() -> authService.registerLocalUser("admin@healthcore.com", "StrongPass123!", Role.ADMIN, null))
                 .isInstanceOf(UnauthorizedException.class)
                 .hasMessage("Self-registration with ADMIN role is not allowed");
     }
@@ -153,7 +153,7 @@ class AuthServiceTest {
         when(passwordEncoder.encode(rawPassword)).thenReturn("encodedPassword123");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = authService.createUserByAdmin(email, rawPassword, Role.ADMIN);
+        User result = authService.createUserByAdmin(email, rawPassword, Role.ADMIN, null);
 
         assertThat(result.getRole()).isEqualTo(Role.ADMIN);
         assertThat(result.getProvider()).isEqualTo(AuthProvider.LOCAL);
@@ -360,7 +360,7 @@ class AuthServiceTest {
     void should_DoNothing_When_PasswordResetRequestedForUnknownEmail() {
         when(userRepository.findByEmailAndProvider(any(), any())).thenReturn(Optional.empty());
 
-        authService.requestPasswordReset("unknown@healthcore.com");
+        authService.requestPasswordReset("unknown@healthcore.com", null);
 
         verify(passwordResetCodeRepository, org.mockito.Mockito.never()).save(any(PasswordResetCode.class));
     }
@@ -380,7 +380,7 @@ class AuthServiceTest {
         when(userRepository.findByEmailAndProvider(email, AuthProvider.LOCAL)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode(any())).thenReturn("encoded");
 
-        authService.resetPassword(email, code, "StrongPass123!");
+        authService.resetPassword(email, code, "StrongPass123!", null);
 
         verify(userRepository).save(any(User.class));
         verify(passwordResetCodeRepository).deleteByEmail(email);
@@ -438,4 +438,3 @@ class AuthServiceTest {
         assertThat(firstResult ^ secondResult).isTrue();
     }
 }
-

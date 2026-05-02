@@ -65,6 +65,7 @@ public class PatientAppointmentService {
             .startTime(slot.getStartTime())
             .endTime(slot.getEndTime())
             .status(AppointmentStatus.PENDING)
+            .locale(command.locale())
             .createdAt(Instant.now())
             .updatedAt(Instant.now())
             .build());
@@ -104,7 +105,7 @@ public class PatientAppointmentService {
             saved.getPatientId(),
             saved.getNutritionistId(),
             saved.getStartTime().toString(),
-            saved.getEndTime().toString()
+            saved.getLocale()
         ));
     }
 
@@ -161,6 +162,7 @@ public class PatientAppointmentService {
         appointment.setEndTime(newSlot.getEndTime());
         appointment.setUpdatedAt(Instant.now());
         appointment.setStatus(AppointmentStatus.PENDING);
+        appointment.setLocale(command.locale());
         
         Appointment updated = appointmentRepository.save(appointment);
         appointmentConfirmationService.confirmAppointmentAsync(updated.getId());
@@ -168,5 +170,3 @@ public class PatientAppointmentService {
         return updated;
     }
 }
-
-

@@ -47,7 +47,7 @@ public class AppointmentReminderScheduler {
                     appointment.getPatientId(),
                     appointment.getNutritionistId(),
                     appointment.getStartTime().toString(),
-                    appointment.getEndTime().toString()
+                    appointment.getLocale()
             ));
         }
     }

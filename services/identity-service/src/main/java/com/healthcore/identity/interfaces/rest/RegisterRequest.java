@@ -17,5 +17,7 @@ public record RegisterRequest(
                 message = "Password must include upper, lower, number, and symbol")
         String password,
 
-        Role role
+        Role role,
+
+        String locale
 ) {}

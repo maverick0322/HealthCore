@@ -32,7 +32,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"email\": \"{{testEmail}}\",\r\n  \"password\": \"{{testPassword}}\",\r\n  \"role\": \"PATIENT\"\r\n}",
+              "raw": "{\r\n  \"email\": \"{{testEmail}}\",\r\n  \"password\": \"{{testPassword}}\",\r\n  \"role\": \"PATIENT\",\r\n  \"locale\": \"es\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -76,7 +76,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"email\": \"{{testEmail}}\",\r\n  \"password\": \"{{testPassword}}\",\r\n  \"role\": \"PATIENT\"\r\n}",
+              "raw": "{\r\n  \"email\": \"{{testEmail}}\",\r\n  \"password\": \"{{testPassword}}\",\r\n  \"role\": \"PATIENT\",\r\n  \"locale\": \"es\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -727,7 +727,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"email\": \"{{testEmail}}\"\r\n}\r\n",
+              "raw": "{\r\n  \"email\": \"{{testEmail}}\",\r\n  \"locale\": \"es\"\r\n}\r\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -816,7 +816,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"email\": \"{{testEmail}}\",\r\n  \"code\": \"{{resetCode}}\",\r\n  \"newPassword\": \"NewSecureP@ss123!\"\r\n}\r\n",
+              "raw": "{\r\n  \"email\": \"{{testEmail}}\",\r\n  \"code\": \"{{resetCode}}\",\r\n  \"newPassword\": \"NewSecureP@ss123!\",\r\n  \"locale\": \"es\"\r\n}\r\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -925,7 +925,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"email\": \"nutritionist@healthcore.com\",\r\n  \"password\": \"{{testPassword}}\",\r\n  \"role\": \"NUTRITIONIST\"\r\n}\r\n",
+              "raw": "{\r\n  \"email\": \"nutritionist@healthcore.com\",\r\n  \"password\": \"{{testPassword}}\",\r\n  \"role\": \"NUTRITIONIST\",\r\n  \"locale\": \"es\"\r\n}\r\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -979,7 +979,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"email\": \"nutritionist@healthcore.com\",\r\n  \"password\": \"{{testPassword}}\",\r\n  \"role\": \"NUTRITIONIST\"\r\n}\r\n",
+              "raw": "{\r\n  \"email\": \"nutritionist@healthcore.com\",\r\n  \"password\": \"{{testPassword}}\",\r\n  \"role\": \"NUTRITIONIST\",\r\n  \"locale\": \"es\"\r\n}\r\n",
               "options": {
                 "raw": {
                   "language": "json"

@@ -7,6 +7,7 @@ import com.healthcore.notification_service.application.usecase.SendAppointmentCa
 import com.healthcore.notification_service.application.usecase.SendAppointmentConfirmedEmailUseCase;
 import com.healthcore.notification_service.application.usecase.SendAppointmentReminderEmailUseCase;
 import com.healthcore.notification_service.application.usecase.SendWelcomeEmailUseCase;
+import com.healthcore.notification_service.application.usecase.TemplateService;
 import com.healthcore.notification_service.infrastructure.email.ResendEmailClient;
 import com.healthcore.notification_service.infrastructure.email.ResendEmailSender;
 import com.healthcore.notification_service.infrastructure.email.ResendSdkEmailClient;
@@ -30,37 +31,40 @@ public class NotificationServiceConfig {
     }
 
     @Bean
-    public SendWelcomeEmailUseCase sendWelcomeEmailUseCase(EmailSender emailSender, Clock systemClock) {
-        return new SendWelcomeEmailUseCase(emailSender, systemClock);
+    public SendWelcomeEmailUseCase sendWelcomeEmailUseCase(EmailSender emailSender, Clock systemClock, TemplateService templateService) {
+        return new SendWelcomeEmailUseCase(emailSender, systemClock, templateService);
     }
 
     @Bean
-    public SendPasswordResetEmailUseCase sendPasswordResetEmailUseCase(EmailSender emailSender, Clock systemClock) {
-        return new SendPasswordResetEmailUseCase(emailSender, systemClock);
+    public SendPasswordResetEmailUseCase sendPasswordResetEmailUseCase(EmailSender emailSender, Clock systemClock, TemplateService templateService) {
+        return new SendPasswordResetEmailUseCase(emailSender, systemClock, templateService);
     }
 
     @Bean
     public SendAppointmentConfirmedEmailUseCase sendAppointmentConfirmedEmailUseCase(
             EmailSender emailSender,
-            UserDirectoryPort userDirectoryPort
+            UserDirectoryPort userDirectoryPort,
+            TemplateService templateService
     ) {
-        return new SendAppointmentConfirmedEmailUseCase(emailSender, userDirectoryPort);
+        return new SendAppointmentConfirmedEmailUseCase(emailSender, userDirectoryPort, templateService);
     }
 
     @Bean
     public SendAppointmentCancelledEmailUseCase sendAppointmentCancelledEmailUseCase(
             EmailSender emailSender,
-            UserDirectoryPort userDirectoryPort
+            UserDirectoryPort userDirectoryPort,
+            TemplateService templateService
     ) {
-        return new SendAppointmentCancelledEmailUseCase(emailSender, userDirectoryPort);
+        return new SendAppointmentCancelledEmailUseCase(emailSender, userDirectoryPort, templateService);
     }
 
     @Bean
     public SendAppointmentReminderEmailUseCase sendAppointmentReminderEmailUseCase(
             EmailSender emailSender,
-            UserDirectoryPort userDirectoryPort
+            UserDirectoryPort userDirectoryPort,
+            TemplateService templateService
     ) {
-        return new SendAppointmentReminderEmailUseCase(emailSender, userDirectoryPort);
+        return new SendAppointmentReminderEmailUseCase(emailSender, userDirectoryPort, templateService);
     }
 
     @Bean

@@ -7,6 +7,7 @@ import com.healthcore.notification_service.domain.events.AppointmentReminderEven
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -14,10 +15,12 @@ public class SendAppointmentReminderEmailUseCase {
 
     private final EmailSender emailSender;
     private final UserDirectoryPort userDirectoryPort;
+    private final TemplateService templateService;
 
-    public SendAppointmentReminderEmailUseCase(EmailSender emailSender, UserDirectoryPort userDirectoryPort) {
+    public SendAppointmentReminderEmailUseCase(EmailSender emailSender, UserDirectoryPort userDirectoryPort, TemplateService templateService) {
         this.emailSender = emailSender;
         this.userDirectoryPort = userDirectoryPort;
+        this.templateService = templateService;
     }
 
     public void send(AppointmentReminderEvent event) {
@@ -27,13 +30,10 @@ public class SendAppointmentReminderEmailUseCase {
         String patientEmail = emailByUserId.get(event.patientId());
         String nutritionistEmail = emailByUserId.get(event.nutritionistId());
 
-        String subject = "Appointment reminder";
-        String htmlBody = String.format("""
-                <p>This is a reminder for your appointment in 24 hours.</p>
-                <p>Start: %s</p>
-                <p>End: %s</p>
-                """, event.startTime(), event.endTime());
-        String textBody = String.format("Reminder: appointment in 24 hours. Start: %s End: %s", event.startTime(), event.endTime());
+        Locale locale = templateService.getLocale(event.locale());
+        String subject = templateService.getMessage("appointment.reminder.subject", locale);
+        String htmlBody = templateService.getMessage("appointment.reminder.html", locale, event.startTime());
+        String textBody = templateService.getMessage("appointment.reminder.text", locale, event.startTime());
 
         sendIfPresent(patientEmail, subject, htmlBody, textBody);
         sendIfPresent(nutritionistEmail, subject, htmlBody, textBody);
@@ -51,6 +51,5 @@ public class SendAppointmentReminderEmailUseCase {
         EventValidation.requireNonBlank(event.appointmentId(), "appointmentId");
         EventValidation.requireNonBlank(event.patientId(), "patientId");
         EventValidation.requireNonBlank(event.nutritionistId(), "nutritionistId");
-        EventValidation.requireStartBeforeEnd(event.startTime(), event.endTime(), "startTime", "endTime");
     }
 }

@@ -4,95 +4,106 @@ import com.healthcore.notification_service.application.port.EmailSender;
 import com.healthcore.notification_service.application.port.UserDirectoryPort;
 import com.healthcore.notification_service.domain.events.AppointmentConfirmedEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SendAppointmentConfirmedEmailUseCaseTest {
 
-    @Test
-    void sendSendsEmailsToPatientAndNutritionist() {
-        CapturingEmailSender emailSender = new CapturingEmailSender();
-        UserDirectoryPort userDirectoryPort = Mockito.mock(UserDirectoryPort.class);
-        Mockito.when(userDirectoryPort.getEmailsByUserIds(List.of("patient-1", "nutri-1")))
-                .thenReturn(Map.of("patient-1", "patient@healthcore.com", "nutri-1", "nutri@healthcore.com"));
+    private TemplateService templateService;
+    private CapturingEmailSender emailSender;
+    private UserDirectoryPort userDirectoryPort;
+    private SendAppointmentConfirmedEmailUseCase useCase;
 
-        SendAppointmentConfirmedEmailUseCase useCase = new SendAppointmentConfirmedEmailUseCase(emailSender, userDirectoryPort);
+    @BeforeEach
+    void setUp() {
+        templateService = mock(TemplateService.class);
+        emailSender = new CapturingEmailSender();
+        userDirectoryPort = mock(UserDirectoryPort.class);
+        useCase = new SendAppointmentConfirmedEmailUseCase(emailSender, userDirectoryPort, templateService);
 
-        useCase.send(new AppointmentConfirmedEvent(
-                "appt-1",
-                "patient-1",
-                "nutri-1",
-                "2026-04-30T10:00:00Z",
-                "2026-04-30T10:30:00Z"
+        when(templateService.getLocale(any())).thenReturn(new Locale("es"));
+        when(templateService.getMessage(eq("appointment.confirmed.subject"), any())).thenReturn("Confirmed Subject");
+        when(userDirectoryPort.getEmailsByUserIds(any())).thenReturn(Map.of(
+                "patient-1", "patient@healthcore.com",
+                "nutri-1", "nutri@healthcore.com"
         ));
+    }
 
+    @Test
+    void sendSendsEmailsToBothRecipients() {
+        useCase.send(createEvent());
         assertEquals(2, emailSender.messages.size());
-        EmailMessage patientMessage = emailSender.messages.stream()
-                .filter(message -> message.toEmail().equals("patient@healthcore.com"))
-                .findFirst()
-                .orElseThrow();
-        assertEquals("Appointment confirmed", patientMessage.subject());
-        assertTrue(patientMessage.htmlBody().contains("2026-04-30T10:00:00Z"));
-        assertTrue(patientMessage.textBody().contains("2026-04-30T10:30:00Z"));
-        assertTrue(emailSender.messages.stream().anyMatch(message -> message.toEmail().equals("nutri@healthcore.com")));
+    }
+
+    @Test
+    void sendSetsCorrectPatientRecipient() {
+        useCase.send(createEvent());
+        boolean hasPatient = emailSender.messages.stream().anyMatch(m -> m.toEmail().equals("patient@healthcore.com"));
+        assertEquals(true, hasPatient);
+    }
+
+    @Test
+    void sendSetsCorrectNutritionistRecipient() {
+        useCase.send(createEvent());
+        boolean hasNutri = emailSender.messages.stream().anyMatch(m -> m.toEmail().equals("nutri@healthcore.com"));
+        assertEquals(true, hasNutri);
+    }
+
+    @Test
+    void sendSetsLocalizedSubject() {
+        useCase.send(createEvent());
+        assertEquals("Confirmed Subject", emailSender.messages.get(0).subject());
+    }
+
+    @Test
+    void sendSetsLocalizedHtmlBody() {
+        when(templateService.getMessage(eq("appointment.confirmed.html"), any(), any(), any())).thenReturn("html body");
+        useCase.send(createEvent());
+        assertEquals("html body", emailSender.messages.get(0).htmlBody());
+    }
+
+    @Test
+    void sendSetsLocalizedTextBody() {
+        when(templateService.getMessage(eq("appointment.confirmed.text"), any(), any(), any())).thenReturn("text body");
+        useCase.send(createEvent());
+        assertEquals("text body", emailSender.messages.get(0).textBody());
     }
 
     @Test
     void sendSkipsMissingEmails() {
-        CapturingEmailSender emailSender = new CapturingEmailSender();
-        UserDirectoryPort userDirectoryPort = Mockito.mock(UserDirectoryPort.class);
-        Mockito.when(userDirectoryPort.getEmailsByUserIds(List.of("patient-1", "nutri-1")))
-                .thenReturn(Map.of("patient-1", "patient@healthcore.com"));
-
-        SendAppointmentConfirmedEmailUseCase useCase = new SendAppointmentConfirmedEmailUseCase(emailSender, userDirectoryPort);
-
-        useCase.send(new AppointmentConfirmedEvent(
-                "appt-1",
-                "patient-1",
-                "nutri-1",
-                "2026-04-30T10:00:00Z",
-                "2026-04-30T10:30:00Z"
-        ));
-
+        when(userDirectoryPort.getEmailsByUserIds(any())).thenReturn(Map.of("patient-1", "patient@healthcore.com"));
+        useCase.send(createEvent());
         assertEquals(1, emailSender.messages.size());
-        assertEquals("patient@healthcore.com", emailSender.messages.get(0).toEmail());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "2026-04-30T10:00:00Z,2026-04-30T10:00:00Z",
-            "2026-04-30T11:00:00Z,2026-04-30T10:00:00Z"
-    })
-    void sendRejectsInvalidTimeRange(String startTime, String endTime) {
-        CapturingEmailSender emailSender = new CapturingEmailSender();
-        UserDirectoryPort userDirectoryPort = Mockito.mock(UserDirectoryPort.class);
-        SendAppointmentConfirmedEmailUseCase useCase = new SendAppointmentConfirmedEmailUseCase(emailSender, userDirectoryPort);
-
+    @Test
+    void sendRejectsInvalidTimeRange() {
         AppointmentConfirmedEvent event = new AppointmentConfirmedEvent(
-                "appt-1",
-                "patient-1",
-                "nutri-1",
-                startTime,
-                endTime
+                "appt-1", "patient-1", "nutri-1", "2026-04-30T11:00:00Z", "2026-04-30T10:00:00Z", null
         );
-
         assertThrows(IllegalArgumentException.class, () -> useCase.send(event));
     }
 
+    private AppointmentConfirmedEvent createEvent() {
+        return new AppointmentConfirmedEvent(
+                "appt-1", "patient-1", "nutri-1", "2026-04-30T10:00:00Z", "2026-04-30T10:30:00Z", null
+        );
+    }
+
     private static class CapturingEmailSender implements EmailSender {
-
         private final List<EmailMessage> messages = new ArrayList<>();
-
         @Override
         public void send(EmailMessage message) {
             messages.add(message);

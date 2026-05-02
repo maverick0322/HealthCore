@@ -9,6 +9,8 @@ import com.healthcore.agenda_service.domain.exception.ForbiddenOperationExceptio
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
 import com.healthcore.agenda_service.domain.repository.TimeSlotRepository;
 import com.healthcore.agenda_service.infrastructure.clinical.ClinicalServiceClient;
+import com.healthcore.agenda_service.application.events.AppointmentCancelledEvent;
+import com.healthcore.agenda_service.application.ports.AgendaEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +43,8 @@ class PatientAppointmentServiceTest {
     private ClinicalServiceClient clinicalServiceClient;
     @Mock
     private AppointmentConfirmationService appointmentConfirmationService;
+    @Mock
+    private AgendaEventPublisher agendaEventPublisher;
 
     @InjectMocks
     private PatientAppointmentService service;
@@ -63,7 +67,7 @@ class PatientAppointmentServiceTest {
 
     @Test
     void createAppointment_shouldReserveSlotCreatePendingAndDispatchAsyncConfirmation() {
-        var command = new CreateAppointmentCommand("slot-1", 1L);
+        var command = new CreateAppointmentCommand("slot-1", 1L, "es");
 
         when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
         when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(true);
@@ -80,6 +84,7 @@ class PatientAppointmentServiceTest {
         ArgumentCaptor<Appointment> captor = ArgumentCaptor.forClass(Appointment.class);
         verify(appointmentRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(AppointmentStatus.PENDING);
+        assertThat(captor.getValue().getLocale()).isEqualTo("es");
         assertThat(result.getId()).isEqualTo("app-1");
         verify(appointmentConfirmationService).confirmAppointmentAsync("app-1");
     }
@@ -89,7 +94,7 @@ class PatientAppointmentServiceTest {
         when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
         when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(false);
 
-        assertThatThrownBy(() -> service.createAppointment("patient-1", new CreateAppointmentCommand("slot-1", 1L)))
+        assertThatThrownBy(() -> service.createAppointment("patient-1", new CreateAppointmentCommand("slot-1", 1L, "es")))
             .isInstanceOf(ForbiddenOperationException.class);
     }
 
@@ -99,7 +104,7 @@ class PatientAppointmentServiceTest {
         when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(true);
         doThrow(new OptimisticLockingFailureException("stale version")).when(timeSlotRepository).save(any(TimeSlot.class));
 
-        assertThatThrownBy(() -> service.createAppointment("patient-1", new CreateAppointmentCommand("slot-1", 1L)))
+        assertThatThrownBy(() -> service.createAppointment("patient-1", new CreateAppointmentCommand("slot-1", 1L, "es")))
             .isInstanceOf(ConflictException.class)
             .hasMessageContaining("El horario acaba de ser ocupado");
     }
@@ -114,6 +119,7 @@ class PatientAppointmentServiceTest {
             .startTime(slot.getStartTime())
             .endTime(slot.getEndTime())
             .status(AppointmentStatus.CONFIRMED)
+            .locale("es")
             .build();
 
         when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
@@ -126,6 +132,7 @@ class PatientAppointmentServiceTest {
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
         assertThat(slot.isReserved()).isFalse();
         assertThat(slot.getReservedByPatientId()).isNull();
+        verify(agendaEventPublisher).publishAppointmentCancelled(any(AppointmentCancelledEvent.class));
     }
 
     @Test
@@ -155,6 +162,7 @@ class PatientAppointmentServiceTest {
             .startTime(slot.getStartTime())
             .endTime(slot.getEndTime())
             .status(AppointmentStatus.CONFIRMED)
+            .locale("en")
             .build();
             
         TimeSlot newSlot = TimeSlot.builder()
@@ -168,7 +176,7 @@ class PatientAppointmentServiceTest {
             .origin(TimeSlotOrigin.PREDEFINED)
             .build();
 
-        var command = new CreateAppointmentCommand("slot-2", 1L);
+        var command = new CreateAppointmentCommand("slot-2", 1L, "es");
 
         when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
         when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
@@ -180,6 +188,7 @@ class PatientAppointmentServiceTest {
         Appointment result = service.rescheduleAppointment("patient-1", "app-1", command);
 
         assertThat(result.getSlotId()).isEqualTo("slot-2");
+        assertThat(result.getLocale()).isEqualTo("es");
     }
 
     @Test
@@ -187,7 +196,7 @@ class PatientAppointmentServiceTest {
         Appointment appointment = Appointment.builder().id("app-1").patientId("other-patient").build();
         when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
 
-        var command = new CreateAppointmentCommand("slot-2", 1L);
+        var command = new CreateAppointmentCommand("slot-2", 1L, "es");
 
         assertThatThrownBy(() -> service.rescheduleAppointment("patient-1", "app-1", command))
             .isInstanceOf(ForbiddenOperationException.class);

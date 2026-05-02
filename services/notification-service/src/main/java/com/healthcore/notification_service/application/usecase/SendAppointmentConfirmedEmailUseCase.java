@@ -7,6 +7,7 @@ import com.healthcore.notification_service.domain.events.AppointmentConfirmedEve
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -14,10 +15,12 @@ public class SendAppointmentConfirmedEmailUseCase {
 
     private final EmailSender emailSender;
     private final UserDirectoryPort userDirectoryPort;
+    private final TemplateService templateService;
 
-    public SendAppointmentConfirmedEmailUseCase(EmailSender emailSender, UserDirectoryPort userDirectoryPort) {
+    public SendAppointmentConfirmedEmailUseCase(EmailSender emailSender, UserDirectoryPort userDirectoryPort, TemplateService templateService) {
         this.emailSender = emailSender;
         this.userDirectoryPort = userDirectoryPort;
+        this.templateService = templateService;
     }
 
     public void send(AppointmentConfirmedEvent event) {
@@ -27,13 +30,10 @@ public class SendAppointmentConfirmedEmailUseCase {
         String patientEmail = emailByUserId.get(event.patientId());
         String nutritionistEmail = emailByUserId.get(event.nutritionistId());
 
-        String subject = "Appointment confirmed";
-        String htmlBody = String.format("""
-                <p>Your appointment is confirmed.</p>
-                <p>Start: %s</p>
-                <p>End: %s</p>
-                """, event.startTime(), event.endTime());
-        String textBody = String.format("Your appointment is confirmed. Start: %s End: %s", event.startTime(), event.endTime());
+        Locale locale = templateService.getLocale(event.locale());
+        String subject = templateService.getMessage("appointment.confirmed.subject", locale);
+        String htmlBody = templateService.getMessage("appointment.confirmed.html", locale, event.startTime(), event.endTime());
+        String textBody = templateService.getMessage("appointment.confirmed.text", locale, event.startTime(), event.endTime());
 
         sendIfPresent(patientEmail, subject, htmlBody, textBody);
         sendIfPresent(nutritionistEmail, subject, htmlBody, textBody);

@@ -121,8 +121,8 @@ class RoleEndpointSecurityTest {
     @Test
     void should_AllowAdminProvisioningEndpoint_When_RoleIsAdmin() throws Exception {
         String token = jwtUtil.generateAccessToken("admin@healthcore.com", "ADMIN");
-        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "StrongPass123!", Role.PATIENT);
-        when(authService.createUserByAdmin(anyString(), anyString(), any()))
+        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "StrongPass123!", Role.PATIENT, null);
+        when(authService.createUserByAdmin(anyString(), anyString(), any(), any()))
                 .thenReturn(User.builder().email("new.patient@healthcore.com").role(Role.PATIENT).build());
 
         mockMvc.perform(post("/api/v1/admin/users")
@@ -135,7 +135,7 @@ class RoleEndpointSecurityTest {
     @Test
     void should_RejectAdminProvisioningEndpoint_When_RoleIsPatient() throws Exception {
         String token = jwtUtil.generateAccessToken("patient@healthcore.com", "PATIENT");
-        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "StrongPass123!", Role.PATIENT);
+        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "StrongPass123!", Role.PATIENT, null);
 
         mockMvc.perform(post("/api/v1/admin/users")
                         .header("Authorization", "Bearer " + token)

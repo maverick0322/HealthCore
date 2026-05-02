@@ -1,5 +1,6 @@
 package com.healthcore.notification_service;
 
+import com.healthcore.notification_service.infrastructure.grpc.IdentityGrpcClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -8,10 +9,13 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.Connection;
 import com.rabbitmq.client.Channel;
 import org.mockito.Mockito;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest
 class NotificationServiceApplicationTests {
 
+    @MockitoBean
+    private IdentityGrpcClient identityGrpcClient;
     @TestConfiguration
     static class MockRabbitConfig {
         @Bean

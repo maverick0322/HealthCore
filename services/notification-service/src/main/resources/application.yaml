@@ -18,6 +18,8 @@ app:
   messaging:
     exchange: ${APP_MESSAGING_EXCHANGE:healthcore.identity.events}
     agenda-exchange: ${APP_MESSAGING_AGENDA_EXCHANGE:healthcore.agenda.events}
+    dead-letter-exchange: ${APP_MESSAGING_DLX:healthcore.notification.dlx}
+    dead-letter-queue-suffix: ${APP_MESSAGING_DLQ_SUFFIX:.dlq}
     queues:
       welcome-email: ${APP_MESSAGING_QUEUE_WELCOME:notification.welcome.email}
       password-reset-email: ${APP_MESSAGING_QUEUE_PASSWORD_RESET:notification.password.reset.email}

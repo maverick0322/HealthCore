@@ -1,17 +1,21 @@
 package com.healthcore.notification_service.application.usecase;
 
 import com.healthcore.notification_service.application.port.EmailSender;
+import com.healthcore.notification_service.application.validation.EventValidation;
 import com.healthcore.notification_service.domain.events.PasswordResetRequestedEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
+import java.time.Clock;
 import java.util.Objects;
 
 public class SendPasswordResetEmailUseCase {
 
     private final EmailSender emailSender;
+    private final Clock clock;
 
-    public SendPasswordResetEmailUseCase(EmailSender emailSender) {
+    public SendPasswordResetEmailUseCase(EmailSender emailSender, Clock clock) {
         this.emailSender = emailSender;
+        this.clock = clock;
     }
 
     public void send(PasswordResetRequestedEvent event) {
@@ -34,14 +38,8 @@ public class SendPasswordResetEmailUseCase {
 
     private void validate(PasswordResetRequestedEvent event) {
         Objects.requireNonNull(event, "event must not be null");
-        if (event.email() == null || event.email().isBlank()) {
-            throw new IllegalArgumentException("event email must not be blank");
-        }
-        if (event.resetCode() == null || event.resetCode().isBlank()) {
-            throw new IllegalArgumentException("reset code must not be blank");
-        }
-        if (event.expiresAt() == null || event.expiresAt().isBlank()) {
-            throw new IllegalArgumentException("expiresAt must not be blank");
-        }
+        EventValidation.requireEmail(event.email(), "event email");
+        EventValidation.requireNonBlank(event.resetCode(), "reset code");
+        EventValidation.requireFutureInstant(event.expiresAt(), "expiresAt", clock);
     }
 }

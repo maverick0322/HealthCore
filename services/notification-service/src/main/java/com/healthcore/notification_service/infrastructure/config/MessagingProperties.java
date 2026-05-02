@@ -9,6 +9,8 @@ import org.springframework.validation.annotation.Validated;
 public record MessagingProperties(
         @NotBlank String exchange,
         @NotBlank String agendaExchange,
+        @NotBlank String deadLetterExchange,
+        @NotBlank String deadLetterQueueSuffix,
         Queues queues,
         RoutingKeys routingKeys
 ) {

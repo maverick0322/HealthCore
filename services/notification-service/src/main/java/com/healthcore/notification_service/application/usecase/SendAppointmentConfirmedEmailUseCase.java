@@ -2,6 +2,7 @@ package com.healthcore.notification_service.application.usecase;
 
 import com.healthcore.notification_service.application.port.EmailSender;
 import com.healthcore.notification_service.application.port.UserDirectoryPort;
+import com.healthcore.notification_service.application.validation.EventValidation;
 import com.healthcore.notification_service.domain.events.AppointmentConfirmedEvent;
 import com.healthcore.notification_service.domain.model.EmailMessage;
 
@@ -47,17 +48,9 @@ public class SendAppointmentConfirmedEmailUseCase {
 
     private void validate(AppointmentConfirmedEvent event) {
         Objects.requireNonNull(event, "event must not be null");
-        if (event.patientId() == null || event.patientId().isBlank()) {
-            throw new IllegalArgumentException("patientId must not be blank");
-        }
-        if (event.nutritionistId() == null || event.nutritionistId().isBlank()) {
-            throw new IllegalArgumentException("nutritionistId must not be blank");
-        }
-        if (event.startTime() == null || event.startTime().isBlank()) {
-            throw new IllegalArgumentException("startTime must not be blank");
-        }
-        if (event.endTime() == null || event.endTime().isBlank()) {
-            throw new IllegalArgumentException("endTime must not be blank");
-        }
+        EventValidation.requireNonBlank(event.appointmentId(), "appointmentId");
+        EventValidation.requireNonBlank(event.patientId(), "patientId");
+        EventValidation.requireNonBlank(event.nutritionistId(), "nutritionistId");
+        EventValidation.requireStartBeforeEnd(event.startTime(), event.endTime(), "startTime", "endTime");
     }
 }

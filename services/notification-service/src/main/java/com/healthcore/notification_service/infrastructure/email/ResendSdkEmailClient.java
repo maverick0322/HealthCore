@@ -3,7 +3,9 @@ package com.healthcore.notification_service.infrastructure.email;
 import com.resend.Resend;
 import com.resend.core.exception.ResendException;
 import com.resend.services.emails.model.CreateEmailOptions;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ResendSdkEmailClient implements ResendEmailClient {
 
     private final Resend resend;
@@ -25,8 +27,7 @@ public class ResendSdkEmailClient implements ResendEmailClient {
         try {
             resend.emails().send(options);
         } catch (ResendException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.warn("Failed to send email to {} with subject '{}'", request.to(), request.subject(), e);
         }
     }
 }

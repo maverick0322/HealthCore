@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.healthcore.notification_service.infrastructure.config.MessagingProperties;
+import org.aopalliance.aop.Advice;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -11,10 +12,17 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.retry.MessageRecoverer;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.backoff.ExponentialBackOffPolicy;
+import org.springframework.retry.interceptor.RetryOperationsInterceptor;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 
 @Configuration
 public class RabbitMessagingConfig {
@@ -30,28 +38,58 @@ public class RabbitMessagingConfig {
     }
 
     @Bean
+    public TopicExchange deadLetterExchange(MessagingProperties messagingProperties) {
+        return new TopicExchange(messagingProperties.deadLetterExchange(), true, false);
+    }
+
+    @Bean
     public Queue welcomeEmailQueue(MessagingProperties messagingProperties) {
-        return QueueBuilder.durable(messagingProperties.queues().welcomeEmail()).build();
+        return buildDurableQueueWithDlq(messagingProperties.queues().welcomeEmail(), messagingProperties);
     }
 
     @Bean
     public Queue passwordResetEmailQueue(MessagingProperties messagingProperties) {
-        return QueueBuilder.durable(messagingProperties.queues().passwordResetEmail()).build();
+        return buildDurableQueueWithDlq(messagingProperties.queues().passwordResetEmail(), messagingProperties);
     }
 
     @Bean
     public Queue appointmentConfirmedQueue(MessagingProperties messagingProperties) {
-        return QueueBuilder.durable(messagingProperties.queues().appointmentConfirmedEmail()).build();
+        return buildDurableQueueWithDlq(messagingProperties.queues().appointmentConfirmedEmail(), messagingProperties);
     }
 
     @Bean
     public Queue appointmentCancelledQueue(MessagingProperties messagingProperties) {
-        return QueueBuilder.durable(messagingProperties.queues().appointmentCancelledEmail()).build();
+        return buildDurableQueueWithDlq(messagingProperties.queues().appointmentCancelledEmail(), messagingProperties);
     }
 
     @Bean
     public Queue appointmentReminderQueue(MessagingProperties messagingProperties) {
-        return QueueBuilder.durable(messagingProperties.queues().appointmentReminderEmail()).build();
+        return buildDurableQueueWithDlq(messagingProperties.queues().appointmentReminderEmail(), messagingProperties);
+    }
+
+    @Bean
+    public Queue welcomeEmailDlqQueue(MessagingProperties messagingProperties) {
+        return QueueBuilder.durable(dlqName(messagingProperties.queues().welcomeEmail(), messagingProperties)).build();
+    }
+
+    @Bean
+    public Queue passwordResetDlqQueue(MessagingProperties messagingProperties) {
+        return QueueBuilder.durable(dlqName(messagingProperties.queues().passwordResetEmail(), messagingProperties)).build();
+    }
+
+    @Bean
+    public Queue appointmentConfirmedDlqQueue(MessagingProperties messagingProperties) {
+        return QueueBuilder.durable(dlqName(messagingProperties.queues().appointmentConfirmedEmail(), messagingProperties)).build();
+    }
+
+    @Bean
+    public Queue appointmentCancelledDlqQueue(MessagingProperties messagingProperties) {
+        return QueueBuilder.durable(dlqName(messagingProperties.queues().appointmentCancelledEmail(), messagingProperties)).build();
+    }
+
+    @Bean
+    public Queue appointmentReminderDlqQueue(MessagingProperties messagingProperties) {
+        return QueueBuilder.durable(dlqName(messagingProperties.queues().appointmentReminderEmail(), messagingProperties)).build();
     }
 
     @Bean
@@ -89,15 +127,90 @@ public class RabbitMessagingConfig {
                 .with(messagingProperties.routingKeys().appointmentReminder());
     }
 
+    @Bean
+    public Binding welcomeEmailDlqBinding(TopicExchange deadLetterExchange, Queue welcomeEmailDlqQueue, MessagingProperties messagingProperties) {
+        return BindingBuilder.bind(welcomeEmailDlqQueue)
+                .to(deadLetterExchange)
+                .with(dlqName(messagingProperties.queues().welcomeEmail(), messagingProperties));
+    }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
+    public Binding passwordResetDlqBinding(TopicExchange deadLetterExchange, Queue passwordResetDlqQueue, MessagingProperties messagingProperties) {
+        return BindingBuilder.bind(passwordResetDlqQueue)
+                .to(deadLetterExchange)
+                .with(dlqName(messagingProperties.queues().passwordResetEmail(), messagingProperties));
+    }
+
+    @Bean
+    public Binding appointmentConfirmedDlqBinding(TopicExchange deadLetterExchange, Queue appointmentConfirmedDlqQueue, MessagingProperties messagingProperties) {
+        return BindingBuilder.bind(appointmentConfirmedDlqQueue)
+                .to(deadLetterExchange)
+                .with(dlqName(messagingProperties.queues().appointmentConfirmedEmail(), messagingProperties));
+    }
+
+    @Bean
+    public Binding appointmentCancelledDlqBinding(TopicExchange deadLetterExchange, Queue appointmentCancelledDlqQueue, MessagingProperties messagingProperties) {
+        return BindingBuilder.bind(appointmentCancelledDlqQueue)
+                .to(deadLetterExchange)
+                .with(dlqName(messagingProperties.queues().appointmentCancelledEmail(), messagingProperties));
+    }
+
+    @Bean
+    public Binding appointmentReminderDlqBinding(TopicExchange deadLetterExchange, Queue appointmentReminderDlqQueue, MessagingProperties messagingProperties) {
+        return BindingBuilder.bind(appointmentReminderDlqQueue)
+                .to(deadLetterExchange)
+                .with(dlqName(messagingProperties.queues().appointmentReminderEmail(), messagingProperties));
+    }
+
+    @Bean
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter messageConverter, RetryTemplate retryTemplate) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
+        rabbitTemplate.setRetryTemplate(retryTemplate);
         return rabbitTemplate;
     }
 
-     @Bean
+    @Bean
+    public RetryTemplate retryTemplate() {
+        RetryTemplate retryTemplate = new RetryTemplate();
+
+        SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(3);
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
+        backOffPolicy.setInitialInterval(1000);
+        backOffPolicy.setMultiplier(2.0);
+        backOffPolicy.setMaxInterval(10000);
+        retryTemplate.setBackOffPolicy(backOffPolicy);
+
+        return retryTemplate;
+    }
+
+    @Bean
+    public MessageRecoverer messageRecoverer(RabbitTemplate rabbitTemplate, MessagingProperties messagingProperties) {
+        return new DeadLetteringMessageRecoverer(rabbitTemplate, messagingProperties);
+    }
+
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory,
+            MessageConverter messageConverter,
+            RetryTemplate retryTemplate,
+            MessageRecoverer messageRecoverer
+    ) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(messageConverter);
+        RetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless()
+                .retryOperations(retryTemplate)
+                .recoverer(messageRecoverer)
+                .build();
+        factory.setAdviceChain(new Advice[] { interceptor });
+        return factory;
+    }
+
+    @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule()); // soporte para fechas modernas (LocalDate, etc.)
@@ -108,5 +221,16 @@ public class RabbitMessagingConfig {
     @Bean
     public MessageConverter messageConverter(ObjectMapper objectMapper) {
         return new Jackson2JsonMessageConverter(objectMapper);
+    }
+
+    private Queue buildDurableQueueWithDlq(String queueName, MessagingProperties messagingProperties) {
+        return QueueBuilder.durable(queueName)
+                .withArgument("x-dead-letter-exchange", messagingProperties.deadLetterExchange())
+                .withArgument("x-dead-letter-routing-key", dlqName(queueName, messagingProperties))
+                .build();
+    }
+
+    private String dlqName(String queueName, MessagingProperties messagingProperties) {
+        return queueName + messagingProperties.deadLetterQueueSuffix();
     }
 }

@@ -2,10 +2,9 @@ package com.healthcore.tracking.application.usecase;
 
 import com.healthcore.tracking.domain.exception.InvalidDomainDataException;
 import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
-import com.healthcore.tracking.domain.model.FoodLog;
 import com.healthcore.tracking.domain.model.FoodNutrients;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
-import com.healthcore.tracking.domain.port.FoodLogPort;
+import com.healthcore.tracking.domain.port.MealLogPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +27,7 @@ class FoodTrackingUseCaseTest {
     private FoodCatalogPort catalogPort;
 
     @Mock
-    private FoodLogPort logPort;
+    private MealLogPort logPort;
 
     @InjectMocks
     private FoodTrackingUseCase useCase;

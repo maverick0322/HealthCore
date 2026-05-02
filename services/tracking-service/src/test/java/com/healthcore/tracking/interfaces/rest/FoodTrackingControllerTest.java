@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.healthcore.tracking.application.usecase.FoodTrackingUseCase;
 import com.healthcore.tracking.domain.exception.InvalidDomainDataException;
 import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
-import com.healthcore.tracking.domain.model.FoodLog;
 import com.healthcore.tracking.domain.model.FoodNutrients;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -98,7 +97,7 @@ class FoodTrackingControllerTest {
     @DisplayName("Should return 201 CREATED when food log is successfully processed")
     void logFoodConsumption_Created() throws Exception {
         // Arrange
-        FoodLogRequest requestBody = new FoodLogRequest("75017618", 150.0);
+        MealLogRequest requestBody = new MealLogRequest("75017618", 150.0);
 
         FoodLog mockSavedLog = FoodLog.builder()
                 .userId("user-123")

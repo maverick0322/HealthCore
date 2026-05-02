@@ -1,23 +1,20 @@
 package com.healthcore.tracking.domain.model;
 
-import lombok.Builder;
-import lombok.Getter;
-import java.io.Serializable;
-
 /**
- * Value Object representing the nutritional profile of a food item per 100g.
- * Immutable design: Uses @Getter instead of @Data to prevent state mutation after creation.
+ * Value Object representing the nutritional profile of a food item per standard base weight (100g).
+ * Modeled as a Record for immutability, ensuring data integrity across the application.
  */
-@Getter
-@Builder
-public class FoodNutrients implements  Serializable {
-    private final String barcode;
-    private final String name;
-    private final String brand;
-    private final String imageUrl;
-    private final double calories;
-    private final double proteins;
-    private final double carbohydrates;
-    private final double fats;
-    private final String source;
-}
+public record FoodNutrients(
+        String barcode,
+        String name,
+        String brand,
+        String imageUrl,
+        double calories,
+        double proteins,
+        double carbohydrates,
+        double fats,
+        double fiberGrams,
+        double sodiumMg,
+        double sugarGrams,
+        double potassiumMg
+) {}

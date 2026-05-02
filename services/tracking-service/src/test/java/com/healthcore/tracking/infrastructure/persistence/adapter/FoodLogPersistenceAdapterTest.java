@@ -1,8 +1,7 @@
 package com.healthcore.tracking.infrastructure.persistence.adapter;
 
-import com.healthcore.tracking.domain.model.FoodLog;
-import com.healthcore.tracking.infrastructure.persistence.entity.FoodLogDocument;
-import com.healthcore.tracking.infrastructure.persistence.repository.SpringDataMongoFoodLogRepository;
+import com.healthcore.tracking.infrastructure.persistence.entity.MealLogDocument;
+import com.healthcore.tracking.infrastructure.persistence.repository.SpringDataMongoMealLogRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,13 +23,13 @@ import static org.mockito.Mockito.*;
 class FoodLogPersistenceAdapterTest {
 
     @Mock
-    private SpringDataMongoFoodLogRepository repositoryMock;
+    private SpringDataMongoMealLogRepository repositoryMock;
 
     @InjectMocks
     private FoodLogPersistenceAdapter adapter;
 
     @Captor
-    private ArgumentCaptor<FoodLogDocument> documentCaptor;
+    private ArgumentCaptor<MealLogDocument> documentCaptor;
 
     @Test
     @DisplayName("Should correctly map Domain to Document, save, and map back to Domain")
@@ -46,7 +45,7 @@ class FoodLogPersistenceAdapterTest {
                 .consumedAt(now)
                 .build();
 
-        FoodLogDocument savedDocument = FoodLogDocument.builder()
+        MealLogDocument savedDocument = MealLogDocument.builder()
                 .id("mongo-uuid-999")
                 .userId("user-1")
                 .barcode("123")
@@ -56,7 +55,7 @@ class FoodLogPersistenceAdapterTest {
                 .consumedAt(now)
                 .build();
 
-        when(repositoryMock.save(any(FoodLogDocument.class))).thenReturn(savedDocument);
+        when(repositoryMock.save(any(MealLogDocument.class))).thenReturn(savedDocument);
 
         // Act
         FoodLog result = adapter.save(domainLog);
@@ -67,7 +66,7 @@ class FoodLogPersistenceAdapterTest {
         assertEquals("user-1", result.getUserId());
 
         verify(repositoryMock).save(documentCaptor.capture());
-        FoodLogDocument capturedDoc = documentCaptor.getValue();
+        MealLogDocument capturedDoc = documentCaptor.getValue();
 
         assertEquals("Manzana", capturedDoc.getFoodName());
         assertEquals(52.0, capturedDoc.getTotalCalories());
@@ -81,8 +80,8 @@ class FoodLogPersistenceAdapterTest {
         LocalDateTime start = LocalDateTime.now().minusDays(1);
         LocalDateTime end = LocalDateTime.now();
 
-        FoodLogDocument doc1 = FoodLogDocument.builder().id("doc-1").foodName("Plátano").build();
-        FoodLogDocument doc2 = FoodLogDocument.builder().id("doc-2").foodName("Avena").build();
+        MealLogDocument doc1 = MealLogDocument.builder().id("doc-1").foodName("Plátano").build();
+        MealLogDocument doc2 = MealLogDocument.builder().id("doc-2").foodName("Avena").build();
 
         when(repositoryMock.findByUserIdAndConsumedAtBetween(userId, start, end))
                 .thenReturn(List.of(doc1, doc2));

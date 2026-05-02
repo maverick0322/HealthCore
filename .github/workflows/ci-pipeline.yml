@@ -33,6 +33,14 @@ jobs:
         working-directory: ./services/tracking-service
         run: mvn clean test
 
+      - name: Run Tests (Notification Service)
+        working-directory: ./services/notification-service
+        run: mvn clean test
+
+      - name: Run Tests (Agenda Service)
+        working-directory: ./services/agenda-service
+        run: mvn clean test
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:

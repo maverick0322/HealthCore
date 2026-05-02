@@ -29,6 +29,7 @@ public class PasswordResetCodeDocument {
     @Field("email")
     private String email;
 
+    @Indexed(unique = true)
     @Field("code_hash")
     private String codeHash;
 

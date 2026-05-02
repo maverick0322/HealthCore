@@ -277,6 +277,16 @@ class AuthServiceTest {
     }
 
     @Test
+    void should_ThrowException_When_LogoutWithDuplicateTokens() {
+        String refreshToken = "refresh-token-123";
+        when(refreshTokenRepository.findByTokenHash(any()))
+                .thenThrow(new org.springframework.dao.IncorrectResultSizeDataAccessException(1, 2));
+
+        assertThatThrownBy(() -> authService.logout(refreshToken))
+                .isInstanceOf(org.springframework.dao.IncorrectResultSizeDataAccessException.class);
+    }
+
+    @Test
     void should_ThrowUnauthorized_When_RefreshTokenIsRevoked() {
         String refreshToken = "refresh-token-123";
         RefreshTokenOwnership revoked = RefreshTokenOwnership.builder()

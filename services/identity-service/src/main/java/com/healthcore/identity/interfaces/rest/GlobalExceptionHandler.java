@@ -75,6 +75,20 @@ public class GlobalExceptionHandler {
                 .body(buildErrorResponse("METHOD_NOT_ALLOWED", "HTTP method not supported for this endpoint"));
     }
 
+    @ExceptionHandler(org.springframework.dao.IncorrectResultSizeDataAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleIncorrectResultSize(org.springframework.dao.IncorrectResultSizeDataAccessException ex) {
+        log.error("Database integrity error: expected single result but found multiple", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(buildErrorResponse("DATA_INTEGRITY_ERROR", "Multiple records found where only one was expected."));
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleDataAccessException(org.springframework.dao.DataAccessException ex) {
+        log.error("Database access error", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(buildErrorResponse("DATABASE_ERROR", "A database error occurred."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
         log.error("Unhandled critical exception caught by GlobalExceptionHandler", ex);

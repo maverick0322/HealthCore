@@ -16,7 +16,7 @@ import com.healthcore.identity.infrastructure.persistence.UserRepositoryAdapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = IdentityServiceApplication.class)
 @ActiveProfiles("context")
 class IdentityServiceApplicationTests {
 

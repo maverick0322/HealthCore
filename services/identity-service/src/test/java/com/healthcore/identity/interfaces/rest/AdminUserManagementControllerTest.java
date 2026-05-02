@@ -25,7 +25,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(value = AdminUserManagementController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+@WebMvcTest(controllers = AdminUserManagementController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+@org.springframework.test.context.ContextConfiguration(classes = com.healthcore.identity.IdentityServiceApplication.class)
 @Import(AdminUserManagementControllerTest.TestConfig.class)
 class AdminUserManagementControllerTest {
 

@@ -3,6 +3,10 @@ package com.healthcore.identity.infrastructure.persistence;
 import com.healthcore.identity.domain.RefreshTokenOwnership;
 import com.healthcore.identity.domain.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -13,6 +17,7 @@ import java.util.Optional;
 public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
 
     private final SpringDataMongoRefreshTokenRepository mongoRepository;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public RefreshTokenOwnership save(RefreshTokenOwnership refreshTokenOwnership) {
@@ -35,6 +40,17 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
                     document.setReplacedByTokenHash(replacedByTokenHash);
                     mongoRepository.save(document);
                 });
+    }
+
+    @Override
+    public boolean revokeIfActive(String tokenHash, String replacedByTokenHash) {
+        Query query = new Query(Criteria.where("token_hash").is(tokenHash).and("revoked").is(false));
+        Update update = new Update()
+                .set("revoked", true)
+                .set("revoked_at", LocalDateTime.now())
+                .set("replaced_by_token_hash", replacedByTokenHash);
+        return mongoTemplate.updateFirst(query, update, RefreshTokenDocument.class)
+                .getModifiedCount() > 0;
     }
 
     private RefreshTokenOwnership toDomain(RefreshTokenDocument document) {
@@ -65,4 +81,3 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
                 .build();
     }
 }
-

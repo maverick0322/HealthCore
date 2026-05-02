@@ -56,6 +56,8 @@ class RoleEndpointSecurityTest {
     @MockitoBean
     private SpringDataMongoRefreshTokenRepository springDataMongoRefreshTokenRepository;
 
+    @MockitoBean
+    private org.springframework.data.mongodb.core.MongoTemplate mongoTemplate;
     @Test
     void should_AllowPatientEndpoint_When_RoleIsPatient() throws Exception {
         String token = jwtUtil.generateAccessToken("patient@healthcore.com", "PATIENT");
@@ -119,7 +121,7 @@ class RoleEndpointSecurityTest {
     @Test
     void should_AllowAdminProvisioningEndpoint_When_RoleIsAdmin() throws Exception {
         String token = jwtUtil.generateAccessToken("admin@healthcore.com", "ADMIN");
-        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "password123", Role.PATIENT);
+        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "StrongPass123!", Role.PATIENT);
         when(authService.createUserByAdmin(anyString(), anyString(), any()))
                 .thenReturn(User.builder().email("new.patient@healthcore.com").role(Role.PATIENT).build());
 
@@ -133,7 +135,7 @@ class RoleEndpointSecurityTest {
     @Test
     void should_RejectAdminProvisioningEndpoint_When_RoleIsPatient() throws Exception {
         String token = jwtUtil.generateAccessToken("patient@healthcore.com", "PATIENT");
-        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "password123", Role.PATIENT);
+        AdminCreateUserRequest request = new AdminCreateUserRequest("new.patient@healthcore.com", "StrongPass123!", Role.PATIENT);
 
         mockMvc.perform(post("/api/v1/admin/users")
                         .header("Authorization", "Bearer " + token)
@@ -142,5 +144,3 @@ class RoleEndpointSecurityTest {
                 .andExpect(status().isForbidden());
     }
 }
-
-

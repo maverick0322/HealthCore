@@ -1,6 +1,8 @@
 package com.healthcore.identity.interfaces.rest;
 
+import com.healthcore.identity.domain.exception.BadRequestException;
 import com.healthcore.identity.domain.exception.ConflictException;
+import com.healthcore.identity.domain.exception.OAuth2ProviderConflictException;
 import com.healthcore.identity.domain.exception.TooManyRequestsException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
 import lombok.extern.slf4j.Slf4j;
@@ -11,9 +13,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.time.OffsetDateTime;
 
 @Slf4j
 @RestControllerAdvice
@@ -54,6 +56,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNoResourceFound(NoResourceFoundException ex) {
+        log.warn("Resource not found: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(buildErrorResponse("NOT_FOUND", "Resource not found"));
     }
@@ -77,6 +80,20 @@ public class GlobalExceptionHandler {
         log.error("Unhandled critical exception caught by GlobalExceptionHandler", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildErrorResponse("INTERNAL_ERROR", "Internal server error. Please try again later."));
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(buildErrorResponse("BAD_REQUEST", ex.getMessage()));
+    }
+
+    @ExceptionHandler(OAuth2ProviderConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleOAuth2ProviderConflict(OAuth2ProviderConflictException ex) {
+        Map<String, Object> response = buildErrorResponse("OAUTH2_PROVIDER_CONFLICT", ex.getMessage());
+        response.put("existingProvider", ex.getExistingProvider().name());
+        response.put("requestedProvider", ex.getRequestedProvider().name());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
     private Map<String, Object> buildErrorResponse(String code, String message) {

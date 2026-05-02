@@ -9,7 +9,9 @@ import com.healthcore.identity.domain.RefreshTokenOwnership;
 import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.VerificationCode;
+import com.healthcore.identity.domain.exception.BadRequestException;
 import com.healthcore.identity.domain.exception.ConflictException;
+import com.healthcore.identity.domain.exception.OAuth2ProviderConflictException;
 import com.healthcore.identity.domain.exception.TooManyRequestsException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
 import com.healthcore.identity.domain.repository.PasswordResetCodeRepository;
@@ -33,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -50,6 +53,11 @@ public class AuthService {
     private static final long ACCESS_TOKEN_EXPIRES_IN_MS = 300_000L;
     private static final long REFRESH_TOKEN_EXPIRES_IN_MS = 86_400_000L;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int MAX_EMAIL_LENGTH = 254;
+    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final int MAX_PASSWORD_LENGTH = 72;
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,72}$");
 
     private final UserRepository userRepository;
     private final VerificationCodeRepository verificationCodeRepository;
@@ -67,6 +75,8 @@ public class AuthService {
     }
 
     public User registerLocalUser(String email, String plainPassword, Role requestedRole) {
+        validateEmail(email, "Email is required");
+        validatePassword(plainPassword, "Password is required");
         Role role = sanitizeSelfRegistrationRole(requestedRole);
         log.info("Attempting to register local user with email: {} and role: {}", email, role);
 
@@ -94,6 +104,8 @@ public class AuthService {
     }
 
     public User createUserByAdmin(String email, String plainPassword, Role requestedRole) {
+        validateEmail(email, "Email is required");
+        validatePassword(plainPassword, "Password is required");
         Role role = requestedRole == null ? Role.PATIENT : requestedRole;
         log.info("Admin provisioning local user with email: {} and role: {}", email, role);
 
@@ -196,7 +208,10 @@ public class AuthService {
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getEmail());
         String newTokenHash = hashValue(newRefreshToken);
 
-        refreshTokenRepository.revokeByTokenHash(currentOwnership.getTokenHash(), newTokenHash);
+        boolean revoked = refreshTokenRepository.revokeIfActive(currentOwnership.getTokenHash(), newTokenHash);
+        if (!revoked) {
+            throw new UnauthorizedException("Invalid refresh token");
+        }
         persistRefreshToken(user, newRefreshToken);
 
         return buildTokenResponse(newAccessToken, newRefreshToken);
@@ -223,6 +238,7 @@ public class AuthService {
     }
 
     public void requestPasswordReset(String email) {
+        validateEmail(email, "Email is required");
         Optional<User> userOptional = userRepository.findByEmailAndProvider(email, AuthProvider.LOCAL);
 
         if (userOptional.isEmpty()) {
@@ -259,6 +275,8 @@ public class AuthService {
     }
 
     public void resetPassword(String email, String code, String newPassword) {
+        validateEmail(email, "Email is required");
+        validatePassword(newPassword, "New password is required");
         PasswordResetCode passwordResetCode = passwordResetCodeRepository
                 .findByEmailAndCodeHash(email, hashValue(code))
                 .filter(storedCode -> storedCode.getExpiresAt().isAfter(LocalDateTime.now()))
@@ -331,7 +349,11 @@ public class AuthService {
         userRepository.findByEmail(email)
                 .filter(existing -> existing.getProvider() != provider)
                 .ifPresent(existing -> {
-                    throw new ConflictException("Email is already registered with a different authentication provider");
+                    throw new OAuth2ProviderConflictException(
+                            "Email is already registered with a different authentication provider",
+                            existing.getProvider(),
+                            provider
+                    );
                 });
 
         User newSocialUser = User.builder()
@@ -409,6 +431,28 @@ public class AuthService {
                 ACCESS_TOKEN_EXPIRES_IN_MS,
                 REFRESH_TOKEN_EXPIRES_IN_MS
         );
+    }
+
+    private void validateEmail(String email, String message) {
+        if (email == null || email.isBlank()) {
+            throw new BadRequestException(message);
+        }
+        String trimmed = email.trim();
+        if (trimmed.length() > MAX_EMAIL_LENGTH || !EMAIL_PATTERN.matcher(trimmed).matches()) {
+            throw new BadRequestException("Invalid email format");
+        }
+    }
+
+    private void validatePassword(String password, String message) {
+        if (password == null || password.isBlank()) {
+            throw new BadRequestException(message);
+        }
+        if (password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
+            throw new BadRequestException("Password does not meet the required length");
+        }
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            throw new BadRequestException("Password does not meet complexity requirements");
+        }
     }
 
     public record AuthTokens(

@@ -43,7 +43,8 @@ class IdentityServiceApplicationTests {
 
 	@MockitoBean
 	private com.healthcore.identity.application.ports.IdentityEventPublisher identityEventPublisher;
-
+	@MockitoBean
+	private org.springframework.data.mongodb.core.MongoTemplate mongoTemplate;
 	@Test
 	void contextLoads() {
 		assertThat(authService).isNotNull();

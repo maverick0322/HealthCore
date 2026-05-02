@@ -8,5 +8,5 @@ public interface RefreshTokenRepository {
     RefreshTokenOwnership save(RefreshTokenOwnership refreshTokenOwnership);
     Optional<RefreshTokenOwnership> findByTokenHash(String tokenHash);
     void revokeByTokenHash(String tokenHash, String replacedByTokenHash);
+    boolean revokeIfActive(String tokenHash, String replacedByTokenHash);
 }
-

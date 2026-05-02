@@ -2,8 +2,8 @@ package com.healthcore.identity.infrastructure.security;
 
 import com.healthcore.identity.application.AuthService;
 import com.healthcore.identity.domain.AuthProvider;
+import com.healthcore.identity.domain.exception.OAuth2ProviderConflictException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
             HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
+            Authentication authentication) throws IOException {
         try {
             if (!(authentication instanceof OAuth2AuthenticationToken oauthToken)) {
                 throw new UnauthorizedException("Invalid OAuth2 authentication context");
@@ -50,6 +50,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             log.info("OAuth2 login completed for provider: {} and email: {}", provider, email);
             response.sendRedirect(finalUrl);
+        } catch (OAuth2ProviderConflictException ex) {
+            log.warn("OAuth2 login conflict: {}", ex.getMessage());
+            writeErrorRedirect(response, "OAUTH2_PROVIDER_CONFLICT", ex.getMessage(), ex.getExistingProvider().name(), ex.getRequestedProvider().name());
         } catch (UnauthorizedException ex) {
             log.warn("OAuth2 login rejected: {}", ex.getMessage());
             writeErrorRedirect(response, "UNAUTHORIZED", ex.getMessage());
@@ -78,6 +81,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String finalUrl = org.springframework.web.util.UriComponentsBuilder.fromUriString(redirectUrl)
                 .queryParam("error", code)
                 .queryParam("message", message)
+                .build().toUriString();
+        response.sendRedirect(finalUrl);
+    }
+
+    private void writeErrorRedirect(HttpServletResponse response, String code, String message, String existingProvider, String requestedProvider) throws IOException {
+        String finalUrl = org.springframework.web.util.UriComponentsBuilder.fromUriString(redirectUrl)
+                .queryParam("error", code)
+                .queryParam("message", message)
+                .queryParam("existingProvider", existingProvider)
+                .queryParam("requestedProvider", requestedProvider)
                 .build().toUriString();
         response.sendRedirect(finalUrl);
     }

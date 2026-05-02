@@ -49,7 +49,7 @@ class AuthControllerTest {
 
     @Test
     void should_Return201Created_When_RegistrationIsSuccessful() throws Exception {
-        RegisterRequest request = new RegisterRequest("new@healthcore.com", "password123", Role.PATIENT);
+        RegisterRequest request = new RegisterRequest("new@healthcore.com", "StrongPass123!", Role.PATIENT);
         User mockUser = User.builder().email("new@healthcore.com").role(Role.PATIENT).build();
 
         when(authService.registerLocalUser(anyString(), anyString(), any())).thenReturn(mockUser);
@@ -64,7 +64,7 @@ class AuthControllerTest {
 
     @Test
     void should_Return400BadRequest_When_EmailIsInvalid() throws Exception {
-        RegisterRequest badRequest = new RegisterRequest("not-an-email", "123", Role.PATIENT);
+        RegisterRequest badRequest = new RegisterRequest("not-an-email", "Weak1!", Role.PATIENT);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -76,7 +76,7 @@ class AuthControllerTest {
 
     @Test
     void should_Return409Conflict_When_EmailAlreadyExists() throws Exception {
-        RegisterRequest request = new RegisterRequest("existing@healthcore.com", "password123", Role.PATIENT);
+        RegisterRequest request = new RegisterRequest("existing@healthcore.com", "StrongPass123!", Role.PATIENT);
         when(authService.registerLocalUser(anyString(), anyString(), any()))
                 .thenThrow(new ConflictException("Email is already registered in HealthCore"));
 
@@ -90,7 +90,7 @@ class AuthControllerTest {
 
     @Test
     void should_Return200Ok_And_Tokens_When_LoginIsSuccessful() throws Exception {
-        LoginRequest request = new LoginRequest("patient@healthcore.com", "password123");
+        LoginRequest request = new LoginRequest("patient@healthcore.com", "StrongPass123!");
         AuthService.AuthTokens tokens = new AuthService.AuthTokens(
                 "mocked-access-token",
                 "mocked-refresh-token",
@@ -112,7 +112,7 @@ class AuthControllerTest {
 
     @Test
     void should_Return401Unauthorized_When_CredentialsAreInvalid() throws Exception {
-        LoginRequest request = new LoginRequest("ghost@healthcore.com", "wrongpassword");
+        LoginRequest request = new LoginRequest("ghost@healthcore.com", "WrongPass123!");
         when(authService.login(anyString(), anyString()))
                 .thenThrow(new UnauthorizedException("Invalid credentials"));
 
@@ -125,7 +125,7 @@ class AuthControllerTest {
 
     @Test
     void should_Return429TooManyRequests_When_LoginIsTemporarilyBlocked() throws Exception {
-        LoginRequest request = new LoginRequest("blocked@healthcore.com", "password123");
+        LoginRequest request = new LoginRequest("blocked@healthcore.com", "StrongPass123!");
         when(authService.login(anyString(), anyString()))
                 .thenThrow(new TooManyRequestsException("Too many failed login attempts. Please try again later."));
 

@@ -1,5 +1,6 @@
 package com.healthcore.identity.infrastructure.grpc;
 
+import com.healthcore.identity.domain.User;
 import com.healthcore.identity.domain.repository.UserRepository;
 import com.healthcore.identity.grpc.IdentityDirectoryGrpc;
 import com.healthcore.identity.grpc.UserContact;
@@ -32,7 +33,7 @@ public class IdentityGrpcService extends IdentityDirectoryGrpc.IdentityDirectory
                 .toList();
 
         Map<String, String> emailByUserId = userRepository.findByIdIn(userIds).stream()
-                .collect(Collectors.toMap(user -> user.getId(), user -> user.getEmail()));
+                .collect(Collectors.toMap(User::getId, User::getEmail));
 
         List<UserContact> contacts = userIds.stream()
                 .map(id -> UserContact.newBuilder()

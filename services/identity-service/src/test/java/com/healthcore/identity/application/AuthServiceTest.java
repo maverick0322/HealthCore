@@ -1,8 +1,12 @@
 package com.healthcore.identity.application;
 
 import com.healthcore.identity.domain.AuthProvider;
+import com.healthcore.identity.domain.PasswordResetCode;
+import com.healthcore.identity.domain.RefreshTokenOwnership;
 import com.healthcore.identity.domain.Role;
 import com.healthcore.identity.domain.User;
+import com.healthcore.identity.domain.VerificationCode;
+import com.healthcore.identity.domain.exception.BadRequestException;
 import com.healthcore.identity.domain.exception.ConflictException;
 import com.healthcore.identity.domain.exception.TooManyRequestsException;
 import com.healthcore.identity.domain.exception.UnauthorizedException;
@@ -20,6 +24,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -61,7 +71,7 @@ class AuthServiceTest {
     void should_ThrowConflictException_When_EmailAlreadyExistsDuringRegistration() {
         // Arrange
         String email = "existing@healthcore.com";
-        String password = "password123";
+        String password = "StrongPass123!";
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(User.builder().build()));
 
         // Act & Assert
@@ -71,10 +81,17 @@ class AuthServiceTest {
     }
 
     @Test
+    void should_RejectWeakPassword_When_Registering() {
+        assertThatThrownBy(() -> authService.registerPatient("weak@healthcore.com", "weakpass"))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Password does not meet complexity requirements");
+    }
+
+    @Test
     void should_ReturnSavedUser_When_RegistrationIsSuccessful() {
         // Arrange
         String email = "new@healthcore.com";
-        String rawPassword = "password123";
+        String rawPassword = "StrongPass123!";
         String encodedPassword = "encodedPassword123";
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
@@ -108,7 +125,7 @@ class AuthServiceTest {
     @Test
     void should_RegisterNutritionist_When_RoleIsNutritionist() {
         String email = "nutritionist@healthcore.com";
-        String rawPassword = "password123";
+        String rawPassword = "StrongPass123!";
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(rawPassword)).thenReturn("encodedPassword123");
@@ -122,7 +139,7 @@ class AuthServiceTest {
 
     @Test
     void should_RejectAdminSelfRegistration() {
-        assertThatThrownBy(() -> authService.registerLocalUser("admin@healthcore.com", "password123", Role.ADMIN))
+        assertThatThrownBy(() -> authService.registerLocalUser("admin@healthcore.com", "StrongPass123!", Role.ADMIN))
                 .isInstanceOf(UnauthorizedException.class)
                 .hasMessage("Self-registration with ADMIN role is not allowed");
     }
@@ -130,7 +147,7 @@ class AuthServiceTest {
     @Test
     void should_CreateAdminUser_When_ProvisionedByAdmin() {
         String email = "new.admin@healthcore.com";
-        String rawPassword = "password123";
+        String rawPassword = "StrongPass123!";
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(rawPassword)).thenReturn("encodedPassword123");
@@ -159,7 +176,7 @@ class AuthServiceTest {
     void should_ThrowUnauthorizedException_When_PasswordMismatchDuringLogin() {
         // Arrange
         String email = "patient@healthcore.com";
-        String wrongPassword = "wrongPassword";
+        String wrongPassword = "WrongPass123!";
         User existingUser = User.builder()
                 .email(email)
                 .passwordHash("correctHashedPassword")
@@ -179,7 +196,7 @@ class AuthServiceTest {
     void should_ReturnTokens_When_LoginCredentialsAreCorrect() {
         // Arrange
         String email = "patient@healthcore.com";
-        String rawPassword = "correctPassword";
+        String rawPassword = "StrongPass123!";
         User existingUser = User.builder()
                 .email(email)
                 .passwordHash("hashedPassword")
@@ -207,7 +224,7 @@ class AuthServiceTest {
         String email = "blocked@healthcore.com";
         when(loginAttemptService.isBlocked(email)).thenReturn(true);
 
-        assertThatThrownBy(() -> authService.login(email, "password123"))
+        assertThatThrownBy(() -> authService.login(email, "StrongPass123!"))
                 .isInstanceOf(TooManyRequestsException.class)
                 .hasMessage("Too many failed login attempts. Please try again later.");
     }
@@ -258,4 +275,157 @@ class AuthServiceTest {
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Email is already registered with a different authentication provider");
     }
+
+    @Test
+    void should_ThrowUnauthorized_When_RefreshTokenIsRevoked() {
+        String refreshToken = "refresh-token-123";
+        RefreshTokenOwnership revoked = RefreshTokenOwnership.builder()
+                .tokenHash("hash")
+                .revoked(true)
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .build();
+
+        when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
+        when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.of(revoked));
+
+        assertThatThrownBy(() -> authService.refresh(refreshToken))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("Invalid refresh token");
+    }
+
+    @Test
+    void should_ThrowUnauthorized_When_RefreshTokenIsExpired() {
+        String refreshToken = "refresh-token-123";
+        RefreshTokenOwnership expired = RefreshTokenOwnership.builder()
+                .tokenHash("hash")
+                .revoked(false)
+                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .build();
+
+        when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
+        when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.of(expired));
+
+        assertThatThrownBy(() -> authService.refresh(refreshToken))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("Invalid refresh token");
+    }
+
+    @Test
+    void should_ThrowUnauthorized_When_RefreshTokenCannotBeRevoked() {
+        String refreshToken = "refresh-token-123";
+        RefreshTokenOwnership active = RefreshTokenOwnership.builder()
+                .tokenHash("hash")
+                .revoked(false)
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+
+        when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
+        when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.of(active));
+        when(userRepository.findByEmail("user@healthcore.com")).thenReturn(Optional.of(User.builder().email("user@healthcore.com").role(Role.PATIENT).build()));
+        when(jwtUtil.generateAccessToken(any(), any())).thenReturn("access");
+        when(jwtUtil.generateRefreshToken(any())).thenReturn("refresh");
+        when(refreshTokenRepository.revokeIfActive(any(), any())).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.refresh(refreshToken))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("Invalid refresh token");
+    }
+
+    @Test
+    void should_ThrowUnauthorized_When_VerificationCodeIsExpired() {
+        VerificationCode expiredCode = VerificationCode.builder()
+                .email("patient@healthcore.com")
+                .codeHash("hash")
+                .expiresAt(LocalDateTime.now().minusMinutes(1))
+                .build();
+
+        when(verificationCodeRepository.findByEmailAndCodeHash(any(), any())).thenReturn(Optional.of(expiredCode));
+
+        assertThatThrownBy(() -> authService.verifyCode("patient@healthcore.com", "123456"))
+                .isInstanceOf(UnauthorizedException.class)
+                .hasMessage("Invalid or expired verification code");
+    }
+
+    @Test
+    void should_DoNothing_When_PasswordResetRequestedForUnknownEmail() {
+        when(userRepository.findByEmailAndProvider(any(), any())).thenReturn(Optional.empty());
+
+        authService.requestPasswordReset("unknown@healthcore.com");
+
+        verify(passwordResetCodeRepository, org.mockito.Mockito.never()).save(any(PasswordResetCode.class));
+    }
+
+    @Test
+    void should_ResetPassword_When_CodeIsValid() {
+        String email = "patient@healthcore.com";
+        String code = "123456";
+        PasswordResetCode stored = PasswordResetCode.builder()
+                .email(email)
+                .codeHash("hash")
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+        User user = User.builder().email(email).provider(AuthProvider.LOCAL).build();
+
+        when(passwordResetCodeRepository.findByEmailAndCodeHash(any(), any())).thenReturn(Optional.of(stored));
+        when(userRepository.findByEmailAndProvider(email, AuthProvider.LOCAL)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(any())).thenReturn("encoded");
+
+        authService.resetPassword(email, code, "StrongPass123!");
+
+        verify(userRepository).save(any(User.class));
+        verify(passwordResetCodeRepository).deleteByEmail(email);
+    }
+
+    @Test
+    void should_AllowOnlyOneRefresh_When_ConcurrentRequests() throws Exception {
+        String refreshToken = "refresh-token-123";
+        RefreshTokenOwnership active = RefreshTokenOwnership.builder()
+                .tokenHash("hash")
+                .revoked(false)
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+
+        when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
+        when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.of(active));
+        when(userRepository.findByEmail("user@healthcore.com")).thenReturn(Optional.of(User.builder().email("user@healthcore.com").role(Role.PATIENT).build()));
+
+        AtomicInteger tokenCounter = new AtomicInteger();
+        when(jwtUtil.generateAccessToken(any(), any())).thenAnswer(invocation -> "access-" + tokenCounter.incrementAndGet());
+        when(jwtUtil.generateRefreshToken(any())).thenAnswer(invocation -> "refresh-" + tokenCounter.incrementAndGet());
+
+        AtomicBoolean first = new AtomicBoolean(true);
+        when(refreshTokenRepository.revokeIfActive(any(), any())).thenAnswer(invocation -> first.getAndSet(false));
+
+        CountDownLatch latch = new CountDownLatch(1);
+        var executor = Executors.newFixedThreadPool(2);
+
+        CompletableFuture<Boolean> firstCall = CompletableFuture.supplyAsync(() -> {
+            try {
+                latch.await(2, TimeUnit.SECONDS);
+                authService.refresh(refreshToken);
+                return true;
+            } catch (Exception ex) {
+                return false;
+            }
+        }, executor);
+
+        CompletableFuture<Boolean> secondCall = CompletableFuture.supplyAsync(() -> {
+            try {
+                latch.await(2, TimeUnit.SECONDS);
+                authService.refresh(refreshToken);
+                return true;
+            } catch (Exception ex) {
+                return false;
+            }
+        }, executor);
+
+        latch.countDown();
+
+        boolean firstResult = firstCall.get(2, TimeUnit.SECONDS);
+        boolean secondResult = secondCall.get(2, TimeUnit.SECONDS);
+        executor.shutdownNow();
+
+        assertThat(firstResult ^ secondResult).isTrue();
+    }
 }
+

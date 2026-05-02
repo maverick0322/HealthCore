@@ -3,6 +3,7 @@ package com.healthcore.identity.interfaces.rest;
 import com.healthcore.identity.domain.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
@@ -11,7 +12,9 @@ public record RegisterRequest(
         String email,
 
         @NotBlank(message = "Password is required")
-        @Size(min = 8, message = "Password must be at least 8 characters long")
+        @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters long")
+        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,72}$",
+                message = "Password must include upper, lower, number, and symbol")
         String password,
 
         Role role

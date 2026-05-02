@@ -78,6 +78,13 @@ After successful login, backend returns JSON:
 }
 ```
 
+If the email is already registered with a different provider, the redirect includes:
+
+- `error=OAUTH2_PROVIDER_CONFLICT`
+- `message=...`
+- `existingProvider=LOCAL|AUTH0|...`
+- `requestedProvider=AUTH0|...`
+
 ## 5) REST endpoints for frontend
 
 Auth base URL: `http://localhost:8082/api/v1/auth`
@@ -111,6 +118,11 @@ Role-scoped base URL: `http://localhost:8082/api/v1`
 ```
 
 `role` is optional. If omitted, backend defaults to `PATIENT`. Self-registration as `ADMIN` is blocked.
+
+Password policy:
+
+- 8-72 characters
+- Must include upper, lower, number, and symbol
 
 ### Current user endpoint (`/me`)
 
@@ -165,4 +177,3 @@ Expected response:
   "refreshTokenExpiresInMs": 86400000
 }
 ```
-

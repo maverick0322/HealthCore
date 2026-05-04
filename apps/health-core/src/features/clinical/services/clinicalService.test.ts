@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { clinicalApi } from './clinicalApi';
+import { clinicalApi } from './clinicalService';
 import httpClient from '@/core/http/httpClient';
 
 vi.mock('@/core/http/httpClient', () => ({

@@ -4,12 +4,18 @@ import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.HealthGoal;
 import com.healthcore.clinical.domain.model.PatientProfile;
+import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.HealthGoalResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -36,7 +42,7 @@ public class ClinicalController {
                 ActivityLevel.valueOf(request.activityLevel().toUpperCase())
         );
 
-        manageProfileUseCase.createOrUpdateProfile(profile);
+        manageProfileUseCase.createProfile(profile);
         
         return ResponseEntity.ok().build();
     }
@@ -60,5 +66,29 @@ public class ClinicalController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/weight")
+    public ResponseEntity<HealthGoalResponse> updateWeight(
+            @RequestHeader("X-User-Id") String userId,
+            @Valid @RequestBody UpdateWeightRequest request) {
+        
+        HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg());
+        
+        HealthGoalResponse response = new HealthGoalResponse(
+                newGoal.targetCalories(),
+                newGoal.targetProtein(),
+                newGoal.targetCarbs(),
+                newGoal.targetFat()
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/weight/history")
+    public ResponseEntity<List<WeightRecord>> getWeightHistory(
+            @RequestHeader("X-User-Id") String userId) {
+        
+        List<WeightRecord> history = manageProfileUseCase.getWeightHistory(userId);
+        return ResponseEntity.ok(history);
     }
 }

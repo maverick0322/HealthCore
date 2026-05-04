@@ -21,3 +21,8 @@ export interface HealthGoalResponse {
   targetCarbs: number;
   targetFat: number;
 }
+
+export interface WeightRecord {
+  weightKg: number;
+  date: string;
+}

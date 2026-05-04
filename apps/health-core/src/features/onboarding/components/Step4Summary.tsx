@@ -3,8 +3,8 @@ import { Button } from "@/shared/ui/button";
 import { usePatientOnboardingStore } from "../store/usePatientOnboardingStore";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { clinicalApi } from "@/features/clinical/infrastructure/clinicalApi";
-import type { CreateProfilePayload } from "@/features/clinical/domain/types";
+import { clinicalApi } from "@/features/clinical/services/clinicalService";
+import type { CreateProfilePayload } from "@/features/clinical/types/clinical.types";
 
 export const Step4Summary = () => {
   const { t } = useTranslation("onboarding");

@@ -7,8 +7,7 @@ from src.domain.entities import FoodItem
 from src.domain.exceptions import (
     FoodNotFoundError, 
     ExternalServiceUnavailableError, 
-    InvalidDomainDataError,
-    CatalogDomainException
+    InvalidDomainDataError
 )
 
 logger = logging.getLogger(__name__)
@@ -22,8 +21,6 @@ class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
     Acts purely as an adapter between the network protocol and the application use cases.
     """
     
-    _DEFAULT_SOURCE = "Open Food Facts"
-
     def __init__(self, use_case: CatalogUseCase):
         self._use_case = use_case
 
@@ -43,12 +40,18 @@ class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
             return self._handle_grpc_error(context, grpc.StatusCode.NOT_FOUND, str(e), catalog_pb2.FoodResponse())
             
         except ExternalServiceUnavailableError as e:
-            logger.error(f"Upstream provider failure: {e}")
+            # We log the internal_reason if available for debugging, but send the safe str(e) to the client
+            logger.error(f"Provider/Local cache failure: {getattr(e, 'internal_reason', str(e))}")
             return self._handle_grpc_error(context, grpc.StatusCode.UNAVAILABLE, str(e), catalog_pb2.FoodResponse())
             
         except Exception as e:
             logger.exception("Unhandled critical error in GetFoodItem RPC.")
-            return self._handle_grpc_error(context, grpc.StatusCode.INTERNAL, "Internal server error.", catalog_pb2.FoodResponse())
+            return self._handle_grpc_error(
+                context, 
+                grpc.StatusCode.INTERNAL, 
+                "Ocurrió un error inesperado en el servidor. Inténtelo más tarde.", 
+                catalog_pb2.FoodResponse()
+            )
 
 
     def SearchFood(self, request, context):
@@ -66,18 +69,23 @@ class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
             return self._handle_grpc_error(context, grpc.StatusCode.INVALID_ARGUMENT, str(e), catalog_pb2.SearchResponse())
             
         except ExternalServiceUnavailableError as e:
-            logger.error(f"Upstream provider failure during search: {e}")
+            logger.error(f"Provider/Local cache failure during search: {getattr(e, 'internal_reason', str(e))}")
             return self._handle_grpc_error(context, grpc.StatusCode.UNAVAILABLE, str(e), catalog_pb2.SearchResponse())
             
         except Exception as e:
             logger.exception("Unhandled critical error in SearchFood RPC.")
-            return self._handle_grpc_error(context, grpc.StatusCode.INTERNAL, "Internal server error.", catalog_pb2.SearchResponse())
+            return self._handle_grpc_error(
+                context, 
+                grpc.StatusCode.INTERNAL, 
+                "Ocurrió un error inesperado en el servidor. Inténtelo más tarde.", 
+                catalog_pb2.SearchResponse()
+            )
         
 
     def _map_to_grpc_response(self, product: FoodItem) -> catalog_pb2.FoodResponse:
         """
         Isolates the data transformation logic from Domain Entity to gRPC Protobuf.
-        Prevents code duplication across multiple RPC methods.
+        Prevents code duplication across multiple RPC methods and includes new clinical micronutrients.
         """
         return catalog_pb2.FoodResponse(
             barcode=product.barcode,
@@ -88,7 +96,10 @@ class NutritionalCatalogService(catalog_pb2_grpc.NutritionalCatalogServicer):
             proteins_per_100g=product.nutrition.proteins,
             carbs_per_100g=product.nutrition.carbohydrates,
             fats_per_100g=product.nutrition.fats,
-            source=self._DEFAULT_SOURCE 
+            fiber_grams_per_100g=product.nutrition.fiber_grams,
+            sodium_mg_per_100g=product.nutrition.sodium_mg,
+            sugar_grams_per_100g=product.nutrition.sugar_grams,
+            potassium_mg_per_100g=product.nutrition.potassium_mg
         )
 
     def _handle_grpc_error(self, context, status_code: grpc.StatusCode, detail: str, empty_response_obj):

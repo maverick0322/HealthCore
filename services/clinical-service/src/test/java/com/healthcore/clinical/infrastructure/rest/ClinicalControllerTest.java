@@ -45,7 +45,7 @@ class ClinicalControllerTest {
         );
 
         PatientProfile mockProfile = Mockito.mock(PatientProfile.class);
-        when(clinicalApplicationService.createOrUpdateProfile(any())).thenReturn(mockProfile);
+        when(clinicalApplicationService.createProfile(any())).thenReturn(mockProfile);
 
         mockMvc.perform(post("/api/v1/clinical/profile")
                 .header("X-User-Id", "user-123") 
@@ -53,7 +53,7 @@ class ClinicalControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk()); 
 
-        verify(clinicalApplicationService).createOrUpdateProfile(any());
+        verify(clinicalApplicationService).createProfile(any());
     }
 
     @Test

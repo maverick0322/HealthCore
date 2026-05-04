@@ -2,6 +2,8 @@ package com.healthcore.clinical.domain.model;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PatientProfile {
     private final String userId;
@@ -10,6 +12,7 @@ public class PatientProfile {
     private LocalDate birthDate;
     private Gender gender;
     private ActivityLevel activityLevel;
+    private List<WeightRecord> weightHistory;
 
     public PatientProfile(String userId, Double weightKg, Double heightCm, LocalDate birthDate, Gender gender, ActivityLevel activityLevel) {
         if (userId == null || userId.isBlank()) {
@@ -21,6 +24,14 @@ public class PatientProfile {
         this.birthDate = birthDate;
         this.gender = gender;
         this.activityLevel = activityLevel;
+        this.weightHistory = new ArrayList<>();
+        this.weightHistory.add(new WeightRecord(weightKg, LocalDate.now()));
+    }
+
+    public HealthGoal updateWeight(Double newWeight) {
+        this.weightKg = newWeight;
+        this.weightHistory.add(new WeightRecord(newWeight, LocalDate.now()));
+        return generateHealthGoals();
     }
 
     public HealthGoal generateHealthGoals() {
@@ -50,4 +61,5 @@ public class PatientProfile {
     public LocalDate getBirthDate() { return birthDate; }
     public Gender getGender() { return gender; }
     public ActivityLevel getActivityLevel() { return activityLevel; }
+    public List<WeightRecord> getWeightHistory() { return weightHistory; } 
 }

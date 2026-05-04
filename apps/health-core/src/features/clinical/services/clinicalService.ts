@@ -1,4 +1,4 @@
-import type { CreateProfilePayload, HealthGoalResponse } from '../domain/types';
+import type { CreateProfilePayload, HealthGoalResponse } from '../types/clinical.types';
 
 import httpClient from '@/core/http/httpClient';
 

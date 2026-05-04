@@ -32,7 +32,7 @@ class ClinicalApplicationServiceTest {
         
         when(repositoryPort.save(any(PatientProfile.class))).thenReturn(profile);
 
-        PatientProfile savedProfile = service.createOrUpdateProfile(profile);
+        PatientProfile savedProfile = service.createProfile(profile);
 
         assertNotNull(savedProfile);
         assertEquals("user-123", savedProfile.getUserId());

@@ -68,8 +68,6 @@ public class ClinicalController {
         return ResponseEntity.ok(response);
     }
 
-    // ... tus otros métodos (ej. createProfile, getProfile) ...
-
     @PostMapping("/weight")
     public ResponseEntity<HealthGoalResponse> updateWeight(
             @RequestHeader("X-User-Id") String userId,
@@ -77,7 +75,6 @@ public class ClinicalController {
         
         HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg());
         
-        // Mapeamos el HealthGoal del dominio a nuestro DTO de respuesta
         HealthGoalResponse response = new HealthGoalResponse(
                 newGoal.targetCalories(),
                 newGoal.targetProtein(),

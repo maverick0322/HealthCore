@@ -28,7 +28,10 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/api/v1/tracking/health"
+            "/api/v1/tracking/health",
+            // Actuator endpoints must be unauthenticated for Prometheus scraping
+            "/actuator/health",
+            "/actuator/prometheus"
     };
 
     @Bean

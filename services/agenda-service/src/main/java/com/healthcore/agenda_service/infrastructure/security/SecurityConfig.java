@@ -31,7 +31,10 @@ public class SecurityConfig {
                     "/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",
-                    "/v3/api-docs/**"
+                    "/v3/api-docs/**",
+                    // Actuator endpoints must be unauthenticated for Prometheus scraping
+                    "/actuator/health",
+                    "/actuator/prometheus"
                 ).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/v1/agenda/nutritionist/**").hasRole("NUTRITIONIST")

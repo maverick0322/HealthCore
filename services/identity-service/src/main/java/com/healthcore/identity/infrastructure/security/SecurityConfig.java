@@ -37,7 +37,10 @@ public class SecurityConfig {
             "/api/v1/test/**",
             "/oauth2/**",
             "/login/**",
-            "/error"
+            "/error",
+            // Actuator endpoints are internal-only but must be unauthenticated for Prometheus scraping
+            "/actuator/health",
+            "/actuator/prometheus"
     };
 
     private static final String[] DOCS_ENDPOINTS = {

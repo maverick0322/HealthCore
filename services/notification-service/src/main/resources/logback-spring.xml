@@ -6,7 +6,7 @@
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <includeMdcKeyName>traceId</includeMdcKeyName>
             <includeMdcKeyName>spanId</includeMdcKeyName>
-            <customFields>{"app_name":"identity-service"}</customFields>
+            <customFields>{"app_name":"notification-service"}</customFields>
         </encoder>
     </appender>
 

@@ -8,20 +8,31 @@ const CLINICAL_API_URL = '/clinical';
 /**
  * Get the X-User-Id header value by extracting userId from JWT token.
  * This header is required by the Clinical Service for all endpoints.
+ *
+ * @throws {Error} If user is not authenticated or token is invalid
  */
 const getXUserIdHeader = (): Record<string, string> => {
   const { accessToken } = useAuthStore.getState();
-  
+
   if (!accessToken) {
     throw new Error('User is not authenticated. No access token found.');
   }
 
-  const userId = extractUserIdFromToken(accessToken);
+  let userId: string;
+  try {
+    userId = extractUserIdFromToken(accessToken);
+  } catch (error) {
+    throw new Error('Invalid or malformed access token. Cannot extract user ID.');
+  }
+
+  if (!userId) {
+    throw new Error('User ID not found in token.');
+  }
+
   return { 'X-User-Id': userId };
 };
 
 export const clinicalApi = {
-  
   createProfile: async (payload: CreateProfilePayload): Promise<void> => {
     await httpClient.post(
       `${CLINICAL_API_URL}/profile`,
@@ -53,5 +64,5 @@ export const clinicalApi = {
       { headers: getXUserIdHeader() }
     );
     return response.data;
-  }
+  },
 };

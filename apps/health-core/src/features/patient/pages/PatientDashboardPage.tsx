@@ -11,6 +11,7 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { PatientNav } from "@/features/patient/components/PatientNav";
+import { WeightChart } from "@/features/patient/components/WeightChart";
 
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -255,50 +256,7 @@ export const PatientDashboardPage = () => {
         </div>
 
         {/* ── Weight Evolution ───────────────────────────────────── */}
-        <Card id="card-weight">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <TrendingDown size={16} className="text-primary" />
-              {t("dashboard.weightEvolution")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Mini sparkline */}
-            <div className="flex items-end gap-1.5 h-16 mb-4">
-              {DUMMY.weightHistory.map((w, i) => {
-                const minW = Math.min(...DUMMY.weightHistory);
-                const maxW = Math.max(...DUMMY.weightHistory);
-                const heightPct = maxW === minW ? 50 : ((w - minW) / (maxW - minW)) * 100;
-                const barH = Math.max(8, (1 - heightPct / 100) * 60 + 8);
-                const isLast = i === DUMMY.weightHistory.length - 1;
-                return (
-                  <div
-                    key={i}
-                    className={`flex-1 rounded-t-sm transition-all duration-500 ${
-                      isLast ? "bg-primary" : "bg-primary/30"
-                    }`}
-                    style={{ height: `${barH}px` }}
-                    title={`${w} kg`}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex justify-between text-sm">
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground">{t("dashboard.startWeight")}</p>
-                <p className="font-bold">{DUMMY.weight.start} kg</p>
-              </div>
-              <div className="space-y-0.5 text-center">
-                <p className="text-xs text-muted-foreground">{t("dashboard.currentWeight")}</p>
-                <p className="font-bold text-primary">{DUMMY.weight.current} kg</p>
-              </div>
-              <div className="space-y-0.5 text-right">
-                <p className="text-xs text-muted-foreground">{t("dashboard.targetWeight")}</p>
-                <p className="font-bold">{DUMMY.weight.target} kg</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <WeightChart />
 
         {/* ── Bottom row: Appointment + Water ───────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

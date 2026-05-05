@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import { ProtectedRoute } from "@/core/routes/ProtectedRoute";
 import { GuestRoute } from "@/core/routes/GuestRoute";
+import { OnboardingGuard } from "@/core/routes/OnboardingGuard";
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { SignUpPage } from "@/features/auth/pages/SignUpPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
@@ -79,8 +80,14 @@ export const appRouter = createBrowserRouter([
         element: <PatientPlanPage />,
       },
       {
-        path: "/onboarding/patient",
-        element: <PatientOnboardingPage />,
+        path: "/onboarding",
+        element: <OnboardingGuard />,
+        children: [
+          {
+            path: "/onboarding/patient",
+            element: <PatientOnboardingPage />,
+          },
+        ],
       },
       // ── NUTRITIONIST ROUTES ──
       {

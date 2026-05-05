@@ -31,7 +31,7 @@ public class ClinicalController {
     @PostMapping("/profile")
     public ResponseEntity<Void> createProfile(
             @RequestHeader("X-User-Id") String userId,
-            @RequestBody CreateProfileRequest request) {
+            @Valid @RequestBody CreateProfileRequest request) {
 
         PatientProfile profile = new PatientProfile(
                 userId, 

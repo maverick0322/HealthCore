@@ -1,0 +1,70 @@
+import { useQuery } from '@tanstack/react-query';
+import type { UseQueryResult } from '@tanstack/react-query';
+import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import { clinicalApi } from '@/features/clinical/services/clinicalService';
+import type { WeightRecord } from '@/features/clinical/types/clinical.types';
+import { AxiosError } from 'axios';
+
+const WEIGHT_HISTORY_QUERY_KEY = ['clinical', 'weight-history'];
+const WEIGHT_HISTORY_CACHE_TIME = 5 * 60 * 1000;
+
+interface UseWeightHistoryReturn {
+  data: WeightRecord[];
+  isLoading: boolean;
+  isError: boolean;
+  error: AxiosError<unknown> | null;
+  refetch: UseQueryResult<WeightRecord[], Error>['refetch'];
+}
+
+export const useWeightHistory = (): UseWeightHistoryReturn => {
+  const user = useAuthStore.getState().user;
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: [...WEIGHT_HISTORY_QUERY_KEY, user?.email ?? null],
+    queryFn: async () => {
+      if (!user?.email) {
+        return [];
+      }
+
+      try {
+        return await clinicalApi.getWeightHistory(user.email);
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          return [];
+        }
+        throw err;
+      }
+    },
+    staleTime: WEIGHT_HISTORY_CACHE_TIME,
+    retry: (count, err: any) => {
+      if (err?.response?.status === 404) {
+        return false;
+      }
+      return count < 2;
+    },
+    enabled: !!user?.email,
+  });
+
+  return {
+    data: data || [],
+    isLoading,
+    isError,
+    error: error as AxiosError<unknown> | null,
+    refetch,
+  };
+};
+
+export const transformWeightDataForChart = (data: WeightRecord[] | undefined) => {
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  return data.map((record) => ({
+    date: new Date(record.date).toLocaleDateString('es-ES', {
+      month: 'short',
+      day: 'numeric',
+    }),
+    weight: record.weightKg,
+    fullDate: record.date,
+  }));
+};

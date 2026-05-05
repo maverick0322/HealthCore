@@ -26,12 +26,11 @@ export const Step4Summary = () => {
       };
 
       await clinicalApi.createProfile(payload);
-      
       navigate("/");
       
     } catch (error: any) {
-      console.error("Error al enviar los datos clínicos:", error);
-      alert(`Falló la conexión con Java. Error: ${error.message || "Revisa la consola (F12)"}`);
+      const errorMessage = error.response?.data?.message || error.message || "Revisa la consola (F12) para más detalles";
+      alert(`❌ Error: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }

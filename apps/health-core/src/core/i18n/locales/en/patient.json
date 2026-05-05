@@ -97,6 +97,7 @@
     "currentWeight": "Current weight",
     "startWeight": "Start weight",
     "targetWeight": "Target weight",
+    "minWeight": "Minimum weight",
     "nextAppointment": "Next Appointment",
     "withNutritionist": "With",
     "noAppointment": "No upcoming appointments",

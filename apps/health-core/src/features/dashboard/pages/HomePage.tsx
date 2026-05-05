@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/shared/ui/button';
@@ -6,14 +6,28 @@ import { SettingsBar } from '@/shared/components/SettingsBar';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
 /**
- * Placeholder home dashboard — shown after login for all roles.
- * Displays role-specific welcome content and a logout button.
+ * Home Dashboard — shown after login.
+ * Automatically redirects users to role-specific dashboards:
+ * - PATIENT → /dashboard/patient
+ * - NUTRITIONIST → /dashboard/nutritionist
+ * - ADMIN → /dashboard/admin (placeholder)
  */
 export const HomePage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('auth');
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+
+  // Auto-redirect based on user role
+  if (user?.role === 'PATIENT') {
+    return <Navigate to="/dashboard/patient" replace />;
+  }
+  if (user?.role === 'NUTRITIONIST') {
+    return <Navigate to="/dashboard/nutritionist" replace />;
+  }
+  if (user?.role === 'ADMIN') {
+    return <Navigate to="/dashboard/admin" replace />;
+  }
 
   const handleLogout = async () => {
     await logout();

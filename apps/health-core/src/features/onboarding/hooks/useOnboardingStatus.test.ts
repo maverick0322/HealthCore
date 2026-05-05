@@ -2,12 +2,29 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useOnboardingStatus } from './useOnboardingStatus';
 import * as clinicalServiceModule from '@/features/clinical/services/clinicalService';
+import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
 vi.mock('@/features/clinical/services/clinicalService');
+vi.mock('@/features/auth/store/useAuthStore', () => ({
+  useAuthStore: {
+    getState: vi.fn(),
+  },
+}));
+
+const mockedUseAuthStore = vi.mocked(useAuthStore);
+
+const mockUser = {
+  email: 'patient@example.com',
+  role: 'PATIENT' as const,
+  provider: 'LOCAL' as const,
+  emailVerified: true,
+  enabled: true,
+};
 
 describe('useOnboardingStatus', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedUseAuthStore.getState.mockReturnValue({ user: mockUser } as any);
   });
 
   it('should return "loading" on initial mount', () => {

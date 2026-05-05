@@ -21,8 +21,26 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
 
     @Override
     public RefreshTokenOwnership save(RefreshTokenOwnership refreshTokenOwnership) {
-        RefreshTokenDocument savedDocument = mongoRepository.save(toDocument(refreshTokenOwnership));
-        return toDomain(savedDocument);
+        RefreshTokenDocument document = toDocument(refreshTokenOwnership);
+
+        Query query = new Query(Criteria.where("token_hash").is(document.getTokenHash()));
+        Update update = new Update()
+                .set("user_id", document.getUserId())
+                .set("email", document.getEmail())
+                .set("expires_at", document.getExpiresAt())
+                .set("revoked", document.isRevoked())
+                .set("revoked_at", document.getRevokedAt())
+                .set("replaced_by_token_hash", document.getReplacedByTokenHash());
+
+        if (document.getCreatedAt() != null) {
+            update.setOnInsert("created_at", document.getCreatedAt());
+        }
+
+        mongoTemplate.upsert(query, update, RefreshTokenDocument.class);
+
+        return mongoRepository.findByTokenHash(document.getTokenHash())
+                .map(this::toDomain)
+                .orElse(refreshTokenOwnership);
     }
 
     @Override

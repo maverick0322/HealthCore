@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import type { UseQueryResult } from '@tanstack/react-query';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
-import { extractUserIdFromToken } from '@/core/utils/jwt';
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type { WeightRecord } from '@/features/clinical/types/clinical.types';
 import { AxiosError } from 'axios';
@@ -13,27 +13,21 @@ interface UseWeightHistoryReturn {
   isLoading: boolean;
   isError: boolean;
   error: AxiosError<unknown> | null;
+  refetch: UseQueryResult<WeightRecord[], Error>['refetch'];
 }
 
 export const useWeightHistory = (): UseWeightHistoryReturn => {
-  const { accessToken } = useAuthStore();
+  const user = useAuthStore.getState().user;
 
-  const isAuthenticated = !!accessToken;
-  let userId: string | null = null;
-
-  if (isAuthenticated) {
-    try {
-      userId = extractUserIdFromToken(accessToken);
-    } catch {
-      // Token is invalid, disable the query
-    }
-  }
-
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: WEIGHT_HISTORY_QUERY_KEY,
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: [...WEIGHT_HISTORY_QUERY_KEY, user?.email ?? null],
     queryFn: async () => {
+      if (!user?.email) {
+        return [];
+      }
+
       try {
-        return await clinicalApi.getWeightHistory();
+        return await clinicalApi.getWeightHistory(user.email);
       } catch (err: any) {
         if (err.response?.status === 404) {
           return [];
@@ -48,7 +42,7 @@ export const useWeightHistory = (): UseWeightHistoryReturn => {
       }
       return count < 2;
     },
-    enabled: isAuthenticated && !!userId,
+    enabled: !!user?.email,
   });
 
   return {
@@ -56,6 +50,7 @@ export const useWeightHistory = (): UseWeightHistoryReturn => {
     isLoading,
     isError,
     error: error as AxiosError<unknown> | null,
+    refetch,
   };
 };
 

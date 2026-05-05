@@ -97,6 +97,7 @@
     "currentWeight": "Peso actual",
     "startWeight": "Peso inicial",
     "targetWeight": "Peso objetivo",
+    "minWeight": "Peso mínimo",
     "nextAppointment": "Próxima Cita",
     "withNutritionist": "Con",
     "noAppointment": "Sin citas próximas",

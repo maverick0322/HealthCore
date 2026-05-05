@@ -36,7 +36,7 @@ describe('useWeightHistory', () => {
 
     vi.mocked(clinicalServiceModule.clinicalApi.getWeightHistory).mockResolvedValue(mockData);
 
-    const { result } = renderHook(() => useWeightHistory());
+    renderHook(() => useWeightHistory());
 
     await waitFor(() => {
       expect(clinicalServiceModule.clinicalApi.getWeightHistory).toHaveBeenCalled();
@@ -46,7 +46,7 @@ describe('useWeightHistory', () => {
   it('should handle empty weight history', async () => {
     vi.mocked(clinicalServiceModule.clinicalApi.getWeightHistory).mockResolvedValue([]);
 
-    const { result } = renderHook(() => useWeightHistory());
+    renderHook(() => useWeightHistory());
 
     await waitFor(() => {
       expect(clinicalServiceModule.clinicalApi.getWeightHistory).toHaveBeenCalled();

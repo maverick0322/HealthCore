@@ -13,10 +13,11 @@ export const useNutritionistAppointments = () => {
     try {
       const data = await nutritionistAgendaService.getMyAppointments(from, to);
       setAppointments(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
       const msg =
-        err.response?.data?.message ??
-        err.response?.data?.error ??
+        axiosError.response?.data?.message ??
+        axiosError.response?.data?.error ??
         'Error fetching appointments.';
       setError(msg);
       setAppointments([]);

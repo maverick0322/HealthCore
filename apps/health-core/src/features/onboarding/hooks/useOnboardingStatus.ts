@@ -18,18 +18,9 @@ export type OnboardingStatus = 'loading' | 'completed' | 'pending';
  */
 export const useOnboardingStatus = (): OnboardingStatus => {
   const [status, setStatus] = useState<OnboardingStatus>('loading');
-  const { accessToken } = useAuthStore();
+  const { user } = useAuthStore.getState();
 
   useEffect(() => {
-    // If no access token, user is not authenticated
-    // Default to pending to allow onboarding flow
-    if (!accessToken) {
-      setStatus('pending');
-      return;
-    }
-
-    // Prefer the user object from the auth store instead of extracting from token
-    const user = useAuthStore.getState().user;
     if (!user) {
       setStatus('pending');
       return;
@@ -38,7 +29,7 @@ export const useOnboardingStatus = (): OnboardingStatus => {
     const checkOnboardingStatus = async () => {
       try {
         // Attempt to fetch user's goals (only available after onboarding)
-        await clinicalApi.getMyGoals();
+        await clinicalApi.getMyGoals(user.email);
         // If successful, user has completed onboarding
         setStatus('completed');
       } catch (error: any) {
@@ -61,7 +52,7 @@ export const useOnboardingStatus = (): OnboardingStatus => {
     };
 
     checkOnboardingStatus();
-  }, [accessToken]);
+  }, [user]);
 
   return status;
 };

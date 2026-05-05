@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+<<<<<<< HEAD
 import { render, screen, waitFor } from '@testing-library/react';
+=======
+import { render, screen } from '@testing-library/react';
+>>>>>>> 1e269106be8f6c59c44dbcc92a744531adcdf4dc
 import userEvent from '@testing-library/user-event';
 import { WeightChart } from './WeightChart';
 import * as useWeightHistoryModule from '@/features/patient/hooks/useWeightHistory';

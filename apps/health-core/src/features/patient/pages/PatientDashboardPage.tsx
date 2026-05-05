@@ -3,8 +3,6 @@ import { useTranslation } from "react-i18next";
 import {
   Droplets,
   CalendarDays,
-  TrendingDown,
-  Flame,
   Plus,
   ChevronRight,
   Zap,
@@ -12,7 +10,7 @@ import {
 } from "lucide-react";
 import { PatientNav } from "@/features/patient/components/PatientNav";
 import { WeightChart } from "@/features/patient/components/WeightChart";
-
+import { HealthGoalsCard } from "@/features/patient/components/HealthGoalsCard";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
@@ -21,9 +19,6 @@ import { useAuthStore } from "@/features/auth/store/useAuthStore";
 // ── Dummy data ─────────────────────────────────────────────────────────────
 
 const DUMMY = {
-  calories: { consumed: 1420, goal: 2000 },
-  macros: { protein: 98, carbs: 160, fat: 52 },
-  macroGoals: { protein: 130, carbs: 200, fat: 65 },
   weight: { current: 78.5, start: 83, target: 72 },
   weightHistory: [83, 82.1, 81.4, 80.7, 79.9, 79.2, 78.5],
   water: { consumed: 5, goal: 8 },
@@ -39,75 +34,6 @@ const DUMMY = {
   ],
   streak: 7,
 };
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/** Thin arc SVG calorie ring */
-function CalorieRing({
-  consumed,
-  goal,
-}: {
-  consumed: number;
-  goal: number;
-}) {
-  const pct = Math.min(consumed / goal, 1);
-  const r = 52;
-  const circ = 2 * Math.PI * r;
-  const dash = pct * circ;
-
-  return (
-    <svg width="140" height="140" viewBox="0 0 140 140" className="rotate-[-90deg]">
-      {/* track */}
-      <circle cx="70" cy="70" r={r} fill="none" strokeWidth="12" className="stroke-muted" />
-      {/* progress */}
-      <circle
-        cx="70"
-        cy="70"
-        r={r}
-        fill="none"
-        strokeWidth="12"
-        strokeLinecap="round"
-        strokeDasharray={`${dash} ${circ}`}
-        className="stroke-primary transition-all duration-700"
-      />
-    </svg>
-  );
-}
-
-/** Macro progress bar */
-function MacroBar({
-  label,
-  value,
-  goal,
-  color,
-  unit = "g",
-}: {
-  label: string;
-  value: number;
-  goal: number;
-  color: string;
-  unit?: string;
-}) {
-  const pct = Math.min((value / goal) * 100, 100);
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-xs">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground">
-          {value}
-          {unit} / {goal}
-          {unit}
-        </span>
-      </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-700 ${color}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
 
 /** Water glass pill */
 function WaterGlass({ filled }: { filled: boolean }) {
@@ -137,9 +63,6 @@ export const PatientDashboardPage = () => {
   const user = useAuthStore((s) => s.user);
 
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
-  const remaining = DUMMY.calories.goal - DUMMY.calories.consumed;
-  const calPct = Math.round((DUMMY.calories.consumed / DUMMY.calories.goal) * 100);
-
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
       {/* ── Responsive Nav (sidebar desktop / bottom bar mobile) ── */}
@@ -178,82 +101,7 @@ export const PatientDashboardPage = () => {
       {/* ── Scrollable content ───────────────────────────────────── */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-6 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-        {/* ── Calories + Macros ──────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-          {/* Calorie ring card */}
-          <Card id="card-calories">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Flame size={16} className="text-primary" />
-                {t("dashboard.caloriesCard")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center pt-4 pb-5">
-              <div className="relative flex items-center justify-center">
-                <CalorieRing
-                  consumed={DUMMY.calories.consumed}
-                  goal={DUMMY.calories.goal}
-                />
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-2xl font-bold leading-none">
-                    {DUMMY.calories.consumed}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {t("dashboard.kcal")}
-                  </span>
-                </div>
-              </div>
-              <div className="flex justify-around w-full mt-4 text-center">
-                <div>
-                  <p className="text-xs text-muted-foreground">{t("dashboard.goal")}</p>
-                  <p className="font-semibold text-sm">{DUMMY.calories.goal}</p>
-                </div>
-                <div className="w-px bg-border" />
-                <div>
-                  <p className="text-xs text-muted-foreground">{t("dashboard.remaining")}</p>
-                  <p className={`font-semibold text-sm ${remaining < 0 ? "text-destructive" : "text-emerald-500"}`}>
-                    {remaining}
-                  </p>
-                </div>
-                <div className="w-px bg-border" />
-                <div>
-                  <p className="text-xs text-muted-foreground">%</p>
-                  <p className="font-semibold text-sm">{calPct}%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Macros card */}
-          <Card id="card-macros">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-base font-semibold">
-                {t("dashboard.macros")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-4">
-              <MacroBar
-                label={t("dashboard.protein")}
-                value={DUMMY.macros.protein}
-                goal={DUMMY.macroGoals.protein}
-                color="bg-primary"
-              />
-              <MacroBar
-                label={t("dashboard.carbs")}
-                value={DUMMY.macros.carbs}
-                goal={DUMMY.macroGoals.carbs}
-                color="bg-amber-400"
-              />
-              <MacroBar
-                label={t("dashboard.fat")}
-                value={DUMMY.macros.fat}
-                goal={DUMMY.macroGoals.fat}
-                color="bg-sky-400"
-              />
-            </CardContent>
-          </Card>
-        </div>
+        <HealthGoalsCard />
 
         {/* ── Weight Evolution ───────────────────────────────────── */}
         <WeightChart />

@@ -16,10 +16,11 @@ export const useCancelAppointment = () => {
     try {
       await agendaService.cancelAppointment(appointmentId);
       setIsSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
       const msg =
-        err.response?.data?.message ??
-        err.response?.data?.error ??
+        axiosError.response?.data?.message ??
+        axiosError.response?.data?.error ??
         'Error cancelling appointment.';
       setError(msg);
       throw err;

@@ -17,10 +17,11 @@ export const useGenerateSlots = () => {
       setSlots(data);
       setIsSuccess(true);
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
       const msg =
-        err.response?.data?.message ??
-        err.response?.data?.error ??
+        axiosError.response?.data?.message ??
+        axiosError.response?.data?.error ??
         'Error generating slots.';
       setError(msg);
       throw err;

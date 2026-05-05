@@ -27,17 +27,24 @@ export const OAuth2CallbackPage = () => {
   const { t } = useTranslation('auth');
   const setTokens = useAuthStore((s) => s.setTokens);
   const fetchCurrentUser = useAuthStore((s) => s.fetchCurrentUser);
-  const [error, setError] = useState<string | null>(null);
+  
+  const accessToken = searchParams.get('accessToken');
+  const refreshToken = searchParams.get('refreshToken');
+  const urlError = searchParams.get('error');
+  const urlMessage = searchParams.get('message');
+
+  const [asyncError, setAsyncError] = useState<string | null>(null);
+
+  let error = asyncError;
+  if (urlError) {
+    error = t('oauth2CallbackError');
+  } else if (!accessToken || !refreshToken) {
+    error = t('oauth2NoTokens');
+  }
 
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
-    const urlError = searchParams.get('error');
-    const urlMessage = searchParams.get('message');
-
     if (urlError) {
       console.error(`OAuth2 login error: ${urlError} - ${urlMessage}`);
-      setError(t('oauth2CallbackError'));
       setTimeout(() => navigate('/login', { replace: true }), 3000);
       return;
     }
@@ -57,7 +64,7 @@ export const OAuth2CallbackPage = () => {
         const expectedRole = sessionStorage.getItem("expectedRole");
         if (expectedRole && currentUser && currentUser.role !== expectedRole) {
           useAuthStore.getState().logout();
-          setError(t('oauth2RoleMismatch'));
+          setAsyncError(t('oauth2RoleMismatch'));
           setTimeout(() => navigate('/login', { replace: true }), 3000);
           return;
         }
@@ -65,11 +72,10 @@ export const OAuth2CallbackPage = () => {
         navigate('/', { replace: true });
       });
     } else {
-      setError(t('oauth2NoTokens'));
       // Redirect to login after a brief delay
       setTimeout(() => navigate('/login', { replace: true }), 3000);
     }
-  }, [searchParams, setTokens, fetchCurrentUser, navigate, t]);
+  }, [searchParams, setTokens, fetchCurrentUser, navigate, t, urlError, urlMessage, accessToken, refreshToken]);
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 bg-background text-foreground">

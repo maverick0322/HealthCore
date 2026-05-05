@@ -13,10 +13,11 @@ export const useDeactivateSlot = () => {
     try {
       await nutritionistAgendaService.deactivateSlot(slotId);
       setIsSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
       const msg =
-        err.response?.data?.message ??
-        err.response?.data?.error ??
+        axiosError.response?.data?.message ??
+        axiosError.response?.data?.error ??
         'Error deactivating slot.';
       setError(msg);
       throw err;

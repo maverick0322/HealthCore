@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>HealthCore</title>
@@ -25,7 +25,7 @@
                             <div style="margin: 30px 0; padding: 25px; background-color: #f9fbf9; border-radius: 8px;">
                                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
                                     <tr>
-                                        <td style="padding: 5px 0; font-weight: bold; color: #666666;" width="40%" th:text="#{appointment.reminder.details.start}">Hora de inicio:</td>
+                                        <th scope="row" style="padding: 5px 0; font-weight: bold; color: #666666; text-align: left;" width="40%" th:text="#{appointment.reminder.details.start}">Hora de inicio:</th>
                                         <td style="padding: 5px 0; color: #333333;" th:text="${startTime}">...</td>
                                     </tr>
                                 </table>

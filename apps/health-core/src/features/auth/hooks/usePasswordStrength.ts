@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 
 export type PasswordStrength = {
   score: 0 | 1 | 2 | 3;
@@ -7,20 +7,14 @@ export type PasswordStrength = {
 };
 
 export function usePasswordStrength(password: string): PasswordStrength {
-  const [strength, setStrength] = useState<PasswordStrength>({
-    score: 0,
-    labelKey: "securityLow",
-    isValidLength: false,
-  });
-
-  useEffect(() => {
+  return useMemo(() => {
     let score = 0;
     
     const isValidLength = password.length >= 8 && password.length <= 15;
     
     if (password.length > 0) {
       if (password.length >= 8) score += 1;
-      if (/[0-9]/.test(password)) score += 1;
+      if (/\d/.test(password)) score += 1;
       if (/[^A-Za-z0-9]/.test(password)) score += 1;
     }
 
@@ -33,13 +27,10 @@ export function usePasswordStrength(password: string): PasswordStrength {
       3: "securityVeryHigh"
     };
 
-    setStrength({
+    return {
       score: finalScore,
       labelKey: labels[finalScore],
       isValidLength
-    });
-
+    };
   }, [password]);
-
-  return strength;
 }

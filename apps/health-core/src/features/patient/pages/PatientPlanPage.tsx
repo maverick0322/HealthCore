@@ -97,7 +97,7 @@ const PLAN_DUMMY = {
 
 // ── Components ─────────────────────────────────────────────────────────────
 
-function MacroPill({ label, value, colorClass }: { label: string; value: string; colorClass: string }) {
+function MacroPill({ label, value, colorClass }: Readonly<{ label: string; value: string; colorClass: string }>) {
   return (
     <div className={`flex flex-col items-center justify-center bg-background rounded-lg border p-2 ${colorClass}`}>
       <span className="text-[10px] uppercase font-bold tracking-wider opacity-70">{label}</span>
@@ -106,7 +106,19 @@ function MacroPill({ label, value, colorClass }: { label: string; value: string;
   );
 }
 
-function MealCard({ meal, toggleEaten }: { meal: any; toggleEaten: (id: string) => void }) {
+interface Meal {
+  id: string;
+  type: string;
+  name: string;
+  time: string;
+  macros: { kcal: number; p: number; c: number; f: number };
+  ingredients: string[];
+  instructions: string;
+  substitutions?: string;
+  eaten: boolean;
+}
+
+function MealCard({ meal, toggleEaten }: Readonly<{ meal: Meal; toggleEaten: (id: string) => void }>) {
   const { t } = useTranslation("patient");
   const [expanded, setExpanded] = useState(false);
 
@@ -114,8 +126,16 @@ function MealCard({ meal, toggleEaten }: { meal: any; toggleEaten: (id: string) 
     <Card className={`overflow-hidden transition-all duration-300 ${meal.eaten ? 'border-primary/50 bg-primary/5' : ''}`}>
       {/* Card Header (Always visible) */}
       <div
-        className="p-4 sm:p-5 flex items-start gap-4 cursor-pointer hover:bg-muted/30 transition-colors"
+        role="button"
+        tabIndex={0}
+        className="p-4 sm:p-5 flex items-start gap-4 cursor-pointer hover:bg-muted/30 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
         onClick={() => setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setExpanded(!expanded);
+          }
+        }}
       >
         <button
           onClick={(e) => { e.stopPropagation(); toggleEaten(meal.id); }}
@@ -169,8 +189,8 @@ function MealCard({ meal, toggleEaten }: { meal: any; toggleEaten: (id: string) 
                 {t("plan.ingredients")}
               </h4>
               <ul className="space-y-1.5 text-sm">
-                {meal.ingredients.map((ing: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2">
+                {meal.ingredients.map((ing: string) => (
+                  <li key={ing} className="flex items-start gap-2">
                     <span className="w-1 h-1 rounded-full bg-primary/60 mt-2 flex-shrink-0" />
                     <span>{ing}</span>
                   </li>

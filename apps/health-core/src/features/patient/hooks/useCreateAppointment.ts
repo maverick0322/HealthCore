@@ -18,10 +18,11 @@ export const useCreateAppointment = () => {
       const data = await agendaService.createAppointment(payload);
       setAppointment(data);
       return data;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
       const msg =
-        err.response?.data?.message ??
-        err.response?.data?.error ??
+        axiosError.response?.data?.message ??
+        axiosError.response?.data?.error ??
         'Error creating appointment.';
       setError(msg);
       throw err;

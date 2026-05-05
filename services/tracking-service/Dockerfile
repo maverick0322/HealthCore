@@ -1,13 +1,14 @@
-# Etapa 1: Construcción (Usamos la versión normal, NO alpine, para que compile gRPC)
+# Stage 1: Build
 FROM maven:3.9.6-eclipse-temurin-21 AS builder
 WORKDIR /app
+
 COPY pom.xml .
-RUN mvn dependency:go-offline
+RUN mvn package -q -Dmaven.test.skip=true --no-transfer-progress 2>/dev/null || true
 
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests --no-transfer-progress
 
-# Etapa 2: Producción (Aquí sí seguimos usando alpine porque ya está compilado)
+# Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar

@@ -71,7 +71,7 @@ services:
     build: ./services/identity-service
     container_name: healthcore-identity-service
     ports:
-      - "8082:8082"
+      - "${SERVER_PORT_IDENTITY:-8082}:8082"
       - "9090:9090"
     depends_on:
       mongodb:
@@ -97,6 +97,8 @@ services:
       - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE=${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_SCOPE:-openid,profile,email}
       - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI}
       - APP_MANUALDB_SEED_ENABLED=true
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
+      - TRACING_SAMPLING_PROBABILITY=${TRACING_SAMPLING_PROBABILITY:-1.0}
     restart: unless-stopped
 
   notification-service:
@@ -116,8 +118,10 @@ services:
       - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL}
       - RESEND_FROM_NAME=${RESEND_FROM_NAME}
       - GRPC_IDENTITY_TARGET=identity-service:9090
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
+      - TRACING_SAMPLING_PROBABILITY=${TRACING_SAMPLING_PROBABILITY:-1.0}
     ports:
-      - "8086:8086"
+      - "${SERVER_PORT_NOTIFICATION:-8086}:8086"
     restart: unless-stopped
 
   redis:
@@ -136,7 +140,7 @@ services:
     build: ./services/tracking-service
     container_name: healthcore-tracking-service
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT_TRACKING:-8080}:8080"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -150,6 +154,9 @@ services:
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET}
+      - LOGGING_LEVEL_TRACKING=${LOGGING_LEVEL_TRACKING:-DEBUG}
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
+      - TRACING_SAMPLING_PROBABILITY=${TRACING_SAMPLING_PROBABILITY:-1.0}
 
   
   agenda-mongodb:
@@ -200,6 +207,8 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-healthcore}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASS:-healthcore}
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
+      TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY:-1.0}
     ports:
       - "${AGENDA_SERVICE_PORT:-8083}:8080"
 
@@ -243,8 +252,80 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://clinical-mongodb:27017/healthcore_clinical
       SERVER_PORT: 8083
       JWT_SECRET: ${JWT_SECRET}
+      MANAGEMENT_OTLP_TRACING_ENDPOINT: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
+      TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY:-1.0}
+
+  # ─── OBSERVABILITY STACK ──────────────────────────────────────────────────
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: healthcore-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./ops/observability/loki/loki-config.yml:/etc/loki/config.yaml:ro
+    command: -config.file=/etc/loki/config.yaml
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: healthcore-promtail
+    volumes:
+      - ./ops/observability/promtail/promtail-config.yml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: healthcore-tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./ops/observability/tempo/tempo-config.yml:/etc/tempo/config.yaml:ro
+    command: -config.file=/etc/tempo/config.yaml
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: healthcore-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./ops/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-remote-write-receiver'
+      - '--enable-feature=exemplar-storage'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: healthcore-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-healthcore}
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./ops/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: unless-stopped
 
 volumes:
   mongo_data:
   agenda_mongo_data:
   clinical_mongo_data:
+  prometheus_data:
+  grafana_data:

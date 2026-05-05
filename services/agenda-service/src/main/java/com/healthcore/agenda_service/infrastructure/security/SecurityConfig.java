@@ -34,6 +34,8 @@ public class SecurityConfig {
                     "/v3/api-docs/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/v1/agenda/nutritionist/**").hasRole("NUTRITIONIST")
+                .requestMatchers("/api/v1/agenda/availability/**", "/api/v1/agenda/appointments/**").hasRole("PATIENT")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtValidationFilter, UsernamePasswordAuthenticationFilter.class);

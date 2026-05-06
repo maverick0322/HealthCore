@@ -43,12 +43,10 @@ class FatSecretAdapter(ExternalCatalogPort):
         except requests.exceptions.JSONDecodeError:
             raise ExternalServiceUnavailableError(self.MALFORMED_JSON_ERROR)
             
-        # 1. Validación segura que contenta a ambas pruebas
         if "error" in data:
             error_code = str(data["error"].get("code", ""))
             error_msg = data["error"].get("message", "Unknown FatSecret API Error")
             
-            # Si es código 3 (Not Found), devolvemos None sin lanzar excepción
             if error_code == "3":
                 logger.warning(f"Barcode {barcode} not found in FatSecret.")
                 return None
@@ -59,7 +57,6 @@ class FatSecretAdapter(ExternalCatalogPort):
         if "food_id" not in data:
             return None
             
-        # 2. Tu flujo original intacto
         food_id = str(data["food_id"].get("value", ""))
         return self._fetch_food_details(food_id, barcode) if food_id else None
 
@@ -70,10 +67,6 @@ class FatSecretAdapter(ExternalCatalogPort):
     def search_products_by_name(self, query: str) -> List[FoodItem]:
         params = {"method": "foods.search", "search_expression": query, "format": "json", "max_results": 5}
         response = self._execute_request(params)
-        
-        # --- LUPA TEMPORAL PARA DEPURAR FATSECRET ---
-        logger.warning(f"FATSECRET RAW RESPONSE (SEARCH): {response.text}")
-        # --------------------------------------------
         
         try:
             data = response.json()

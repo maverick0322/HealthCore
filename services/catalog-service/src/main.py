@@ -12,7 +12,6 @@ from src.domain.exceptions import (
     InvalidDomainDataError
 )
 
-# Nuevas dependencias
 from src.infrastructure.mongo_local_adapter import MongoLocalCatalogAdapter
 from src.infrastructure.fatsecret.fatsecret_authenticator import FatSecretAuthenticator
 from src.infrastructure.fatsecret.fatsecret_mapper import FatSecretMapper
@@ -30,8 +29,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Patrón Singleton para la conexión a MongoDB y el UseCase
-# Esto evita abrir una nueva conexión a la base de datos por cada petición HTTP
+# Singleton Pattern for Use Case instance 
 _use_case_instance = None
 
 def get_catalog_use_case() -> CatalogUseCase:
@@ -66,4 +64,90 @@ def get_catalog_use_case() -> CatalogUseCase:
 
 UseCaseDep = Annotated[CatalogUseCase, Depends(get_catalog_use_case)]
 
-# ... (Mantén el resto de tu código de main.py intacto a partir de aquí: diccionarios y endpoints) ...
+# OpenAPI Documentation Dictionaries
+COMMON_RESPONSES = {
+    500: {"description": "Internal Server Error - Unexpected critical failure."},
+    503: {"description": "Service Unavailable - Upstream catalog is down."}
+}
+
+GET_PRODUCT_RESPONSES = {
+    **COMMON_RESPONSES,
+    400: {"description": "Bad Request - Invalid barcode format or empty string."},
+    404: {"description": "Not Found - The requested barcode does not exist in the catalog."}
+}
+
+SEARCH_RESPONSES = {
+    **COMMON_RESPONSES,
+    400: {"description": "Bad Request - Search query cannot be empty or just whitespace."}
+}
+
+@app.get("/api/v1/catalog/health", tags=["Monitoring"])
+def health_check():
+    return {"status": "success", "message": "Catalog REST API is up and running!"}
+
+@app.get(
+    "/api/v1/catalog/products/{barcode}", 
+    response_model=FoodItem, 
+    tags=["Catalog"],
+    responses=GET_PRODUCT_RESPONSES 
+)
+def get_product(
+    barcode: Annotated[str, Path(title="Barcode", min_length=1)],
+    use_case: UseCaseDep
+):
+    logger.info(f"Processing REST GET request for barcode: '{barcode}'")
+    
+    try:
+        return use_case.find_food(barcode)
+        
+    except InvalidDomainDataError as e:
+        logger.warning(f"REST Validation failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    except FoodNotFoundError as e:
+        logger.warning(f"REST Search yielded no results: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
+        
+    except ExternalServiceUnavailableError as e:
+        logger.error(f"Upstream provider failure via REST: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+        
+    except Exception:
+        logger.exception("Unhandled critical error in REST get_product endpoint.")
+        raise HTTPException(
+            status_code=500, 
+            detail="An internal server error occurred. Please try again later."
+        )
+
+@app.get(
+    "/api/v1/catalog/search", 
+    response_model=List[FoodItem], 
+    tags=["Catalog"],
+    responses=SEARCH_RESPONSES
+)
+def search_products(
+    query: Annotated[str, Query(title="Search Query", min_length=1)],
+    use_case: UseCaseDep
+):
+    """
+    Text-based search endpoint to ensure feature parity with the gRPC interface.
+    """
+    logger.info(f"Processing REST GET request to search: '{query}'")
+    
+    try:
+        return use_case.search_food(query)
+        
+    except InvalidDomainDataError as e:
+        logger.warning(f"REST Validation failed for search: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    except ExternalServiceUnavailableError as e:
+        logger.error(f"Upstream provider failure during REST search: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+        
+    except Exception:
+        logger.exception("Unhandled critical error in REST search_products endpoint.")
+        raise HTTPException(
+            status_code=500, 
+            detail="An internal server error occurred. Please try again later."
+        )

@@ -31,14 +31,12 @@ def serve():
     COMPOSITION ROOT: We wire up the new MongoDB and FatSecret dependencies here.
     """
     try:
-        # 1. Configurar MongoDB (Local Port)
         mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
         db_name = os.getenv("MONGO_DB_NAME", "healthcore")
         mongo_client = MongoClient(mongo_uri)
         db = mongo_client[db_name]
         local_adapter = MongoLocalCatalogAdapter(collection=db["catalog"])
 
-        # 2. Configurar FatSecret (External Port)
         fs_client_id = os.getenv("FATSECRET_CLIENT_ID")
         fs_client_secret = os.getenv("FATSECRET_CLIENT_SECRET")
         
@@ -58,10 +56,8 @@ def serve():
             mapper=mapper
         )
 
-        # 3. Inyectar ambos puertos al Caso de Uso (Cache-Aside pattern)
         use_case = CatalogUseCase(local_port=local_adapter, external_port=external_adapter)
         
-        # 4. Iniciar servicio gRPC
         grpc_servicer = NutritionalCatalogService(use_case=use_case)
         
     except Exception:

@@ -18,7 +18,6 @@ class MongoLocalCatalogAdapter(LocalCatalogPort):
     def __init__(self, collection: Collection):
         # DEPENDENCY INJECTION: We do not manage the MongoClient here.
         # We simply receive the specific Collection we need to work with.
-        # This makes unit testing incredibly easy (we can inject a MockCollection).
         self._collection = collection
         self._collection.create_index([("name", TEXT), ("brand", TEXT)])
 
@@ -54,7 +53,6 @@ class MongoLocalCatalogAdapter(LocalCatalogPort):
             return results
             
         except OperationFailure as e:
-            # OperationFailure usually means the text index is missing or query is malformed
             logger.error(f"MongoDB search operation failed (Missing index?): {e}")
             return []
         except PyMongoError as e:
@@ -85,13 +83,11 @@ class MongoLocalCatalogAdapter(LocalCatalogPort):
         Safely removes MongoDB's internal ID before hydrating the Pydantic model.
         """
         try:
-            # MongoDB injects an internal '_id' (ObjectId) which our Domain doesn't care about
             document.pop("_id", None)
             
             # Pydantic handles deep validation (types, constraints) automatically
             return FoodItem(**document)
             
         except Exception as e:
-            # If the database data is corrupted and violates Pydantic rules, we catch it
             logger.warning(f"Data corruption detected in local cache document: {e}")
             return None

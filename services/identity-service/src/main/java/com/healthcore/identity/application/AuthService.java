@@ -35,6 +35,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -111,6 +112,11 @@ public class AuthService {
         Role role = requestedRole == null ? Role.PATIENT : requestedRole;
         log.info("Admin provisioning local user with email: {} and role: {}", email, role);
 
+        if (role == Role.ADMIN) {
+            log.warn("Admin provisioning rejected. Cannot create another ADMIN.");
+            throw new BadRequestException("Admins cannot create other administrators");
+        }
+
         if (userRepository.findByEmail(email).isPresent()) {
             log.warn("Admin provisioning rejected. Email already exists: {}", email);
             throw new ConflictException("Email is already registered in HealthCore");
@@ -134,6 +140,19 @@ public class AuthService {
         return savedUser;
     }
 
+    public User updateUserStatus(String userId, boolean enabled) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BadRequestException("User not found"));
+        user.setEnabled(enabled);
+        User savedUser = userRepository.save(user);
+        log.info("Admin updated user status. User ID: {}, new status: {}", userId, enabled ? "Enabled" : "Disabled");
+        return savedUser;
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
     public AuthTokens login(String email, String plainPassword) {
         log.info("Authentication attempt for user: {}", email);
         String loginKey = normalizeLoginKey(email);
@@ -148,6 +167,12 @@ public class AuthService {
                     loginAttemptService.recordFailedAttempt(loginKey);
                     return new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
                 });
+
+        if (!user.isEnabled()) {
+            log.warn("Authentication failed. User account is disabled for email: {}", email);
+            loginAttemptService.recordFailedAttempt(loginKey);
+            throw new UnauthorizedException("User account is disabled");
+        }
 
         if (!passwordEncoder.matches(plainPassword, user.getPasswordHash())) {
             log.warn("Authentication failed. Password mismatch for email: {}", email);
@@ -169,6 +194,11 @@ public class AuthService {
     public AuthTokens loginWithProvider(String email, AuthProvider provider) {
         User user = userRepository.findByEmailAndProvider(email, provider)
                 .orElseGet(() -> provisionSocialUser(email, provider));
+
+        if (!user.isEnabled()) {
+            log.warn("Authentication failed. User account is disabled for email: {}", email);
+            throw new UnauthorizedException("User account is disabled");
+        }
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
@@ -205,6 +235,10 @@ public class AuthService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE));
+
+        if (!user.isEnabled()) {
+            throw new UnauthorizedException("User account is disabled");
+        }
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getEmail());

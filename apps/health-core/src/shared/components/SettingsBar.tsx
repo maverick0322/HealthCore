@@ -1,23 +1,32 @@
-import { Moon, Sun, Globe, Settings } from "lucide-react";
+import { Moon, Sun, Globe, Settings, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { useSettingsStore } from "@/core/store/useSettingsStore";
 import { SUPPORTED_LANGUAGES } from "@/core/i18n";
+import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/shared/ui/dropdown-menu";
 
 export const SettingsBar = ({ className }: { className?: string }) => {
   const navigate = useNavigate();
   const { theme, setTheme, language, setLanguage } = useSettingsStore();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
   const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const toggleTheme = () => {
     setTheme(isDark ? "light" : "dark");
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
   };
 
   const containerClass = className ?? "absolute top-4 right-4 flex items-center gap-2 z-50";
@@ -61,15 +70,31 @@ export const SettingsBar = ({ className }: { className?: string }) => {
         <span className="sr-only">Alternar Tema</span>
       </Button>
 
-      <Button 
-        variant="outline" 
-        size="icon" 
-        onClick={() => navigate("/profile")} 
-        className="rounded-full w-10 h-10 border-border bg-card hover:bg-muted text-foreground transition-all duration-300 shadow-sm"
-      >
-        <Settings className="w-5 h-5" />
-        <span className="sr-only">Configuración</span>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="rounded-full w-10 h-10 border-border bg-card hover:bg-muted text-foreground transition-all duration-300 shadow-sm outline-none ring-0"
+          >
+            <Settings className="w-5 h-5" />
+            <span className="sr-only">Configuración</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48 border-border bg-card shadow-lg">
+          {user?.role !== "ADMIN" && (
+            <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
+              <User className="mr-2 w-4 h-4" />
+              <span>Perfil</span>
+            </DropdownMenuItem>
+          )}
+          {user?.role !== "ADMIN" && <DropdownMenuSeparator />}
+          <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
+            <LogOut className="mr-2 w-4 h-4" />
+            <span>Cerrar sesión</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

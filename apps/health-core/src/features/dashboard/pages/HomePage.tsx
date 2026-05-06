@@ -1,16 +1,18 @@
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/shared/ui/button';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 
 /**
  * Home Dashboard — shown after login.
  * Automatically redirects users to role-specific dashboards:
  * - PATIENT → /dashboard/patient
  * - NUTRITIONIST → /dashboard/nutritionist
- * - ADMIN → /dashboard/admin (placeholder)
+ * - ADMIN → /dashboard/admin
  */
 export const HomePage = () => {
   const navigate = useNavigate();
@@ -18,15 +20,24 @@ export const HomePage = () => {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
-  // Auto-redirect based on user role
-  if (user?.role === 'PATIENT') {
-    return <Navigate to="/dashboard/patient" replace />;
-  }
-  if (user?.role === 'NUTRITIONIST') {
-    return <Navigate to="/dashboard/nutritionist" replace />;
-  }
-  if (user?.role === 'ADMIN') {
-    return <Navigate to="/dashboard/admin" replace />;
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'PATIENT') {
+        navigate('/dashboard/patient', { replace: true });
+      } else if (user.role === 'NUTRITIONIST') {
+        navigate('/dashboard/nutritionist', { replace: true });
+      } else if (user.role === 'ADMIN') {
+        navigate('/dashboard/admin', { replace: true });
+      }
+    }
+  }, [user, navigate]);
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-[100dvh] bg-background">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   const handleLogout = async () => {

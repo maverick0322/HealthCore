@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { TrendingDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useWeightHistory, transformWeightDataForChart } from '../hooks/useWeightHistory';
+import { useWeightHistory } from '../hooks/useWeightHistory';
 
 /**
  * WeightChart Component
@@ -20,7 +20,6 @@ export const WeightChart = () => {
   const { t } = useTranslation('patient');
   const { isLoading, isError, data, refetch } = useWeightHistory();
 
-  const chartData = useMemo(() => transformWeightDataForChart(data), [data]);
 
   // Calculate statistics
   const stats = useMemo(() => {

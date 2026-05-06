@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 @Component
 public class CatalogGrpcClientAdapter implements FoodCatalogPort {
 
-    private static final String FALLBACK_SOURCE = "Unknown Source";
     private static final int GRPC_TIMEOUT_SECONDS = 5;
 
     private final NutritionalCatalogGrpc.NutritionalCatalogBlockingStub catalogStub;
@@ -54,7 +53,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
     @Cacheable(value = "foodNutrients", key = "#barcode", unless = "#result == null")
     public Optional<FoodNutrients> getNutrientsByBarcode(String barcode) {
         try {
-            log.debug("Initiating gRPC call to fetch nutrients for barcode.");
+            log.debug("Initiating gRPC call to fetch nutrients for barcode: {}", barcode);
             FoodRequest request = FoodRequest.newBuilder().setBarcode(barcode).build();
             FoodResponse response = catalogStub.withDeadlineAfter(GRPC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .getFoodItem(request);
@@ -63,7 +62,6 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
 
         } catch (StatusRuntimeException e) {
             if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
-                // Not finding a barcode is a valid state, not a system failure
                 return Optional.empty();
             }
             throw translateGrpcException(e, "getNutrientsByBarcode");
@@ -77,7 +75,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
     @Cacheable(value = "foodSearch", key = "#query", unless = "#result.isEmpty()")
     public List<FoodNutrients> searchFoodByName(String query) {
         try {
-            log.debug("Initiating gRPC call to search food by name.");
+            log.debug("Initiating gRPC call to search food by name: {}", query);
             SearchRequest request = SearchRequest.newBuilder().setQuery(query).build();
             SearchResponse response = catalogStub.withDeadlineAfter(GRPC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .searchFood(request);
@@ -99,25 +97,23 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
 
     private FoodNutrients mapToDomain(FoodResponse response, String requestedBarcode) {
         String finalBarcode = response.getBarcode().isEmpty() ? requestedBarcode : response.getBarcode();
-        String finalSource = response.getSource().isEmpty() ? FALLBACK_SOURCE : response.getSource();
 
-        return FoodNutrients.builder()
-                .barcode(finalBarcode)
-                .name(response.getName())
-                .brand(response.getBrand())
-                .imageUrl(response.getImageUrl())
-                .calories(response.getCaloriesPer100G())
-                .proteins(response.getProteinsPer100G())
-                .carbohydrates(response.getCarbsPer100G())
-                .fats(response.getFatsPer100G())
-                .source(finalSource)
-                .build();
+        return new FoodNutrients(
+                finalBarcode,
+                response.getName(),
+                response.getBrand(),
+                response.getImageUrl(),
+                response.getCaloriesPer100G(),
+                response.getProteinsPer100G(),
+                response.getCarbsPer100G(),
+                response.getFatsPer100G(),
+                response.getFiberGramsPer100G(),
+                response.getSodiumMgPer100G(),
+                response.getSugarGramsPer100G(),
+                response.getPotassiumMgPer100G()
+        );
     }
 
-    /**
-     * Translates gRPC status codes into specific Domain exceptions.
-     * Prevents infrastructure-specific objects from leaking into the Application layer.
-     */
     private RuntimeException translateGrpcException(StatusRuntimeException e, String operation) {
         Status.Code code = e.getStatus().getCode();
         log.warn("gRPC operation [{}] failed with status: {}", operation, code);
@@ -125,11 +121,9 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
         if (code == Status.Code.INVALID_ARGUMENT) {
             return new InvalidDomainDataException("Catalog Service rejected the input data format.");
         } else if (code == Status.Code.DEADLINE_EXCEEDED) {
-            return new ExternalCatalogUnavailableException("Catalog Service timed out after " + GRPC_TIMEOUT_SECONDS +
-                    " seconds.");
+            return new ExternalCatalogUnavailableException("Catalog Service timed out after " + GRPC_TIMEOUT_SECONDS + " seconds.");
         } else {
-            return new ExternalCatalogUnavailableException("The Catalog Service is currently unreachable or failed " +
-                    "internally.");
+            return new ExternalCatalogUnavailableException("The Catalog Service is currently unreachable or failed internally.");
         }
     }
 }

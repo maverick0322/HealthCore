@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcatalog.proto\x12\x07\x63\x61talog\"\x1e\n\x0b\x46oodRequest\x12\x0f\n\x07\x62\x61rcode\x18\x01 \x01(\t\"\xc4\x01\n\x0c\x46oodResponse\x12\x0f\n\x07\x62\x61rcode\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05\x62rand\x18\x03 \x01(\t\x12\x11\n\timage_url\x18\x04 \x01(\t\x12\x19\n\x11\x63\x61lories_per_100g\x18\x05 \x01(\x02\x12\x19\n\x11proteins_per_100g\x18\x06 \x01(\x02\x12\x16\n\x0e\x63\x61rbs_per_100g\x18\x07 \x01(\x02\x12\x15\n\rfats_per_100g\x18\x08 \x01(\x02\x12\x0e\n\x06source\x18\t \x01(\t\"-\n\rSearchRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\"6\n\x0eSearchResponse\x12$\n\x05items\x18\x01 \x03(\x0b\x32\x15.catalog.FoodResponse2\x93\x01\n\x12NutritionalCatalog\x12<\n\x0bGetFoodItem\x12\x14.catalog.FoodRequest\x1a\x15.catalog.FoodResponse\"\x00\x12?\n\nSearchFood\x12\x16.catalog.SearchRequest\x1a\x17.catalog.SearchResponse\"\x00\x42-\n\x1b\x63om.healthcore.catalog.grpcB\x0c\x43\x61talogProtoP\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rcatalog.proto\x12\x07\x63\x61talog\"\x1e\n\x0b\x46oodRequest\x12\x0f\n\x07\x62\x61rcode\x18\x01 \x01(\t\"\xbb\x02\n\x0c\x46oodResponse\x12\x0f\n\x07\x62\x61rcode\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05\x62rand\x18\x03 \x01(\t\x12\x11\n\timage_url\x18\x04 \x01(\t\x12\x19\n\x11\x63\x61lories_per_100g\x18\x05 \x01(\x02\x12\x19\n\x11proteins_per_100g\x18\x06 \x01(\x02\x12\x16\n\x0e\x63\x61rbs_per_100g\x18\x07 \x01(\x02\x12\x15\n\rfats_per_100g\x18\x08 \x01(\x02\x12\x0e\n\x06source\x18\t \x01(\t\x12\x1c\n\x14\x66iber_grams_per_100g\x18\n \x01(\x02\x12\x1a\n\x12sodium_mg_per_100g\x18\x0b \x01(\x02\x12\x1c\n\x14sugar_grams_per_100g\x18\x0c \x01(\x02\x12\x1d\n\x15potassium_mg_per_100g\x18\r \x01(\x02\"-\n\rSearchRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\"6\n\x0eSearchResponse\x12$\n\x05items\x18\x01 \x03(\x0b\x32\x15.catalog.FoodResponse2\x93\x01\n\x12NutritionalCatalog\x12<\n\x0bGetFoodItem\x12\x14.catalog.FoodRequest\x1a\x15.catalog.FoodResponse\"\x00\x12?\n\nSearchFood\x12\x16.catalog.SearchRequest\x1a\x17.catalog.SearchResponse\"\x00\x42-\n\x1b\x63om.healthcore.catalog.grpcB\x0c\x43\x61talogProtoP\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -35,11 +35,11 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_FOODREQUEST']._serialized_start=26
   _globals['_FOODREQUEST']._serialized_end=56
   _globals['_FOODRESPONSE']._serialized_start=59
-  _globals['_FOODRESPONSE']._serialized_end=255
-  _globals['_SEARCHREQUEST']._serialized_start=257
-  _globals['_SEARCHREQUEST']._serialized_end=302
-  _globals['_SEARCHRESPONSE']._serialized_start=304
-  _globals['_SEARCHRESPONSE']._serialized_end=358
-  _globals['_NUTRITIONALCATALOG']._serialized_start=361
-  _globals['_NUTRITIONALCATALOG']._serialized_end=508
+  _globals['_FOODRESPONSE']._serialized_end=374
+  _globals['_SEARCHREQUEST']._serialized_start=376
+  _globals['_SEARCHREQUEST']._serialized_end=421
+  _globals['_SEARCHRESPONSE']._serialized_start=423
+  _globals['_SEARCHRESPONSE']._serialized_end=477
+  _globals['_NUTRITIONALCATALOG']._serialized_start=480
+  _globals['_NUTRITIONALCATALOG']._serialized_end=627
 # @@protoc_insertion_point(module_scope)

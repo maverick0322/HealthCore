@@ -22,6 +22,7 @@ import { NutritionistAgendaPage } from "@/features/nutritionist/pages/Nutritioni
 import { NutritionistReportsPage } from "@/features/nutritionist/pages/NutritionistReportsPage";
 import { NutritionistAvailabilityPage } from "@/features/nutritionist/pages/NutritionistAvailabilityPage";
 import { NutritionistProfilePage } from "@/features/nutritionist/pages/NutritionistProfilePage";
+import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
 import { LogFoodPage } from "@/features/tracking/pages/LogFoodPage";
@@ -93,6 +94,11 @@ export const appRouter = createBrowserRouter([
       {
         path: "/dashboard/nutritionist",
         element: <NutritionistDashboardPage />,
+      },
+      // ── ADMIN ROUTES ──
+      {
+        path: "/dashboard/admin",
+        element: <AdminDashboardPage />,
       },
       {
         path: "/patients/nutritionist",

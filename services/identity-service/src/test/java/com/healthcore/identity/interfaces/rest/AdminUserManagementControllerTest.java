@@ -21,11 +21,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = AdminUserManagementController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+@WebMvcTest(controllers = AdminUserManagementController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class, org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration.class})
 @org.springframework.test.context.ContextConfiguration(classes = com.healthcore.identity.IdentityServiceApplication.class)
 @Import(AdminUserManagementControllerTest.TestConfig.class)
 class AdminUserManagementControllerTest {
@@ -80,6 +81,14 @@ class AdminUserManagementControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Email is already registered in HealthCore"));
+    }
+
+    @Test
+    void should_Return200Ok_When_AdminUpdatesUserStatus() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/users/user123/status")
+                        .param("enabled", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("User disabled successfully"));
     }
 
     @TestConfiguration

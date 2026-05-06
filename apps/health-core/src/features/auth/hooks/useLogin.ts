@@ -27,14 +27,15 @@ export const useLogin = () => {
       
       if (expectedRole) {
         const currentUser = useAuthStore.getState().user;
-        if (currentUser && currentUser.role !== expectedRole) {
+        // Admins can log in regardless of the selected UI toggle
+        if (currentUser && currentUser.role !== 'ADMIN' && currentUser.role !== expectedRole) {
           await logout();
           setError(t('errorInvalidCredentials')); // Or a specific role mismatch error
           return;
         }
       }
 
-      navigate('/onboarding/patient', { replace: true });
+      navigate('/', { replace: true });
     } catch (err: unknown) {
       console.error('[useLogin] Login failed:', err);
       if (axios.isAxiosError(err)) {

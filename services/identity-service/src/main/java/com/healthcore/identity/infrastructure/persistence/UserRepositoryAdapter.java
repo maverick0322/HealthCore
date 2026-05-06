@@ -47,6 +47,13 @@ public class UserRepositoryAdapter implements UserRepository {
                 .toList();
     }
 
+    @Override
+    public List<User> findAll() {
+        return mongoRepository.findAll().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
     private User toDomain(UserDocument doc) {
         return User.builder()
                 .id(doc.getId())

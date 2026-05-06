@@ -24,9 +24,10 @@ export const useLogin = () => {
     setIsLoading(true);
     try {
       await login(data);
+              
+      const currentUser = useAuthStore.getState().user;
       
       if (expectedRole) {
-        const currentUser = useAuthStore.getState().user;
         if (currentUser && currentUser.role !== expectedRole) {
           await logout();
           setError(t('errorInvalidCredentials')); // Or a specific role mismatch error
@@ -34,7 +35,13 @@ export const useLogin = () => {
         }
       }
 
-      navigate('/onboarding/patient', { replace: true });
+      if (currentUser?.role === 'NUTRITIONIST') {
+        navigate('/dashboard/nutritionist', { replace: true });
+      } else if (currentUser?.role === 'PATIENT') {
+        navigate('/dashboard/patient', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err: unknown) {
       console.error('[useLogin] Login failed:', err);
       if (axios.isAxiosError(err)) {

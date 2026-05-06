@@ -27,6 +27,11 @@ export const useOnboardingStatus = (): OnboardingStatus => {
       return;
     }
 
+    if (user.role !== 'PATIENT') {
+      setStatus('completed');
+      return;
+    }
+
     const checkOnboardingStatus = async () => {
       try {
         await clinicalApi.getMyGoals(user.email);

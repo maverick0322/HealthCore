@@ -35,6 +35,8 @@ class FatSecretAdapter(ExternalCatalogPort):
     def get_product_by_barcode(self, barcode: str) -> Optional[FoodItem]:
         params = {"method": "food.find.id.for.barcode", "barcode": barcode, "format": "json"}
         response = self._execute_request(params)
+
+        logger.warning(f"FATSECRET RAW RESPONSE (BARCODE): {response.text}")
         
         try:
             data = response.json()
@@ -42,7 +44,9 @@ class FatSecretAdapter(ExternalCatalogPort):
             raise ExternalServiceUnavailableError(self.MALFORMED_JSON_ERROR)
             
         if "error" in data or "food_id" not in data:
-            return None
+            error_msg = data["error"].get("message", "Unknown FatSecret API Error")
+            logger.error(f"FatSecret API returned an error payload: {error_msg}")
+            raise ExternalServiceUnavailableError(f"Upstream catalog error: {error_msg}")
             
         food_id = str(data["food_id"].get("value", ""))
         return self._fetch_food_details(food_id, barcode) if food_id else None
@@ -54,6 +58,10 @@ class FatSecretAdapter(ExternalCatalogPort):
     def search_products_by_name(self, query: str) -> List[FoodItem]:
         params = {"method": "foods.search", "search_expression": query, "format": "json", "max_results": 5}
         response = self._execute_request(params)
+        
+        # --- LUPA TEMPORAL PARA DEPURAR FATSECRET ---
+        logger.warning(f"FATSECRET RAW RESPONSE (SEARCH): {response.text}")
+        # --------------------------------------------
         
         try:
             data = response.json()
@@ -68,6 +76,7 @@ class FatSecretAdapter(ExternalCatalogPort):
             mapped for item in foods_data 
             if (mapped := self._mapper.map_to_domain(item)) is not None
         ]
+
 
     def _fetch_food_details(self, food_id: str, barcode: str) -> Optional[FoodItem]:
         params = {"method": "food.get.v2", "food_id": food_id, "format": "json"}

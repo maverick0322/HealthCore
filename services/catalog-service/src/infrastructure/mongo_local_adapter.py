@@ -1,5 +1,6 @@
 import logging
 from typing import List, Optional, Dict, Any
+from pymongo import TEXT
 from pymongo.collection import Collection
 from pymongo.errors import PyMongoError, ConnectionFailure, OperationFailure
 from src.domain.entities import FoodItem
@@ -19,6 +20,7 @@ class MongoLocalCatalogAdapter(LocalCatalogPort):
         # We simply receive the specific Collection we need to work with.
         # This makes unit testing incredibly easy (we can inject a MockCollection).
         self._collection = collection
+        self._collection.create_index([("name", TEXT), ("brand", TEXT)])
 
     def get_product_by_barcode(self, barcode: str) -> Optional[FoodItem]:
         logger.debug(f"Querying local MongoDB for barcode: {barcode}")

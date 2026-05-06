@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Dict, Any, Optional
 from src.domain.entities import FoodItem, NutritionalValues
 
@@ -16,19 +17,22 @@ class FatSecretMapper:
                 return None
                 
             serving = self._extract_standard_serving(item)
-            if not serving:
+            
+            if serving:
+                nutrition = NutritionalValues(
+                    calories=self._parse_float(serving, "calories"),
+                    proteins=self._parse_float(serving, "protein"),
+                    carbohydrates=self._parse_float(serving, "carbohydrate"),
+                    fats=self._parse_float(serving, "fat"),
+                    fiber_grams=self._parse_float(serving, "fiber"),
+                    sodium_mg=self._parse_float(serving, "sodium"),
+                    sugar_grams=self._parse_float(serving, "sugar"),
+                    potassium_mg=self._parse_float(serving, "potassium")
+                )
+            elif "food_description" in item:
+                nutrition = self._parse_from_description(item["food_description"])
+            else:
                 return None
-
-            nutrition = NutritionalValues(
-                calories=self._parse_float(serving, "calories"),
-                proteins=self._parse_float(serving, "protein"),
-                carbohydrates=self._parse_float(serving, "carbohydrate"),
-                fats=self._parse_float(serving, "fat"),
-                fiber_grams=self._parse_float(serving, "fiber"),
-                sodium_mg=self._parse_float(serving, "sodium"),
-                sugar_grams=self._parse_float(serving, "sugar"),
-                potassium_mg=self._parse_float(serving, "potassium")
-            )
 
             return FoodItem(
                 barcode=barcode or str(item.get("food_id", "UNKNOWN")),
@@ -57,3 +61,26 @@ class FatSecretMapper:
             return float(val) if val is not None else 0.0
         except (ValueError, TypeError):
             return 0.0
+
+    def _parse_from_description(self, description: str) -> NutritionalValues:
+        """Extracts basic macros from the raw description string using regex."""
+        return NutritionalValues(
+            calories=self._extract_regex(r'Calories:\s*([\d.]+)', description),
+            fats=self._extract_regex(r'Fat:\s*([\d.]+)', description),
+            carbohydrates=self._extract_regex(r'Carbs:\s*([\d.]+)', description),
+            proteins=self._extract_regex(r'Protein:\s*([\d.]+)', description),
+            fiber_grams=0.0, 
+            sodium_mg=0.0,
+            sugar_grams=0.0,
+            potassium_mg=0.0
+        )
+
+    def _extract_regex(self, pattern: str, text: str) -> float:
+        """Helper to run a regex search and return a float safely."""
+        match = re.search(pattern, text)
+        if match:
+            try:
+                return float(match.group(1))
+            except ValueError:
+                return 0.0
+        return 0.0

@@ -43,11 +43,23 @@ class FatSecretAdapter(ExternalCatalogPort):
         except requests.exceptions.JSONDecodeError:
             raise ExternalServiceUnavailableError(self.MALFORMED_JSON_ERROR)
             
-        if "error" in data or "food_id" not in data:
+        # 1. Validación segura que contenta a ambas pruebas
+        if "error" in data:
+            error_code = str(data["error"].get("code", ""))
             error_msg = data["error"].get("message", "Unknown FatSecret API Error")
+            
+            # Si es código 3 (Not Found), devolvemos None sin lanzar excepción
+            if error_code == "3":
+                logger.warning(f"Barcode {barcode} not found in FatSecret.")
+                return None
+                
             logger.error(f"FatSecret API returned an error payload: {error_msg}")
             raise ExternalServiceUnavailableError(f"Upstream catalog error: {error_msg}")
             
+        if "food_id" not in data:
+            return None
+            
+        # 2. Tu flujo original intacto
         food_id = str(data["food_id"].get("value", ""))
         return self._fetch_food_details(food_id, barcode) if food_id else None
 

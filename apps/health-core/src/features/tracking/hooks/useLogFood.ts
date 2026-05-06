@@ -16,7 +16,6 @@ export const useLogFood = () => {
       await trackingService.logFood(payload);
       setIsSuccess(true);
     } catch (err: any) {
-      // Manejamos los errores estructurados que configuramos en el GlobalExceptionHandler de Spring
       const errorMsg = err.response?.data?.message || 'Ocurrió un error al registrar el alimento.';
       setError(errorMsg);
     } finally {

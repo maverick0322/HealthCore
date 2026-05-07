@@ -12,15 +12,13 @@ interface FoodLogFormProps {
 export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoodsChange }) => {
   const { t } = useTranslation('tracking');
   const { logFood, isLoading, error, isSuccess } = useLogFood();
-  const [mealType, setMealType] = useState('breakfast');
+  const [mealType, setMealType] = useState('BREAKFAST');
   
-  // Para la fecha/hora usaremos el momento actual formateado para la UI
   const now = new Date();
   const displayDate = now.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   const displayTime = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
   const handleRegister = async () => {
-    // Armamos el payload exacto que espera Java (LogFoodRequest)
     const payload = {
       mealType: mealType,
       consumedAt: now.toISOString(), // ISO-8601 para el backend
@@ -48,10 +46,10 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
   };
 
   const mealOptions = [
-    { key: 'breakfast', label: t('meals.breakfast', 'Desayuno') },
-    { key: 'lunch', label: t('meals.lunch', 'Comida') },
-    { key: 'dinner', label: t('meals.dinner', 'Cena') },
-    { key: 'snack', label: t('meals.snack', 'Snack') }
+    { key: 'BREAKFAST', label: t('meals.breakfast', 'Desayuno') },
+    { key: 'LUNCH', label: t('meals.lunch', 'Comida') },
+    { key: 'DINNER', label: t('meals.dinner', 'Cena') },
+    { key: 'SNACK', label: t('meals.snack', 'Snack') }
   ];
 
   if (isSuccess) {

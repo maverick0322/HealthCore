@@ -17,6 +17,7 @@ public class PatientProfileDocument {
     private String gender; 
     private String activityLevel;
     private List<WeightRecord> weightHistory;
+    private String nutritionistId;
 
     public PatientProfileDocument() {}
 
@@ -50,4 +51,7 @@ public class PatientProfileDocument {
 
     public List<WeightRecord> getWeightHistory() { return weightHistory; }
     public void setWeightHistory(List<WeightRecord> weightHistory) { this.weightHistory = weightHistory; }
+
+    public String getNutritionistId() { return nutritionistId; }
+    public void setNutritionistId(String nutritionistId) { this.nutritionistId = nutritionistId; }
 }

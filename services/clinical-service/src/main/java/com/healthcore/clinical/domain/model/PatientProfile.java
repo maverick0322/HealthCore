@@ -13,6 +13,7 @@ public class PatientProfile {
     private Gender gender;
     private ActivityLevel activityLevel;
     private List<WeightRecord> weightHistory;
+    private String nutritionistId;
 
     public PatientProfile(String userId, Double weightKg, Double heightCm, LocalDate birthDate, Gender gender, ActivityLevel activityLevel) {
         if (userId == null || userId.isBlank()) {
@@ -46,6 +47,17 @@ public class PatientProfile {
         return new HealthGoal(targetCalories, targetProtein, targetCarbs, targetFat);
     }
 
+    public void assignNutritionist(String nutritionistId) {
+        if (this.nutritionistId != null) {
+            throw new IllegalStateException("El paciente ya tiene un nutriólogo asignado.");
+        }
+        this.nutritionistId = nutritionistId;
+    }
+
+    public void removeNutritionist() {
+        this.nutritionistId = null;
+    }
+
     private double calculateTMB() {
         int age = Period.between(this.birthDate, LocalDate.now()).getYears();
         double baseMifflin = (10 * this.weightKg) + (6.25 * this.heightCm) - (5 * age);
@@ -62,4 +74,9 @@ public class PatientProfile {
     public Gender getGender() { return gender; }
     public ActivityLevel getActivityLevel() { return activityLevel; }
     public List<WeightRecord> getWeightHistory() { return weightHistory; } 
+    public String getNutritionistId() { return nutritionistId; }
+
+    public void setNutritionistId(String nutritionistId) {
+        this.nutritionistId = nutritionistId;
+    }
 }

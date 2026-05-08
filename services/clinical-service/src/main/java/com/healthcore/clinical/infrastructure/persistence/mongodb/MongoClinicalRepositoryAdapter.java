@@ -6,8 +6,9 @@ import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
-
+import java.util.stream.Collectors;
 @Component
 public class MongoClinicalRepositoryAdapter implements ClinicalRepositoryPort {
 
@@ -19,7 +20,6 @@ public class MongoClinicalRepositoryAdapter implements ClinicalRepositoryPort {
 
     @Override
     public PatientProfile save(PatientProfile profile) {
-        // Mapeo: De Dominio a Documento de Mongo
         PatientProfileDocument document = new PatientProfileDocument(
             profile.getUserId(),
             profile.getWeightKg(),
@@ -29,6 +29,8 @@ public class MongoClinicalRepositoryAdapter implements ClinicalRepositoryPort {
             profile.getActivityLevel().name(),
             profile.getWeightHistory() 
         );
+        
+        document.setNutritionistId(profile.getNutritionistId());
 
         repository.save(document);
         return profile;
@@ -37,22 +39,33 @@ public class MongoClinicalRepositoryAdapter implements ClinicalRepositoryPort {
     @Override
     public Optional<PatientProfile> findByUserId(String userId) {
         return repository.findById(userId)
-            .map(doc -> {
-                PatientProfile profile = new PatientProfile(
-                    doc.getUserId(),
-                    doc.getWeightKg(),
-                    doc.getHeightCm(),
-                    doc.getBirthDate(),
-                    Gender.valueOf(doc.getGender()), 
-                    ActivityLevel.valueOf(doc.getActivityLevel())
-                );
-                
-                if (doc.getWeightHistory() != null && !doc.getWeightHistory().isEmpty()) {
-                    profile.getWeightHistory().clear();
-                    profile.getWeightHistory().addAll(doc.getWeightHistory());
-                }
-                
-                return profile;
-            });
+            .map(this::mapDocumentToDomain);
+    }
+
+    @Override
+    public List<PatientProfile> findAllByNutritionistId(String nutritionistId) {
+        return repository.findAllByNutritionistId(nutritionistId).stream()
+                .map(this::mapDocumentToDomain)
+                .collect(Collectors.toList());
+    }
+
+    private PatientProfile mapDocumentToDomain(PatientProfileDocument doc) {
+        PatientProfile profile = new PatientProfile(
+            doc.getUserId(),
+            doc.getWeightKg(),
+            doc.getHeightCm(),
+            doc.getBirthDate(),
+            Gender.valueOf(doc.getGender()), 
+            ActivityLevel.valueOf(doc.getActivityLevel())
+        );
+        
+        if (doc.getWeightHistory() != null && !doc.getWeightHistory().isEmpty()) {
+            profile.getWeightHistory().clear();
+            profile.getWeightHistory().addAll(doc.getWeightHistory());
+        }
+        
+        profile.setNutritionistId(doc.getNutritionistId());
+        
+        return profile;
     }
 }

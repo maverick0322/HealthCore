@@ -46,7 +46,10 @@
       "height": "Height",
       "objective": "Objective",
       "editPlan": "Edit Diet Plan",
-      "newNote": "Add Note"
+      "newNote": "Add Note",
+      "newNotePlaceholder": "Write a new clinical note or comment...",
+      "saveObservation": "Save Observation",
+      "noObservations": "No observations registered yet"
     }
   },
   "agenda": {

@@ -41,6 +41,10 @@ jobs:
         working-directory: ./services/agenda-service
         run: mvn clean test
 
+      - name: Run Tests (Clinical Service)
+        working-directory: ./services/clinical-service
+        run: mvn clean test  
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:

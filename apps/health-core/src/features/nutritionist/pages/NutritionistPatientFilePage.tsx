@@ -1,36 +1,70 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, User, Ruler, Weight, Flame, UtensilsCrossed, CalendarDays, FileText, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, User, Ruler, Weight, Flame, UtensilsCrossed, CalendarDays, FileText, CheckCircle2, Loader2 } from "lucide-react";
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
+import { createObservation, getPatientObservations } from "../../clinical/services/clinicalService";
+import type { ObservationResponse } from "../../clinical/types/clinical.types";
+
 
 export const NutritionistPatientFilePage = () => {
-  const { id } = useParams();
+  const { id: patientId } = useParams<{ id: string }>(); 
+  const [observations, setObservations] = useState<ObservationResponse[]>([]);
+  const [newNote, setNewNote] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation("nutritionist");
 
   const [activeTab, setActiveTab] = useState<"overview" | "plan" | "history">("overview");
 
+  useEffect(() => {
+    if (patientId) {
+      loadObservations();
+    }
+  }, [patientId]);
+
+  const loadObservations = async () => {
+    try {
+      const data = await getPatientObservations(patientId!);
+      setObservations(data);
+    } catch (error) {
+      console.error("Error cargando observaciones:", error);
+    }
+  };
+
+  // -- HANDLER: Guardar nota nueva --
+  const handleSaveObservation = async () => {
+    if (!newNote.trim() || !patientId) return;
+    
+    setIsSavingNote(true);
+    try {
+      await createObservation({ patientId, note: newNote });
+      setNewNote(""); // Limpiar el input
+      await loadObservations(); // Recargar la lista para mostrar la nueva
+    } catch (error) {
+      console.error("Error guardando observación:", error);
+      // Aquí podrías mostrar un toast de error si usan alguna librería para eso
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
   // Dummy patient data based on ID 
   const patient = {
-    id,
-    name: id === "1" ? "Carlos Gómez" : id === "2" ? "María López" : "Paciente Demo",
-    age: 28,
-    weight: 75.5,
-    height: 1.78,
-    objective: "Pérdida de peso (-5kg)",
-    status: "active",
-    planId: "PLAN-A1",
-    lastUpdate: "Hace 2 días",
-    notes: [
-      { date: "24-Abr-2026", content: "Paciente reporta sentir menos ansiedad por las tardes. Se ajustaron los snacks." },
-      { date: "10-Abr-2026", content: "Inicio de plan. Motivación alta." }
-    ]
-  };
+      id: patientId,
+      name: patientId === "1" ? "Carlos Gómez" : patientId === "2" ? "María López" : "Paciente Demo",
+      age: 28,
+      weight: 75.5,
+      height: 1.78,
+      objective: "Pérdida de peso (-5kg)",
+      status: "active",
+      planId: "PLAN-A1",
+      lastUpdate: "Hace 2 días",
+      notes: [] 
+    };
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
@@ -186,26 +220,58 @@ export const NutritionistPatientFilePage = () => {
 
         {activeTab === "history" && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+            <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-base flex items-center gap-2">
                 <FileText size={18} className="text-primary" /> Historial de Consultas
               </CardTitle>
-              <Button size="sm" className="h-8">
-                {t("patients.file.newNote")}
-              </Button>
             </CardHeader>
-            <CardContent className="pt-5">
-              <div className="relative border-l-2 border-border/50 ml-3 space-y-6">
-                {patient.notes.map((note, idx) => (
-                  <div key={idx} className="relative pl-6">
-                    <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-background border-2 border-primary" />
-                    <p className="text-xs font-bold text-muted-foreground mb-1">{note.date}</p>
-                    <div className="bg-muted/30 p-3 rounded-lg border border-border/50 text-sm text-foreground/90 leading-relaxed">
-                      {note.content}
-                    </div>
-                  </div>
-                ))}
+            
+            <CardContent className="pt-5 space-y-8">
+              
+              {/* ZONA PARA CREAR NUEVA NOTA (Mantiene el estilo del proyecto) */}
+              <div className="bg-muted/10 p-4 rounded-xl border border-border/50 space-y-3">
+                <textarea 
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  disabled={isSavingNote}
+                  placeholder={t("patients.file.newNotePlaceholder")}
+                  className="w-full min-h-[80px] p-3 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y transition-colors"
+                />
+                <div className="flex justify-end">
+                  <Button 
+                    size="sm" 
+                    onClick={handleSaveObservation}
+                    disabled={isSavingNote || !newNote.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    {isSavingNote && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {t("patients.file.saveObservation")}
+                  </Button>
+                </div>
               </div>
+
+              <div className="relative border-l-2 border-border/50 ml-3 space-y-6">
+                {observations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic pl-4">{t("patients.file.noObservations")}</p>
+                ) : (
+                  observations.map((obs) => (
+                    <div key={obs.id} className="relative pl-6">
+                      <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-background border-2 border-primary" />
+                      
+                      <p className="text-xs font-bold text-muted-foreground mb-1">
+                        {new Date(obs.createdAt).toLocaleDateString('es-ES', { 
+                          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                        })}
+                      </p>
+                      
+                      <div className="bg-muted/30 p-3 rounded-lg border border-border/50 text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                        {obs.note}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
             </CardContent>
           </Card>
         )}

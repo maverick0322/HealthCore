@@ -1,0 +1,116 @@
+package com.healthcore.clinical.application.service;
+
+import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
+import com.healthcore.clinical.domain.model.ActivityLevel;
+import com.healthcore.clinical.domain.model.ClinicalObservation;
+import com.healthcore.clinical.domain.model.Gender;
+import com.healthcore.clinical.domain.model.PatientProfile;
+import com.healthcore.clinical.domain.port.out.ClinicalObservationRepositoryPort;
+import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class ClinicalObservationApplicationServiceTest {
+
+    @Mock
+    private ClinicalObservationRepositoryPort observationRepositoryPort;
+
+    @Mock
+    private ClinicalRepositoryPort clinicalRepositoryPort;
+
+    @InjectMocks
+    private ClinicalObservationApplicationService service;
+
+    @Test
+    void recordObservation_Success_WhenDataIsValidAndProfileExists() {
+        String patientId = "patient-123";
+        String nutritionistId = "nutri-456";
+        String note = "Paciente muestra mejora en hidratación.";
+        
+        PatientProfile mockProfile = new PatientProfile(
+                patientId, 
+                70.0, 
+                175.0, 
+                LocalDate.of(1990, 1, 1), 
+                Gender.MALE, 
+                ActivityLevel.MODERATELY_ACTIVE
+        );
+
+        when(clinicalRepositoryPort.findByUserId(patientId)).thenReturn(Optional.of(mockProfile));
+        when(observationRepositoryPort.save(any(ClinicalObservation.class))).thenAnswer(invocation -> {
+            ClinicalObservation obs = invocation.getArgument(0);
+            obs.setId("obs-789");
+            return obs;
+        });
+
+        ClinicalObservation result = service.recordObservation(patientId, nutritionistId, note);
+
+        assertEquals("obs-789", result.getId());
+        assertEquals(patientId, result.getPatientId());
+        assertEquals(nutritionistId, result.getNutritionistId());
+        assertEquals(note, result.getNote());
+        assertNotNull(result.getCreatedAt());
+        
+        verify(clinicalRepositoryPort, times(1)).findByUserId(patientId);
+        verify(observationRepositoryPort, times(1)).save(any(ClinicalObservation.class));
+    }
+
+    @Test
+    void recordObservation_ThrowsException_WhenNoteIsEmpty() {
+        String patientId = "patient-123";
+        String nutritionistId = "nutri-456";
+        String emptyNote = "   ";
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> 
+            service.recordObservation(patientId, nutritionistId, emptyNote)
+        );
+
+        assertEquals("Observation note cannot be empty.", exception.getMessage());
+        verify(clinicalRepositoryPort, never()).findByUserId(anyString());
+        verify(observationRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void recordObservation_ThrowsException_WhenPatientProfileDoesNotExist() {
+        String patientId = "ghost-patient";
+        String nutritionistId = "nutri-456";
+        String note = "Nota válida.";
+
+        when(clinicalRepositoryPort.findByUserId(patientId)).thenReturn(Optional.empty());
+
+        ProfileNotFoundException exception = assertThrows(ProfileNotFoundException.class, () -> 
+            service.recordObservation(patientId, nutritionistId, note)
+        );
+
+        assertEquals("Cannot add observation. Patient clinical profile not found.", exception.getMessage());
+        verify(observationRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void getPatientObservations_ReturnsList() {
+        String patientId = "patient-123";
+        List<ClinicalObservation> mockList = List.of(
+            new ClinicalObservation("1", patientId, "nutri-1", "Nota 1", null),
+            new ClinicalObservation("2", patientId, "nutri-2", "Nota 2", null)
+        );
+
+        when(observationRepositoryPort.findAllByPatientId(patientId)).thenReturn(mockList);
+
+        List<ClinicalObservation> result = service.getPatientObservations(patientId);
+
+        assertEquals(2, result.size());
+        verify(observationRepositoryPort, times(1)).findAllByPatientId(patientId);
+    }
+}

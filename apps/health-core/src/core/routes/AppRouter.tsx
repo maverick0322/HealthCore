@@ -54,15 +54,23 @@ export const appRouter = createBrowserRouter([
       },
     ],
   },
-  // ── Protected routes (redirect to /login if not authenticated) ──
+  // ── Protected routes (They only require you to be logged in) ──
   {
     errorElement: <ErrorBoundaryPage />,
-    element: <ProtectedRoute />,
+    element: <ProtectedRoute />, 
     children: [
       {
         path: "/",
         element: <HomePage />,
       },
+    ],
+  },
+
+  // ── Protected routes (PATIENTS ONLY) ──
+  {
+    errorElement: <ErrorBoundaryPage />,
+    element: <ProtectedRoute allowedRoles={['PATIENT']} />, 
+    children: [
       {
         path: "/dashboard/patient",
         element: <PatientDashboardPage />,
@@ -80,6 +88,14 @@ export const appRouter = createBrowserRouter([
         element: <PatientPlanPage />,
       },
       {
+        path: "/profile",
+        element: <PatientProfilePage />,
+      },
+      {
+        path: "/tracking/log-food",
+        element: <LogFoodPage />,
+      },
+      {
         path: "/onboarding",
         element: <OnboardingGuard />,
         children: [
@@ -89,7 +105,14 @@ export const appRouter = createBrowserRouter([
           },
         ],
       },
-      // ── NUTRITIONIST ROUTES ──
+    ],
+  },
+
+  // ── Protected routes (NUTRITIONISTS ONLY) ──
+  {
+    errorElement: <ErrorBoundaryPage />,
+    element: <ProtectedRoute allowedRoles={['NUTRITIONIST']} />,
+    children: [
       {
         path: "/dashboard/nutritionist",
         element: <NutritionistDashboardPage />,
@@ -118,16 +141,9 @@ export const appRouter = createBrowserRouter([
         path: "/profile/nutritionist",
         element: <NutritionistProfilePage />,
       },
-      {
-        path: "/profile",
-        element: <PatientProfilePage />,
-      },
-      {
-        path: "/tracking/log-food",
-        element: <LogFoodPage />,
-      },
     ],
   },
+
   // ── OAuth2 callback (outside guards — user arrives mid-auth flow) ──
   {
     path: "/oauth2/callback",

@@ -26,3 +26,16 @@ export interface WeightRecord {
   weightKg: number;
   date: string;
 }
+
+export interface ObservationResponse {
+  id: string;
+  patientId: string;
+  nutritionistId: string;
+  note: string;
+  createdAt: string;
+}
+
+export interface CreateObservationRequest {
+  patientId: string;
+  note: string;
+}

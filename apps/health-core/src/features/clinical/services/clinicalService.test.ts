@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { clinicalApi } from './clinicalService';
+import { clinicalApi, createObservation, getPatientObservations } from './clinicalService';
 import httpClient from '@/core/http/httpClient';
 import * as jwtUtils from '@/core/utils/jwt';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
@@ -22,7 +22,6 @@ describe('clinicalApi Infrastructure', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     
-    // Setup default mocks
     (useAuthStore.getState as any).mockReturnValue({
       accessToken: MOCK_TOKEN,
     });
@@ -143,5 +142,41 @@ describe('clinicalApi Infrastructure', () => {
     await expect(clinicalApi.createProfile(mockPayload)).rejects.toThrow(
       'User is not authenticated. No access token found.'
     );
+  });
+});
+
+describe('CU-10: Clinical Service - Observations', () => {
+  
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const mockPatientId = 'patient-123';
+  const mockNote = 'Patients adherence improves';
+
+  it('Must register a new observation by sending the correct data to the endpoint', async () => {
+    const mockResponse = { data: { id: 'obs-1', patientId: mockPatientId, note: mockNote } };
+    (httpClient.post as any).mockResolvedValueOnce(mockResponse);
+
+    const result = await createObservation({ patientId: mockPatientId, note: mockNote });
+
+    expect(httpClient.post).toHaveBeenCalledWith('/clinical/observations', {
+      patientId: mockPatientId,
+      note: mockNote
+    });
+    expect(result).toEqual(mockResponse.data);
+  });
+
+  it('Must fetch the observation history for a patient correctly', async () => {
+    const mockObservations = [
+      { id: '1', note: 'Note 1' },
+      { id: '2', note: 'Note 2' }
+    ];
+    (httpClient.get as any).mockResolvedValueOnce({ data: mockObservations });
+
+    const result = await getPatientObservations(mockPatientId);
+
+    expect(httpClient.get).toHaveBeenCalledWith(`/clinical/observations/patient/${mockPatientId}`);
+    expect(result).toEqual(mockObservations);
   });
 });

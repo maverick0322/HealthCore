@@ -1,4 +1,6 @@
 import type { CreateProfilePayload, HealthGoalResponse, WeightRecord } from '../types/clinical.types';
+import type { ObservationResponse, CreateObservationRequest } from '../types/clinical.types';
+
 import httpClient from '@/core/http/httpClient';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { extractUserIdFromToken } from '@/core/utils/jwt';
@@ -69,4 +71,14 @@ export const clinicalApi = {
     );
     return response.data;
   },
+};
+
+export const createObservation = async (data: CreateObservationRequest): Promise<ObservationResponse> => {
+  const response = await httpClient.post<ObservationResponse>('/clinical/observations', data);
+  return response.data;
+};
+
+export const getPatientObservations = async (patientId: string): Promise<ObservationResponse[]> => {
+  const response = await httpClient.get<ObservationResponse[]>(`/clinical/observations/patient/${patientId}`);
+  return response.data;
 };

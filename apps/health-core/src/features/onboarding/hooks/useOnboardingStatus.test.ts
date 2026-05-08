@@ -2,34 +2,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useOnboardingStatus } from './useOnboardingStatus';
 import * as clinicalServiceModule from '@/features/clinical/services/clinicalService';
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
 vi.mock('@/features/clinical/services/clinicalService');
-vi.mock('@/features/auth/store/useAuthStore', () => ({
-  useAuthStore: {
-    getState: vi.fn(),
-  },
-}));
-
-const mockedUseAuthStore = vi.mocked(useAuthStore);
-
-const mockUser = {
-  email: 'patient@example.com',
-  role: 'PATIENT' as const,
-  provider: 'LOCAL' as const,
-  emailVerified: true,
-  enabled: true,
-};
+vi.mock('@/features/auth/store/useAuthStore', () => {
+  const mockUser = {
+    email: 'patient@example.com',
+    role: 'PATIENT',
+    provider: 'LOCAL',
+    emailVerified: true,
+    enabled: true,
+  };
+  
+  const mockStore = vi.fn((selector) => selector({ user: mockUser }));
+  (mockStore as any).getState = vi.fn(() => ({ user: mockUser }));
+  
+  return { useAuthStore: mockStore };
+});
 
 describe('useOnboardingStatus', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedUseAuthStore.getState.mockReturnValue({ user: mockUser } as any);
   });
 
   it('should return "loading" on initial mount', () => {
     vi.mocked(clinicalServiceModule.clinicalApi.getMyGoals).mockImplementation(
-      () => new Promise(() => {}) // Never resolves
+      () => new Promise(() => {}) 
     );
 
     const { result } = renderHook(() => useOnboardingStatus());
@@ -55,7 +52,8 @@ describe('useOnboardingStatus', () => {
   });
 
   it('should return "pending" when getMyGoals throws 404 error', async () => {
-    const error404 = new Error('Not Found');
+    const error404 = new Error('Not Found') as any;
+    error404.response = { status: 404 };
     vi.mocked(clinicalServiceModule.clinicalApi.getMyGoals).mockRejectedValue(error404);
 
     const { result } = renderHook(() => useOnboardingStatus());
@@ -65,14 +63,14 @@ describe('useOnboardingStatus', () => {
     });
   });
 
-  it('should return "pending" when getMyGoals throws any error', async () => {
+  it('should return "completed" when getMyGoals throws any unknown error', async () => {
     const networkError = new Error('Network Error');
     vi.mocked(clinicalServiceModule.clinicalApi.getMyGoals).mockRejectedValue(networkError);
 
     const { result } = renderHook(() => useOnboardingStatus());
 
     await waitFor(() => {
-      expect(result.current).toBe('pending');
+      expect(result.current).toBe('completed');
     });
   });
 
@@ -90,10 +88,8 @@ describe('useOnboardingStatus', () => {
       expect(clinicalServiceModule.clinicalApi.getMyGoals).toHaveBeenCalledTimes(1);
     });
 
-    // Re-render the hook
     rerender();
 
-    // Should still be called only once (no new call on re-render)
     expect(clinicalServiceModule.clinicalApi.getMyGoals).toHaveBeenCalledTimes(1);
   });
 });

@@ -46,7 +46,10 @@
       "height": "Altura",
       "objective": "Objetivo",
       "editPlan": "Editar Plan Dietético",
-      "newNote": "Añadir Nota"
+      "newNote": "Añadir Nota",
+      "newNotePlaceholder": "Escribe una nueva nota clínica o comentario...",
+      "saveObservation": "Guardar Observación",
+      "noObservations": "No hay observaciones registradas aún"
     }
   },
   "agenda": {

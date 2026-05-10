@@ -8,6 +8,7 @@ import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.HealthGoalResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.PatientProfileResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 
 import jakarta.validation.Valid;
@@ -90,5 +91,22 @@ public class ClinicalController {
         
         List<WeightRecord> history = manageProfileUseCase.getWeightHistory(userId);
         return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/profile/me")
+    public ResponseEntity<PatientProfileResponse> getMyProfile() {
+        String patientId = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        return manageProfileUseCase.getProfileByUserId(patientId)
+                .map(profile -> ResponseEntity.ok(new PatientProfileResponse(
+                        profile.getUserId(),
+                        profile.getWeightKg(),
+                        profile.getHeightCm(),
+                        profile.getBirthDate(),
+                        profile.getGender().name(),
+                        profile.getActivityLevel().name(),
+                        profile.getNutritionistId() 
+                )))
+                .orElse(ResponseEntity.notFound().build());
     }
 }

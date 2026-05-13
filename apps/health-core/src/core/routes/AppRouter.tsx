@@ -26,9 +26,22 @@ import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
 import { LogFoodPage } from "@/features/tracking/pages/LogFoodPage";
+import { LandingPage } from "@/features/marketing/pages/LandingPage";
+import { DemoPage } from "@/features/marketing/pages/DemoPage";
 
 export const appRouter = createBrowserRouter([
-  // ── Guest-only routes (redirect to / if already authenticated) ──
+  // ── Public marketing routes ──
+  {
+    path: "/",
+    element: <LandingPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/demo",
+    element: <DemoPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  // ── Guest-only routes (redirect to /home if already authenticated) ──
   {
     errorElement: <ErrorBoundaryPage />,
     element: <GuestRoute />,
@@ -61,7 +74,7 @@ export const appRouter = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/",
+        path: "/home",
         element: <HomePage />,
       },
       {

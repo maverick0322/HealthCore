@@ -35,7 +35,7 @@ export const useLogin = () => {
         }
       }
 
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     } catch (err: unknown) {
       console.error('[useLogin] Login failed:', err);
       if (axios.isAxiosError(err)) {

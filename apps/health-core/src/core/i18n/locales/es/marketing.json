@@ -1,0 +1,147 @@
+{
+  "brand": "HealthCore",
+  "nav": {
+    "login": "Iniciar sesión",
+    "goToApp": "Ir al panel",
+    "preview": "Vista previa"
+  },
+  "hero": {
+    "title": "Tu alimentación, acompañada paso a paso",
+    "subtitle": "Registra tus comidas en segundos, entiende tu progreso y, si lo necesitas, conéctate con un nutriólogo sin fricción.",
+    "primaryCta": "Comenzar ahora",
+    "secondaryCta": "Ver cómo funciona"
+  },
+  "value": {
+    "title": "Todo lo que necesitas para mantener el control",
+    "cards": {
+      "fast": {
+        "title": "Registro ultra rápido",
+        "body": "Búsqueda inteligente, favoritos y porciones para anotar en menos de un minuto."
+      },
+      "pro": {
+        "title": "Acompañamiento profesional",
+        "body": "Comparte tu información con un nutriólogo y recibe ajustes y recomendaciones."
+      },
+      "calm": {
+        "title": "Progreso sin estrés",
+        "body": "Gráficas claras, recordatorios suaves y enfoque en consistencia."
+      }
+    }
+  },
+  "how": {
+    "title": "Cómo funciona",
+    "steps": {
+      "oneTitle": "Configura tu perfil",
+      "oneBody": "Objetivos, alergias y preferencias en menos de 30 segundos.",
+      "twoTitle": "Registra tus comidas",
+      "twoBody": "Autogestionado o guiado por tu nutriólogo, tú eliges.",
+      "threeTitle": "Visualiza tu evolución",
+      "threeBody": "Métricas y tendencias para tomar decisiones fáciles."
+    }
+  },
+  "explore": {
+    "title": "Explora sin registrarte",
+    "demoTitle": "Demo interactiva",
+    "demoBody": "Prueba un día de ejemplo y juega con el registro de comidas.",
+    "demoCta": "Abrir demo",
+    "calcTitle": "Calculadora de calorías (TDEE)",
+    "calcBody": "Obtén una estimación de mantenimiento según tu perfil.",
+    "galleryTitle": "Galería de ejemplos",
+    "galleryBody": "Vistas del panel del usuario y del nutriólogo (ejemplos).",
+    "videoTitle": "Guía rápida (1–2 min)",
+    "videoBody": "Un tour corto para entender el flujo completo.",
+    "videoCta": "Ver video",
+    "mock": {
+      "exampleDay": "Día de ejemplo"
+    },
+    "nutritionistTitle": "Nutriólogo",
+    "nutritionistBody": "Notas, ajustes y seguimiento (ejemplo).",
+    "videoPlaceholderTitle": "Video",
+    "videoPlaceholderBody": "Placeholder. Aquí se integrará un video (YouTube/Vimeo) sin requerir cuenta."
+  },
+  "calculator": {
+    "sex": "Sexo",
+    "male": "Hombre",
+    "female": "Mujer",
+    "age": "Edad (años)",
+    "weight": "Peso (kg)",
+    "height": "Altura (cm)",
+    "activity": "Actividad",
+    "activityLevels": {
+      "0": "Sedentario",
+      "1": "Ligera",
+      "2": "Moderada",
+      "3": "Alta",
+      "4": "Muy alta"
+    },
+    "bmr": "BMR (kcal/día)",
+    "tdee": "TDEE (kcal/día)",
+    "disclaimer": "Estimación orientativa. Para un plan personalizado, consulta a un profesional."
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "q1": "¿Necesito un nutriólogo para usar la app?",
+    "a1": "No. Puedes usarla en modo autogestionado y sumar acompañamiento cuando lo necesites.",
+    "q2": "¿Puedo probar antes de crear una cuenta?",
+    "a2": "Sí. La demo te permite explorar el flujo sin registro. Solo pediremos cuenta si quieres guardar progreso.",
+    "q3": "¿Mis datos están seguros?",
+    "a3": "Usamos prácticas estándar de seguridad y separación de sesiones. Evita compartir credenciales y cierra sesión en dispositivos públicos."
+  },
+  "finalCta": {
+    "title": "Empieza hoy, sin compromisos",
+    "subtitle": "Explora la demo y decide después si quieres guardar tu progreso.",
+    "primary": "Probar demo",
+    "secondary": "Crear cuenta"
+  },
+  "footer": {
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "contact": "Contacto"
+  },
+  "heroMock": {
+    "title": "Vista previa",
+    "today": "Hoy",
+    "subtitle": "Registro + progreso, en un vistazo.",
+    "meals": {
+      "breakfast": "Desayuno",
+      "lunch": "Comida",
+      "dinner": "Cena"
+    },
+    "weeklyTrend": "Tendencia semanal"
+  },
+  "demo": {
+    "title": "Demo interactiva",
+    "subtitle": "Explora el flujo sin registro. Todo es ejemplo y se guarda solo en tu navegador.",
+    "back": "Volver",
+    "saveCta": "Guardar mi progreso",
+    "tabs": {
+      "self": "Autogestionado",
+      "pro": "Con nutriólogo"
+    },
+    "self": {
+      "title": "Registrar desayuno",
+      "badge": "Ejemplo",
+      "body": "Agrega alimentos de ejemplo y revisa el total de calorías.",
+      "total": "Total",
+      "remove": "Eliminar alimento",
+      "addHint": "Agrega uno o dos elementos para ver cambios.",
+      "reset": "Reiniciar",
+      "previewTitle": "Vista previa del panel",
+      "previewBody": "Así se verían tus métricas y tendencias.",
+      "insights": "Insights",
+      "note": "Para guardar tu progreso real, crea una cuenta."
+    },
+    "pro": {
+      "title": "Acompañamiento",
+      "badge": "Feedback",
+      "body": "Ejemplo de comentarios y ajustes por parte de un nutriólogo.",
+      "commentLabel": "Comentario del nutriólogo",
+      "comment": "Buen inicio. Mantén proteína en el desayuno y suma una porción de fruta extra si entrenas por la mañana.",
+      "adjustments": "Ajustes sugeridos",
+      "previewTitle": "Seguimiento",
+      "previewBody": "Historial de cambios y recomendaciones.",
+      "timeline": "Timeline",
+      "note": "El acompañamiento se habilita cuando conectas tu cuenta con un profesional."
+    }
+  }
+}

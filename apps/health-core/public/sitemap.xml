@@ -4,4 +4,8 @@
     <loc>https://healthcore-lift.me/</loc>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://healthcore-lift.me/demo</loc>
+    <priority>0.8</priority>
+  </url>
 </urlset>

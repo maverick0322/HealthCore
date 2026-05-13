@@ -127,7 +127,7 @@ export const PatientProfilePage = () => {
           {/* Only show 'Back to Dashboard' on mobile since desktop has sidebar nav */}
           <button
             id="btn-back-dashboard"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/home")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 md:hidden"
           >
             <ChevronLeft size={16} />

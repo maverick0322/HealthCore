@@ -26,7 +26,7 @@ export const Step4Summary = () => {
       };
 
       await clinicalApi.createProfile(payload);
-      navigate("/");
+      navigate("/home");
       
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || "Revisa la consola (F12) para más detalles";

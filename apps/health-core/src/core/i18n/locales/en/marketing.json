@@ -1,0 +1,147 @@
+{
+  "brand": "HealthCore",
+  "nav": {
+    "login": "Sign in",
+    "goToApp": "Go to app",
+    "preview": "Preview"
+  },
+  "hero": {
+    "title": "Nutrition tracking, guided step by step",
+    "subtitle": "Log meals in seconds, understand your progress, and connect with a nutritionist when you want—without friction.",
+    "primaryCta": "Start now",
+    "secondaryCta": "See how it works"
+  },
+  "value": {
+    "title": "Everything you need to stay on track",
+    "cards": {
+      "fast": {
+        "title": "Ultra-fast logging",
+        "body": "Smart search, favorites, and portions to log in under a minute."
+      },
+      "pro": {
+        "title": "Professional support",
+        "body": "Share your progress with a nutritionist and get adjustments and feedback."
+      },
+      "calm": {
+        "title": "Progress without stress",
+        "body": "Clear charts, gentle reminders, and a consistency-first approach."
+      }
+    }
+  },
+  "how": {
+    "title": "How it works",
+    "steps": {
+      "oneTitle": "Set up your profile",
+      "oneBody": "Goals, allergies, and preferences in under 30 seconds.",
+      "twoTitle": "Log your meals",
+      "twoBody": "Self-managed or guided by a nutritionist—you choose.",
+      "threeTitle": "See your progress",
+      "threeBody": "Trends and insights to make decisions easier."
+    }
+  },
+  "explore": {
+    "title": "Explore with no signup",
+    "demoTitle": "Interactive demo",
+    "demoBody": "Try an example day and play with meal logging.",
+    "demoCta": "Open demo",
+    "calcTitle": "Calorie calculator (TDEE)",
+    "calcBody": "Get a maintenance estimate based on your profile.",
+    "galleryTitle": "Example gallery",
+    "galleryBody": "User and nutritionist views (examples).",
+    "videoTitle": "Quick tour (1–2 min)",
+    "videoBody": "A short walkthrough of the full flow.",
+    "videoCta": "Watch video",
+    "mock": {
+      "exampleDay": "Example day"
+    },
+    "nutritionistTitle": "Nutritionist",
+    "nutritionistBody": "Notes, adjustments, and follow-up (example).",
+    "videoPlaceholderTitle": "Video",
+    "videoPlaceholderBody": "Placeholder. A video (YouTube/Vimeo) will be embedded here without requiring an account."
+  },
+  "calculator": {
+    "sex": "Sex",
+    "male": "Male",
+    "female": "Female",
+    "age": "Age (years)",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "activity": "Activity",
+    "activityLevels": {
+      "0": "Sedentary",
+      "1": "Light",
+      "2": "Moderate",
+      "3": "High",
+      "4": "Very high"
+    },
+    "bmr": "BMR (kcal/day)",
+    "tdee": "TDEE (kcal/day)",
+    "disclaimer": "Estimated values. For a personalized plan, consult a professional."
+  },
+  "faq": {
+    "title": "FAQ",
+    "q1": "Do I need a nutritionist to use the app?",
+    "a1": "No. You can use it self-managed and add professional support whenever you want.",
+    "q2": "Can I try it before creating an account?",
+    "a2": "Yes. The demo lets you explore without signing up. We'll only ask for an account if you want to save progress.",
+    "q3": "Is my data safe?",
+    "a3": "We follow standard security practices and session isolation. Avoid sharing credentials and sign out on public devices."
+  },
+  "finalCta": {
+    "title": "Start today, no pressure",
+    "subtitle": "Explore the demo first, then decide if you want to save your progress.",
+    "primary": "Try demo",
+    "secondary": "Create account"
+  },
+  "footer": {
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "contact": "Contact"
+  },
+  "heroMock": {
+    "title": "Preview",
+    "today": "Today",
+    "subtitle": "Meal logging + progress, in one glance.",
+    "meals": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner"
+    },
+    "weeklyTrend": "Weekly trend"
+  },
+  "demo": {
+    "title": "Interactive demo",
+    "subtitle": "Explore the flow without signing up. Everything is sample data stored only in your browser.",
+    "back": "Back",
+    "saveCta": "Save my progress",
+    "tabs": {
+      "self": "Self-managed",
+      "pro": "With nutritionist"
+    },
+    "self": {
+      "title": "Log breakfast",
+      "badge": "Sample",
+      "body": "Add sample foods and see the total calories change.",
+      "total": "Total",
+      "remove": "Remove food",
+      "addHint": "Add one or two items to see changes.",
+      "reset": "Reset",
+      "previewTitle": "Dashboard preview",
+      "previewBody": "This is how your metrics and trends could look.",
+      "insights": "Insights",
+      "note": "To save real progress, create an account."
+    },
+    "pro": {
+      "title": "Professional support",
+      "badge": "Feedback",
+      "body": "Sample comments and adjustments from a nutritionist.",
+      "commentLabel": "Nutritionist note",
+      "comment": "Great start. Keep protein at breakfast and add one fruit portion if you train in the morning.",
+      "adjustments": "Suggested adjustments",
+      "previewTitle": "Follow-up",
+      "previewBody": "History of changes and recommendations.",
+      "timeline": "Timeline",
+      "note": "Professional support is enabled when you connect your account with a specialist."
+    }
+  }
+}

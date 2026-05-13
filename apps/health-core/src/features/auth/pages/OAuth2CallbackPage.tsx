@@ -69,7 +69,7 @@ export const OAuth2CallbackPage = () => {
           return;
         }
         sessionStorage.removeItem("expectedRole");
-        navigate('/', { replace: true });
+        navigate('/home', { replace: true });
       });
     } else {
       // Redirect to login after a brief delay

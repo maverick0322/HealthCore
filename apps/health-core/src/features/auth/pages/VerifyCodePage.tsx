@@ -127,7 +127,11 @@ export const VerifyCodePage = () => {
                 </button>
               )}
             </div>
-            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline underline-offset-4 transition-colors">
+            <Link
+              to={flow === "password-reset" ? "/forgot-password" : "/signup"}
+              state={{ email }}
+              className="text-sm font-medium text-primary hover:underline underline-offset-4 transition-colors"
+            >
               {t("changeEmail")}
             </Link>
           </div>

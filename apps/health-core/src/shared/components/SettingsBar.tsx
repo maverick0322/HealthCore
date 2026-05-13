@@ -1,5 +1,5 @@
 import { Moon, Sun, Globe, Settings, LogOut, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { useSettingsStore } from "@/core/store/useSettingsStore";
 import { SUPPORTED_LANGUAGES } from "@/core/i18n";
@@ -14,6 +14,7 @@ import {
 
 export const SettingsBar = ({ className }: { className?: string }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme, setTheme, language, setLanguage } = useSettingsStore();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -30,6 +31,15 @@ export const SettingsBar = ({ className }: { className?: string }) => {
   };
 
   const containerClass = className ?? "absolute top-4 right-4 flex items-center gap-2 z-50";
+
+  const isAuthRoute =
+    location.pathname === "/login" ||
+    location.pathname === "/signup" ||
+    location.pathname === "/forgot-password" ||
+    location.pathname === "/verify-code" ||
+    location.pathname === "/reset-password";
+
+  const showAccountMenu = Boolean(user) && !isAuthRoute;
 
   return (
     <div className={containerClass}>
@@ -70,31 +80,33 @@ export const SettingsBar = ({ className }: { className?: string }) => {
         <span className="sr-only">Alternar Tema</span>
       </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="rounded-full w-10 h-10 border-border bg-card hover:bg-muted text-foreground transition-all duration-300 shadow-sm outline-none ring-0"
-          >
-            <Settings className="w-5 h-5" />
-            <span className="sr-only">Configuración</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 border-border bg-card shadow-lg">
-          {user?.role !== "ADMIN" && (
-            <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
-              <User className="mr-2 w-4 h-4" />
-              <span>Perfil</span>
+      {showAccountMenu && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="rounded-full w-10 h-10 border-border bg-card hover:bg-muted text-foreground transition-all duration-300 shadow-sm outline-none ring-0"
+            >
+              <Settings className="w-5 h-5" />
+              <span className="sr-only">Configuración</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 border-border bg-card shadow-lg">
+            {user?.role !== "ADMIN" && (
+              <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
+                <User className="mr-2 w-4 h-4" />
+                <span>Perfil</span>
+              </DropdownMenuItem>
+            )}
+            {user?.role !== "ADMIN" && <DropdownMenuSeparator />}
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
+              <LogOut className="mr-2 w-4 h-4" />
+              <span>Cerrar sesión</span>
             </DropdownMenuItem>
-          )}
-          {user?.role !== "ADMIN" && <DropdownMenuSeparator />}
-          <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
-            <LogOut className="mr-2 w-4 h-4" />
-            <span>Cerrar sesión</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 };

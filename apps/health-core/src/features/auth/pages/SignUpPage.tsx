@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -13,8 +13,15 @@ import { PasswordStrengthIndicator } from "../components/PasswordStrengthIndicat
 import { useRegister } from "../hooks/useRegister";
 import type { UserRole } from "../types/auth.types";
 
+interface LocationState {
+  email?: string;
+}
+
 export const SignUpPage = () => {
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const state = (location.state as LocationState) || {};
+
+  const [email, setEmail] = useState(state.email ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

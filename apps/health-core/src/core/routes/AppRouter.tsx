@@ -28,6 +28,9 @@ import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
 import { LogFoodPage } from "@/features/tracking/pages/LogFoodPage";
 import { LandingPage } from "@/features/marketing/pages/LandingPage";
 import { DemoPage } from "@/features/marketing/pages/DemoPage";
+import { TermsPage } from "@/features/marketing/pages/TermsPage";
+import { PrivacyPage } from "@/features/marketing/pages/PrivacyPage";
+import { TourPage } from "@/features/marketing/pages/TourPage";
 
 export const appRouter = createBrowserRouter([
   // ── Public marketing routes ──
@@ -39,6 +42,21 @@ export const appRouter = createBrowserRouter([
   {
     path: "/demo",
     element: <DemoPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/terms",
+    element: <TermsPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/tour",
+    element: <TourPage />,
     errorElement: <ErrorBoundaryPage />,
   },
   // ── Guest-only routes (redirect to /home if already authenticated) ──

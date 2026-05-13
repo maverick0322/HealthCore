@@ -48,16 +48,78 @@
     "calcBody": "Obtén una estimación de mantenimiento según tu perfil.",
     "galleryTitle": "Galería de ejemplos",
     "galleryBody": "Vistas del panel del usuario y del nutriólogo (ejemplos).",
-    "videoTitle": "Guía rápida (1–2 min)",
-    "videoBody": "Un tour corto para entender el flujo completo.",
-    "videoCta": "Ver video",
+    "galleryMock": {
+      "patientTitle": "Panel del paciente",
+      "patientSubtitle": "Registro diario + métricas clave",
+      "kcal": "Kcal",
+      "protein": "Proteína",
+      "steps": "Pasos",
+      "weekTitle": "Resumen semanal"
+    },
+    "videoTitle": "Tour guiado",
+    "videoBody": "Explora secciones reales con datos de ejemplo y personalización rápida.",
+    "videoCta": "Abrir tour",
     "mock": {
       "exampleDay": "Día de ejemplo"
     },
     "nutritionistTitle": "Nutriólogo",
     "nutritionistBody": "Notas, ajustes y seguimiento (ejemplo).",
+    "nutriMock": {
+      "title": "Panel del nutriólogo",
+      "subtitle": "Pacientes, estado y seguimiento",
+      "badge": "Cupos",
+      "statusOk": "Al día",
+      "statusReview": "Revisar",
+      "statusNew": "Nuevo",
+      "noteOk": "Registro completo · 4 días seguidos",
+      "noteReview": "Falta comida · revisar porciones",
+      "noteNew": "Primer día · crear plan base",
+      "adjustmentsTitle": "Ajustes sugeridos",
+      "adjust1": "Sube proteína en desayuno (+15g).",
+      "adjust2": "Añade 1 porción de fruta post-entreno.",
+      "adjust3": "Mantén agua: 2L al día como meta."
+    },
     "videoPlaceholderTitle": "Video",
     "videoPlaceholderBody": "Placeholder. Aquí se integrará un video (YouTube/Vimeo) sin requerir cuenta."
+  },
+  "tour": {
+    "title": "Tour guiado",
+    "subtitle": "Explora las secciones principales con datos de ejemplo y personaliza algunos valores para ver cómo cambia la experiencia.",
+    "back": "Volver",
+    "tryDemo": "Abrir demo",
+    "profileCardTitle": "Personaliza tu perfil",
+    "profileCardBody": "Esto ajusta metas y ejemplos del tour.",
+    "goal": "Objetivo",
+    "goals": {
+      "lose": "Bajar de peso",
+      "maintain": "Mantenerme",
+      "gain": "Subir masa"
+    },
+    "target": "Objetivo",
+    "steps": {
+      "profile": { "label": "Perfil", "title": "Tu perfil en 30 segundos", "body": "Preferencias y metas claras desde el inicio.", "card1Title": "Preferencias", "card1Body": "Alergias, dieta y hábitos", "card2Title": "Metas", "card2Body": "Calorías y enfoque", "card3Title": "Recordatorios", "card3Body": "Suaves y configurables" },
+      "log": { "label": "Registro", "title": "Registro de comidas", "body": "Rápido, consistente y sin fricción.", "sampleDay": "Día de ejemplo" },
+      "progress": { "label": "Progreso", "title": "Progreso claro", "body": "Tendencias y métricas útiles para tomar decisiones.", "metric1": "Meta diaria", "metric2": "Consistencia", "metric3": "Logros", "metric3Body": "semana" },
+      "nutritionist": { "label": "Nutriólogo", "title": "Acompañamiento", "body": "Feedback y ajustes sobre tu registro.", "thread": "Conversación", "msg1": "Buen inicio. Mantén proteína en el desayuno y suma una porción de fruta hoy.", "msg2": "Perfecto. ¿Qué snack recomiendas para media tarde?" }
+    },
+    "hintProfile": "Esto es un tour. Las secciones reales se habilitan en la app.",
+    "hintLog": "Ejemplo de cómo se vería un día con comidas registradas.",
+    "hintProgress": "Las métricas se actualizan conforme registras tus días.",
+    "hintNutritionist": "El acompañamiento se habilita al conectar con un profesional.",
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "sample": "Ejemplo",
+    "you": "Tú",
+    "meals": {
+      "breakfast": "Desayuno",
+      "lunch": "Comida",
+      "dinner": "Cena"
+    },
+    "foods": {
+      "oats": "Avena",
+      "banana": "Plátano",
+      "yogurt": "Yogurt"
+    }
   },
   "calculator": {
     "sex": "Sexo",
@@ -83,13 +145,13 @@
     "q1": "¿Necesito un nutriólogo para usar la app?",
     "a1": "No. Puedes usarla en modo autogestionado y sumar acompañamiento cuando lo necesites.",
     "q2": "¿Puedo probar antes de crear una cuenta?",
-    "a2": "Sí. La demo te permite explorar el flujo sin registro. Solo pediremos cuenta si quieres guardar progreso.",
+    "a2": "Sí. La demo y el tour te permiten explorar el flujo sin registro.",
     "q3": "¿Mis datos están seguros?",
     "a3": "Usamos prácticas estándar de seguridad y separación de sesiones. Evita compartir credenciales y cierra sesión en dispositivos públicos."
   },
   "finalCta": {
     "title": "Empieza hoy, sin compromisos",
-    "subtitle": "Explora la demo y decide después si quieres guardar tu progreso.",
+    "subtitle": "Explora la demo y decide después si quieres crear una cuenta.",
     "primary": "Probar demo",
     "secondary": "Crear cuenta"
   },
@@ -107,13 +169,31 @@
       "lunch": "Comida",
       "dinner": "Cena"
     },
-    "weeklyTrend": "Tendencia semanal"
+    "items": {
+      "oats": "Avena",
+      "banana": "Plátano",
+      "coffee": "Café",
+      "chicken": "Pollo",
+      "rice": "Arroz",
+      "salad": "Ensalada",
+      "yogurt": "Yogurt",
+      "fruit": "Fruta",
+      "water": "Agua"
+    },
+    "weeklyTrend": "Tendencia semanal",
+    "weekStart": "Lun",
+    "weekEnd": "Dom"
   },
   "demo": {
     "title": "Demo interactiva",
-    "subtitle": "Explora el flujo sin registro. Todo es ejemplo y se guarda solo en tu navegador.",
+    "subtitle": "Explora el flujo sin registro. Todo es ejemplo para darte una idea de cómo funciona la app.",
     "back": "Volver",
-    "saveCta": "Guardar mi progreso",
+    "primaryCta": "Crear cuenta",
+    "labels": {
+      "day": "Hoy",
+      "week": "Esta semana",
+      "daily": "Diario"
+    },
     "tabs": {
       "self": "Autogestionado",
       "pro": "Con nutriólogo"
@@ -129,7 +209,13 @@
       "previewTitle": "Vista previa del panel",
       "previewBody": "Así se verían tus métricas y tendencias.",
       "insights": "Insights",
-      "note": "Para guardar tu progreso real, crea una cuenta."
+      "insightsConsistency": "Consistencia",
+      "macros": {
+        "protein": "Proteína",
+        "carbs": "Carbos",
+        "fat": "Grasa"
+      },
+      "note": "Si quieres comenzar con tu propio perfil, crea una cuenta."
     },
     "pro": {
       "title": "Acompañamiento",
@@ -137,10 +223,22 @@
       "body": "Ejemplo de comentarios y ajustes por parte de un nutriólogo.",
       "commentLabel": "Comentario del nutriólogo",
       "comment": "Buen inicio. Mantén proteína en el desayuno y suma una porción de fruta extra si entrenas por la mañana.",
+      "userMessage": "Gracias. ¿Qué snack recomiendas para media tarde?",
+      "you": "Tú",
       "adjustments": "Ajustes sugeridos",
+      "adjustmentItems": {
+        "fruit": "+ 1 porción de fruta",
+        "proteinBreakfast": "Proteína en desayuno",
+        "water": "Agua: 2L"
+      },
       "previewTitle": "Seguimiento",
       "previewBody": "Historial de cambios y recomendaciones.",
       "timeline": "Timeline",
+      "timelineItems": {
+        "breakfastReview": "Revisión de desayuno · 09:12",
+        "goalAdjustment": "Ajuste de objetivo · 11:40",
+        "snackRecommendation": "Recomendación snack · 16:05"
+      },
       "note": "El acompañamiento se habilita cuando conectas tu cuenta con un profesional."
     }
   }

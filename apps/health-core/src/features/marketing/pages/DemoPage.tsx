@@ -3,30 +3,33 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Check, MessageCircle, Plus, Salad, Trash2 } from "lucide-react";
 
-import { MarketingTopBar } from "@/features/marketing/components/MarketingTopBar";
+import { MarketingSettingsBar } from "@/features/marketing/components/MarketingSettingsBar";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Badge } from "@/shared/ui/badge";
 import { Separator } from "@/shared/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 type DemoFood = {
   id: string;
   name: string;
   kcal: number;
+  p: number;
+  c: number;
+  f: number;
 };
 
 const FOODS: DemoFood[] = [
-  { id: "oats", name: "Avena (50g)", kcal: 190 },
-  { id: "banana", name: "Plátano", kcal: 105 },
-  { id: "yogurt", name: "Yogurt natural", kcal: 120 },
-  { id: "eggs", name: "Huevos (2)", kcal: 156 },
-  { id: "coffee", name: "Café", kcal: 5 },
+  { id: "oats", name: "Avena (50g)", kcal: 190, p: 6, c: 32, f: 3 },
+  { id: "banana", name: "Plátano", kcal: 105, p: 1, c: 27, f: 0 },
+  { id: "yogurt", name: "Yogurt natural", kcal: 120, p: 10, c: 8, f: 5 },
+  { id: "eggs", name: "Huevos (2)", kcal: 156, p: 12, c: 1, f: 11 },
+  { id: "coffee", name: "Café", kcal: 5, p: 0, c: 0, f: 0 },
 ];
 
 export const DemoPage = () => {
   const { t } = useTranslation("marketing");
 
+  const [mode, setMode] = useState<"self" | "pro">("self");
   const [selected, setSelected] = useState<DemoFood[]>([
     FOODS[0]!,
     FOODS[1]!,
@@ -37,6 +40,29 @@ export const DemoPage = () => {
     () => selected.reduce((sum, f) => sum + f.kcal, 0),
     [selected]
   );
+
+  const macros = useMemo(() => {
+    const totals = selected.reduce(
+      (acc, f) => ({
+        p: acc.p + f.p,
+        c: acc.c + f.c,
+        f: acc.f + f.f,
+      }),
+      { p: 0, c: 0, f: 0 }
+    );
+    return {
+      p: Math.round(totals.p),
+      c: Math.round(totals.c),
+      f: Math.round(totals.f),
+    };
+  }, [selected]);
+
+  const targetKcal = 500;
+  const progress = Math.min(100, Math.round((totalKcal / targetKcal) * 100));
+
+  const dayLabel = t("demo.labels.day");
+  const weekLabel = t("demo.labels.week");
+  const dailyLabel = t("demo.labels.daily");
 
   const addFood = (food: DemoFood) => {
     setSelected((prev) => [...prev, food]);
@@ -50,8 +76,9 @@ export const DemoPage = () => {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
+      <MarketingSettingsBar />
       <div className="max-w-6xl mx-auto px-4">
-        <MarketingTopBar />
+        <div className="py-4" />
 
         <div className="flex items-center justify-between gap-3 pb-6">
           <div className="space-y-1">
@@ -63,18 +90,41 @@ export const DemoPage = () => {
               <Link to="/">{t("demo.back")}</Link>
             </Button>
             <Button asChild>
-              <Link to="/signup">{t("demo.saveCta")}</Link>
+              <Link to="/signup">{t("demo.primaryCta")}</Link>
             </Button>
           </div>
         </div>
 
-        <Tabs defaultValue="self" className="pb-14">
-          <TabsList>
-            <TabsTrigger value="self">{t("demo.tabs.self")}</TabsTrigger>
-            <TabsTrigger value="pro">{t("demo.tabs.pro")}</TabsTrigger>
-          </TabsList>
+        <div className="pb-14">
+          <div className="mt-2 inline-flex w-full max-w-xl rounded-xl border border-border bg-muted p-1">
+            <button
+              type="button"
+              onClick={() => setMode("self")}
+              aria-pressed={mode === "self"}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+                mode === "self"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("demo.tabs.self")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("pro")}
+              aria-pressed={mode === "pro"}
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+                mode === "pro"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("demo.tabs.pro")}
+            </button>
+          </div>
 
-          <TabsContent value="self" className="mt-6">
+          <div className="mt-6">
+          {mode === "self" ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -93,13 +143,22 @@ export const DemoPage = () => {
                       <div className="text-xs text-muted-foreground">{t("demo.self.total")}</div>
                       <div className="text-lg font-semibold">{totalKcal} kcal</div>
                     </div>
+                    <div className="mt-3 h-2 w-full rounded-full bg-muted overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{progress}%</span>
+                      <span>{targetKcal} kcal</span>
+                    </div>
                     <Separator className="my-3" />
                     <div className="space-y-2">
                       {selected.map((food) => (
                         <div key={food.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
                           <div className="min-w-0">
                             <div className="text-sm font-medium truncate">{food.name}</div>
-                            <div className="text-xs text-muted-foreground">{food.kcal} kcal</div>
+                            <div className="text-xs text-muted-foreground">
+                              {food.kcal} kcal · P {food.p}g · C {food.c}g · F {food.f}g
+                            </div>
                           </div>
                           <Button
                             variant="ghost"
@@ -146,6 +205,21 @@ export const DemoPage = () => {
                   <CardDescription>{t("demo.self.previewBody")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-border bg-background/70 p-3">
+                      <div className="text-[11px] text-muted-foreground">{t("demo.self.macros.protein")}</div>
+                      <div className="mt-1 text-lg font-semibold">{macros.p}g</div>
+                    </div>
+                    <div className="rounded-xl border border-border bg-background/70 p-3">
+                      <div className="text-[11px] text-muted-foreground">{t("demo.self.macros.carbs")}</div>
+                      <div className="mt-1 text-lg font-semibold">{macros.c}g</div>
+                    </div>
+                    <div className="rounded-xl border border-border bg-background/70 p-3">
+                      <div className="text-[11px] text-muted-foreground">{t("demo.self.macros.fat")}</div>
+                      <div className="mt-1 text-lg font-semibold">{macros.f}g</div>
+                    </div>
+                  </div>
+
                   <div className="rounded-xl border border-border bg-background/70 p-4">
                     <div className="flex items-center justify-between">
                       <div className="text-xs text-muted-foreground">{t("demo.self.insights")}</div>
@@ -154,20 +228,28 @@ export const DemoPage = () => {
                         OK
                       </Badge>
                     </div>
-                    <div className="mt-3 h-20 rounded-lg bg-muted" />
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {[0, 1, 2].map((i) => (
-                        <div key={i} className="h-10 rounded-lg bg-muted" />
-                      ))}
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{t("demo.self.insightsConsistency")}</span>
+                        <span className="font-medium">4/7</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: "57%" }} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{t("demo.self.macros.protein")}</span>
+                        <span className="font-medium">{macros.p}g</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: `${Math.min(100, (macros.p / 30) * 100)}%` }} />
+                      </div>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">{t("demo.self.note")}</p>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-
-          <TabsContent value="pro" className="mt-6">
+          ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -183,16 +265,42 @@ export const DemoPage = () => {
                 <CardContent className="space-y-4">
                   <div className="rounded-xl border border-border bg-background/70 p-4">
                     <div className="text-xs text-muted-foreground">{t("demo.pro.commentLabel")}</div>
-                    <div className="mt-2 rounded-xl bg-muted/50 p-4">
-                      <p className="text-sm leading-relaxed">{t("demo.pro.comment")}</p>
+                    <div className="mt-3 space-y-3">
+                      <div className="flex gap-2">
+                        <div className="mt-1 h-7 w-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-bold">
+                          N
+                        </div>
+                        <div className="flex-1 rounded-2xl rounded-tl-md bg-muted/50 p-4">
+                          <p className="text-sm leading-relaxed">{t("demo.pro.comment")}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <div className="flex-1 max-w-[80%] rounded-2xl rounded-tr-md bg-primary/10 p-4">
+                          <p className="text-sm leading-relaxed">
+                            {t("demo.pro.userMessage")}
+                          </p>
+                        </div>
+                        <div className="mt-1 h-7 w-7 rounded-full bg-foreground/10 flex items-center justify-center text-xs font-bold">
+                          {t("demo.pro.you")}
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="rounded-xl border border-border bg-background/70 p-4">
                     <div className="text-xs text-muted-foreground">{t("demo.pro.adjustments")}</div>
                     <div className="mt-3 space-y-2">
-                      {[0, 1, 2].map((i) => (
-                        <div key={i} className="h-10 rounded-lg bg-muted" />
-                      ))}
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2">
+                        <span className="text-sm">{t("demo.pro.adjustmentItems.fruit")}</span>
+                        <Badge variant="secondary">{dayLabel}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2">
+                        <span className="text-sm">{t("demo.pro.adjustmentItems.proteinBreakfast")}</span>
+                        <Badge variant="secondary">{weekLabel}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2">
+                        <span className="text-sm">{t("demo.pro.adjustmentItems.water")}</span>
+                        <Badge variant="secondary">{dailyLabel}</Badge>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -207,22 +315,34 @@ export const DemoPage = () => {
                   <div className="rounded-xl border border-border bg-background/70 p-4">
                     <div className="text-xs text-muted-foreground">{t("demo.pro.timeline")}</div>
                     <div className="mt-3 space-y-2">
-                      {[0, 1, 2, 3].map((i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                          <div className="h-10 flex-1 rounded-lg bg-muted" />
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                        <div className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                          {t("demo.pro.timelineItems.breakfastReview")}
                         </div>
-                      ))}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                        <div className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                          {t("demo.pro.timelineItems.goalAdjustment")}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                        <div className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm">
+                          {t("demo.pro.timelineItems.snackRecommendation")}
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">{t("demo.pro.note")}</p>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
-

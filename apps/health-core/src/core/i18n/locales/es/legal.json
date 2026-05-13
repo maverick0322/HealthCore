@@ -1,0 +1,89 @@
+{
+  "common": {
+    "back": "Volver",
+    "updatedTitle": "Última actualización",
+    "updatedBody": "Este documento se proporciona para fines informativos generales. Puedes revisarlo y contactarnos si tienes dudas.",
+    "footerNote": "Si necesitas versiones firmadas o adaptadas a tu operación, te recomendamos revisarlas con asesoría legal."
+  },
+  "terms": {
+    "title": "Términos y condiciones",
+    "subtitle": "Reglas de uso de la plataforma y limitaciones de responsabilidad.",
+    "sections": {
+      "acceptance": {
+        "title": "1. Aceptación",
+        "body": "Al acceder o usar la plataforma, aceptas estos términos. Si no estás de acuerdo, no utilices el servicio."
+      },
+      "eligibility": {
+        "title": "2. Elegibilidad",
+        "body": "Debes tener capacidad legal para contratar. Si eres menor de edad, utiliza el servicio con autorización de tu tutor."
+      },
+      "use": {
+        "title": "3. Uso permitido",
+        "body": "Te comprometes a usar la plataforma de forma lícita, sin intentar vulnerar seguridad, interferir con el servicio o abusar de funciones."
+      },
+      "health": {
+        "title": "4. Información de salud",
+        "body": "HealthCore no sustituye diagnóstico o tratamiento médico. La información, recomendaciones o estimaciones son orientativas."
+      },
+      "accounts": {
+        "title": "5. Cuentas y acceso",
+        "body": "Eres responsable de la confidencialidad de tus credenciales y de toda actividad realizada desde tu cuenta."
+      },
+      "payments": {
+        "title": "6. Pagos (si aplica)",
+        "body": "Algunas funciones podrían requerir pago. Los precios, planes y condiciones se mostrarán antes de la contratación."
+      },
+      "ip": {
+        "title": "7. Propiedad intelectual",
+        "body": "El software, marcas y contenidos pertenecen a sus respectivos titulares. No se concede licencia más allá del uso normal del servicio."
+      },
+      "termination": {
+        "title": "8. Suspensión o terminación",
+        "body": "Podemos suspender el acceso por incumplimiento, fraude o riesgos de seguridad. Puedes dejar de usar el servicio en cualquier momento."
+      },
+      "contact": {
+        "title": "9. Contacto",
+        "body": "Para dudas sobre estos términos, contáctanos a través de los canales disponibles en la plataforma."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Aviso de privacidad",
+    "subtitle": "Cómo tratamos tus datos y qué opciones tienes.",
+    "sections": {
+      "summary": {
+        "title": "1. Resumen",
+        "body": "Recopilamos datos mínimos para operar el servicio (por ejemplo, email y preferencias). Puedes usar la demo sin cuenta."
+      },
+      "dataWeCollect": {
+        "title": "2. Datos que recopilamos",
+        "body": "Dependiendo del uso, podemos recopilar: datos de cuenta, registros de alimentos, métricas (peso/altura), y datos técnicos (navegador, eventos de error)."
+      },
+      "howWeUse": {
+        "title": "3. Cómo usamos tus datos",
+        "body": "Para proveer el servicio, mejorar la experiencia, mantener seguridad, y (si aplica) habilitar acompañamiento con un nutriólogo."
+      },
+      "sharing": {
+        "title": "4. Compartición",
+        "body": "Solo compartimos datos cuando lo solicitas (por ejemplo, con un nutriólogo que elijas), o cuando sea necesario para operar el servicio (proveedores de infraestructura)."
+      },
+      "retention": {
+        "title": "5. Retención",
+        "body": "Conservamos datos el tiempo necesario para operar tu cuenta y cumplir obligaciones. Puedes solicitar eliminación según disponibilidad del producto."
+      },
+      "security": {
+        "title": "6. Seguridad",
+        "body": "Aplicamos controles razonables para proteger información. Ningún sistema es 100% seguro; evita reutilizar contraseñas."
+      },
+      "rights": {
+        "title": "7. Derechos",
+        "body": "Puedes solicitar acceso, corrección o eliminación cuando aplique. Las opciones exactas pueden variar según tu región y el estado del producto."
+      },
+      "contact": {
+        "title": "8. Contacto",
+        "body": "Para solicitudes relacionadas con privacidad, contáctanos mediante los canales disponibles en la plataforma."
+      }
+    }
+  }
+}
+

@@ -5,7 +5,11 @@ import {
   Salad,
   TrendingUp,
   PlayCircle,
+  ArrowRight,
   Sparkles,
+  LayoutDashboard,
+  Users,
+  ClipboardList,
 } from "lucide-react";
 
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
@@ -20,20 +24,12 @@ import {
 import { Badge } from "@/shared/ui/badge";
 import { Separator } from "@/shared/ui/separator";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/shared/ui/dialog";
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/shared/ui/accordion";
-import { MarketingTopBar } from "@/features/marketing/components/MarketingTopBar";
+import { MarketingSettingsBar } from "@/features/marketing/components/MarketingSettingsBar";
 import { CalorieCalculator } from "@/features/marketing/components/CalorieCalculator";
 
 export const LandingPage = () => {
@@ -47,15 +43,17 @@ export const LandingPage = () => {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
+      <MarketingSettingsBar />
       <div className="bg-gradient-to-b from-primary/10 via-background to-background">
         <div className="max-w-6xl mx-auto px-4">
-          <MarketingTopBar />
+          <div className="py-4" />
 
           <div className="flex items-center justify-between gap-3 pb-6">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold tracking-tight">
-                {t("brand")}
-              </span>
+              <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center ring-1 ring-primary/15">
+                <img src="/icon-192.png" alt="HealthCore" className="rounded-xl" />
+              </div>
+              <span className="text-sm font-semibold tracking-tight">{t("brand")}</span>
               <Badge variant="secondary" className="hidden sm:inline-flex">
                 {isAuthenticated ? t("nav.goToApp") : t("nav.preview")}
               </Badge>
@@ -109,7 +107,10 @@ export const LandingPage = () => {
                 {isAuthenticated && (
                   <div className="pt-2">
                     <Button variant="ghost" asChild className="px-0">
-                      <Link to="/home">{t("nav.goToApp")} →</Link>
+                      <Link to="/home" className="inline-flex items-center gap-1.5">
+                        {t("nav.goToApp")}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
                     </Button>
                   </div>
                 )}
@@ -128,28 +129,78 @@ export const LandingPage = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        t("heroMock.meals.breakfast"),
-                        t("heroMock.meals.lunch"),
-                        t("heroMock.meals.dinner"),
-                      ].map((label) => (
-                        <div
-                          key={label}
-                          className="rounded-xl border border-border bg-background/70 p-3"
-                        >
-                          <div className="text-[11px] text-muted-foreground">{label}</div>
-                          <div className="mt-2 h-2 w-3/4 rounded bg-muted" />
-                          <div className="mt-2 h-2 w-1/2 rounded bg-muted" />
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="rounded-xl border border-border bg-background/70 p-3">
+                        <div className="text-[11px] text-muted-foreground">{t("heroMock.meals.breakfast")}</div>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.oats")}</span>
+                            <span className="text-muted-foreground">190</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.banana")}</span>
+                            <span className="text-muted-foreground">105</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.coffee")}</span>
+                            <span className="text-muted-foreground">5</span>
+                          </div>
                         </div>
-                      ))}
+                      </div>
+                      <div className="rounded-xl border border-border bg-background/70 p-3">
+                        <div className="text-[11px] text-muted-foreground">{t("heroMock.meals.lunch")}</div>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.chicken")}</span>
+                            <span className="text-muted-foreground">220</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.rice")}</span>
+                            <span className="text-muted-foreground">210</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.salad")}</span>
+                            <span className="text-muted-foreground">80</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-border bg-background/70 p-3">
+                        <div className="text-[11px] text-muted-foreground">{t("heroMock.meals.dinner")}</div>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.yogurt")}</span>
+                            <span className="text-muted-foreground">120</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.fruit")}</span>
+                            <span className="text-muted-foreground">90</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">{t("heroMock.items.water")}</span>
+                            <span className="text-muted-foreground">0</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     <div className="rounded-xl border border-border bg-background/70 p-4">
                       <div className="flex items-center justify-between">
                         <div className="text-[11px] text-muted-foreground">{t("heroMock.weeklyTrend")}</div>
                         <TrendingUp className="h-4 w-4 text-primary" />
                       </div>
-                      <div className="mt-3 h-20 rounded-lg bg-muted" />
+                      <div className="mt-3 grid grid-cols-7 gap-1 items-end">
+                        {[28, 34, 22, 41, 30, 38, 45].map((h, i) => (
+                          <div
+                            key={i}
+                            className="rounded-md bg-primary/30"
+                            style={{ height: `${h}px` }}
+                            title={`D${i + 1}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>{t("heroMock.weekStart")}</span>
+                        <span>{t("heroMock.weekEnd")}</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -248,9 +299,27 @@ export const LandingPage = () => {
                 <div className="rounded-xl border border-border bg-background/70 p-4">
                   <div className="text-[11px] text-muted-foreground">{t("explore.mock.exampleDay")}</div>
                   <div className="mt-3 grid grid-cols-3 gap-2">
-                    {[0, 1, 2].map((i) => (
-                      <div key={i} className="h-12 rounded-lg bg-muted" />
-                    ))}
+                    <div className="rounded-lg border border-border bg-card p-3">
+                      <div className="text-[11px] text-muted-foreground">{t("heroMock.meals.breakfast")}</div>
+                      <div className="mt-2 text-sm font-semibold">300 kcal</div>
+                      <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: "40%" }} />
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-border bg-card p-3">
+                      <div className="text-[11px] text-muted-foreground">{t("heroMock.meals.lunch")}</div>
+                      <div className="mt-2 text-sm font-semibold">510 kcal</div>
+                      <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: "68%" }} />
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-border bg-card p-3">
+                      <div className="text-[11px] text-muted-foreground">{t("heroMock.meals.dinner")}</div>
+                      <div className="mt-2 text-sm font-semibold">210 kcal</div>
+                      <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-primary" style={{ width: "28%" }} />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <Button onClick={() => navigate("/demo")} className="w-full">
@@ -268,9 +337,85 @@ export const LandingPage = () => {
                 <CardTitle className="text-base">{t("explore.galleryTitle")}</CardTitle>
                 <CardDescription>{t("explore.galleryBody")}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="h-20 rounded-xl bg-muted" />
-                <div className="h-20 rounded-xl bg-muted" />
+              <CardContent className="space-y-3">
+                <div className="rounded-xl border border-border bg-background/70 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center ring-1 ring-primary/15">
+                        <LayoutDashboard className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold leading-none">
+                          {t("explore.galleryMock.patientTitle")}
+                        </div>
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          {t("explore.galleryMock.patientSubtitle")}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-[11px]">
+                      {t("heroMock.today")}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {[
+                      { label: t("explore.galleryMock.kcal"), value: "1,020" },
+                      { label: t("explore.galleryMock.protein"), value: "78g" },
+                      { label: t("explore.galleryMock.steps"), value: "6.2k" },
+                    ].map((m) => (
+                      <div key={m.label} className="rounded-lg border border-border bg-card p-2">
+                        <div className="text-[10px] text-muted-foreground">{m.label}</div>
+                        <div className="mt-1 text-sm font-semibold">{m.value}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {[
+                      {
+                        key: "breakfast",
+                        label: t("heroMock.meals.breakfast"),
+                        items: [t("heroMock.items.oats"), t("heroMock.items.banana")],
+                        width: "46%",
+                      },
+                      {
+                        key: "lunch",
+                        label: t("heroMock.meals.lunch"),
+                        items: [t("heroMock.items.chicken"), t("heroMock.items.salad")],
+                        width: "62%",
+                      },
+                    ].map((row) => (
+                      <div key={row.key} className="rounded-lg border border-border bg-card p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[11px] font-medium">{row.label}</div>
+                          <div className="text-[11px] text-muted-foreground truncate">
+                            {row.items.join(" · ")}
+                          </div>
+                        </div>
+                        <div className="mt-2 h-2 w-full rounded-full bg-muted overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: row.width }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border bg-background/70 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold">{t("explore.galleryMock.weekTitle")}</div>
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="mt-3 grid grid-cols-7 gap-1 items-end">
+                    {[18, 26, 22, 30, 24, 28, 32].map((h, i) => (
+                      <div key={i} className="rounded-md bg-primary/30" style={{ height: `${h}px` }} />
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>{t("heroMock.weekStart")}</span>
+                    <span>{t("heroMock.weekEnd")}</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -279,9 +424,71 @@ export const LandingPage = () => {
                 <CardTitle className="text-base">{t("explore.nutritionistTitle")}</CardTitle>
                 <CardDescription>{t("explore.nutritionistBody")}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="h-20 rounded-xl bg-muted" />
-                <div className="h-20 rounded-xl bg-muted" />
+              <CardContent className="space-y-3">
+                <div className="rounded-xl border border-border bg-background/70 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center ring-1 ring-primary/15">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold leading-none">
+                          {t("explore.nutriMock.title")}
+                        </div>
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          {t("explore.nutriMock.subtitle")}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[11px]">
+                      {t("explore.nutriMock.badge")}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {[
+                      { name: "Andrea M.", status: t("explore.nutriMock.statusOk"), note: t("explore.nutriMock.noteOk") },
+                      { name: "Luis R.", status: t("explore.nutriMock.statusReview"), note: t("explore.nutriMock.noteReview") },
+                      { name: "Sofía G.", status: t("explore.nutriMock.statusNew"), note: t("explore.nutriMock.noteNew") },
+                    ].map((p) => (
+                      <div key={p.name} className="rounded-lg border border-border bg-card p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 ring-1 ring-primary/15 flex items-center justify-center text-xs font-semibold text-primary">
+                              {p.name.split(" ").map((x) => x[0]).join("")}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{p.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{p.note}</div>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-[11px] whitespace-nowrap">
+                            {p.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border bg-background/70 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold">{t("explore.nutriMock.adjustmentsTitle")}</div>
+                    <ClipboardList className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="mt-3 space-y-2 text-sm">
+                    {[
+                      t("explore.nutriMock.adjust1"),
+                      t("explore.nutriMock.adjust2"),
+                      t("explore.nutriMock.adjust3"),
+                    ].map((a) => (
+                      <div key={a} className="flex items-start gap-2 rounded-lg border border-border bg-card p-2">
+                        <div className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                        <div className="text-[13px] leading-relaxed">{a}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -291,24 +498,12 @@ export const LandingPage = () => {
                 <CardDescription>{t("explore.videoBody")}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      {t("explore.videoCta")}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>{t("explore.videoTitle")}</DialogTitle>
-                      <DialogDescription>
-                        {t("explore.videoPlaceholderBody")}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="aspect-video rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
-                      {t("explore.videoPlaceholderTitle")}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button variant="outline" className="w-full justify-between" asChild>
+                  <Link to="/tour">
+                    {t("explore.videoCta")}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -362,13 +557,13 @@ export const LandingPage = () => {
               © {new Date().getFullYear()} {t("brand")}
             </div>
             <div className="flex items-center gap-4 text-sm">
-              <a className="text-muted-foreground hover:text-foreground" href="#">
+              <Link className="text-muted-foreground hover:text-foreground" to="/terms">
                 {t("footer.terms")}
-              </a>
-              <a className="text-muted-foreground hover:text-foreground" href="#">
+              </Link>
+              <Link className="text-muted-foreground hover:text-foreground" to="/privacy">
                 {t("footer.privacy")}
-              </a>
-              <a className="text-muted-foreground hover:text-foreground" href="#">
+              </Link>
+              <a className="text-muted-foreground hover:text-foreground" href="mailto:support@healthcore-lift.me">
                 {t("footer.contact")}
               </a>
             </div>

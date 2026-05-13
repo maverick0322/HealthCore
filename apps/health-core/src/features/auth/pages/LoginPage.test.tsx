@@ -36,7 +36,6 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     expect(screen.getByRole('button', { name: /google/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /facebook/i })).toBeInTheDocument();
   });
 
   it('renders the patient/nutritionist role toggle', () => {

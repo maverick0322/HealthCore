@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useWeightHistory, transformWeightDataForChart } from './useWeightHistory';
 import * as clinicalServiceModule from '@/features/clinical/services/clinicalService';
+import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
 vi.mock('@/features/clinical/services/clinicalService');
 vi.mock('@tanstack/react-query', () => ({
@@ -25,6 +26,19 @@ vi.mock('@tanstack/react-query', () => ({
 describe('useWeightHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useAuthStore.setState({
+      user: {
+        email: 'patient@example.com',
+        role: 'PATIENT',
+        provider: 'LOCAL',
+        emailVerified: true,
+        enabled: true,
+      },
+    } as any);
+  });
+
+  afterEach(() => {
+    useAuthStore.setState({ user: null } as any);
   });
 
   it('should fetch weight history successfully', async () => {

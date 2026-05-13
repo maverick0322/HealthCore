@@ -106,6 +106,10 @@ export const PatientProfilePage = () => {
     navigate("/onboarding/patient");
   };
 
+  const handleChangePassword = () => {
+    navigate("/forgot-password", { state: { email: user?.email } });
+  };
+
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
       {/* ── Responsive Nav (sidebar desktop / bottom bar mobile) ── */}
@@ -354,6 +358,7 @@ export const PatientProfilePage = () => {
                 icon={<KeyRound size={16} className="text-primary" />}
                 label={t("profile.changePassword")}
                 desc={t("profile.changePasswordDesc")}
+                onClick={handleChangePassword}
               />
             )}
             {/* Disable notifications */}
@@ -439,18 +444,20 @@ interface ActionRowProps {
   icon: React.ReactNode;
   label: string;
   desc?: string;
+  onClick?: () => void;
 }
 
 /**
  * Tappable row for account actions (non-functional — UI only).
  * Styled as a list item with a trailing chevron to communicate interactivity.
  */
-const ActionRow = ({ id, icon, label, desc }: ActionRowProps) => (
+const ActionRow = ({ id, icon, label, desc, onClick }: ActionRowProps) => (
   <button
     id={id}
     type="button"
     className="w-full flex items-center gap-3 py-3 px-1 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left group"
-    disabled
+    onClick={onClick}
+    disabled={!onClick}
     aria-label={label}
   >
     <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">

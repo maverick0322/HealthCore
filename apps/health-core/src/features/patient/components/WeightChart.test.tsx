@@ -62,8 +62,8 @@ describe('WeightChart', () => {
     render(<WeightChart />);
 
     expect(screen.getByText('Weight Evolution')).toBeInTheDocument();
-    expect(screen.getByText(/80/)).toBeInTheDocument();
-    expect(screen.getByText(/78.5/)).toBeInTheDocument();
+    expect(screen.getByText('80.0 kg')).toBeInTheDocument();
+    expect(screen.getAllByText('78.5 kg').length).toBeGreaterThanOrEqual(1);
   });
 
   it('should display weight statistics correctly', () => {
@@ -78,10 +78,8 @@ describe('WeightChart', () => {
 
     // Start weight (first entry)
     expect(screen.getByText('80.0 kg')).toBeInTheDocument();
-    // Current weight (last entry)
-    expect(screen.getByText('78.5 kg')).toBeInTheDocument();
-    // Min weight
-    expect(screen.getByText('78.5 kg')).toBeInTheDocument();
+    // Current weight (last entry) + Min weight can be the same number
+    expect(screen.getAllByText('78.5 kg')).toHaveLength(2);
   });
 
   it('should show weight lost message when weight decreased', () => {

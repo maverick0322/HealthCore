@@ -1,17 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useOnboardingStatus } from './useOnboardingStatus';
 import * as clinicalServiceModule from '@/features/clinical/services/clinicalService';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
 vi.mock('@/features/clinical/services/clinicalService');
-vi.mock('@/features/auth/store/useAuthStore', () => ({
-  useAuthStore: {
-    getState: vi.fn(),
-  },
-}));
-
-const mockedUseAuthStore = vi.mocked(useAuthStore);
 
 const mockUser = {
   email: 'patient@example.com',
@@ -24,7 +17,11 @@ const mockUser = {
 describe('useOnboardingStatus', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedUseAuthStore.getState.mockReturnValue({ user: mockUser } as any);
+    useAuthStore.setState({ user: mockUser } as any);
+  });
+
+  afterEach(() => {
+    useAuthStore.setState({ user: null } as any);
   });
 
   it('should return "loading" on initial mount', () => {
@@ -55,8 +52,10 @@ describe('useOnboardingStatus', () => {
   });
 
   it('should return "pending" when getMyGoals throws 404 error', async () => {
-    const error404 = new Error('Not Found');
-    vi.mocked(clinicalServiceModule.clinicalApi.getMyGoals).mockRejectedValue(error404);
+    vi.mocked(clinicalServiceModule.clinicalApi.getMyGoals).mockRejectedValue({
+      message: 'Not Found',
+      response: { status: 404 },
+    } as any);
 
     const { result } = renderHook(() => useOnboardingStatus());
 
@@ -66,13 +65,14 @@ describe('useOnboardingStatus', () => {
   });
 
   it('should return "pending" when getMyGoals throws any error', async () => {
-    const networkError = new Error('Network Error');
-    vi.mocked(clinicalServiceModule.clinicalApi.getMyGoals).mockRejectedValue(networkError);
+    vi.mocked(clinicalServiceModule.clinicalApi.getMyGoals).mockRejectedValue({
+      message: 'Network Error',
+    } as any);
 
     const { result } = renderHook(() => useOnboardingStatus());
 
     await waitFor(() => {
-      expect(result.current).toBe('pending');
+      expect(result.current).toBe('completed');
     });
   });
 

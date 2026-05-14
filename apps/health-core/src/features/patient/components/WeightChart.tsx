@@ -20,7 +20,6 @@ export const WeightChart = () => {
   const { t } = useTranslation('patient');
   const { isLoading, isError, data, refetch } = useWeightHistory();
 
-
   // Calculate statistics
   const stats = useMemo(() => {
     if (!data || data.length === 0) {

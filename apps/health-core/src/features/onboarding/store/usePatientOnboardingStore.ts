@@ -1,66 +1,89 @@
 import { create } from 'zustand';
 
-export type GoalType = 'weight-loss' | 'muscle-gain' | 'health' | 'performance';
-export type DietType = 'omnivore' | 'vegetarian' | 'vegan' | 'keto' | 'paleo';
-export type GenderType = 'MALE' | 'FEMALE';
-export type ActivityLevelType = 'SEDENTARY' | 'LIGHTLY_ACTIVE' | 'MODERATELY_ACTIVE' | 'VERY_ACTIVE' | 'EXTRA_ACTIVE';
+import type {
+  ActivityLevel,
+  Allergy,
+  CreateProfilePayload,
+  DietType,
+  Gender,
+  PatientGoal,
+} from '@/features/clinical/types/clinical.types';
 
-interface PhysicalData {
-  age: number;
-  height: number;
-  weight: number;
-  gender: GenderType;          
-  activityLevel: ActivityLevelType;
+interface PatientIdentityData {
+  firstName: string;
+  paternalLastName: string;
+  maternalLastName: string;
 }
 
-interface Preferences {
+interface PatientPhysicalData {
+  birthDate: string;
+  heightCm: number;
+  weightKg: number;
+  gender: Gender;
+  activityLevel: ActivityLevel;
+}
+
+interface PatientPreferences {
   dietType: DietType;
-  allergies: string[];
+  allergies: Allergy[];
   excludedFoods: string[];
 }
 
 interface PatientOnboardingState {
   step: number;
-  physical: PhysicalData;
-  goal: GoalType;
-  preferences: Preferences;
+  identity: PatientIdentityData;
+  physical: PatientPhysicalData;
+  goal: PatientGoal;
+  preferences: PatientPreferences;
+  hasExistingProfile: boolean;
 
-  // Actions
   setStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
-  setPhysicalData: (data: Partial<PhysicalData>) => void;
-  setGoal: (goal: GoalType) => void;
-  setPreferences: (data: Partial<Preferences>) => void;
-  toggleAllergy: (allergy: string) => void;
+  setIdentityData: (data: Partial<PatientIdentityData>) => void;
+  setPhysicalData: (data: Partial<PatientPhysicalData>) => void;
+  setGoal: (goal: PatientGoal) => void;
+  setPreferences: (data: Partial<PatientPreferences>) => void;
+  toggleAllergy: (allergy: Allergy) => void;
   addExcludedFood: (food: string) => void;
   removeExcludedFood: (food: string) => void;
+  hydrateFromProfile: (profile: CreateProfilePayload, hasExistingProfile: boolean) => void;
+  setHasExistingProfile: (hasExistingProfile: boolean) => void;
   reset: () => void;
 }
 
 const initialState = {
   step: 1,
-  physical: {
-    age: 25,
-    height: 175,
-    weight: 72.5,
-    gender: 'MALE' as GenderType,           
-    activityLevel: 'SEDENTARY' as ActivityLevelType
+  identity: {
+    firstName: '',
+    paternalLastName: '',
+    maternalLastName: '',
   },
-  goal: 'weight-loss' as GoalType,
+  physical: {
+    birthDate: '',
+    heightCm: 175,
+    weightKg: 72.5,
+    gender: 'MALE' as Gender,
+    activityLevel: 'SEDENTARY' as ActivityLevel,
+  },
+  goal: 'weight-loss' as PatientGoal,
   preferences: {
     dietType: 'omnivore' as DietType,
-    allergies: [],
+    allergies: [] as Allergy[],
     excludedFoods: [],
   },
+  hasExistingProfile: false,
 };
 
 export const usePatientOnboardingStore = create<PatientOnboardingState>((set) => ({
   ...initialState,
 
   setStep: (step) => set({ step }),
-  nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 4) })),
+  nextStep: () => set((state) => ({ step: Math.min(state.step + 1, 5) })),
   prevStep: () => set((state) => ({ step: Math.max(state.step - 1, 1) })),
+
+  setIdentityData: (data) =>
+    set((state) => ({ identity: { ...state.identity, ...data } })),
 
   setPhysicalData: (data) =>
     set((state) => ({ physical: { ...state.physical, ...data } })),
@@ -74,18 +97,23 @@ export const usePatientOnboardingStore = create<PatientOnboardingState>((set) =>
     set((state) => {
       const exists = state.preferences.allergies.includes(allergy);
       const allergies = exists
-        ? state.preferences.allergies.filter((a) => a !== allergy)
+        ? state.preferences.allergies.filter((item) => item !== allergy)
         : [...state.preferences.allergies, allergy];
+
       return { preferences: { ...state.preferences, allergies } };
     }),
 
   addExcludedFood: (food) =>
     set((state) => {
-      if (state.preferences.excludedFoods.includes(food)) return state;
+      const normalized = food.trim();
+      if (!normalized || state.preferences.excludedFoods.includes(normalized)) {
+        return state;
+      }
+
       return {
         preferences: {
           ...state.preferences,
-          excludedFoods: [...state.preferences.excludedFoods, food],
+          excludedFoods: [...state.preferences.excludedFoods, normalized],
         },
       };
     }),
@@ -94,9 +122,35 @@ export const usePatientOnboardingStore = create<PatientOnboardingState>((set) =>
     set((state) => ({
       preferences: {
         ...state.preferences,
-        excludedFoods: state.preferences.excludedFoods.filter((f) => f !== food),
+        excludedFoods: state.preferences.excludedFoods.filter((item) => item !== food),
       },
     })),
+
+  hydrateFromProfile: (profile, hasExistingProfile) =>
+    set({
+      step: 1,
+      identity: {
+        firstName: profile.firstName,
+        paternalLastName: profile.paternalLastName,
+        maternalLastName: profile.maternalLastName ?? '',
+      },
+      physical: {
+        birthDate: profile.birthDate,
+        heightCm: profile.heightCm,
+        weightKg: profile.weightKg,
+        gender: profile.gender,
+        activityLevel: profile.activityLevel,
+      },
+      goal: profile.goal,
+      preferences: {
+        dietType: profile.dietType,
+        allergies: profile.allergies,
+        excludedFoods: profile.excludedFoods,
+      },
+      hasExistingProfile,
+    }),
+
+  setHasExistingProfile: (hasExistingProfile) => set({ hasExistingProfile }),
 
   reset: () => set(initialState),
 }));

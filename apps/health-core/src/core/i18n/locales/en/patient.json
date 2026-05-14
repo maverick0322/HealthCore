@@ -233,5 +233,32 @@
     "substitutions": "Allowed substitutions",
     "waterGoal": "Hydration goal: {{count}} glasses",
     "downloadPdf": "Download PDF"
+  },
+  "linking": {
+    "title": "Link Nutritionist",
+    "description": "Enter the code provided by your nutritionist or scan their QR code.",
+    "inputPlaceholder": "E.g. AB12CD",
+    "connectButton": "Link now",
+    "startScan": "Scan QR Code",
+    "stopScan": "Stop Camera",
+    "invalidCodeFormat": "The code must be exactly 6 characters.",
+    "success": "Successfully linked with your nutritionist!",
+    "error": "Invalid or expired code.",
+    "cameraError": "Could not access the camera. Please check your browser permissions.",
+    "linkNutritionist": "Link with Nutritionist",
+    "linkDesc": "Scan QR or enter code",
+    "unlinkNutritionist": "Unlink Nutritionist",
+    "unlinkDesc": "Break the current relationship",
+    "unlink": "Unlink",
+    "unlinkSuccess": "You have successfully unlinked from your nutritionist.",
+    "confirmUnlink": "Unlink from your nutritionist?",
+    "confirmUnlinkDesc": "This action will break the relationship with your current nutritionist. You can link with another one whenever you want.",
+    "alreadyLinked": "You are already linked to a nutritionist.",
+    "alreadyLinkedDesc": "To link with another nutritionist, you must first unlink from the current one.",
+    "unlinkFirst": "You must unlink from your previous nutritionist first."
+  },
+  "common": {
+    "back": "Back",
+    "or": "OR"
   }
 }

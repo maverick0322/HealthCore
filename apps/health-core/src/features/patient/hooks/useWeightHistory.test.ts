@@ -22,6 +22,14 @@ vi.mock('@tanstack/react-query', () => ({
   }),
 }));
 
+vi.mock('@/features/auth/store/useAuthStore', () => ({
+  useAuthStore: {
+    getState: vi.fn(() => ({
+      user: { email: 'patient@example.com' }
+    }))
+  }
+}));
+
 describe('useWeightHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -87,7 +95,6 @@ describe('transformWeightDataForChart', () => {
 
     const result = transformWeightDataForChart(input);
 
-    // Spanish locale date format
     expect(result[0].date).toMatch(/\d+\s+\w+/);
   });
 });

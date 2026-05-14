@@ -1,24 +1,22 @@
 import { useEffect, useState } from 'react';
+
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 
 export type OnboardingStatus = 'loading' | 'completed' | 'pending';
 
-/**
- * Hook that checks if the user has already completed onboarding
- * by attempting to fetch their clinical profile.
- *
- * Only attempts to check if the user has a valid access token.
- * If authentication is not available, defaults to 'pending'.
- *
- * @returns {OnboardingStatus} The current onboarding status:
- * - 'loading': Still checking the backend or waiting for auth
- * - 'completed': User has a clinical profile (onboarding done)
- * - 'pending': User doesn't have a clinical profile yet
- */
+const resolveOnboardingStatus = async (role: 'PATIENT' | 'NUTRITIONIST'): Promise<OnboardingStatus> => {
+  if (role === 'PATIENT') {
+    const profile = await clinicalApi.getMyProfile();
+    return profile.profileCompleted ? 'completed' : 'pending';
+  }
+
+  const profile = await clinicalApi.getMyNutritionistProfile();
+  return profile.profileCompleted ? 'completed' : 'pending';
+};
+
 export const useOnboardingStatus = (): OnboardingStatus => {
   const [status, setStatus] = useState<OnboardingStatus>('loading');
-  
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
@@ -27,25 +25,33 @@ export const useOnboardingStatus = (): OnboardingStatus => {
       return;
     }
 
+    const role = user.role;
+    if (role !== 'PATIENT' && role !== 'NUTRITIONIST') {
+      setStatus('completed');
+      return;
+    }
+
+    let isMounted = true;
+
     const checkOnboardingStatus = async () => {
       try {
-        await clinicalApi.getMyGoals(user.email);
-        setStatus('completed');
-      } catch (error: any) {
-        const errStatus = error.response?.status;
-        
-        if (errStatus === 404) {
-          setStatus('pending');
-        } else if (errStatus === 401 || errStatus === 403) {
-          setStatus('loading');
-        } else {
-          console.warn('[useOnboardingStatus] Unexpected error checking onboarding status:', error.message);
-          setStatus('completed');
+        const resolvedStatus = await resolveOnboardingStatus(role);
+        if (isMounted) {
+          setStatus(resolvedStatus);
+        }
+      } catch (error) {
+        const errStatus = (error as { response?: { status?: number } })?.response?.status;
+        if (isMounted) {
+          setStatus(errStatus === 404 || errStatus === 401 || errStatus === 403 ? 'pending' : 'pending');
         }
       }
     };
 
-    checkOnboardingStatus();
+    void checkOnboardingStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   return status;

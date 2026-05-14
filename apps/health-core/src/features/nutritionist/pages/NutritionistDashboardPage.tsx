@@ -14,6 +14,8 @@ import { NutritionistNav } from "@/features/nutritionist/components/Nutritionist
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
+import { clinicalApi } from "@/features/clinical/services/clinicalService";
+import { useEffect, useState } from "react";
 
 // ── Dummy data ─────────────────────────────────────────────────────────────
 
@@ -34,7 +36,22 @@ const DUMMY_AGENDA = [
 
 export const NutritionistDashboardPage = () => {
   const { t } = useTranslation("nutritionist");
-  const displayName = "Daniel"; // Would come from auth context
+  const [displayName, setDisplayName] = useState("Profesional");
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await clinicalApi.getMyNutritionistProfile();
+        if (profile.fullName) {
+          setDisplayName(profile.fullName.split(" ")[0] ?? profile.fullName);
+        }
+      } catch {
+        setDisplayName("Profesional");
+      }
+    };
+
+    void loadProfile();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

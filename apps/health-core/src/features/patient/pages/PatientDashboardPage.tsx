@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -61,6 +62,10 @@ export const PatientDashboardPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("patient");
   const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    console.info('[PatientDashboardPage] Render', { role: user?.role });
+  }, [user]);
 
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
   return (

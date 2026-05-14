@@ -5,6 +5,15 @@ import { GuestRoute } from './GuestRoute';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { Route, Routes } from 'react-router-dom';
 
+const mockAuthenticatedUser = {
+  id: 'user-1',
+  email: 'patient@example.com',
+  role: 'PATIENT' as const,
+  provider: 'LOCAL' as const,
+  emailVerified: true,
+  enabled: true,
+};
+
 // Helper to render a route guard with a dummy child route
 const renderGuard = (
   Guard: typeof ProtectedRoute | typeof GuestRoute,
@@ -34,12 +43,11 @@ describe('ProtectedRoute', () => {
   });
 
   it('renders children when authenticated', () => {
-    useAuthStore.getState().setTokens({
+    useAuthStore.setState({
       accessToken: 'at-123',
       refreshToken: 'rt-456',
-      tokenType: 'Bearer',
-      accessTokenExpiresInMs: 300000,
-      refreshTokenExpiresInMs: 86400000,
+      isAuthenticated: true,
+      user: mockAuthenticatedUser,
     });
 
     renderGuard(ProtectedRoute, '/dashboard', ['/dashboard']);
@@ -58,12 +66,11 @@ describe('GuestRoute', () => {
   });
 
   it('redirects to / when authenticated', () => {
-    useAuthStore.getState().setTokens({
+    useAuthStore.setState({
       accessToken: 'at-123',
       refreshToken: 'rt-456',
-      tokenType: 'Bearer',
-      accessTokenExpiresInMs: 300000,
-      refreshTokenExpiresInMs: 86400000,
+      isAuthenticated: true,
+      user: mockAuthenticatedUser,
     });
 
     renderGuard(GuestRoute, '/signup', ['/signup']);

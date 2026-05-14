@@ -32,11 +32,10 @@ describe('LoginPage', () => {
     expect(link).toHaveAttribute('href', '/signup');
   });
 
-  it('renders Google and Facebook buttons', () => {
+  it('renders the social login button', () => {
     render(<LoginPage />);
 
     expect(screen.getByRole('button', { name: /google/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /facebook/i })).toBeInTheDocument();
   });
 
   it('renders the patient/nutritionist role toggle', () => {

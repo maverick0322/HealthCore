@@ -29,11 +29,17 @@
     "title": "My Patients",
     "subtitle": "Manage and track your patients.",
     "searchPlaceholder": "Search patient by name...",
+    "loading": "Loading linked patients...",
+    "error": "Unable to load linked patients.",
+    "empty": "No linked patients were found.",
+    "lastVisitPlaceholder": "New",
+    "objectivePlaceholder": "Clinical profile",
     "filters": {
       "all": "All",
       "active": "Active",
       "pendingReview": "Pending Review"
     },
+    "addPatient": "Add Patient",
     "viewFile": "View File",
     "lastVisit": "Last visit: {{date}}",
     "file": {
@@ -46,7 +52,22 @@
       "height": "Height",
       "objective": "Objective",
       "editPlan": "Edit Diet Plan",
-      "newNote": "Add Note"
+      "viewPlan": "View Detailed Plan",
+      "planSummaryTitle": "Plan Summary",
+      "currentPlanLabel": "Current Plan",
+      "planPlaceholder": "Clinical profile",
+      "planDescription": "Connect this area to the patient's nutrition plan.",
+      "planUpdatedPlaceholder": "Updated: New",
+      "newNote": "Add Note",
+      "newNotePlaceholder": "Write a new clinical note or comment...",
+      "saveObservation": "Save Observation",
+      "noObservations": "No observations registered yet",
+      "loading": "Loading file...",
+      "error": "Unable to load the patient file.",
+      "statusActive": "Active",
+      "confirmUnlink": "Are you sure you want to unlink this patient? You will lose access to their file",
+      "unlink": "Unlink",
+      "unlinkTitle": "Unlink Patient"
     }
   },
   "agenda": {
@@ -133,11 +154,32 @@
   "profile": {
     "title": "My Profile",
     "subtitle": "Manage your public and professional information.",
+    "contactInfo": "Contact information",
+    "credentials": "Credentials",
     "specialty": "Specialty",
     "license": "Professional License",
     "bio": "Professional Bio",
     "consultationType": "Consultation Type",
     "editProfile": "Edit Profile",
-    "saveProfile": "Save Profile"
+    "saveProfile": "Save Profile",
+    "pendingProfile": "Professional profile pending",
+    "noPhone": "No phone registered",
+    "noAddress": "No address registered",
+    "noConsultationTypes": "No consultation types registered",
+    "completeBioPrompt": "Add your professional bio to complete your profile.",
+    "logout": "Log out"
+  },
+  "common": {
+    "backToPatients": "Back to Patients",
+    "cancel": "Cancel"
+  },
+  "linking": {
+    "title": "Link Patient",
+    "description": "Ask your patient to scan this QR or enter the alphanumeric code in their app.",
+    "expiredTitle": "QR time has run out",
+    "expiredDesc": "For security reasons, the previous code has been invalidated.",
+    "generateNewBtn": "Generate new code",
+    "manualCodeLabel": "Manual Backup Code",
+    "expiresIn": "Code expires in"
   }
 }

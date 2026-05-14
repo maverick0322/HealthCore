@@ -3,34 +3,48 @@ package com.healthcore.clinical.infrastructure.rest.dto;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
+import java.util.List;
 
-/**
- * Request DTO para crear un nuevo perfil clínico de paciente.
- * 
- * Validaciones:
- * - Peso: Entre 30.0 kg y 300.0 kg
- * - Altura: Entre 50.0 cm y 250.0 cm
- * - Todos los campos son obligatorios
- */
 public record CreateProfileRequest(
-    @NotNull(message = "Peso es requerido")
-    @DecimalMin(value = "30.0", message = "Peso mínimo permitido es 30.0 kg")
-    @DecimalMax(value = "300.0", message = "Peso máximo permitido es 300.0 kg")
-    Double weightKg,
+        @NotBlank(message = "First name is required")
+        String firstName,
 
-    @NotNull(message = "Altura es requerida")
-    @DecimalMin(value = "50.0", message = "Altura mínima permitida es 50.0 cm")
-    @DecimalMax(value = "250.0", message = "Altura máxima permitida es 250.0 cm")
-    Double heightCm,
+        @NotBlank(message = "Paternal last name is required")
+        String paternalLastName,
 
-    @NotNull(message = "Fecha de nacimiento es requerida")
-    LocalDate birthDate,
+        String maternalLastName,
 
-    @NotBlank(message = "Género es requerido")
-    String gender,
+        @NotNull(message = "Weight is required")
+        @DecimalMin(value = "40.0", message = "Weight must be at least 40.0 kg")
+        @DecimalMax(value = "200.0", message = "Weight must be at most 200.0 kg")
+        Double weightKg,
 
-    @NotBlank(message = "Nivel de actividad es requerido")
-    String activityLevel
-) {}
+        @NotNull(message = "Height is required")
+        @DecimalMin(value = "100.0", message = "Height must be at least 100 cm")
+        @DecimalMax(value = "250.0", message = "Height must be at most 250 cm")
+        Double heightCm,
+
+        @NotNull(message = "Birth date is required")
+        LocalDate birthDate,
+
+        @NotBlank(message = "Gender is required")
+        String gender,
+
+        @NotBlank(message = "Activity level is required")
+        String activityLevel,
+
+        @NotBlank(message = "Goal is required")
+        String goal,
+
+        @NotBlank(message = "Diet type is required")
+        String dietType,
+
+        List<String> allergies,
+
+        List<String> excludedFoods
+) {
+}

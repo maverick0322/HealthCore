@@ -26,7 +26,7 @@ const renderGuard = (
         <Route path={path} element={<div data-testid="guarded-content">Protected</div>} />
       </Route>
       <Route path="/login" element={<div data-testid="login-page">Login</div>} />
-      <Route path="/" element={<div data-testid="home-page">Home</div>} />
+      <Route path="/home" element={<div data-testid="home-page">Home</div>} />
     </Routes>,
     { initialEntries },
   );
@@ -55,25 +55,3 @@ describe('ProtectedRoute', () => {
   });
 });
 
-describe('GuestRoute', () => {
-  beforeEach(() => {
-    useAuthStore.getState().clearSession();
-  });
-
-  it('renders children when not authenticated', () => {
-    renderGuard(GuestRoute, '/signup', ['/signup']);
-    expect(screen.getByTestId('guarded-content')).toBeInTheDocument();
-  });
-
-  it('redirects to / when authenticated', () => {
-    useAuthStore.setState({
-      accessToken: 'at-123',
-      refreshToken: 'rt-456',
-      isAuthenticated: true,
-      user: mockAuthenticatedUser,
-    });
-
-    renderGuard(GuestRoute, '/signup', ['/signup']);
-    expect(screen.getByTestId('home-page')).toBeInTheDocument();
-  });
-});

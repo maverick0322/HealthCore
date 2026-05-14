@@ -1,38 +1,70 @@
-import { createBrowserRouter } from 'react-router-dom';
-import { GuestRoute } from '@/core/routes/GuestRoute';
-import { NutritionistOnboardingGuard } from '@/core/routes/NutritionistOnboardingGuard';
-import { OnboardingGuard } from '@/core/routes/OnboardingGuard';
-import { PatientOnboardingGuard } from '@/core/routes/PatientOnboardingGuard';
-import { ProtectedRoute } from '@/core/routes/ProtectedRoute';
-import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage';
-import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
-import { LoginPage } from '@/features/auth/pages/LoginPage';
-import { OAuth2CallbackPage } from '@/features/auth/pages/OAuth2CallbackPage';
-import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage';
-import { SignUpPage } from '@/features/auth/pages/SignUpPage';
-import { VerifyCodePage } from '@/features/auth/pages/VerifyCodePage';
-import { HomePage } from '@/features/dashboard/pages/HomePage';
-import { NutritionistAgendaPage } from '@/features/nutritionist/pages/NutritionistAgendaPage';
-import { NutritionistAvailabilityPage } from '@/features/nutritionist/pages/NutritionistAvailabilityPage';
-import { NutritionistDashboardPage } from '@/features/nutritionist/pages/NutritionistDashboardPage';
-import { NutritionistGenerateQrPage } from '@/features/nutritionist/pages/NutritionistGenerateQrPage';
-import { NutritionistPatientFilePage } from '@/features/nutritionist/pages/NutritionistPatientFilePage';
-import { NutritionistPatientsPage } from '@/features/nutritionist/pages/NutritionistPatientsPage';
-import { NutritionistProfilePage } from '@/features/nutritionist/pages/NutritionistProfilePage';
-import { NutritionistReportsPage } from '@/features/nutritionist/pages/NutritionistReportsPage';
-import { NutritionistOnboardingPage } from '@/features/onboarding/pages/NutritionistOnboardingPage';
-import { PatientOnboardingPage } from '@/features/onboarding/pages/PatientOnboardingPage';
-import { PatientAppointmentsPage } from '@/features/patient/pages/PatientAppointmentsPage';
-import { PatientDashboardPage } from '@/features/patient/pages/PatientDashboardPage';
-import { PatientHistoryPage } from '@/features/patient/pages/PatientHistoryPage';
-import { PatientPlanPage } from '@/features/patient/pages/PatientPlanPage';
-import { PatientProfilePage } from '@/features/patient/pages/PatientProfilePage';
-import { PatientScanningPage } from '@/features/patient/pages/PatientScanningPage';
-import { LogFoodPage } from '@/features/tracking/pages/LogFoodPage';
-import { ErrorBoundaryPage } from '@/shared/components/ErrorBoundaryPage';
-import { NotFoundPage } from '@/shared/components/NotFoundPage';
+import { createBrowserRouter } from "react-router-dom";
+import { ProtectedRoute } from "@/core/routes/ProtectedRoute";
+import { GuestRoute } from "@/core/routes/GuestRoute";
+import { OnboardingGuard } from "@/core/routes/OnboardingGuard";
+import { LoginPage } from "@/features/auth/pages/LoginPage";
+import { SignUpPage } from "@/features/auth/pages/SignUpPage";
+import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
+import { VerifyCodePage } from "@/features/auth/pages/VerifyCodePage";
+import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { OAuth2CallbackPage } from "@/features/auth/pages/OAuth2CallbackPage";
+import { PatientOnboardingPage } from "@/features/onboarding/pages/PatientOnboardingPage";
+import { HomePage } from "@/features/dashboard/pages/HomePage";
+import { PatientDashboardPage } from "@/features/patient/pages/PatientDashboardPage";
+import { PatientHistoryPage } from "@/features/patient/pages/PatientHistoryPage";
+import { PatientAppointmentsPage } from "@/features/patient/pages/PatientAppointmentsPage";
+import { PatientPlanPage } from "@/features/patient/pages/PatientPlanPage";
+import { PatientProfilePage } from "@/features/patient/pages/PatientProfilePage";
+import { NutritionistDashboardPage } from "@/features/nutritionist/pages/NutritionistDashboardPage";
+import { NutritionistPatientsPage } from "@/features/nutritionist/pages/NutritionistPatientsPage";
+import { NutritionistPatientFilePage } from "@/features/nutritionist/pages/NutritionistPatientFilePage";
+import { NutritionistAgendaPage } from "@/features/nutritionist/pages/NutritionistAgendaPage";
+import { NutritionistReportsPage } from "@/features/nutritionist/pages/NutritionistReportsPage";
+import { NutritionistAvailabilityPage } from "@/features/nutritionist/pages/NutritionistAvailabilityPage";
+import { NutritionistProfilePage } from "@/features/nutritionist/pages/NutritionistProfilePage";
+import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
+import { NotFoundPage } from "@/shared/components/NotFoundPage";
+import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
+import { LogFoodPage } from "@/features/tracking/pages/LogFoodPage";
+import { LandingPage } from "@/features/marketing/pages/LandingPage";
+import { DemoPage } from "@/features/marketing/pages/DemoPage";
+import { TermsPage } from "@/features/marketing/pages/TermsPage";
+import { PrivacyPage } from "@/features/marketing/pages/PrivacyPage";
+import { TourPage } from "@/features/marketing/pages/TourPage";
+import { PatientOnboardingGuard } from "@/core/routes/PatientOnboardingGuard";
+import { NutritionistOnboardingGuard } from "@/core/routes/NutritionistOnboardingGuard";
+import { PatientScanningPage } from "@/features/patient/pages/PatientScanningPage";
+import { NutritionistOnboardingPage } from "@/features/onboarding/pages/NutritionistOnboardingPage";
+import {NutritionistGenerateQrPage} from "@/features/nutritionist/pages/NutritionistGenerateQrPage";
 
 export const appRouter = createBrowserRouter([
+  // ── Public marketing routes ──
+  {
+    path: "/",
+    element: <LandingPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/demo",
+    element: <DemoPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/terms",
+    element: <TermsPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/tour",
+    element: <TourPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  // ── Guest-only routes (redirect to /home if already authenticated) ──
   {
     errorElement: <ErrorBoundaryPage />,
     element: <GuestRoute />,
@@ -55,6 +87,27 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         element: <PatientOnboardingGuard />,
+        path: "/home",
+      },
+      {
+        path: "/dashboard/patient",
+        element: <PatientDashboardPage />,
+      },
+      {
+        path: "/history/patient",
+        element: <PatientHistoryPage />,
+      },
+      {
+        path: "/appointments/patient",
+        element: <PatientAppointmentsPage />,
+      },
+      {
+        path: "/plan/patient",
+        element: <PatientPlanPage />,
+      },
+      {
+        path: "/onboarding",
+        element: <OnboardingGuard />,
         children: [
           { path: '/dashboard/patient', element: <PatientDashboardPage /> },
           { path: '/history/patient', element: <PatientHistoryPage /> },

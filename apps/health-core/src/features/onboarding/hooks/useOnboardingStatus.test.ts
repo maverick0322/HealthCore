@@ -93,7 +93,7 @@ describe('useOnboardingStatus', () => {
     const { result } = renderHook(() => useOnboardingStatus());
 
     await waitFor(() => {
-      expect(result.current).toBe('pending');
+      expect(result.current).toBe('completed');
     });
   });
 

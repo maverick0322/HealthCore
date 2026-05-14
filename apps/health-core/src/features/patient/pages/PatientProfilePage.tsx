@@ -129,6 +129,10 @@ export const PatientProfilePage = () => {
     );
   }
 
+  const handleChangePassword = () => {
+    navigate("/forgot-password", { state: { email: user?.email } });
+  };
+
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
       <PatientNav />
@@ -145,7 +149,7 @@ export const PatientProfilePage = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-8">
           <button
             id="btn-back-dashboard"
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/home")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 md:hidden"
           >
             <ChevronLeft size={16} />
@@ -290,8 +294,9 @@ export const PatientProfilePage = () => {
               <ActionRow
                 id="btn-change-password"
                 icon={<KeyRound size={16} className="text-primary" />}
-                label={t('profile.changePassword')}
-                desc={t('profile.changePasswordDesc')}
+                label={t("profile.changePassword")}
+                desc={t("profile.changePasswordDesc")}
+                onClick={handleChangePassword}
               />
             )}
             <ActionRow
@@ -309,8 +314,9 @@ export const PatientProfilePage = () => {
                   label={t('linking.unlinkNutritionist')}
                   desc={t('linking.unlinkDesc')}
                   variant="destructive"
-                  onClick={() => setShowUnlinkDialog(true)}
-                  disabled={isUnlinking}
+                  onClick={() => {
+                    if (!isUnlinking) setShowUnlinkDialog(true);
+                  }}
                 />
               ) : (
                 <ActionRow
@@ -397,27 +403,21 @@ interface ActionRowProps {
   label: string;
   desc?: string;
   onClick?: () => void;
-  disabled?: boolean;
   variant?: 'default' | 'destructive';
 }
 
-const ActionRow = ({
-  id,
-  icon,
-  label,
-  desc,
-  onClick,
-  disabled,
-  variant = 'default',
-}: ActionRowProps) => (
+/**
+ * Tappable row for account actions (non-functional — UI only).
+ * Styled as a list item with a trailing chevron to communicate interactivity.
+ */
+const ActionRow = ({ id, icon, label, desc, onClick, variant = 'default' }: ActionRowProps) => (
   <button
     id={id}
     type="button"
+    className="w-full flex items-center gap-3 py-3 px-1 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left group"
     onClick={onClick}
-    disabled={disabled || !onClick}
-    className={`w-full flex items-center gap-3 py-3 px-1 rounded-lg hover:bg-muted/50 active:bg-muted transition-colors text-left group disabled:opacity-50 disabled:pointer-events-none ${
-      variant === 'destructive' ? 'text-destructive hover:bg-destructive/10' : ''
-    }`}
+    disabled={!onClick}
+    aria-label={label}
   >
     <span
       className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${

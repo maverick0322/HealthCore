@@ -1,3 +1,10 @@
+import { useAuthStore } from "../store/useAuthStore";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { type LoginRequest } from "../types/auth.types";
+import { useTranslation } from "react-i18next";
+import axios from "axios";
+
 export const useLogin = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('auth');
@@ -28,16 +35,7 @@ export const useLogin = () => {
         }
       }
 
-      // Redirect to role dashboard. PatientOnboardingGuard will enforce onboarding.
-      if (currentUser?.role === 'PATIENT') {
-        navigate('/dashboard/patient', { replace: true });
-      } else if (currentUser?.role === 'NUTRITIONIST') {
-        navigate('/dashboard/nutritionist', { replace: true });
-      } else if (currentUser?.role === 'ADMIN') {
-        navigate('/dashboard/admin', { replace: true });
-      } else {
-        navigate('/', { replace: true });
-      }
+      navigate('/home', { replace: true });
     } catch (err: unknown) {
       console.error('[useLogin] Login failed:', err);
       if (axios.isAxiosError(err)) {

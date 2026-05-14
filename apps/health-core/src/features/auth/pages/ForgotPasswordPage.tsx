@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -8,9 +8,16 @@ import { Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { useForgotPassword } from "../hooks/useForgotPassword";
 
+interface LocationState {
+  email?: string;
+}
+
 export const ForgotPasswordPage = () => {
   const { t } = useTranslation("auth");
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const state = (location.state as LocationState) || {};
+
+  const [email, setEmail] = useState(state.email ?? "");
   const { handleForgotPassword, isLoading, error } = useForgotPassword();
 
   const handleSubmit = async (e: React.FormEvent) => {

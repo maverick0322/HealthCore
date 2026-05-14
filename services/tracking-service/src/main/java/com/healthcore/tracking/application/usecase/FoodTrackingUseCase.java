@@ -2,10 +2,12 @@ package com.healthcore.tracking.application.usecase;
 
 import com.healthcore.tracking.domain.exception.InvalidDomainDataException;
 import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
-import com.healthcore.tracking.domain.model.FoodLog;
 import com.healthcore.tracking.domain.model.FoodNutrients;
+import com.healthcore.tracking.domain.model.MealItem;
+import com.healthcore.tracking.domain.model.MealLog;
+import com.healthcore.tracking.domain.model.MealType;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
-import com.healthcore.tracking.domain.port.FoodLogPort;
+import com.healthcore.tracking.domain.port.MealLogPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Primary Application Service (Use Case).
@@ -25,14 +28,14 @@ import java.util.List;
 public class FoodTrackingUseCase {
 
     private final FoodCatalogPort catalogPort;
-    private final FoodLogPort logPort;
-    private final int MIN_SEARCH_QUERY_LENGTH = 3;
+    private final MealLogPort logPort; // Note: You'll need to rename FoodLogPort to MealLogPort
+
+    private static final int MIN_SEARCH_QUERY_LENGTH = 3;
 
     public FoodNutrients getFoodFromCatalog(String barcode) {
         log.debug("Delegating catalog lookup for barcode: {}", barcode);
         return catalogPort.getNutrientsByBarcode(barcode)
-                .orElseThrow(() -> new ResourceNotFoundException("Barcode [" + barcode + "] not found in external " +
-                        "catalog."));
+                .orElseThrow(() -> new ResourceNotFoundException("Barcode [" + barcode + "] not found in external catalog."));
     }
 
     public List<FoodNutrients> searchCatalog(String query) {
@@ -43,21 +46,40 @@ public class FoodTrackingUseCase {
         return catalogPort.searchFoodByName(query);
     }
 
-    public FoodLog logFoodConsumption(String userId, String barcode, double consumedGrams) {
-        log.info("Processing food consumption log for user: {}, barcode: {}", userId, barcode);
+    /**
+     * Registers a complete meal by fetching necessary nutritional data and building the Aggregate.
+     */
+    public MealLog logMealConsumption(String userId, MealType mealType, LocalDateTime consumedAt, String photoKey, List<MealItemCommand> requestedItems) {
+        log.info("Processing meal consumption log for user: {}, mealType: {}, items count: {}", userId, mealType, requestedItems.size());
 
-        FoodNutrients baseNutrients = getFoodFromCatalog(barcode);
-        FoodLog newLog = FoodLog.create(userId, baseNutrients, consumedGrams, LocalDateTime.now());
+        // 1. Fetch nutrients and build MealItems (Children Entities)
+        // Note: Using stream to maintain immutability and functional purity
+        List<MealItem> mealItems = requestedItems.stream()
+                .map(item -> {
+                    FoodNutrients baseNutrients = getFoodFromCatalog(item.barcode());
+                    return MealItem.create(baseNutrients, item.grams());
+                })
+                .collect(Collectors.toList());
 
-        return logPort.save(newLog);
+        // 2. Build the Aggregate Root
+        MealLog newMealLog = MealLog.create(userId, mealType, consumedAt, photoKey, mealItems);
+
+        // 3. Persist the Aggregate
+        return logPort.save(newMealLog);
     }
 
-    public List<FoodLog> getTodayLogs(String userId) {
-        log.debug("Retrieving today's food logs for user: {}", userId);
+    public List<MealLog> getTodayLogs(String userId) {
+        log.debug("Retrieving today's meal logs for user: {}", userId);
 
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
         return logPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
     }
+
+    /**
+     * Inner record acting as a Command Payload.
+     * Ensures the Use Case remains completely decoupled from REST/Web dependencies.
+     */
+    public record MealItemCommand(String barcode, double grams) {}
 }

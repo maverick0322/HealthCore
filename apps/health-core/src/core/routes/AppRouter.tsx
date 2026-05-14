@@ -1,10 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom';
-
 import { GuestRoute } from '@/core/routes/GuestRoute';
 import { NutritionistOnboardingGuard } from '@/core/routes/NutritionistOnboardingGuard';
 import { OnboardingGuard } from '@/core/routes/OnboardingGuard';
 import { PatientOnboardingGuard } from '@/core/routes/PatientOnboardingGuard';
 import { ProtectedRoute } from '@/core/routes/ProtectedRoute';
+import { AdminDashboardPage } from '@/features/admin/pages/AdminDashboardPage';
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { OAuth2CallbackPage } from '@/features/auth/pages/OAuth2CallbackPage';
@@ -69,7 +69,9 @@ export const appRouter = createBrowserRouter([
       {
         path: '/onboarding',
         element: <OnboardingGuard />,
-        children: [{ path: '/onboarding/patient', element: <PatientOnboardingPage mode="create" /> }],
+        children: [
+          { path: '/onboarding/patient', element: <PatientOnboardingPage mode="create" /> },
+        ],
       },
     ],
   },
@@ -99,6 +101,11 @@ export const appRouter = createBrowserRouter([
         ],
       },
     ],
+  },
+  {
+    errorElement: <ErrorBoundaryPage />,
+    element: <ProtectedRoute allowedRoles={['ADMIN']} />,
+    children: [{ path: '/dashboard/admin', element: <AdminDashboardPage /> }],
   },
   {
     path: '/oauth2/callback',

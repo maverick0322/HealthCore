@@ -1,15 +1,3 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import axios from 'axios';
-
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
-import type { LoginRequest } from '@/features/auth/types/auth.types';
-
-/**
- * Hook that wraps the auth store's login action with
- * local form state, loading flag, and error handling.
- */
 export const useLogin = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('auth');
@@ -24,13 +12,18 @@ export const useLogin = () => {
     setIsLoading(true);
     try {
       await login(data);
-              
+
       const currentUser = useAuthStore.getState().user;
-      
+
       if (expectedRole) {
-        if (currentUser && currentUser.role !== expectedRole) {
+        // Admins can log in regardless of the selected UI toggle
+        if (
+          currentUser &&
+          currentUser.role !== 'ADMIN' &&
+          currentUser.role !== expectedRole
+        ) {
           await logout();
-          setError(t('errorInvalidCredentials')); // Or a specific role mismatch error
+          setError(t('errorInvalidCredentials'));
           return;
         }
       }

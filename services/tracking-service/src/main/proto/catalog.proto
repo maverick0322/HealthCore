@@ -8,25 +8,29 @@ package catalog;
 
 service NutritionalCatalog {
   rpc GetFoodItem (FoodRequest) returns (FoodResponse) {}
-  
+
   rpc SearchFood (SearchRequest) returns (SearchResponse) {}
 }
 
 message FoodRequest {
-  string barcode = 1; 
+  string barcode = 1;
 }
 
 message FoodResponse {
   string barcode = 1;
   string name = 2;
-  string brand = 3;       
-  string image_url = 4;   
+  string brand = 3;
+  string image_url = 4;
   float calories_per_100g = 5;
   float proteins_per_100g = 6;
   float carbs_per_100g = 7;
   float fats_per_100g = 8;
-  string source = 9;    
-}  
+  string source = 9;
+  float fiber_grams_per_100g = 10;
+  float sodium_mg_per_100g = 11;
+  float sugar_grams_per_100g = 12;
+  float potassium_mg_per_100g = 13;
+}
 
 message SearchRequest {
   string query = 1;
@@ -34,5 +38,5 @@ message SearchRequest {
 }
 
 message SearchResponse {
-  repeated FoodResponse items = 1; 
+  repeated FoodResponse items = 1;
 }

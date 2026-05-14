@@ -47,6 +47,8 @@ services:
     container_name: healthcore-api-gateway
     ports:
       - "80:80"
+    environment:
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     volumes:
       - ./services/api_gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -65,6 +67,14 @@ services:
     container_name: healthcore-catalog-service
     ports:
       - "50051:50051"
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+      - MONGO_DB_NAME=healthcore_catalog
+      - FATSECRET_CLIENT_ID=${FATSECRET_CLIENT_ID}
+      - FATSECRET_CLIENT_SECRET=${FATSECRET_CLIENT_SECRET}
+      - GRPC_PORT=50051
     restart: unless-stopped
   
   identity-service:

@@ -1,8 +1,9 @@
+import os
 import logging
 from typing import List, Annotated
 from fastapi import FastAPI, HTTPException, Path, Query, Depends
+from pymongo import MongoClient
 
-from src.infrastructure.open_food_facts_client import OpenFoodFactsAdapter
 from src.application.catalog_use_case import CatalogUseCase
 from src.domain.entities import FoodItem
 from src.domain.exceptions import (
@@ -10,6 +11,11 @@ from src.domain.exceptions import (
     ExternalServiceUnavailableError, 
     InvalidDomainDataError
 )
+
+from src.infrastructure.mongo_local_adapter import MongoLocalCatalogAdapter
+from src.infrastructure.fatsecret.fatsecret_authenticator import FatSecretAuthenticator
+from src.infrastructure.fatsecret.fatsecret_mapper import FatSecretMapper
+from src.infrastructure.fatsecret.fatsecret_adapter import FatSecretAdapter
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -23,12 +29,35 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Singleton Pattern for Use Case instance 
+_use_case_instance = None
 
 def get_catalog_use_case() -> CatalogUseCase:
     """Dependency Provider for FastAPI."""
+    global _use_case_instance
+    if _use_case_instance is not None:
+        return _use_case_instance
+
     try:
-        catalog_adapter = OpenFoodFactsAdapter()
-        return CatalogUseCase(catalog_port=catalog_adapter)
+        mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+        db_name = os.getenv("MONGO_DB_NAME", "healthcore")
+        mongo_client = MongoClient(mongo_uri)
+        local_adapter = MongoLocalCatalogAdapter(collection=mongo_client[db_name]["catalog"])
+
+        authenticator = FatSecretAuthenticator(
+            client_id=os.getenv("FATSECRET_CLIENT_ID", ""),
+            client_secret=os.getenv("FATSECRET_CLIENT_SECRET", ""),
+            token_url="https://oauth.fatsecret.com/connect/token"
+        )
+        external_adapter = FatSecretAdapter(
+            api_url="https://platform.fatsecret.com/rest/server.api",
+            authenticator=authenticator,
+            mapper=FatSecretMapper()
+        )
+
+        _use_case_instance = CatalogUseCase(local_port=local_adapter, external_port=external_adapter)
+        return _use_case_instance
+        
     except Exception:
         logger.critical("Dependency Injection failed during FastAPI startup.", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server configuration error.")
@@ -38,7 +67,7 @@ UseCaseDep = Annotated[CatalogUseCase, Depends(get_catalog_use_case)]
 # OpenAPI Documentation Dictionaries
 COMMON_RESPONSES = {
     500: {"description": "Internal Server Error - Unexpected critical failure."},
-    503: {"description": "Service Unavailable - Upstream catalog (OpenFoodFacts) is down."}
+    503: {"description": "Service Unavailable - Upstream catalog is down."}
 }
 
 GET_PRODUCT_RESPONSES = {
@@ -52,11 +81,9 @@ SEARCH_RESPONSES = {
     400: {"description": "Bad Request - Search query cannot be empty or just whitespace."}
 }
 
-
 @app.get("/api/v1/catalog/health", tags=["Monitoring"])
 def health_check():
     return {"status": "success", "message": "Catalog REST API is up and running!"}
-
 
 @app.get(
     "/api/v1/catalog/products/{barcode}", 
@@ -91,7 +118,6 @@ def get_product(
             status_code=500, 
             detail="An internal server error occurred. Please try again later."
         )
-
 
 @app.get(
     "/api/v1/catalog/search", 

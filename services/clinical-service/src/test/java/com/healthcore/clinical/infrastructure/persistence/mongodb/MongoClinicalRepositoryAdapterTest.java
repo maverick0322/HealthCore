@@ -15,12 +15,13 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataMongoTest
-@Testcontainers 
+@Testcontainers(disabledWithoutDocker = true)
 @Import(MongoClinicalRepositoryAdapter.class) 
 class MongoClinicalRepositoryAdapterTest {
 
@@ -47,11 +48,18 @@ class MongoClinicalRepositoryAdapterTest {
     void shouldSaveAndRetrievePatientProfileWithWeightHistory() {
         PatientProfile newProfile = new PatientProfile(
                 "user-integration-1",
+                "Carlos",
+                "Gomez",
+                null,
                 75.0,
                 180.0,
                 LocalDate.of(1990, 5, 20),
                 Gender.MALE,
-                ActivityLevel.MODERATELY_ACTIVE
+                ActivityLevel.MODERATELY_ACTIVE,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of()
         );
         
         newProfile.updateWeight(73.5);

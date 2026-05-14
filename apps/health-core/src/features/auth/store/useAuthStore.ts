@@ -43,7 +43,9 @@ export const useAuthStore = create<AuthState>()(
       login: async (data) => {
         set({ isLoading: true });
         try {
+          console.info('[useAuthStore] Starting login');
           const tokens = await authService.login(data);
+          console.info('[useAuthStore] Login tokens received');
           set({
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
@@ -51,6 +53,7 @@ export const useAuthStore = create<AuthState>()(
           });
           // Fetch user profile after login
           await get().fetchCurrentUser();
+          console.info('[useAuthStore] Current user loaded after login');
         } finally {
           set({ isLoading: false });
         }
@@ -85,9 +88,12 @@ export const useAuthStore = create<AuthState>()(
       // ── Fetch current user profile ───────────────────────
       fetchCurrentUser: async () => {
         try {
+          console.info('[useAuthStore] Fetching current user');
           const user = await authService.getCurrentUser();
           set({ user });
-        } catch {
+          console.info('[useAuthStore] Current user loaded', { role: user.role });
+        } catch (error) {
+          console.warn('[useAuthStore] Failed to load current user', error);
           // If we can't fetch the user, the token is invalid
           get().clearSession();
         }

@@ -8,4 +8,5 @@ public interface LinkingCodeRepositoryPort {
     Optional<LinkingCode> findByCode(String code);
     Optional<LinkingCode> findByNutritionistId(String nutritionistId);
     void deleteByCode(String code);
+    void deleteByNutritionistId(String nutritionistId);
 }

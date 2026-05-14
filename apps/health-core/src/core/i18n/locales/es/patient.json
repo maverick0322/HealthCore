@@ -233,5 +233,32 @@
     "substitutions": "Intercambios permitidos",
     "waterGoal": "Meta de hidratación: {{count}} vasos",
     "downloadPdf": "Descargar PDF"
+  },
+  "linking": {
+    "title": "Vincular Nutriólogo",
+    "description": "Ingresa el código proporcionado por tu nutriólogo o escanea su código QR.",
+    "inputPlaceholder": "Ej. AB12CD",
+    "connectButton": "Vincular ahora",
+    "startScan": "Escanear Código QR",
+    "stopScan": "Detener Cámara",
+    "invalidCodeFormat": "El código debe tener exactamente 6 caracteres.",
+    "success": "¡Vinculación exitosa con tu nutriólogo!",
+    "error": "Código inválido o expirado.",
+    "cameraError": "No se pudo acceder a la cámara. Por favor, verifica los permisos de tu navegador.",
+    "linkNutritionist": "Vincular con Nutriólogo",
+    "linkDesc": "Escanear QR o ingresar código",
+    "unlinkNutritionist": "Desvincular Nutriólogo",
+    "unlinkDesc": "Romper la relación actual",
+    "unlink": "Desvincularse",
+    "unlinkSuccess": "Te has desvinculado correctamente de tu nutriólogo.",
+    "confirmUnlink": "¿Desvincularse del nutriólogo?",
+    "confirmUnlinkDesc": "Esta acción romperá la relación con tu nutriólogo actual. Podrás vincularte a otro cuando lo desees.",
+    "alreadyLinked": "Ya estás vinculado a un nutriólogo.",
+    "alreadyLinkedDesc": "Para vincularte a otro nutriólogo, primero debes desvincularte del actual.",
+    "unlinkFirst": "Debes desvincularte del nutriólogo anterior primero."
+  },
+  "common": {
+    "back": "Regresar",
+    "or": "O"
   }
 }

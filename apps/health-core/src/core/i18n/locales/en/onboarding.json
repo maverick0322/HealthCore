@@ -1,74 +1,201 @@
 {
-  "step1": {
-    "title": "Tell us about yourself",
-    "subtitle": "This data helps us accurately personalize your nutritional plan.",
-    "age": "Age",
-    "height": "Height (cm)",
-    "weight": "Current Weight (kg)",
-    "gender": "Biological Gender",
-    "activityLevel": "Physical Activity Level",
-    "next": "Next Step",
-    "editLater": "You can edit this data later in your profile."
-  },
-  "step2": {
-    "title": "What is your main goal?",
-    "subtitle": "Select the goal that best fits what you aim to achieve with us.",
-    "goals": {
-      "weightLoss": { "title": "Lose Weight", "desc": "Reduce body fat in a healthy way" },
-      "muscleGain": { "title": "Gain Muscle Mass", "desc": "Increase your strength and muscle volume" },
-      "health": { "title": "Improve Health", "desc": "Optimize your habits and overall well-being" },
-      "performance": { "title": "Sports Performance", "desc": "Take your energy and power to the next level" }
-    },
-    "continue": "Continue",
-    "changeLater": "You can change this goal later in settings."
-  },
-  "step3": {
-    "title": "Your Dietary Preferences",
-    "subtitle": "This helps us filter out recipes and plans that don't suit you.",
-    "dietType": "Diet Type",
-    "diets": {
-      "omnivore": "Omnivore",
-      "vegetarian": "Vegetarian",
-      "vegan": "Vegan",
-      "keto": "Keto",
-      "paleo": "Paleo"
-    },
-    "allergies": "Allergies and Intolerances",
-    "allergyItems": {
-      "gluten": "Gluten",
-      "lactose": "Lactose",
-      "nuts": "Nuts",
-      "seafood": "Seafood",
-      "egg": "Egg"
-    },
-    "avoidFoods": "Foods to avoid",
-    "avoidPlaceholder": "E.g. Cilantro, Onion, Bell Pepper...",
+  "common": {
     "back": "Back",
-    "continue": "Continue"
-  },
-  "step4": {
-    "title": "All set to start!",
-    "subtitle": "Review your summary and confirm to begin your journey towards a healthier life.",
-    "physicalData": "Physical Data",
-    "mainGoal": "Main Goal",
-    "preferences": "Preferences",
-    "finishBtn": "Finish and see my Dashboard",
-    "editBtn": "Edit my data",
-    "secure": "Your data is secure with HealthCore"
+    "continue": "Continue",
+    "saveChanges": "Save changes",
+    "finishAndContinue": "Finish and continue",
+    "creating": "Creating profile...",
+    "saving": "Saving changes..."
   },
   "stepper": {
     "step": "Step {{current}} of {{total}}"
   },
-  "gender": {
-    "MALE": "Male",
-    "FEMALE": "Female",
-    "OTHER": "Other"
+  "validation": {
+    "required": "{{label}} is required.",
+    "maxLength": "{{label}} cannot exceed {{max}} characters.",
+    "namePattern": "{{label}} can only contain letters, spaces, apostrophes, or hyphens.",
+    "birthDateRequired": "Date of birth is required.",
+    "birthDateInvalid": "Date of birth is invalid.",
+    "birthDateOutOfRange": "Date of birth must represent an age between 1 and 120 years."
   },
-  "activityLevels": {
-    "SEDENTARY": "Sedentary (Little or no exercise)",
-    "LIGHTLY_ACTIVE": "Light (1-3 days/week)",
-    "MODERATELY_ACTIVE": "Moderate (3-5 days/week)",
-    "VERY_ACTIVE": "Active (6-7 days/week)",
-    "EXTRA_ACTIVE": "Extra Active (Double workouts)"
+  "options": {
+    "gender": {
+      "MALE": { "label": "Male" },
+      "FEMALE": { "label": "Female" }
+    },
+    "activityLevels": {
+      "SEDENTARY": { "label": "Sedentary", "description": "Little or no exercise" },
+      "LIGHTLY_ACTIVE": { "label": "Light", "description": "1-3 days per week" },
+      "MODERATELY_ACTIVE": { "label": "Moderate", "description": "3-5 days per week" },
+      "VERY_ACTIVE": { "label": "Intense", "description": "6-7 days per week" },
+      "EXTRA_ACTIVE": { "label": "Athlete", "description": "Double workouts" }
+    },
+    "goals": {
+      "weight-loss": { "label": "Lose weight", "description": "Reduce body fat in a healthy way." },
+      "muscle-gain": { "label": "Gain muscle mass", "description": "Increase strength and body composition." },
+      "health": { "label": "Improve health", "description": "Optimize habits and overall well-being." },
+      "performance": { "label": "Sports performance", "description": "Support training-focused goals." }
+    },
+    "diets": {
+      "omnivore": { "label": "Omnivore" },
+      "vegetarian": { "label": "Vegetarian" },
+      "vegan": { "label": "Vegan" },
+      "keto": { "label": "Keto" },
+      "paleo": { "label": "Paleo" }
+    },
+    "allergies": {
+      "gluten": { "label": "Gluten" },
+      "lactose": { "label": "Lactose" },
+      "nuts": { "label": "Nuts" },
+      "seafood": { "label": "Seafood" },
+      "egg": { "label": "Egg" }
+    },
+    "specializations": {
+      "CLINICAL": { "label": "Clinical" },
+      "SPORTS": { "label": "Sports" },
+      "PEDIATRIC": { "label": "Pediatric" },
+      "GERIATRIC": { "label": "Geriatric" },
+      "FOOD_SAFETY": { "label": "Food Safety" },
+      "PERINATAL": { "label": "Perinatal" },
+      "FOOD_TECHNOLOGY": { "label": "Food Technology" },
+      "OTHER": { "label": "Other" }
+    },
+    "legacySpecializations": {
+      "WOMENS_HEALTH": { "label": "Women's health" },
+      "GASTROINTESTINAL": { "label": "Gastrointestinal" },
+      "METABOLIC": { "label": "Metabolic" },
+      "RENAL": { "label": "Renal" }
+    },
+    "consultationTypes": {
+      "PRESENTIAL": { "label": "In person" },
+      "ONLINE": { "label": "Online" },
+      "HOME_VISIT": { "label": "Home visit" }
+    }
+  },
+  "patient": {
+    "common": {
+      "saveError": "Could not save your profile."
+    },
+    "identity": {
+      "title": "Tell us who you are",
+      "subtitle": "We need your personal details to build your clinical profile.",
+      "fields": {
+        "firstName": "First name",
+        "paternalLastName": "Paternal last name",
+        "maternalLastName": "Maternal last name",
+        "maternalLastNameOptional": "Maternal last name (optional)"
+      }
+    },
+    "physical": {
+      "title": "Your health data",
+      "subtitle": "This helps us personalize your experience more accurately.",
+      "birthDateLabel": "Date of birth",
+      "birthDatePlaceholder": "dd/mm/yyyy",
+      "heightLabel": "Height (cm)",
+      "weightLabel": "Current weight (kg)",
+      "genderLabel": "Biological gender",
+      "activityLabel": "Physical activity level",
+      "birthDateErrors": {
+        "required": "Date of birth is required.",
+        "incomplete": "Complete the date using dd/mm/yyyy format.",
+        "invalid": "Date of birth is invalid.",
+        "outOfRange": "Date of birth must represent an age between 1 and 120 years."
+      }
+    },
+    "goals": {
+      "title": "What is your main goal",
+      "subtitle": "Select the objective that best matches what you want to achieve."
+    },
+    "preferences": {
+      "title": "Your dietary preferences",
+      "subtitle": "They help us adapt recipes and recommendations to your reality.",
+      "dietType": "Diet type",
+      "allergies": "Allergies and intolerances",
+      "avoidFoods": "Foods to avoid",
+      "avoidPlaceholder": "E.g. cilantro, onion, bell pepper"
+    },
+    "summary": {
+      "title": "Review your profile",
+      "subtitle": "Confirm that all information is correct before continuing.",
+      "editButton": "Edit my data",
+      "noAllergies": "No allergies registered",
+      "sections": {
+        "identity": "Identity",
+        "physical": "Physical data",
+        "goal": "Main goal",
+        "preferences": "Preferences"
+      },
+      "physicalValue": "{{age}} years, {{height}} cm, {{weight}} kg",
+      "physicalDescription": "{{birthDate}}, {{gender}}, {{activity}}",
+      "allergiesDescription": "Allergies: {{allergies}}"
+    }
+  },
+  "nutritionist": {
+    "common": {
+      "saveError": "Could not save your professional profile."
+    },
+    "identity": {
+      "title": "Complete your identity",
+      "subtitle": "These details will appear on your professional profile.",
+      "fields": {
+        "firstName": "First name",
+        "paternalLastName": "Paternal last name",
+        "maternalLastName": "Maternal last name",
+        "maternalLastNameOptional": "Maternal last name (optional)"
+      }
+    },
+    "professional": {
+      "title": "Professional profile",
+      "subtitle": "Define your specialty and credentials.",
+      "specializationsLabel": "Specializations (max 3)",
+      "customSpecializationLabel": "Custom specialization",
+      "licenseLabel": "Professional license"
+    },
+    "consultation": {
+      "title": "Consultation type",
+      "subtitle": "Select how you care for your patients."
+    },
+    "contact": {
+      "title": "Contact and clinic",
+      "subtitle": "This information is optional, but it leaves your profile ready for future integrations.",
+      "fields": {
+        "phoneOptional": "Mobile phone (optional)",
+        "postalCode": "Postal code",
+        "state": "State",
+        "city": "City",
+        "neighborhood": "Neighborhood",
+        "street": "Street",
+        "exteriorNumber": "Exterior number",
+        "interiorNumberOptional": "Interior number (optional)"
+      }
+    },
+    "summary": {
+      "title": "Your professional profile",
+      "subtitle": "Review the information before saving.",
+      "bioLabel": "Professional bio",
+      "noPhone": "No phone captured",
+      "customSpecialization": "Custom specialization: {{value}}",
+      "sections": {
+        "identity": "Identity",
+        "specializations": "Specializations",
+        "consultation": "Consultation type",
+        "contact": "Contact"
+      }
+    },
+    "validation": {
+      "specializationsRequired": "Select at least one specialization.",
+      "specializationsMax": "Select up to three specializations.",
+      "customSpecializationRequired": "Specify your custom specialization.",
+      "professionalLicense": "The license must contain between 7 and 10 digits.",
+      "consultationTypesRequired": "Select at least one consultation type.",
+      "phone": "The phone number must contain 10 digits.",
+      "postalCode": "The postal code must contain 5 digits.",
+      "state": "State is required.",
+      "city": "City is required.",
+      "neighborhood": "Neighborhood is required.",
+      "street": "Street is required.",
+      "exteriorNumber": "Exterior number is required.",
+      "bio": "Bio is required."
+    }
   }
 }

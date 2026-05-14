@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/shared/ui/button';
+import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
@@ -17,15 +19,28 @@ export const HomePage = () => {
   const { t } = useTranslation('auth');
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const role = user?.role;
 
-  // Auto-redirect based on user role
-  if (user?.role === 'PATIENT') {
+  useEffect(() => {
+    console.info('[HomePage] Render', { role });
+  }, [role]);
+
+  // Wait for role before redirecting to avoid blank renders
+  if (!role) {
+    return (
+      <div className="flex items-center justify-center w-full min-h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (role === 'PATIENT') {
     return <Navigate to="/dashboard/patient" replace />;
   }
-  if (user?.role === 'NUTRITIONIST') {
+  if (role === 'NUTRITIONIST') {
     return <Navigate to="/dashboard/nutritionist" replace />;
   }
-  if (user?.role === 'ADMIN') {
+  if (role === 'ADMIN') {
     return <Navigate to="/dashboard/admin" replace />;
   }
 

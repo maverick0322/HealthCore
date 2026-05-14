@@ -35,10 +35,13 @@ export const useLogin = () => {
         }
       }
 
-      if (currentUser?.role === 'NUTRITIONIST') {
-        navigate('/dashboard/nutritionist', { replace: true });
-      } else if (currentUser?.role === 'PATIENT') {
+      // Redirect to role dashboard. PatientOnboardingGuard will enforce onboarding.
+      if (currentUser?.role === 'PATIENT') {
         navigate('/dashboard/patient', { replace: true });
+      } else if (currentUser?.role === 'NUTRITIONIST') {
+        navigate('/dashboard/nutritionist', { replace: true });
+      } else if (currentUser?.role === 'ADMIN') {
+        navigate('/dashboard/admin', { replace: true });
       } else {
         navigate('/', { replace: true });
       }

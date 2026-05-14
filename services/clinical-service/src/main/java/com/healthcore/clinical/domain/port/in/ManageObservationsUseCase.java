@@ -17,4 +17,9 @@ public interface ManageObservationsUseCase {
      * It obtains a patient's observation history
      */
     List<ClinicalObservation> getPatientObservations(String patientId);
+
+    /**
+     * It obtains a patient's observation history scoped to the owning nutritionist.
+     */
+    List<ClinicalObservation> getPatientObservations(String patientId, String nutritionistId);
 }

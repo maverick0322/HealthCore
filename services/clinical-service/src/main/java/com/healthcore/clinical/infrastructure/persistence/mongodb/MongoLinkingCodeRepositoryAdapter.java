@@ -33,12 +33,21 @@ public class MongoLinkingCodeRepositoryAdapter implements LinkingCodeRepositoryP
 
     @Override
     public Optional<LinkingCode> findByNutritionistId(String nutritionistId) {
-        return repository.findByNutritionistId(nutritionistId).map(this::toDomain);
+        // Get the most recent code (highest creation time) if multiple exist
+        return repository.findByNutritionistId(nutritionistId)
+                .stream()
+                .max((a, b) -> a.getCreatedAt().compareTo(b.getCreatedAt()))
+                .map(this::toDomain);
     }
 
     @Override
     public void deleteByCode(String code) {
         repository.deleteById(code);
+    }
+
+    @Override
+    public void deleteByNutritionistId(String nutritionistId) {
+        repository.deleteByNutritionistId(nutritionistId);
     }
 
     private LinkingCode toDomain(LinkingCodeDocument doc) {

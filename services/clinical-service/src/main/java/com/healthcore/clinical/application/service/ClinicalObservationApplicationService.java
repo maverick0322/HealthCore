@@ -2,9 +2,11 @@ package com.healthcore.clinical.application.service;
 
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.ClinicalObservation;
+import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.port.in.ManageObservationsUseCase;
 import com.healthcore.clinical.domain.port.out.ClinicalObservationRepositoryPort;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,12 +31,11 @@ public class ClinicalObservationApplicationService implements ManageObservations
             throw new IllegalArgumentException("Observation note cannot be empty.");
         }
 
-        clinicalRepositoryPort.findByUserId(patientId)
-                .orElseThrow(() -> new ProfileNotFoundException("Cannot add observation. Patient clinical profile not found."));
+        PatientProfile profile = getLinkedPatientProfile(patientId, nutritionistId);
 
         ClinicalObservation observation = new ClinicalObservation(
                 null, 
-                patientId,
+                profile.getUserId(),
                 nutritionistId,
                 note,
                 LocalDateTime.now()
@@ -46,5 +47,22 @@ public class ClinicalObservationApplicationService implements ManageObservations
     @Override
     public List<ClinicalObservation> getPatientObservations(String patientId) {
         return observationRepositoryPort.findAllByPatientId(patientId);
+    }
+
+    @Override
+    public List<ClinicalObservation> getPatientObservations(String patientId, String nutritionistId) {
+        PatientProfile profile = getLinkedPatientProfile(patientId, nutritionistId);
+        return observationRepositoryPort.findAllByPatientId(profile.getUserId());
+    }
+
+    private PatientProfile getLinkedPatientProfile(String patientId, String nutritionistId) {
+        PatientProfile profile = clinicalRepositoryPort.findByUserId(patientId)
+                .orElseThrow(() -> new ProfileNotFoundException("Cannot add observation. Patient clinical profile not found."));
+
+        if (profile.getNutritionistId() == null || !profile.getNutritionistId().equals(nutritionistId)) {
+            throw new AccessDeniedException("Action denied: Patient is not linked to this nutritionist.");
+        }
+
+        return profile;
     }
 }

@@ -5,15 +5,22 @@ import com.healthcore.clinical.domain.port.in.LinkingUseCase;
 import com.healthcore.clinical.infrastructure.rest.dto.GenerateCodeResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.LinkPatientRequest;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/v1/clinical/linking")
 public class LinkingController {
+    
+    private static final Logger log = LoggerFactory.getLogger(LinkingController.class);
 
     private final LinkingUseCase linkingUseCase;
 
@@ -25,35 +32,32 @@ public class LinkingController {
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<GenerateCodeResponse> generateCode() {
         String nutritionistId = getCurrentUserId();
+        log.info("Generating linking code for nutritionist: {}", nutritionistId);
         LinkingCode code = linkingUseCase.generateLinkingCode(nutritionistId);
         
-        return ResponseEntity.ok(new GenerateCodeResponse(code.getCode(), 900));
+        return ResponseEntity.ok(toGenerateCodeResponse(code));
     }
 
     @GetMapping("/current")
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<GenerateCodeResponse> getCurrentCode() {
         String nutritionistId = getCurrentUserId();
+        log.info("Retrieving current linking code for nutritionist: {}", nutritionistId);
         LinkingCode code = linkingUseCase.getCurrentLinkingCode(nutritionistId);
         
         if (code == null) {
+            log.debug("No current linking code found for nutritionist: {}", nutritionistId);
             return ResponseEntity.noContent().build(); 
         }
-        
-        long secondsElapsed = java.time.Duration.between(code.getCreatedAt(), java.time.LocalDateTime.now()).getSeconds();
-        long secondsLeft = 900 - secondsElapsed;
-        
-        if (secondsLeft <= 0) {
-            return ResponseEntity.noContent().build();
-        }
-        
-        return ResponseEntity.ok(new GenerateCodeResponse(code.getCode(), secondsLeft));
+
+        return ResponseEntity.ok(toGenerateCodeResponse(code));
     }
 
     @PostMapping("/connect")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<Void> connectPatient(@Valid @RequestBody LinkPatientRequest request) {
         String patientId = getCurrentUserId();
+        log.info("Patient {} attempting to link with code: {}", patientId, request.getCode());
         linkingUseCase.linkPatient(patientId, request.getCode());
         
         return ResponseEntity.ok().build();
@@ -63,6 +67,7 @@ public class LinkingController {
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<Void> disconnectByPatient() {
         String patientId = getCurrentUserId();
+        log.info("Patient {} requesting disconnection from nutritionist", patientId);
         linkingUseCase.unlinkPatient(patientId);
         
         return ResponseEntity.ok().build();
@@ -72,6 +77,7 @@ public class LinkingController {
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<Void> disconnectByNutritionist(@PathVariable String patientId) {
         String nutritionistId = getCurrentUserId();
+        log.info("Nutritionist {} requesting disconnection from patient {}", nutritionistId, patientId);
         linkingUseCase.unlinkNutritionist(nutritionistId, patientId);
         
         return ResponseEntity.ok().build();
@@ -79,6 +85,21 @@ public class LinkingController {
 
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName(); 
+        if (authentication == null || !authentication.isAuthenticated()) {
+            log.error("Authentication is null or not authenticated");
+            throw new IllegalStateException("User is not authenticated");
+        }
+        String userId = authentication.getName();
+        if (userId == null || userId.isEmpty()) {
+            log.error("User ID is null or empty");
+            throw new IllegalStateException("User ID cannot be null or empty");
+        }
+        return userId;
+    }
+
+    private GenerateCodeResponse toGenerateCodeResponse(LinkingCode code) {
+        long secondsElapsed = Duration.between(code.getCreatedAt(), LocalDateTime.now()).getSeconds();
+        long secondsLeft = (LinkingCode.TTL_MINUTES * 60) - secondsElapsed;
+        return new GenerateCodeResponse(code.getCode(), Math.max(secondsLeft, 0));
     }
 }

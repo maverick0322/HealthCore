@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -41,12 +42,20 @@ class ClinicalObservationApplicationServiceTest {
         
         PatientProfile mockProfile = new PatientProfile(
                 patientId, 
-                70.0, 
-                175.0, 
-                LocalDate.of(1990, 1, 1), 
-                Gender.MALE, 
-                ActivityLevel.MODERATELY_ACTIVE
+                "Carlos",
+                "Gomez",
+                null,
+                70.0,
+                175.0,
+                LocalDate.of(1990, 1, 1),
+                Gender.MALE,
+                ActivityLevel.MODERATELY_ACTIVE,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of()
         );
+        mockProfile.assignNutritionist(nutritionistId);
 
         when(clinicalRepositoryPort.findByUserId(patientId)).thenReturn(Optional.of(mockProfile));
         when(observationRepositoryPort.save(any(ClinicalObservation.class))).thenAnswer(invocation -> {
@@ -112,5 +121,67 @@ class ClinicalObservationApplicationServiceTest {
 
         assertEquals(2, result.size());
         verify(observationRepositoryPort, times(1)).findAllByPatientId(patientId);
+    }
+
+    @Test
+    void recordObservation_ThrowsException_WhenPatientBelongsToAnotherNutritionist() {
+        String patientId = "patient-123";
+        PatientProfile mockProfile = new PatientProfile(
+                patientId,
+                "Carlos",
+                "Gomez",
+                null,
+                70.0,
+                175.0,
+                LocalDate.of(1990, 1, 1),
+                Gender.MALE,
+                ActivityLevel.MODERATELY_ACTIVE,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of()
+        );
+        mockProfile.assignNutritionist("nutri-999");
+
+        when(clinicalRepositoryPort.findByUserId(patientId)).thenReturn(Optional.of(mockProfile));
+
+        assertThrows(AccessDeniedException.class, () ->
+                service.recordObservation(patientId, "nutri-456", "Nota válida.")
+        );
+
+        verify(observationRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void getPatientObservations_ReturnsListOnlyForOwningNutritionist() {
+        String patientId = "patient-123";
+        String nutritionistId = "nutri-456";
+        PatientProfile mockProfile = new PatientProfile(
+                patientId,
+                "Carlos",
+                "Gomez",
+                null,
+                70.0,
+                175.0,
+                LocalDate.of(1990, 1, 1),
+                Gender.MALE,
+                ActivityLevel.MODERATELY_ACTIVE,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of()
+        );
+        mockProfile.assignNutritionist(nutritionistId);
+        List<ClinicalObservation> mockList = List.of(
+                new ClinicalObservation("1", patientId, nutritionistId, "Nota 1", null)
+        );
+
+        when(clinicalRepositoryPort.findByUserId(patientId)).thenReturn(Optional.of(mockProfile));
+        when(observationRepositoryPort.findAllByPatientId(patientId)).thenReturn(mockList);
+
+        List<ClinicalObservation> result = service.getPatientObservations(patientId, nutritionistId);
+
+        assertEquals(1, result.size());
+        verify(observationRepositoryPort).findAllByPatientId(patientId);
     }
 }

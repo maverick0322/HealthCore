@@ -36,6 +36,7 @@ import { NutritionistOnboardingGuard } from "@/core/routes/NutritionistOnboardin
 import { PatientScanningPage } from "@/features/patient/pages/PatientScanningPage";
 import { NutritionistOnboardingPage } from "@/features/onboarding/pages/NutritionistOnboardingPage";
 import {NutritionistGenerateQrPage} from "@/features/nutritionist/pages/NutritionistGenerateQrPage";
+import { OnboardingEntryRedirect } from "@/core/routes/OnboardingEntryRedirect";
 
 export const appRouter = createBrowserRouter([
   // ── Public marketing routes ──
@@ -79,7 +80,10 @@ export const appRouter = createBrowserRouter([
   {
     errorElement: <ErrorBoundaryPage />,
     element: <ProtectedRoute />,
-    children: [{ path: '/', element: <HomePage /> }],
+    children: [
+      { path: '/home', element: <HomePage /> },
+      { path: '/onboarding', element: <OnboardingEntryRedirect /> },
+    ],
   },
   {
     errorElement: <ErrorBoundaryPage />,
@@ -87,27 +91,6 @@ export const appRouter = createBrowserRouter([
     children: [
       {
         element: <PatientOnboardingGuard />,
-        path: "/home",
-      },
-      {
-        path: "/dashboard/patient",
-        element: <PatientDashboardPage />,
-      },
-      {
-        path: "/history/patient",
-        element: <PatientHistoryPage />,
-      },
-      {
-        path: "/appointments/patient",
-        element: <PatientAppointmentsPage />,
-      },
-      {
-        path: "/plan/patient",
-        element: <PatientPlanPage />,
-      },
-      {
-        path: "/onboarding",
-        element: <OnboardingGuard />,
         children: [
           { path: '/dashboard/patient', element: <PatientDashboardPage /> },
           { path: '/history/patient', element: <PatientHistoryPage /> },
@@ -120,10 +103,10 @@ export const appRouter = createBrowserRouter([
         ],
       },
       {
-        path: '/onboarding',
+        path: '/onboarding/patient',
         element: <OnboardingGuard />,
         children: [
-          { path: '/onboarding/patient', element: <PatientOnboardingPage mode="create" /> },
+          { index: true, element: <PatientOnboardingPage mode="create" /> },
         ],
       },
     ],
@@ -147,10 +130,10 @@ export const appRouter = createBrowserRouter([
         ],
       },
       {
-        path: '/onboarding',
+        path: '/onboarding/nutritionist',
         element: <OnboardingGuard />,
         children: [
-          { path: '/onboarding/nutritionist', element: <NutritionistOnboardingPage mode="create" /> },
+          { index: true, element: <NutritionistOnboardingPage mode="create" /> },
         ],
       },
     ],

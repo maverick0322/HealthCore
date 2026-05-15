@@ -67,8 +67,8 @@ class NutritionistAgendaControllerTest {
         slot = TimeSlot.builder()
             .id("slot-1")
             .nutritionistId("nutri-1")
-            .startTime(Instant.parse("2026-04-22T10:00:00Z"))
-            .endTime(Instant.parse("2026-04-22T10:30:00Z"))
+            .startTime(Instant.parse("2027-04-22T10:00:00Z"))
+            .endTime(Instant.parse("2027-04-22T10:30:00Z"))
             .reserved(false)
             .active(true)
             .version(1L)
@@ -91,8 +91,8 @@ class NutritionistAgendaControllerTest {
     @WithMockUser(username = "nutri-1")
     void generateSlots_shouldReturnCreatedSlots() throws Exception {
         GenerateSlotsRequest request = new GenerateSlotsRequest(
-            LocalDate.parse("2026-05-10"),
-            LocalDate.parse("2026-05-10"),
+            LocalDate.parse("2027-05-10"),
+            LocalDate.parse("2027-05-10"),
             LocalTime.parse("10:00:00"),
             LocalTime.parse("11:00:00"),
             30
@@ -125,8 +125,8 @@ class NutritionistAgendaControllerTest {
             .thenReturn(List.of(slot));
 
         mockMvc.perform(get("/api/v1/agenda/nutritionist/slots")
-                .param("from", "2026-04-20T00:00:00Z")
-                .param("to", "2026-04-25T00:00:00Z"))
+                .param("from", "2027-04-20T00:00:00Z")
+                .param("to", "2027-04-25T00:00:00Z"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value("slot-1"));
     }
@@ -138,8 +138,8 @@ class NutritionistAgendaControllerTest {
             .thenReturn(List.of(appointment));
 
         mockMvc.perform(get("/api/v1/agenda/nutritionist/appointments")
-                .param("from", "2026-04-20T00:00:00Z")
-                .param("to", "2026-04-25T00:00:00Z"))
+                .param("from", "2027-04-20T00:00:00Z")
+                .param("to", "2027-04-25T00:00:00Z"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value("app-1"));
     }

@@ -11,7 +11,8 @@ services:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 120s
 
   rabbitmq:
     image: rabbitmq:3.13-management
@@ -27,7 +28,8 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "check_running"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 120s
 
   mongo-express:
     image: mongo-express:latest
@@ -184,7 +186,8 @@ services:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 120s
 
   agenda-mongo-express:
     image: mongo-express:latest
@@ -210,8 +213,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://agenda-mongodb:27017/${AGENDA_MONGO_DB:-healthcore_agenda}
-      GRPC_CLIENT_CLINICAL_ADDRESS: ${GRPC_CLIENT_CLINICAL_ADDRESS:-static://clinical-service:50051}
-      AGENDA_CLINICAL_ALLOW_ALL: ${AGENDA_CLINICAL_ALLOW_ALL:-true}
+      GRPC_CLIENT_CLINICAL_TARGET: ${GRPC_CLIENT_CLINICAL_TARGET:-clinical-service:50051}
       SERVICE_NAME: ${AGENDA_SERVICE_NAME:-AGENDA-SVC}
       JWT_SECRET: ${JWT_SECRET}
       SPRING_RABBITMQ_HOST: rabbitmq
@@ -237,7 +239,8 @@ services:
       test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 120s
 
   clinical-mongo-express:
     image: mongo-express:latest
@@ -262,6 +265,7 @@ services:
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://clinical-mongodb:27017/healthcore_clinical
       SERVER_PORT: 8083
+      GRPC_CLINICAL_PORT: 50051
       JWT_SECRET: ${JWT_SECRET}
       MANAGEMENT_OTLP_TRACING_ENDPOINT: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
       TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY:-1.0}

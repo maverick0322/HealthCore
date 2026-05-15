@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   Clock,
   Calendar,
@@ -33,6 +34,7 @@ import { usePatientAppointments } from "@/features/patient/hooks/usePatientAppoi
 import { useCreateAppointment } from "@/features/patient/hooks/useCreateAppointment";
 import { useCancelAppointment } from "@/features/patient/hooks/useCancelAppointment";
 import { useRescheduleAppointment } from "@/features/patient/hooks/useRescheduleAppointment";
+import { clinicalApi } from "@/features/clinical/services/clinicalService";
 import type { AppointmentResponse, AvailabilitySlotResponse } from "@/features/patient/types/agenda.types";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -91,7 +93,8 @@ const statusColor = (s: string) => {
 type Tab = "appointments" | "schedule";
 
 export const PatientAppointmentsPage = () => {
-  const { t } = useTranslation("patient");
+  const { t, i18n } = useTranslation("patient");
+  const navigate = useNavigate();
 
   // ── Tab state ──
   const [activeTab, setActiveTab] = useState<Tab>("appointments");
@@ -103,8 +106,12 @@ export const PatientAppointmentsPage = () => {
   const { cancelAppointment, isLoading: cancelling } = useCancelAppointment();
   const { rescheduleAppointment, isLoading: rescheduling } = useRescheduleAppointment();
 
+  // ── Linked nutritionist state ──
+  const [linkedNutritionistId, setLinkedNutritionistId] = useState<string | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
   // ── Search form state ──
-  const [nutritionistId, setNutritionistId] = useState("");
   const [dateFrom, setDateFrom] = useState(todayISO());
   const [dateTo, setDateTo] = useState(futureISO(14));
 
@@ -124,6 +131,36 @@ export const PatientAppointmentsPage = () => {
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
   useEffect(() => {
+    let ignore = false;
+
+    const fetchProfile = async () => {
+      setLoadingProfile(true);
+      setProfileError(null);
+      try {
+        const profile = await clinicalApi.getMyProfile();
+        if (!ignore) {
+          setLinkedNutritionistId(profile.nutritionistId?.trim() || null);
+        }
+      } catch {
+        if (!ignore) {
+          setProfileError(t("appointments.profileLoadError"));
+          setLinkedNutritionistId(null);
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingProfile(false);
+        }
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      ignore = true;
+    };
+  }, [t]);
+
+  useEffect(() => {
     if (toast) {
       const id = setTimeout(() => setToast(null), 4000);
       return () => clearTimeout(id);
@@ -133,21 +170,26 @@ export const PatientAppointmentsPage = () => {
   // ── Actions ──
 
   const handleSearchSlots = () => {
-    if (!nutritionistId.trim()) return;
+    if (!linkedNutritionistId) return;
     const from = new Date(dateFrom).toISOString();
     const to = new Date(dateTo + "T23:59:59").toISOString();
-    fetchAvailability(nutritionistId.trim(), from, to);
+    fetchAvailability(linkedNutritionistId, from, to);
   };
 
   const handleBook = async () => {
     if (!selectedSlot) return;
     try {
-      await createAppointment({ slotId: selectedSlot.id, slotVersion: selectedSlot.version });
+      await createAppointment({
+        slotId: selectedSlot.id,
+        nutritionistId: selectedSlot.nutritionistId,
+        slotVersion: selectedSlot.version,
+        locale: i18n.language,
+      });
       setToast({ msg: t("appointments.appointmentConfirmed"), type: "success" });
       setSelectedSlot(null);
       fetchAppointments();
       // Refresh slots to remove the booked one
-      if (nutritionistId.trim()) handleSearchSlots();
+      if (linkedNutritionistId) handleSearchSlots();
     } catch {
       setToast({ msg: t("appointments.errorGeneric"), type: "error" });
     }
@@ -171,12 +213,13 @@ export const PatientAppointmentsPage = () => {
       await rescheduleAppointment(rescheduleTarget.id, {
         newSlotId: rescheduleSlot.id,
         newSlotVersion: rescheduleSlot.version,
+        locale: i18n.language,
       });
       setToast({ msg: t("appointments.appointmentRescheduled"), type: "success" });
       setRescheduleTarget(null);
       setRescheduleSlot(null);
       fetchAppointments();
-      if (nutritionistId.trim()) handleSearchSlots();
+      if (linkedNutritionistId) handleSearchSlots();
     } catch {
       setToast({ msg: t("appointments.errorGeneric"), type: "error" });
     }
@@ -320,7 +363,6 @@ export const PatientAppointmentsPage = () => {
                               setRescheduleTarget(appt);
                               // Load slots for this nutritionist if we have the ID
                               if (appt.nutritionistId) {
-                                setNutritionistId(appt.nutritionistId);
                                 const from = new Date().toISOString();
                                 const to = new Date(Date.now() + 14 * 86400000).toISOString();
                                 fetchAvailability(appt.nutritionistId, from, to);
@@ -353,15 +395,51 @@ export const PatientAppointmentsPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="input-nutritionist-id">{t("appointments.nutritionistId")}</Label>
-                  <Input
-                    id="input-nutritionist-id"
-                    value={nutritionistId}
-                    onChange={(e) => setNutritionistId(e.target.value)}
-                    placeholder={t("appointments.nutritionistIdPlaceholder")}
-                  />
-                </div>
+                {loadingProfile && (
+                  <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                    <Loader2 size={16} className="animate-spin" />
+                    {t("appointments.loadingProfile")}
+                  </div>
+                )}
+
+                {profileError && !loadingProfile && (
+                  <div className="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    <span>{profileError}</span>
+                  </div>
+                )}
+
+                {!loadingProfile && !profileError && linkedNutritionistId && (
+                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+                    <p className="text-xs font-medium uppercase text-muted-foreground">
+                      {t("appointments.linkedNutritionist")}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground break-all">{linkedNutritionistId}</p>
+                  </div>
+                )}
+
+                {!loadingProfile && !profileError && !linkedNutritionistId && (
+                  <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-3">
+                    <div className="flex items-start gap-2 text-amber-700 dark:text-amber-300">
+                      <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold">{t("appointments.noLinkedNutritionist")}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {t("appointments.noLinkedNutritionistDesc")}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => navigate("/scanning/patient")}
+                    >
+                      {t("appointments.linkNutritionistAction")}
+                    </Button>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="input-date-from">{t("appointments.dateFrom")}</Label>
@@ -376,7 +454,7 @@ export const PatientAppointmentsPage = () => {
                   id="btn-search-slots"
                   className="w-full"
                   onClick={handleSearchSlots}
-                  disabled={!nutritionistId.trim() || loadingSlots}
+                  disabled={!linkedNutritionistId || loadingProfile || loadingSlots}
                 >
                   {loadingSlots ? (
                     <><Loader2 size={14} className="animate-spin mr-2" />{t("appointments.loadingSlots")}</>

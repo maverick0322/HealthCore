@@ -3,6 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { useOnboardingStatus } from '@/features/onboarding/hooks/useOnboardingStatus';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { OnboardingUnavailableState } from './OnboardingUnavailableState';
 
 const getDashboardPath = (role: string | undefined): string => {
   if (role === 'NUTRITIONIST') {
@@ -25,6 +26,10 @@ export const OnboardingGuard = () => {
 
   if (status === 'completed') {
     return <Navigate to={getDashboardPath(user?.role)} replace />;
+  }
+
+  if (status === 'unavailable') {
+    return <OnboardingUnavailableState />;
   }
 
   return <Outlet />;

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 
-export type OnboardingStatus = 'loading' | 'completed' | 'pending';
+export type OnboardingStatus = 'loading' | 'completed' | 'pending' | 'unavailable';
 
 const resolveOnboardingStatus = async (role: 'PATIENT' | 'NUTRITIONIST'): Promise<OnboardingStatus> => {
   if (role === 'PATIENT') {
@@ -42,7 +42,7 @@ export const useOnboardingStatus = (): OnboardingStatus => {
       } catch (error) {
         const errStatus = (error as { response?: { status?: number } })?.response?.status;
         if (isMounted) {
-          setStatus(errStatus === 404 || errStatus === 401 || errStatus === 403 ? 'pending' : 'pending');
+          setStatus(errStatus === 404 || errStatus === 401 || errStatus === 403 ? 'pending' : 'unavailable');
         }
       }
     };

@@ -12,28 +12,11 @@ export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const logout = useAuthStore((s) => s.logout);
-
-  const handleLogin = async (data: LoginRequest, expectedRole?: string) => {
+  const handleLogin = async (data: LoginRequest) => {
     setError(null);
     setIsLoading(true);
     try {
       await login(data);
-
-      const currentUser = useAuthStore.getState().user;
-
-      if (expectedRole) {
-        // Admins can log in regardless of the selected UI toggle
-        if (
-          currentUser &&
-          currentUser.role !== 'ADMIN' &&
-          currentUser.role !== expectedRole
-        ) {
-          await logout();
-          setError(t('errorInvalidCredentials'));
-          return;
-        }
-      }
 
       navigate('/home', { replace: true });
     } catch (err: unknown) {

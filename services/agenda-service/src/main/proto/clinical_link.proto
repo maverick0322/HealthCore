@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.healthcore.clinical.grpc";
+option java_outer_classname = "ClinicalLinkProto";
+
+package clinical;
+
+service ClinicalLinkValidator {
+  rpc ValidateLink (ValidateLinkRequest) returns (ValidateLinkResponse) {}
+}
+
+message ValidateLinkRequest {
+  string patient_id = 1;
+  string nutritionist_id = 2;
+}
+
+message ValidateLinkResponse {
+  bool valid = 1;
+}

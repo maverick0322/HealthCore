@@ -11,5 +11,5 @@ export interface GenerateSlotsRequest {
   endDate: string;     // yyyy-MM-dd
   startTime: string;   // HH:mm
   endTime: string;     // HH:mm
-  durationMinutes?: number; // min 15, optional (backend defaults to 45)
+  durationMinutes: number; // min 15
 }

@@ -86,14 +86,14 @@ describe('useOnboardingStatus', () => {
     });
   });
 
-  it('should return "pending" when the profile request throws an unknown error', async () => {
+  it('should return "unavailable" when the profile request throws an unknown error', async () => {
     const networkError = new Error('Network Error');
     vi.mocked(clinicalServiceModule.clinicalApi.getMyProfile).mockRejectedValue(networkError);
 
     const { result } = renderHook(() => useOnboardingStatus());
 
     await waitFor(() => {
-      expect(result.current).toBe('completed');
+      expect(result.current).toBe('unavailable');
     });
   });
 

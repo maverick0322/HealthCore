@@ -27,7 +27,8 @@ vi.mock('@/features/auth/store/useAuthStore', () => ({
   useAuthStore: {
     getState: vi.fn(() => ({
       user: { email: 'patient@example.com' }
-    }))
+    })),
+    setState: vi.fn(),
   }
 }));
 

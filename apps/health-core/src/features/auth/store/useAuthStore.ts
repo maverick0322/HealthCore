@@ -49,10 +49,11 @@ export const useAuthStore = create<AuthState>()(
           set({
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
-            isAuthenticated: true,
+            isAuthenticated: false,
           });
-          // Fetch user profile after login
-          await get().fetchCurrentUser();
+
+          const user = await authService.getCurrentUser();
+          set({ user, isAuthenticated: true });
           console.info('[useAuthStore] Current user loaded after login');
         } finally {
           set({ isLoading: false });

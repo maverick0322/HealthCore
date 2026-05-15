@@ -8,6 +8,9 @@ target/
 *.jar
 *.war
 .mvn/
+!services/clinical-service/.mvn/
+!services/clinical-service/.mvn/wrapper/
+!services/clinical-service/.mvn/wrapper/maven-wrapper.properties
 
 # Python
 __pycache__/

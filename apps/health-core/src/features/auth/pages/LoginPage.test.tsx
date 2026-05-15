@@ -38,10 +38,10 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: /google/i })).toBeInTheDocument();
   });
 
-  it('renders the patient/nutritionist role toggle', () => {
+  it('does not ask for a role during login', () => {
     render(<LoginPage />);
 
-    expect(screen.getByText('Patient')).toBeInTheDocument();
-    expect(screen.getByText('Nutritionist')).toBeInTheDocument();
+    expect(screen.queryByText('Patient')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nutritionist')).not.toBeInTheDocument();
   });
 });

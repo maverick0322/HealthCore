@@ -24,10 +24,13 @@ export interface AppointmentResponse {
 
 export interface CreateAppointmentRequest {
   slotId: string;
+  nutritionistId: string;
   slotVersion: number;
+  locale?: string;
 }
 
 export interface RescheduleAppointmentRequest {
   newSlotId: string;
   newSlotVersion: number;
+  locale?: string;
 }

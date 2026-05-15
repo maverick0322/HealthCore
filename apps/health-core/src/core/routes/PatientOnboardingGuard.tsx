@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 
 import { useOnboardingStatus } from '@/features/onboarding/hooks/useOnboardingStatus';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { OnboardingUnavailableState } from './OnboardingUnavailableState';
 
 export const PatientOnboardingGuard = () => {
   const status = useOnboardingStatus();
@@ -16,6 +17,10 @@ export const PatientOnboardingGuard = () => {
 
   if (status === 'pending') {
     return <Navigate to="/onboarding/patient" replace />;
+  }
+
+  if (status === 'unavailable') {
+    return <OnboardingUnavailableState />;
   }
 
   return <Outlet />;

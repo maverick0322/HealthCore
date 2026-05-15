@@ -126,7 +126,6 @@ export const SignUpPage = () => {
               variant="outline"
               className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
               onClick={() => {
-                sessionStorage.setItem("expectedRole", roleMap[role]);
                 window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0?ui_locales=${i18n.language}`;
               }}
             >

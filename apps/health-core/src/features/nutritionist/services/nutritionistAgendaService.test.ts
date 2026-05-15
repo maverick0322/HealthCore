@@ -19,11 +19,14 @@ describe('nutritionistAgendaService', () => {
 
   it('generates slots with required duration', async () => {
     const payload = {
-      startDate: '2026-05-01',
-      endDate: '2026-05-02',
-      startTime: '09:00',
-      endTime: '13:00',
+      timeZone: 'America/Mexico_City',
       durationMinutes: 30,
+      days: [
+        {
+          date: '2026-05-01',
+          blocks: [{ startTime: '09:00', endTime: '13:00' }],
+        },
+      ],
     };
     (httpClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: [] });
 

@@ -140,7 +140,8 @@ public class PatientAppointmentService {
         if (!Objects.equals(newSlot.getVersion(), command.slotVersion())) {
             throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
         }
-        if (!clinicalServiceClient.validateLink(patientId, newSlot.getNutritionistId())) {
+        boolean sameNutritionist = Objects.equals(appointment.getNutritionistId(), newSlot.getNutritionistId());
+        if (!sameNutritionist && !clinicalServiceClient.validateLink(patientId, newSlot.getNutritionistId())) {
             throw new ForbiddenOperationException("No existe vinculo activo con el nutriologo");
         }
 

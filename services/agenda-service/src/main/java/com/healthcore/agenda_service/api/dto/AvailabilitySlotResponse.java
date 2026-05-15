@@ -10,7 +10,9 @@ public record AvailabilitySlotResponse(
     Instant startTime,
     Instant endTime,
     TimeSlotOrigin origin,
-    Long version
+    Long version,
+    boolean reserved,
+    boolean active
 ) {
 }
 

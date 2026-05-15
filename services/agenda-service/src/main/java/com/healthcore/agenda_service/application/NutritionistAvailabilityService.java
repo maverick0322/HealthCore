@@ -4,6 +4,7 @@ import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.TimeSlot;
 import com.healthcore.agenda_service.domain.TimeSlotOrigin;
+import com.healthcore.agenda_service.domain.exception.BadRequestException;
 import com.healthcore.agenda_service.domain.exception.ConflictException;
 import com.healthcore.agenda_service.domain.exception.NotFoundException;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
@@ -17,46 +18,52 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class NutritionistAvailabilityService {
+    private static final LocalTime EARLIEST_SLOT_TIME = LocalTime.of(6, 0);
+    private static final LocalTime LATEST_SLOT_TIME = LocalTime.of(21, 0);
 
     private final TimeSlotRepository timeSlotRepository;
     private final AppointmentRepository appointmentRepository;
 
     public List<TimeSlot> generateTimeSlots(String nutritionistId, GenerateSlotsCommand command) {
-        log.info("Generating slots for nutritionist {} from {} to {}", nutritionistId, command.startDate(),
-                command.endDate());
+        validateGenerateCommand(command);
+        log.info("Generating slots for nutritionist {} in zone {} for {} days", nutritionistId, command.timeZone(),
+                command.days().size());
         List<TimeSlot> createdSlots = new ArrayList<>();
 
-        LocalDate currentDate = command.startDate();
-        while (!currentDate.isAfter(command.endDate())) {
-            LocalTime currentTime = command.startTime();
-            while (currentTime.plusMinutes(command.durationMinutes()).isBefore(command.endTime()) ||
-                    currentTime.plusMinutes(command.durationMinutes()).equals(command.endTime())) {
+        for (GenerateSlotsCommand.DaySchedule day : command.days()) {
+            for (GenerateSlotsCommand.TimeBlock block : day.blocks()) {
+                LocalTime currentTime = block.startTime();
+                while (!currentTime.plusMinutes(command.durationMinutes()).isAfter(block.endTime())) {
 
-                Instant startInstant = currentDate.atTime(currentTime).toInstant(ZoneOffset.UTC);
-                Instant endInstant = startInstant.plus(command.durationMinutes(), ChronoUnit.MINUTES);
+                    Instant startInstant = day.date().atTime(currentTime).atZone(command.timeZone()).toInstant();
+                    Instant endInstant = day.date()
+                            .atTime(currentTime.plusMinutes(command.durationMinutes()))
+                            .atZone(command.timeZone())
+                            .toInstant();
 
-                TimeSlot slot = TimeSlot.builder()
-                        .nutritionistId(nutritionistId)
-                        .startTime(startInstant)
-                        .endTime(endInstant)
-                        .active(true)
-                        .reserved(false)
-                        .origin(TimeSlotOrigin.PREDEFINED)
-                        .build();
+                    TimeSlot slot = TimeSlot.builder()
+                            .nutritionistId(nutritionistId)
+                            .startTime(startInstant)
+                            .endTime(endInstant)
+                            .active(true)
+                            .reserved(false)
+                            .origin(TimeSlotOrigin.PREDEFINED)
+                            .build();
 
-                createdSlots.add(slot);
-                currentTime = currentTime.plusMinutes(command.durationMinutes());
+                    createdSlots.add(slot);
+                    currentTime = currentTime.plusMinutes(command.durationMinutes());
+                }
             }
-            currentDate = currentDate.plusDays(1);
         }
 
         try {
@@ -121,5 +128,88 @@ public class NutritionistAvailabilityService {
     public List<Appointment> getNutritionistAppointments(String nutritionistId, Instant from, Instant to) {
         log.debug("Fetching appointments for nutritionist {} between {} and {}", nutritionistId, from, to);
         return appointmentRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(nutritionistId, from, to);
+    }
+
+    private void validateGenerateCommand(GenerateSlotsCommand command) {
+        if (command == null || command.timeZone() == null) {
+            throw new BadRequestException("Zona horaria requerida");
+        }
+        if (command.durationMinutes() < 15) {
+            throw new BadRequestException("La duracion minima de una cita es de 15 minutos");
+        }
+        if (command.days() == null || command.days().isEmpty()) {
+            throw new BadRequestException("Debes seleccionar al menos un dia");
+        }
+
+        LocalDate today = LocalDate.now(command.timeZone());
+        Set<LocalDate> seenDates = new HashSet<>();
+        Instant now = Instant.now();
+        for (GenerateSlotsCommand.DaySchedule day : command.days()) {
+            validateDay(command, day, today, now, seenDates);
+        }
+    }
+
+    private void validateDay(
+        GenerateSlotsCommand command,
+        GenerateSlotsCommand.DaySchedule day,
+        LocalDate today,
+        Instant now,
+        Set<LocalDate> seenDates
+    ) {
+        if (day == null || day.date() == null) {
+            throw new BadRequestException("Cada dia debe incluir una fecha");
+        }
+        if (day.date().isBefore(today)) {
+            throw new BadRequestException("No puedes generar horarios en fechas pasadas");
+        }
+        if (!seenDates.add(day.date())) {
+            throw new BadRequestException("No puedes repetir fechas en la solicitud");
+        }
+        if (day.blocks() == null || day.blocks().isEmpty()) {
+            throw new BadRequestException("Cada dia debe incluir al menos un bloque de horario");
+        }
+
+        for (GenerateSlotsCommand.TimeBlock block : day.blocks()) {
+            validateBlockShape(block);
+        }
+
+        List<GenerateSlotsCommand.TimeBlock> sortedBlocks = day.blocks().stream()
+                .sorted((left, right) -> left.startTime().compareTo(right.startTime()))
+                .toList();
+        LocalTime previousEndTime = null;
+        for (GenerateSlotsCommand.TimeBlock block : sortedBlocks) {
+            validateBlock(command, day.date(), block, previousEndTime, now);
+            previousEndTime = block.endTime();
+        }
+    }
+
+    private void validateBlock(
+        GenerateSlotsCommand command,
+        LocalDate date,
+        GenerateSlotsCommand.TimeBlock block,
+        LocalTime previousEndTime,
+        Instant now
+    ) {
+        if (!block.startTime().isBefore(block.endTime())) {
+            throw new BadRequestException("La hora inicial del bloque debe ser anterior a la hora final");
+        }
+        if (block.startTime().plusMinutes(command.durationMinutes()).isAfter(block.endTime())) {
+            throw new BadRequestException("Cada bloque debe permitir al menos una cita completa");
+        }
+        if (previousEndTime != null && block.startTime().isBefore(previousEndTime)) {
+            throw new BadRequestException("Los bloques de un mismo dia no pueden solaparse");
+        }
+        if (!date.atTime(block.startTime()).atZone(command.timeZone()).toInstant().isAfter(now)) {
+            throw new BadRequestException("No puedes generar horarios en horas pasadas");
+        }
+        if (block.startTime().isBefore(EARLIEST_SLOT_TIME) || block.endTime().isAfter(LATEST_SLOT_TIME)) {
+            throw new BadRequestException("Los horarios deben estar entre 06:00 y 21:00");
+        }
+    }
+
+    private void validateBlockShape(GenerateSlotsCommand.TimeBlock block) {
+        if (block == null || block.startTime() == null || block.endTime() == null) {
+            throw new BadRequestException("Cada bloque debe incluir hora de inicio y fin");
+        }
     }
 }

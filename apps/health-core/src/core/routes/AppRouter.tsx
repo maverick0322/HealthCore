@@ -65,6 +65,16 @@ export const appRouter = createBrowserRouter([
     element: <TourPage />,
     errorElement: <ErrorBoundaryPage />,
   },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
   // ── Guest-only routes (redirect to /home if already authenticated) ──
   {
     errorElement: <ErrorBoundaryPage />,
@@ -72,9 +82,7 @@ export const appRouter = createBrowserRouter([
     children: [
       { path: '/login', element: <LoginPage /> },
       { path: '/signup', element: <SignUpPage /> },
-      { path: '/forgot-password', element: <ForgotPasswordPage /> },
       { path: '/verify-code', element: <VerifyCodePage /> },
-      { path: '/reset-password', element: <ResetPasswordPage /> },
     ],
   },
   {

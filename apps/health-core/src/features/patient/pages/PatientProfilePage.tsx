@@ -5,7 +5,6 @@ import {
   Activity,
   AlertCircle,
   ArrowRight,
-  BellOff,
   Camera,
   CheckCircle2,
   ChevronLeft,
@@ -299,12 +298,6 @@ export const PatientProfilePage = () => {
                 onClick={handleChangePassword}
               />
             )}
-            <ActionRow
-              id="btn-disable-notifications"
-              icon={<BellOff size={16} className="text-primary" />}
-              label={t('profile.disableNotifications')}
-              desc={t('profile.notificationsDesc')}
-            />
 
             {profile ? (
               profile.nutritionistId ? (

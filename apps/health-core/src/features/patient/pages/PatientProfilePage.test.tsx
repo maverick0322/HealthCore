@@ -26,8 +26,6 @@ const translations: Record<string, string> = {
   'profile.goToOnboarding': 'Completar configuracion',
   'profile.changePassword': 'Cambiar contrasena',
   'profile.changePasswordDesc': 'Actualiza tu contrasena para mantener tu cuenta segura',
-  'profile.disableNotifications': 'Desactivar notificaciones',
-  'profile.notificationsDesc': 'Administra tus preferencias de alertas y recordatorios',
   'profile.actionsSection': 'Acciones de cuenta',
   'profile.logout': 'Cerrar sesion',
   'profile.editProfile': 'Editar Perfil',
@@ -120,5 +118,6 @@ describe('PatientProfilePage', () => {
     expect(screen.queryByText('Proveedor de autenticacion')).not.toBeInTheDocument();
     expect(screen.queryByText('Editar datos de salud')).not.toBeInTheDocument();
     expect(screen.queryByText('Editar preferencias')).not.toBeInTheDocument();
+    expect(screen.queryByText('Desactivar notificaciones')).not.toBeInTheDocument();
   });
 });

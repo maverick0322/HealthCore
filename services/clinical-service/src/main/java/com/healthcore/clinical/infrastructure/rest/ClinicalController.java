@@ -113,6 +113,19 @@ public class ClinicalController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/profile/me/nutritionist")
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<NutritionistProfileResponse> getMyLinkedNutritionistProfile() {
+        String patientId = getCurrentUserId();
+        logger.info("[ClinicalController] Getting linked nutritionist profile for patientId={}", patientId);
+        return manageProfileUseCase.getProfileByUserId(patientId)
+                .map(PatientProfile::getNutritionistId)
+                .filter(nutritionistId -> nutritionistId != null && !nutritionistId.isBlank())
+                .flatMap(manageProfileUseCase::getNutritionistProfileByUserId)
+                .map(profile -> ResponseEntity.ok(toNutritionistProfileResponse(profile)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/nutritionist/profile")
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<Void> createNutritionistProfile(@Valid @RequestBody UpsertNutritionistProfileRequest request) {

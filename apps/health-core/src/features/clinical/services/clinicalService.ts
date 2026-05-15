@@ -108,6 +108,14 @@ export const clinicalApi = {
     return normalizePatientProfile(response.data);
   },
 
+  getMyLinkedNutritionistProfile: async (): Promise<NutritionistProfileResponse> => {
+    const response = await httpClient.get<NutritionistProfileResponse>(
+      `${CLINICAL_API_URL}/profile/me/nutritionist`,
+      { headers: getXUserIdHeader() }
+    );
+    return normalizeNutritionistProfile(response.data);
+  },
+
   createNutritionistProfile: async (payload: NutritionistProfilePayload): Promise<void> => {
     await httpClient.post(`${CLINICAL_API_URL}/nutritionist/profile`, payload, {
       headers: getXUserIdHeader(),

@@ -18,25 +18,25 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const user = useAuthStore((s) => s.user);
   const fetchCurrentUser = useAuthStore((s) => s.fetchCurrentUser);
   const [isFetchingUser, setIsFetchingUser] = useState(false);
-
-  useEffect(() => {
-    console.info('[ProtectedRoute] Render', {
-      isAuthenticated,
-      hasUser: !!user,
-      allowedRoles,
-    });
-  }, [allowedRoles, isAuthenticated, user]);
+  const [failedToFetchUser, setFailedToFetchUser] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || user || isFetchingUser) {
       return;
     }
 
+    setFailedToFetchUser(false);
     setIsFetchingUser(true);
-    fetchCurrentUser().finally(() => setIsFetchingUser(false));
+    fetchCurrentUser()
+      .then(() => {
+        if (!useAuthStore.getState().user) {
+          setFailedToFetchUser(true);
+        }
+      })
+      .finally(() => setIsFetchingUser(false));
   }, [fetchCurrentUser, isAuthenticated, isFetchingUser, user]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || failedToFetchUser) {
     return <Navigate to="/login" replace />;
   }
 

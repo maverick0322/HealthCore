@@ -9,6 +9,8 @@ export interface AvailabilitySlotResponse {
   endTime: string;     // ISO 8601 date-time
   origin: SlotOrigin;
   version: number;
+  reserved: boolean;
+  active: boolean;
 }
 
 export interface AppointmentResponse {

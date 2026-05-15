@@ -11,6 +11,10 @@ const createAppointment = vi.fn();
 const cancelAppointment = vi.fn();
 const rescheduleAppointment = vi.fn();
 const t = (key: string) => key;
+const slotStart = new Date();
+slotStart.setHours(15, 0, 0, 0);
+const slotEnd = new Date(slotStart);
+slotEnd.setMinutes(slotEnd.getMinutes() + 30);
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => mockNavigate }));
 vi.mock('react-i18next', () => ({
@@ -21,6 +25,7 @@ vi.mock('@/features/patient/components/PatientNav', () => ({ PatientNav: () => <
 vi.mock('@/features/clinical/services/clinicalService', () => ({
   clinicalApi: {
     getMyProfile: vi.fn(),
+    getMyLinkedNutritionistProfile: vi.fn(),
   },
 }));
 vi.mock('@/features/patient/hooks/usePatientAppointments', () => ({
@@ -37,10 +42,12 @@ vi.mock('@/features/patient/hooks/useAvailability', () => ({
       {
         id: 'slot-1',
         nutritionistId: 'nutri-1',
-        startTime: '2026-05-01T15:00:00.000Z',
-        endTime: '2026-05-01T15:30:00.000Z',
+        startTime: slotStart.toISOString(),
+        endTime: slotEnd.toISOString(),
         origin: 'PREDEFINED',
         version: 3,
+        reserved: false,
+        active: true,
       },
     ],
     isLoading: false,
@@ -67,6 +74,21 @@ describe('PatientAppointmentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createAppointment.mockResolvedValue({ id: 'app-1' });
+    (clinicalApi.getMyLinkedNutritionistProfile as ReturnType<typeof vi.fn>).mockResolvedValue({
+      userId: 'nutri-1',
+      firstName: 'Elena',
+      paternalLastName: 'Martinez',
+      maternalLastName: '',
+      fullName: 'Dra. Elena Martinez',
+      specializations: ['CLINICAL'],
+      customSpecialization: '',
+      professionalLicense: '1234567',
+      consultationTypes: ['ONLINE'],
+      phone: '',
+      clinicAddress: null,
+      bio: '',
+      profileCompleted: true,
+    });
   });
 
   it('shows linking state and does not search slots without a clinical link', async () => {
@@ -79,7 +101,7 @@ describe('PatientAppointmentsPage', () => {
     fireEvent.click(screen.getByText('appointments.tabSchedule'));
 
     expect(await screen.findByText('appointments.noLinkedNutritionist')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /appointments.searchSlots/ }));
+    expect(screen.queryByRole('button', { name: /appointments.searchSlots/ })).not.toBeInTheDocument();
 
     expect(fetchAvailability).not.toHaveBeenCalled();
   });
@@ -93,7 +115,7 @@ describe('PatientAppointmentsPage', () => {
     render(<PatientAppointmentsPage />);
     fireEvent.click(screen.getByText('appointments.tabSchedule'));
 
-    expect(await screen.findByText('nutri-1')).toBeInTheDocument();
+    expect(await screen.findByText('Dra. Elena Martinez')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /appointments.searchSlots/ }));
 
     expect(fetchAvailability).toHaveBeenCalledWith(
@@ -112,8 +134,8 @@ describe('PatientAppointmentsPage', () => {
     render(<PatientAppointmentsPage />);
     fireEvent.click(screen.getByText('appointments.tabSchedule'));
 
-    await screen.findByText('nutri-1');
-    fireEvent.click(screen.getByRole('button', { name: /\d{1,2}:\d{2}/ }));
+    await screen.findByText('Dra. Elena Martinez');
+    fireEvent.click(screen.getAllByRole('button', { name: /\d{1,2}:\d{2}/ })[0]);
     fireEvent.click(screen.getByText('appointments.bookSlot'));
 
     await waitFor(() => {

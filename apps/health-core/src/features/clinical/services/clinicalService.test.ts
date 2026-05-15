@@ -121,6 +121,35 @@ describe('clinicalService', () => {
     expect(result).toEqual(mockResponse.data);
   });
 
+  it('should fetch the current patient assigned nutritionist profile', async () => {
+    const mockResponse = {
+      data: {
+        userId: 'nutri-1',
+        firstName: 'Elena',
+        paternalLastName: 'Martinez',
+        maternalLastName: '',
+        fullName: 'Elena Martinez',
+        specializations: ['CLINICAL'],
+        customSpecialization: '',
+        professionalLicense: '12345678',
+        consultationTypes: ['ONLINE'],
+        phone: '',
+        clinicAddress: null,
+        bio: 'Nutricion clinica.',
+        profileCompleted: true,
+      },
+    };
+    (httpClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
+
+    const result = await clinicalApi.getMyLinkedNutritionistProfile();
+
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/profile/me/nutritionist', {
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+    expect(result.fullName).toBe('Elena Martinez');
+    expect(result.specializations).toEqual(['CLINICAL']);
+  });
+
   it('should create and fetch the nutritionist profile', async () => {
     const payload: NutritionistProfilePayload = {
       firstName: 'Daniel',

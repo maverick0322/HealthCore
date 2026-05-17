@@ -9,14 +9,14 @@ interface WaterTrackerCardProps {
 }
 
 export const WaterTrackerCard = ({ totalWaterMl, onAddWater, goalMl = 2000 }: WaterTrackerCardProps) => {
-  const glassesCount = Math.floor(totalWaterMl / 250); // Glasses of water 250 ml
+  const glassesCount = Math.floor(totalWaterMl / 250); // Asumiendo vasos de 250ml
   const goalGlasses = Math.floor(goalMl / 250);
 
   return (
     <Card>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <Droplet size={16} className="text-blue-500" /> AGUA
+          <Droplet size={16} className="text-blue-500" /> Agua
         </CardTitle>
         <span className="text-xs text-muted-foreground">Meta: {goalGlasses}</span>
       </CardHeader>

@@ -54,7 +54,10 @@ public class MealLogPersistenceAdapter implements MealLogPort {
             return repository.aggregateHistoricalMacros(userId, start, end);
         } catch (org.springframework.dao.DataAccessException ex) {
             log.error("Database error while aggregating historical macros for user: {}. Error: {}", userId, ex.getMessage());
-            throw new RuntimeException("Failed to aggregate macros due to DB error", ex);
+            throw new MealLogPersistenceException("Failed to aggregate macros due to DB error", ex);
+        } catch (Exception ex) {
+            log.error("Unexpected infrastructure error while aggregating historical macros for user: {}. Error: {}", userId, ex.getMessage());
+            throw new MealLogPersistenceException("Unexpected error during macro aggregation", ex);
         }
     }
 

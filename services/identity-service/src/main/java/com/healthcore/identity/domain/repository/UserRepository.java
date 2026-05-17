@@ -10,5 +10,6 @@ public interface UserRepository {
     Optional<User> findByEmailAndProvider(String email, AuthProvider provider);
     Optional<User> findById(String id);
     List<User> findByIdIn(List<String> ids);
+    List<User> findAll();
     User save(User user);
 }

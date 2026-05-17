@@ -1,6 +1,8 @@
 package com.healthcore.agenda_service.api;
 
+import com.healthcore.agenda_service.domain.exception.BadRequestException;
 import com.healthcore.agenda_service.domain.exception.ConflictException;
+import com.healthcore.agenda_service.domain.exception.ClinicalServiceUnavailableException;
 import com.healthcore.agenda_service.domain.exception.ForbiddenOperationException;
 import com.healthcore.agenda_service.domain.exception.NotFoundException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -32,6 +34,18 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public Map<String, Object> handleConflict(RuntimeException ex) {
         return error("CONFLICT", ex.getMessage());
+    }
+
+    @ExceptionHandler(ClinicalServiceUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Map<String, Object> handleClinicalUnavailable(ClinicalServiceUnavailableException ex) {
+        return error("CLINICAL_UNAVAILABLE", ex.getMessage());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, Object> handleBadRequest(BadRequestException ex) {
+        return error("BAD_REQUEST", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

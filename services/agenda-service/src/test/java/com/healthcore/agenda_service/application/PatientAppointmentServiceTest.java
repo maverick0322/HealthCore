@@ -4,6 +4,7 @@ import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.TimeSlot;
 import com.healthcore.agenda_service.domain.TimeSlotOrigin;
+import com.healthcore.agenda_service.domain.exception.ClinicalServiceUnavailableException;
 import com.healthcore.agenda_service.domain.exception.ConflictException;
 import com.healthcore.agenda_service.domain.exception.ForbiddenOperationException;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -96,6 +98,16 @@ class PatientAppointmentServiceTest {
 
         assertThatThrownBy(() -> service.createAppointment("patient-1", new CreateAppointmentCommand("slot-1", 1L, "es")))
             .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void createAppointment_shouldFailClosedWhenClinicalValidationIsUnavailable() {
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+        when(clinicalServiceClient.validateLink("patient-1", "nutri-1"))
+            .thenThrow(new ClinicalServiceUnavailableException("clinical unavailable"));
+
+        assertThatThrownBy(() -> service.createAppointment("patient-1", new CreateAppointmentCommand("slot-1", 1L, "es")))
+            .isInstanceOf(ClinicalServiceUnavailableException.class);
     }
 
     @Test
@@ -181,7 +193,6 @@ class PatientAppointmentServiceTest {
         when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
         when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
         when(timeSlotRepository.findById("slot-2")).thenReturn(Optional.of(newSlot));
-        when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(true);
         when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(i -> i.getArgument(0));
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -189,6 +200,43 @@ class PatientAppointmentServiceTest {
 
         assertThat(result.getSlotId()).isEqualTo("slot-2");
         assertThat(result.getLocale()).isEqualTo("es");
+        verify(clinicalServiceClient, never()).validateLink("patient-1", "nutri-1");
+    }
+
+    @Test
+    void rescheduleAppointment_shouldFailClosedWhenClinicalValidationIsUnavailable() {
+        Appointment appointment = Appointment.builder()
+            .id("app-1")
+            .slotId("slot-1")
+            .patientId("patient-1")
+            .nutritionistId("nutri-1")
+            .startTime(slot.getStartTime())
+            .endTime(slot.getEndTime())
+            .status(AppointmentStatus.CONFIRMED)
+            .build();
+
+        TimeSlot newSlot = TimeSlot.builder()
+            .id("slot-2")
+            .nutritionistId("nutri-2")
+            .startTime(Instant.parse("2026-04-22T11:00:00Z"))
+            .endTime(Instant.parse("2026-04-22T11:30:00Z"))
+            .reserved(false)
+            .active(true)
+            .version(1L)
+            .origin(TimeSlotOrigin.PREDEFINED)
+            .build();
+
+        when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findById("slot-2")).thenReturn(Optional.of(newSlot));
+        when(clinicalServiceClient.validateLink("patient-1", "nutri-2"))
+            .thenThrow(new ClinicalServiceUnavailableException("clinical unavailable"));
+
+        assertThatThrownBy(() -> service.rescheduleAppointment(
+            "patient-1",
+            "app-1",
+            new CreateAppointmentCommand("slot-2", 1L, "es")
+        )).isInstanceOf(ClinicalServiceUnavailableException.class);
     }
 
     @Test

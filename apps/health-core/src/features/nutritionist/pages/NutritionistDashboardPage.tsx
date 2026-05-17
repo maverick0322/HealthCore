@@ -1,83 +1,168 @@
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { 
-  Users, 
-  CalendarDays, 
-  ClipboardList, 
+import {
+  AlertCircle,
+  CalendarDays,
   ChevronRight,
-  Video,
-  MapPin,
+  ClipboardList,
   Clock,
-  CheckCircle2
+  Loader2,
+  Users,
 } from "lucide-react";
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
 import { SettingsBar } from "@/shared/components/SettingsBar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
+import { clinicalApi } from "@/features/clinical/services/clinicalService";
+import type { NutritionistPatientProfileResponse } from "@/features/clinical/types/clinical.types";
+import { useNutritionistAppointments } from "@/features/nutritionist/hooks/useNutritionistAppointments";
+import {
+  addDays,
+  formatLocalDate,
+  formatLocalTime,
+  getDateRangeForDateKeys,
+  localDateKeyFromIso,
+  todayDateKey,
+} from "@/features/agenda/utils/agendaDateUtils";
 
-// ── Dummy data ─────────────────────────────────────────────────────────────
+const getFirstName = (name: string | null | undefined) =>
+  name?.trim().split(/\s+/)[0] ?? null;
 
-const DUMMY_STATS = {
-  activePatients: 45,
-  appointmentsToday: 6,
-  pendingReviews: 3,
+const statusClass = (status: string) => {
+  switch (status) {
+    case "CONFIRMED":
+    case "ATTENDED":
+      return "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
+    case "PENDING":
+      return "border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-300";
+    default:
+      return "border-border bg-muted text-muted-foreground";
+  }
 };
-
-const DUMMY_AGENDA = [
-  { id: "1", patientName: "Carlos Gómez", time: "09:00", type: "presential", status: "completed" },
-  { id: "2", patientName: "María López", time: "10:30", type: "online", status: "confirmed" },
-  { id: "3", patientName: "Javier Ruiz", time: "12:00", type: "online", status: "confirmed" },
-  { id: "4", patientName: "Lucía Fernández", time: "15:00", type: "presential", status: "pending" },
-];
-
-// ── Main Component ─────────────────────────────────────────────────────────
 
 export const NutritionistDashboardPage = () => {
   const { t } = useTranslation("nutritionist");
-  const displayName = "Daniel"; // Would come from auth context
+  const navigate = useNavigate();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
-      case "confirmed": return "text-primary bg-primary/10 border-primary/20";
-      case "pending": return "text-amber-500 bg-amber-500/10 border-amber-500/20";
-      default: return "text-muted-foreground bg-muted border-border";
-    }
-  };
+  const [displayName, setDisplayName] = useState("Profesional");
+  const [patients, setPatients] = useState<NutritionistPatientProfileResponse[]>([]);
+  const [patientsLoading, setPatientsLoading] = useState(true);
+  const [patientsError, setPatientsError] = useState<string | null>(null);
+
+  const {
+    appointments,
+    isLoading: appointmentsLoading,
+    error: appointmentsError,
+    fetchAppointments,
+  } = useNutritionistAppointments();
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadProfile = async () => {
+      try {
+        const profile = await clinicalApi.getMyNutritionistProfile();
+        if (!ignore) {
+          setDisplayName(getFirstName(profile.fullName) ?? "Profesional");
+        }
+      } catch {
+        if (!ignore) {
+          setDisplayName("Profesional");
+        }
+      }
+    };
+
+    const loadPatients = async () => {
+      setPatientsLoading(true);
+      setPatientsError(null);
+      try {
+        const linkedPatients = await clinicalApi.getNutritionistPatients();
+        if (!ignore) {
+          setPatients(linkedPatients);
+        }
+      } catch {
+        if (!ignore) {
+          setPatients([]);
+          setPatientsError(t("patients.error"));
+        }
+      } finally {
+        if (!ignore) {
+          setPatientsLoading(false);
+        }
+      }
+    };
+
+    void loadProfile();
+    void loadPatients();
+
+    return () => {
+      ignore = true;
+    };
+  }, [t]);
+
+  useEffect(() => {
+    const today = todayDateKey();
+    const range = getDateRangeForDateKeys(today, addDays(today, 14));
+    void fetchAppointments(range.from, range.to);
+  }, [fetchAppointments]);
+
+  const patientNameById = useMemo(
+    () =>
+      new Map(
+        patients.map((patient) => [
+          patient.userId,
+          patient.fullName?.trim() || t("dashboard.unknownPatient"),
+        ]),
+      ),
+    [patients, t],
+  );
+
+  const upcomingAppointments = useMemo(() => {
+    const now = Date.now();
+    return appointments
+      .filter((appointment) => appointment.status !== "CANCELLED")
+      .filter((appointment) => new Date(appointment.endTime).getTime() >= now)
+      .sort(
+        (left, right) =>
+          new Date(left.startTime).getTime() - new Date(right.startTime).getTime(),
+      );
+  }, [appointments]);
+
+  const today = todayDateKey();
+  const appointmentsToday = appointments.filter(
+    (appointment) =>
+      appointment.status !== "CANCELLED" &&
+      localDateKeyFromIso(appointment.startTime) === today,
+  ).length;
+  const pendingAppointments = appointments.filter(
+    (appointment) => appointment.status === "PENDING",
+  ).length;
+  const patientPreview = patients.slice(0, 5);
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
       <NutritionistNav />
 
-      {/* ── Top Controls ─────────────────────────────────────────── */}
       <div className="md:pl-56">
         <SettingsBar />
       </div>
 
-      {/* ── Header ───────────────────────────────────────────────── */}
-      <div className="relative bg-primary/10 border-b border-border overflow-hidden md:pl-56">
-        <div
-          aria-hidden
-          className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
-        />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6 flex items-start sm:items-center justify-between">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-              {t("dashboard.greeting", { name: displayName })}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {t("dashboard.greetingSubtitle")}
-            </p>
-          </div>
+      <div className="border-b border-border bg-primary/10 md:pl-56">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            {t("dashboard.greeting", { name: displayName })}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {t("dashboard.greetingSubtitle")}
+          </p>
         </div>
       </div>
 
-      {/* ── Main Content ─────────────────────────────────────────── */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-        
-        {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <Card className="bg-card/50 border-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {t("dashboard.activePatients")}
@@ -85,11 +170,13 @@ export const NutritionistDashboardPage = () => {
               <Users size={16} className="text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{DUMMY_STATS.activePatients}</div>
+              <div className="text-2xl font-bold">
+                {patientsLoading ? <Loader2 size={20} className="animate-spin" /> : patients.length}
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <Card className="bg-card/50 border-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {t("dashboard.appointmentsToday")}
@@ -97,28 +184,36 @@ export const NutritionistDashboardPage = () => {
               <CalendarDays size={16} className="text-amber-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{DUMMY_STATS.appointmentsToday}</div>
+              <div className="text-2xl font-bold">
+                {appointmentsLoading ? <Loader2 size={20} className="animate-spin" /> : appointmentsToday}
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <Card className="bg-card/50 border-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {t("dashboard.pendingReviews")}
+                {t("dashboard.pendingAppointments")}
               </CardTitle>
               <ClipboardList size={16} className="text-sky-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{DUMMY_STATS.pendingReviews}</div>
+              <div className="text-2xl font-bold">
+                {appointmentsLoading ? <Loader2 size={20} className="animate-spin" /> : pendingAppointments}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Dashboard Sections Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          
-          {/* Today's Agenda */}
-          <Card className="lg:col-span-1 shadow-sm border-border/50 overflow-hidden flex flex-col">
+        {(patientsError || appointmentsError) && (
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-3 text-sm text-destructive">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            <span>{patientsError ?? appointmentsError}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] items-start">
+          <Card className="shadow-sm border-border/50 overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between bg-muted/20 pb-4 border-b border-border/50">
               <div>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -126,98 +221,128 @@ export const NutritionistDashboardPage = () => {
                   {t("dashboard.nextAppointments")}
                 </CardTitle>
                 <CardDescription className="text-xs mt-1">
-                  Revisa tus compromisos para hoy
+                  {t("dashboard.agendaSubtitle")}
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="text-xs text-primary -mr-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-primary -mr-2"
+                onClick={() => navigate("/agenda/nutritionist")}
+              >
                 {t("dashboard.viewAll")} <ChevronRight size={14} className="ml-1" />
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-border/50">
-                {DUMMY_AGENDA.length > 0 ? (
-                  DUMMY_AGENDA.map((appointment) => (
-                    <div 
-                      key={appointment.id}
-                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-muted/10 transition-colors cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-4">
-                        {/* Time Bubble */}
-                        <div className="w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center flex-shrink-0">
-                          <Clock size={14} className="text-primary mb-0.5" />
-                          <span className="text-xs font-bold text-primary">{appointment.time}</span>
-                        </div>
-                        {/* Patient Info */}
-                        <div>
-                          <p className="font-bold text-sm group-hover:text-primary transition-colors">
-                            {appointment.patientName}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              {appointment.type === "online" ? <Video size={12} /> : <MapPin size={12} />}
-                              {appointment.type === "online" ? "Online" : "Presencial"}
-                            </span>
+              {appointmentsLoading ? (
+                <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+                  <Loader2 size={18} className="animate-spin" />
+                  {t("dashboard.loadingAppointments")}
+                </div>
+              ) : upcomingAppointments.length > 0 ? (
+                <div className="divide-y divide-border/50">
+                  {upcomingAppointments.slice(0, 5).map((appointment) => {
+                    const patientName =
+                      patientNameById.get(appointment.patientId) ??
+                      t("dashboard.unknownPatient");
+
+                    return (
+                      <button
+                        key={appointment.id}
+                        type="button"
+                        className="w-full p-4 text-left hover:bg-muted/20 transition-colors"
+                        onClick={() =>
+                          navigate(`/patients/nutritionist/${encodeURIComponent(appointment.patientId)}`)
+                        }
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="w-14 h-14 rounded-lg bg-primary/10 border border-primary/20 flex flex-col items-center justify-center shrink-0">
+                              <Clock size={14} className="text-primary mb-0.5" />
+                              <span className="text-xs font-bold text-primary">
+                                {formatLocalTime(appointment.startTime)}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm truncate">{patientName}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {formatLocalDate(appointment.startTime)},{" "}
+                                {formatLocalTime(appointment.startTime)} -{" "}
+                                {formatLocalTime(appointment.endTime)}
+                              </p>
+                            </div>
                           </div>
+                          <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusClass(appointment.status)}`}>
+                            {t(`agenda.status.${appointment.status}`)}
+                          </span>
                         </div>
-                      </div>
-                      
-                      {/* Status */}
-                      <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 mt-2 sm:mt-0 pl-18 sm:pl-0">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusColor(appointment.status)}`}>
-                          {t(`dashboard.status.${appointment.status}`)}
-                        </span>
-                        {appointment.status === "completed" && (
-                          <CheckCircle2 size={14} className="text-emerald-500 hidden sm:block" />
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-8 text-center text-muted-foreground">
-                    <CalendarDays size={32} className="mx-auto mb-3 opacity-20" />
-                    <p className="text-sm">{t("dashboard.noAppointments")}</p>
-                  </div>
-                )}
-              </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-muted-foreground">
+                  <CalendarDays size={32} className="mx-auto mb-3 opacity-20" />
+                  <p className="text-sm">{t("dashboard.noAppointments")}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Right Column: Alerts or Activity */}
-          <div className="lg:col-span-1 space-y-6">
-            <Card className="shadow-sm border-border/50">
-              <CardHeader className="bg-muted/20 pb-4 border-b border-border/50">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <ClipboardList size={18} className="text-amber-500" />
-                  {t("dashboard.recentActivity")}
-                </CardTitle>
-                <CardDescription className="text-xs mt-1">
-                  Alertas y tareas pendientes
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="flex flex-col gap-3 text-sm">
-                  {/* Dummy Alerts */}
-                  <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 flex items-start gap-3">
-                    <span className="w-2 h-2 mt-1.5 rounded-full bg-amber-500 flex-shrink-0" />
-                    <div>
-                      <p className="font-semibold text-amber-700 dark:text-amber-400">Revisión de plan pendiente</p>
-                      <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">Carlos Gómez (Semana 4)</p>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 flex items-start gap-3">
-                    <span className="w-2 h-2 mt-1.5 rounded-full bg-primary flex-shrink-0" />
-                    <div>
-                      <p className="font-semibold text-primary">Nuevo paciente asignado</p>
-                      <p className="text-xs text-primary/80 mt-0.5">Ana Silva completó su onboarding</p>
-                    </div>
-                  </div>
+          <Card className="shadow-sm border-border/50">
+            <CardHeader className="bg-muted/20 pb-4 border-b border-border/50">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Users size={18} className="text-primary" />
+                {t("dashboard.activePatients")}
+              </CardTitle>
+              <CardDescription className="text-xs mt-1">
+                {t("dashboard.patientsSubtitle")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {patientsLoading ? (
+                <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+                  <Loader2 size={18} className="animate-spin" />
+                  {t("dashboard.loadingPatients")}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              ) : patientPreview.length > 0 ? (
+                <div className="divide-y divide-border/50">
+                  {patientPreview.map((patient) => {
+                    const name = patient.fullName?.trim() || t("dashboard.unknownPatient");
 
+                    return (
+                      <button
+                        key={patient.userId}
+                        type="button"
+                        className="w-full p-4 text-left hover:bg-muted/20 transition-colors"
+                        onClick={() =>
+                          navigate(`/patients/nutritionist/${encodeURIComponent(patient.userId)}`)
+                        }
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                            {name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold">{name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {t("patients.objectivePlaceholder")}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-muted-foreground">
+                  <Users size={32} className="mx-auto mb-3 opacity-20" />
+                  <p className="text-sm">{t("dashboard.noPatients")}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-
       </main>
     </div>
   );

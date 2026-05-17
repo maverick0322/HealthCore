@@ -23,6 +23,8 @@ jwt:
 # SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=https://YOUR_TENANT.us.auth0.com/
 
 app:
+  oauth2:
+    success-redirect-url: ${APP_OAUTH2_SUCCESS_REDIRECT_URL:https://localhost:5173/oauth2/callback}
   messaging:
     exchange: ${APP_MESSAGING_EXCHANGE:healthcore.identity.events}
     routing-keys:
@@ -79,4 +81,4 @@ management:
       probability: 1.0
   otlp:
     tracing:
-      endpoint: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:http://tempo:4318/v1/traces}
+      endpoint: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:http://tempo:4318/v1/traces}

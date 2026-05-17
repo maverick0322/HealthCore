@@ -1,0 +1,89 @@
+{
+  "common": {
+    "back": "Back",
+    "updatedTitle": "Last updated",
+    "updatedBody": "This document is provided for general informational purposes. Review it and contact us if you have questions.",
+    "footerNote": "If you need signed or jurisdiction-specific versions, we recommend reviewing with legal counsel."
+  },
+  "terms": {
+    "title": "Terms & Conditions",
+    "subtitle": "Rules for using the platform and liability limitations.",
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptance",
+        "body": "By accessing or using the platform, you agree to these terms. If you disagree, do not use the service."
+      },
+      "eligibility": {
+        "title": "2. Eligibility",
+        "body": "You must have legal capacity to use the service. If you are underage, use the service with guardian consent."
+      },
+      "use": {
+        "title": "3. Acceptable use",
+        "body": "You agree to use the platform lawfully and not attempt to compromise security, disrupt the service, or abuse features."
+      },
+      "health": {
+        "title": "4. Health information",
+        "body": "HealthCore does not replace medical diagnosis or treatment. Recommendations and estimates are informational only."
+      },
+      "accounts": {
+        "title": "5. Accounts and access",
+        "body": "You are responsible for keeping credentials confidential and for all activity under your account."
+      },
+      "payments": {
+        "title": "6. Payments (if applicable)",
+        "body": "Some features may require payment. Prices and plan conditions will be shown before purchase."
+      },
+      "ip": {
+        "title": "7. Intellectual property",
+        "body": "Software, trademarks, and content belong to their respective owners. No license is granted beyond normal service usage."
+      },
+      "termination": {
+        "title": "8. Suspension or termination",
+        "body": "We may suspend access for violations, fraud, or security risks. You may stop using the service at any time."
+      },
+      "contact": {
+        "title": "9. Contact",
+        "body": "For questions about these terms, contact us through the channels available in the platform."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Notice",
+    "subtitle": "How we handle your data and what choices you have.",
+    "sections": {
+      "summary": {
+        "title": "1. Summary",
+        "body": "We collect minimal data to operate the service (e.g., email and preferences). You can use the demo without an account."
+      },
+      "dataWeCollect": {
+        "title": "2. Data we collect",
+        "body": "Depending on usage, we may collect: account data, meal logs, metrics (weight/height), and technical data (browser, error events)."
+      },
+      "howWeUse": {
+        "title": "3. How we use data",
+        "body": "To provide the service, improve the experience, maintain security, and (if applicable) enable support with a nutritionist."
+      },
+      "sharing": {
+        "title": "4. Sharing",
+        "body": "We only share data when you request it (e.g., with a chosen nutritionist) or when required to operate the service (infrastructure providers)."
+      },
+      "retention": {
+        "title": "5. Retention",
+        "body": "We retain data as needed to operate your account and meet obligations. You may request deletion depending on product availability."
+      },
+      "security": {
+        "title": "6. Security",
+        "body": "We apply reasonable controls to protect information. No system is 100% secure; avoid reusing passwords."
+      },
+      "rights": {
+        "title": "7. Your rights",
+        "body": "You may request access, correction, or deletion where applicable. Exact options vary by region and product status."
+      },
+      "contact": {
+        "title": "8. Contact",
+        "body": "For privacy-related requests, contact us through the channels available in the platform."
+      }
+    }
+  }
+}
+

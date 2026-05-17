@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -33,9 +33,7 @@ export const OAuth2CallbackPage = () => {
   const urlError = searchParams.get('error');
   const urlMessage = searchParams.get('message');
 
-  const [asyncError, setAsyncError] = useState<string | null>(null);
-
-  let error = asyncError;
+  let error: string | null = null;
   if (urlError) {
     error = t('oauth2CallbackError');
   } else if (!accessToken || !refreshToken) {
@@ -60,16 +58,7 @@ export const OAuth2CallbackPage = () => {
 
       setTokens(tokens);
       fetchCurrentUser().then(() => {
-        const currentUser = useAuthStore.getState().user;
-        const expectedRole = sessionStorage.getItem("expectedRole");
-        if (expectedRole && currentUser && currentUser.role !== expectedRole) {
-          useAuthStore.getState().logout();
-          setAsyncError(t('oauth2RoleMismatch'));
-          setTimeout(() => navigate('/login', { replace: true }), 3000);
-          return;
-        }
-        sessionStorage.removeItem("expectedRole");
-        navigate('/', { replace: true });
+        navigate('/home', { replace: true });
       });
     } else {
       // Redirect to login after a brief delay

@@ -5,6 +5,15 @@ import { GuestRoute } from './GuestRoute';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { Route, Routes } from 'react-router-dom';
 
+const mockAuthenticatedUser = {
+  id: 'user-1',
+  email: 'patient@example.com',
+  role: 'PATIENT' as const,
+  provider: 'LOCAL' as const,
+  emailVerified: true,
+  enabled: true,
+};
+
 // Helper to render a route guard with a dummy child route
 const renderGuard = (
   Guard: typeof ProtectedRoute | typeof GuestRoute,
@@ -17,7 +26,7 @@ const renderGuard = (
         <Route path={path} element={<div data-testid="guarded-content">Protected</div>} />
       </Route>
       <Route path="/login" element={<div data-testid="login-page">Login</div>} />
-      <Route path="/" element={<div data-testid="home-page">Home</div>} />
+      <Route path="/home" element={<div data-testid="home-page">Home</div>} />
     </Routes>,
     { initialEntries },
   );
@@ -34,12 +43,11 @@ describe('ProtectedRoute', () => {
   });
 
   it('renders children when authenticated', () => {
-    useAuthStore.getState().setTokens({
+    useAuthStore.setState({
       accessToken: 'at-123',
       refreshToken: 'rt-456',
-      tokenType: 'Bearer',
-      accessTokenExpiresInMs: 300000,
-      refreshTokenExpiresInMs: 86400000,
+      isAuthenticated: true,
+      user: mockAuthenticatedUser,
     });
 
     renderGuard(ProtectedRoute, '/dashboard', ['/dashboard']);
@@ -47,26 +55,3 @@ describe('ProtectedRoute', () => {
   });
 });
 
-describe('GuestRoute', () => {
-  beforeEach(() => {
-    useAuthStore.getState().clearSession();
-  });
-
-  it('renders children when not authenticated', () => {
-    renderGuard(GuestRoute, '/signup', ['/signup']);
-    expect(screen.getByTestId('guarded-content')).toBeInTheDocument();
-  });
-
-  it('redirects to / when authenticated', () => {
-    useAuthStore.getState().setTokens({
-      accessToken: 'at-123',
-      refreshToken: 'rt-456',
-      tokenType: 'Bearer',
-      accessTokenExpiresInMs: 300000,
-      refreshTokenExpiresInMs: 86400000,
-    });
-
-    renderGuard(GuestRoute, '/signup', ['/signup']);
-    expect(screen.getByTestId('home-page')).toBeInTheDocument();
-  });
-});

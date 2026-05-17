@@ -6,6 +6,7 @@ import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.TimeSlot;
 import com.healthcore.agenda_service.domain.TimeSlotOrigin;
+import com.healthcore.agenda_service.domain.exception.ClinicalServiceUnavailableException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -133,5 +134,19 @@ class PatientAgendaControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value("app-1"))
             .andExpect(jsonPath("$.slotId").value("slot-2"));
+    }
+
+    @Test
+    @WithMockUser(username = "patient-1")
+    void postAppointments_shouldReturnServiceUnavailableWhenClinicalValidationFails() throws Exception {
+        when(service.createAppointment(eq("patient-1"), eq(new CreateAppointmentCommand("slot-1", 1L, "es"))))
+            .thenThrow(new ClinicalServiceUnavailableException("No fue posible validar el vinculo clinico"));
+
+        mockMvc.perform(post("/api/v1/agenda/appointments")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"slotId\":\"slot-1\",\"slotVersion\":1,\"nutritionistId\":\"nutri-1\",\"locale\":\"es\"}"))
+            .andExpect(status().isServiceUnavailable())
+            .andExpect(jsonPath("$.code").value("CLINICAL_UNAVAILABLE"));
     }
 }

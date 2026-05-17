@@ -1,0 +1,245 @@
+{
+  "brand": "HealthCore",
+  "nav": {
+    "login": "Sign in",
+    "goToApp": "Go to app",
+    "preview": "Preview"
+  },
+  "hero": {
+    "title": "Nutrition tracking, guided step by step",
+    "subtitle": "Log meals in seconds, understand your progress, and connect with a nutritionist when you want—without friction.",
+    "primaryCta": "Start now",
+    "secondaryCta": "See how it works"
+  },
+  "value": {
+    "title": "Everything you need to stay on track",
+    "cards": {
+      "fast": {
+        "title": "Ultra-fast logging",
+        "body": "Smart search, favorites, and portions to log in under a minute."
+      },
+      "pro": {
+        "title": "Professional support",
+        "body": "Share your progress with a nutritionist and get adjustments and feedback."
+      },
+      "calm": {
+        "title": "Progress without stress",
+        "body": "Clear charts, gentle reminders, and a consistency-first approach."
+      }
+    }
+  },
+  "how": {
+    "title": "How it works",
+    "steps": {
+      "oneTitle": "Set up your profile",
+      "oneBody": "Goals, allergies, and preferences in under 30 seconds.",
+      "twoTitle": "Log your meals",
+      "twoBody": "Self-managed or guided by a nutritionist—you choose.",
+      "threeTitle": "See your progress",
+      "threeBody": "Trends and insights to make decisions easier."
+    }
+  },
+  "explore": {
+    "title": "Explore with no signup",
+    "demoTitle": "Interactive demo",
+    "demoBody": "Try an example day and play with meal logging.",
+    "demoCta": "Open demo",
+    "calcTitle": "Calorie calculator (TDEE)",
+    "calcBody": "Get a maintenance estimate based on your profile.",
+    "galleryTitle": "Example gallery",
+    "galleryBody": "User and nutritionist views (examples).",
+    "galleryMock": {
+      "patientTitle": "Patient dashboard",
+      "patientSubtitle": "Daily log + key metrics",
+      "kcal": "Kcal",
+      "protein": "Protein",
+      "steps": "Steps",
+      "weekTitle": "Weekly summary"
+    },
+    "videoTitle": "Guided tour",
+    "videoBody": "Explore real sections with sample data and quick personalization.",
+    "videoCta": "Open tour",
+    "mock": {
+      "exampleDay": "Example day"
+    },
+    "nutritionistTitle": "Nutritionist",
+    "nutritionistBody": "Notes, adjustments, and follow-up (example).",
+    "nutriMock": {
+      "title": "Nutritionist dashboard",
+      "subtitle": "Patients, status and follow-up",
+      "badge": "Capacity",
+      "statusOk": "On track",
+      "statusReview": "Review",
+      "statusNew": "New",
+      "noteOk": "Complete log · 4-day streak",
+      "noteReview": "Missing meal · check portions",
+      "noteNew": "Day 1 · set baseline plan",
+      "adjustmentsTitle": "Suggested adjustments",
+      "adjust1": "Increase breakfast protein (+15g).",
+      "adjust2": "Add 1 fruit serving post-workout.",
+      "adjust3": "Keep water goal: 2L per day."
+    },
+    "videoPlaceholderTitle": "Video",
+    "videoPlaceholderBody": "Placeholder. A video (YouTube/Vimeo) will be embedded here without requiring an account."
+  },
+  "tour": {
+    "title": "Guided tour",
+    "subtitle": "Explore the key sections with sample data and personalize a few values to see how the experience adapts.",
+    "back": "Back",
+    "tryDemo": "Open demo",
+    "profileCardTitle": "Personalize your profile",
+    "profileCardBody": "This adjusts targets and examples in the tour.",
+    "goal": "Goal",
+    "goals": {
+      "lose": "Lose weight",
+      "maintain": "Maintain",
+      "gain": "Gain muscle"
+    },
+    "target": "Target",
+    "steps": {
+      "profile": { "label": "Profile", "title": "Your profile in 30 seconds", "body": "Clear preferences and targets from day one.", "card1Title": "Preferences", "card1Body": "Allergies, diet, habits", "card2Title": "Targets", "card2Body": "Calories and focus", "card3Title": "Reminders", "card3Body": "Gentle and configurable" },
+      "log": { "label": "Logging", "title": "Meal logging", "body": "Fast, consistent, and frictionless.", "sampleDay": "Example day" },
+      "progress": { "label": "Progress", "title": "Clear progress", "body": "Trends and metrics that help you decide.", "metric1": "Daily target", "metric2": "Consistency", "metric3": "Badges", "metric3Body": "week" },
+      "nutritionist": { "label": "Nutritionist", "title": "Professional support", "body": "Feedback and adjustments on your logs.", "thread": "Conversation", "msg1": "Nice start. Keep protein at breakfast and add a fruit serving today.", "msg2": "Got it. What snack would you recommend for mid‑afternoon?" }
+    },
+    "hintProfile": "This is a tour. Real sections are available inside the app.",
+    "hintLog": "Example of how a day could look with logged meals.",
+    "hintProgress": "Metrics update as you log your days.",
+    "hintNutritionist": "Support is enabled when you connect with a professional.",
+    "prev": "Previous",
+    "next": "Next",
+    "sample": "Sample",
+    "you": "You",
+    "meals": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner"
+    },
+    "foods": {
+      "oats": "Oats",
+      "banana": "Banana",
+      "yogurt": "Yogurt"
+    }
+  },
+  "calculator": {
+    "sex": "Sex",
+    "male": "Male",
+    "female": "Female",
+    "age": "Age (years)",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "activity": "Activity",
+    "activityLevels": {
+      "0": "Sedentary",
+      "1": "Light",
+      "2": "Moderate",
+      "3": "High",
+      "4": "Very high"
+    },
+    "bmr": "BMR (kcal/day)",
+    "tdee": "TDEE (kcal/day)",
+    "disclaimer": "Estimated values. For a personalized plan, consult a professional."
+  },
+  "faq": {
+    "title": "FAQ",
+    "q1": "Do I need a nutritionist to use the app?",
+    "a1": "No. You can use it self-managed and add professional support whenever you want.",
+    "q2": "Can I try it before creating an account?",
+    "a2": "Yes. The demo and tour let you explore without signing up.",
+    "q3": "Is my data safe?",
+    "a3": "We follow standard security practices and session isolation. Avoid sharing credentials and sign out on public devices."
+  },
+  "finalCta": {
+    "title": "Start today, no pressure",
+    "subtitle": "Explore the demo first, then decide if you want to create an account.",
+    "primary": "Try demo",
+    "secondary": "Create account"
+  },
+  "footer": {
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "contact": "Contact"
+  },
+  "heroMock": {
+    "title": "Preview",
+    "today": "Today",
+    "subtitle": "Meal logging + progress, in one glance.",
+    "meals": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner"
+    },
+    "items": {
+      "oats": "Oats",
+      "banana": "Banana",
+      "coffee": "Coffee",
+      "chicken": "Chicken",
+      "rice": "Rice",
+      "salad": "Salad",
+      "yogurt": "Yogurt",
+      "fruit": "Fruit",
+      "water": "Water"
+    },
+    "weeklyTrend": "Weekly trend",
+    "weekStart": "Mon",
+    "weekEnd": "Sun"
+  },
+  "demo": {
+    "title": "Interactive demo",
+    "subtitle": "Explore the flow without signing up. Everything is sample data so you can understand how the app works.",
+    "back": "Back",
+    "primaryCta": "Create account",
+    "labels": {
+      "day": "Today",
+      "week": "This week",
+      "daily": "Daily"
+    },
+    "tabs": {
+      "self": "Self-managed",
+      "pro": "With nutritionist"
+    },
+    "self": {
+      "title": "Log breakfast",
+      "badge": "Sample",
+      "body": "Add sample foods and see the total calories change.",
+      "total": "Total",
+      "remove": "Remove food",
+      "addHint": "Add one or two items to see changes.",
+      "reset": "Reset",
+      "previewTitle": "Dashboard preview",
+      "previewBody": "This is how your metrics and trends could look.",
+      "insights": "Insights",
+      "insightsConsistency": "Consistency",
+      "macros": {
+        "protein": "Protein",
+        "carbs": "Carbs",
+        "fat": "Fat"
+      },
+      "note": "If you want to start with your own profile, create an account."
+    },
+    "pro": {
+      "title": "Professional support",
+      "badge": "Feedback",
+      "body": "Sample comments and adjustments from a nutritionist.",
+      "commentLabel": "Nutritionist note",
+      "comment": "Great start. Keep protein at breakfast and add one fruit portion if you train in the morning.",
+      "userMessage": "Thanks. What snack would you recommend for mid-afternoon?",
+      "you": "You",
+      "adjustments": "Suggested adjustments",
+      "adjustmentItems": {
+        "fruit": "+ 1 fruit serving",
+        "proteinBreakfast": "Protein at breakfast",
+        "water": "Water: 2L"
+      },
+      "previewTitle": "Follow-up",
+      "previewBody": "History of changes and recommendations.",
+      "timeline": "Timeline",
+      "timelineItems": {
+        "breakfastReview": "Breakfast review · 09:12",
+        "goalAdjustment": "Goal adjustment · 11:40",
+        "snackRecommendation": "Snack recommendation · 16:05"
+      },
+      "note": "Professional support is enabled when you connect your account with a specialist."
+    }
+  }
+}

@@ -1,28 +1,20 @@
 import { Navigate, Outlet } from 'react-router-dom';
+
+import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { useOnboardingStatus } from '@/features/onboarding/hooks/useOnboardingStatus';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { OnboardingUnavailableState } from './OnboardingUnavailableState';
 
-/**
- * Route guard that protects the onboarding routes.
- *
- * - If user is loading: Show spinner
- * - If user has completed onboarding: Redirect to /dashboard/patient
- * - If user hasn't completed onboarding: Allow access to /onboarding/patient
- *
- * Usage in router:
- *   {
- *     path: "/onboarding",
- *     element: <OnboardingGuard />,
- *     children: [
- *       {
- *         path: "/onboarding/patient",
- *         element: <PatientOnboardingPage />
- *       }
- *     ]
- *   }
- */
+const getDashboardPath = (role: string | undefined): string => {
+  if (role === 'NUTRITIONIST') {
+    return '/dashboard/nutritionist';
+  }
+  return '/dashboard/patient';
+};
+
 export const OnboardingGuard = () => {
   const status = useOnboardingStatus();
+  const user = useAuthStore((state) => state.user);
 
   if (status === 'loading') {
     return (
@@ -32,11 +24,13 @@ export const OnboardingGuard = () => {
     );
   }
 
-  // If user already completed onboarding, redirect to patient dashboard
   if (status === 'completed') {
-    return <Navigate to="/dashboard/patient" replace />;
+    return <Navigate to={getDashboardPath(user?.role)} replace />;
   }
 
-  // Otherwise, allow access to onboarding routes
+  if (status === 'unavailable') {
+    return <OnboardingUnavailableState />;
+  }
+
   return <Outlet />;
 };

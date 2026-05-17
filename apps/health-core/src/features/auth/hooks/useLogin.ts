@@ -1,15 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { useAuthStore } from "../store/useAuthStore";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { type LoginRequest } from "../types/auth.types";
+import { useTranslation } from "react-i18next";
+import axios from "axios";
 
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
-import type { LoginRequest } from '@/features/auth/types/auth.types';
-
-/**
- * Hook that wraps the auth store's login action with
- * local form state, loading flag, and error handling.
- */
 export const useLogin = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('auth');
@@ -17,24 +12,13 @@ export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const logout = useAuthStore((s) => s.logout);
-
-  const handleLogin = async (data: LoginRequest, expectedRole?: string) => {
+  const handleLogin = async (data: LoginRequest) => {
     setError(null);
     setIsLoading(true);
     try {
       await login(data);
-      
-      if (expectedRole) {
-        const currentUser = useAuthStore.getState().user;
-        if (currentUser && currentUser.role !== expectedRole) {
-          await logout();
-          setError(t('errorInvalidCredentials')); // Or a specific role mismatch error
-          return;
-        }
-      }
 
-      navigate('/onboarding/patient', { replace: true });
+      navigate('/home', { replace: true });
     } catch (err: unknown) {
       console.error('[useLogin] Login failed:', err);
       if (axios.isAxiosError(err)) {

@@ -22,121 +22,142 @@ import { NutritionistAgendaPage } from "@/features/nutritionist/pages/Nutritioni
 import { NutritionistReportsPage } from "@/features/nutritionist/pages/NutritionistReportsPage";
 import { NutritionistAvailabilityPage } from "@/features/nutritionist/pages/NutritionistAvailabilityPage";
 import { NutritionistProfilePage } from "@/features/nutritionist/pages/NutritionistProfilePage";
+import { AdminDashboardPage } from "@/features/admin/pages/AdminDashboardPage";
 import { NotFoundPage } from "@/shared/components/NotFoundPage";
 import { ErrorBoundaryPage } from "@/shared/components/ErrorBoundaryPage";
 import { LogFoodPage } from "@/features/tracking/pages/LogFoodPage";
+import { LandingPage } from "@/features/marketing/pages/LandingPage";
+import { DemoPage } from "@/features/marketing/pages/DemoPage";
+import { TermsPage } from "@/features/marketing/pages/TermsPage";
+import { PrivacyPage } from "@/features/marketing/pages/PrivacyPage";
+import { TourPage } from "@/features/marketing/pages/TourPage";
+import { PatientOnboardingGuard } from "@/core/routes/PatientOnboardingGuard";
+import { NutritionistOnboardingGuard } from "@/core/routes/NutritionistOnboardingGuard";
+import { PatientScanningPage } from "@/features/patient/pages/PatientScanningPage";
+import { NutritionistOnboardingPage } from "@/features/onboarding/pages/NutritionistOnboardingPage";
+import {NutritionistGenerateQrPage} from "@/features/nutritionist/pages/NutritionistGenerateQrPage";
+import { OnboardingEntryRedirect } from "@/core/routes/OnboardingEntryRedirect";
 
 export const appRouter = createBrowserRouter([
-  // ── Guest-only routes (redirect to / if already authenticated) ──
+  // ── Public marketing routes ──
+  {
+    path: "/",
+    element: <LandingPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/demo",
+    element: <DemoPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/terms",
+    element: <TermsPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: "/tour",
+    element: <TourPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
+    errorElement: <ErrorBoundaryPage />,
+  },
+  // ── Guest-only routes (redirect to /home if already authenticated) ──
   {
     errorElement: <ErrorBoundaryPage />,
     element: <GuestRoute />,
     children: [
-      {
-        path: "/login",
-        element: <LoginPage />,
-      },
-      {
-        path: "/signup",
-        element: <SignUpPage />,
-      },
-      {
-        path: "/forgot-password",
-        element: <ForgotPasswordPage />,
-      },
-      {
-        path: "/verify-code",
-        element: <VerifyCodePage />,
-      },
-      {
-        path: "/reset-password",
-        element: <ResetPasswordPage />,
-      },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/signup', element: <SignUpPage /> },
+      { path: '/verify-code', element: <VerifyCodePage /> },
     ],
   },
-  // ── Protected routes (redirect to /login if not authenticated) ──
   {
     errorElement: <ErrorBoundaryPage />,
     element: <ProtectedRoute />,
     children: [
+      { path: '/home', element: <HomePage /> },
+      { path: '/onboarding', element: <OnboardingEntryRedirect /> },
+    ],
+  },
+  {
+    errorElement: <ErrorBoundaryPage />,
+    element: <ProtectedRoute allowedRoles={['PATIENT']} />,
+    children: [
       {
-        path: "/",
-        element: <HomePage />,
-      },
-      {
-        path: "/dashboard/patient",
-        element: <PatientDashboardPage />,
-      },
-      {
-        path: "/history/patient",
-        element: <PatientHistoryPage />,
-      },
-      {
-        path: "/appointments/patient",
-        element: <PatientAppointmentsPage />,
-      },
-      {
-        path: "/plan/patient",
-        element: <PatientPlanPage />,
-      },
-      {
-        path: "/onboarding",
-        element: <OnboardingGuard />,
+        element: <PatientOnboardingGuard />,
         children: [
-          {
-            path: "/onboarding/patient",
-            element: <PatientOnboardingPage />,
-          },
+          { path: '/dashboard/patient', element: <PatientDashboardPage /> },
+          { path: '/history/patient', element: <PatientHistoryPage /> },
+          { path: '/appointments/patient', element: <PatientAppointmentsPage /> },
+          { path: '/plan/patient', element: <PatientPlanPage /> },
+          { path: '/profile', element: <PatientProfilePage /> },
+          { path: '/profile/edit/patient', element: <PatientOnboardingPage mode="edit" /> },
+          { path: '/tracking/log-food', element: <LogFoodPage /> },
+          { path: '/scanning/patient', element: <PatientScanningPage /> },
         ],
       },
-      // ── NUTRITIONIST ROUTES ──
       {
-        path: "/dashboard/nutritionist",
-        element: <NutritionistDashboardPage />,
-      },
-      {
-        path: "/patients/nutritionist",
-        element: <NutritionistPatientsPage />,
-      },
-      {
-        path: "/patients/nutritionist/:id",
-        element: <NutritionistPatientFilePage />,
-      },
-      {
-        path: "/agenda/nutritionist",
-        element: <NutritionistAgendaPage />,
-      },
-      {
-        path: "/agenda/nutritionist/availability",
-        element: <NutritionistAvailabilityPage />,
-      },
-      {
-        path: "/reports/nutritionist",
-        element: <NutritionistReportsPage />,
-      },
-      {
-        path: "/profile/nutritionist",
-        element: <NutritionistProfilePage />,
-      },
-      {
-        path: "/profile",
-        element: <PatientProfilePage />,
-      },
-      {
-        path: "/tracking/log-food",
-        element: <LogFoodPage />,
+        path: '/onboarding/patient',
+        element: <OnboardingGuard />,
+        children: [
+          { index: true, element: <PatientOnboardingPage mode="create" /> },
+        ],
       },
     ],
   },
-  // ── OAuth2 callback (outside guards — user arrives mid-auth flow) ──
   {
-    path: "/oauth2/callback",
+    errorElement: <ErrorBoundaryPage />,
+    element: <ProtectedRoute allowedRoles={['NUTRITIONIST']} />,
+    children: [
+      {
+        element: <NutritionistOnboardingGuard />,
+        children: [
+          { path: '/dashboard/nutritionist', element: <NutritionistDashboardPage /> },
+          { path: '/patients/nutritionist', element: <NutritionistPatientsPage /> },
+          { path: '/qr/nutritionist', element: <NutritionistGenerateQrPage /> },
+          { path: '/patients/nutritionist/:id', element: <NutritionistPatientFilePage /> },
+          { path: '/agenda/nutritionist', element: <NutritionistAgendaPage /> },
+          { path: '/agenda/nutritionist/availability', element: <NutritionistAvailabilityPage /> },
+          { path: '/reports/nutritionist', element: <NutritionistReportsPage /> },
+          { path: '/profile/nutritionist', element: <NutritionistProfilePage /> },
+          { path: '/profile/nutritionist/edit', element: <NutritionistOnboardingPage mode="edit" /> },
+        ],
+      },
+      {
+        path: '/onboarding/nutritionist',
+        element: <OnboardingGuard />,
+        children: [
+          { index: true, element: <NutritionistOnboardingPage mode="create" /> },
+        ],
+      },
+    ],
+  },
+  {
+    errorElement: <ErrorBoundaryPage />,
+    element: <ProtectedRoute allowedRoles={['ADMIN']} />,
+    children: [{ path: '/dashboard/admin', element: <AdminDashboardPage /> }],
+  },
+  {
+    path: '/oauth2/callback',
     element: <OAuth2CallbackPage />,
     errorElement: <ErrorBoundaryPage />,
   },
-  // ── Catch-all 404 ──
   {
-    path: "*",
+    path: '*',
     element: <NotFoundPage />,
   },
 ]);

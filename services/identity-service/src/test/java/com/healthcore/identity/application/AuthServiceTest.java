@@ -146,17 +146,27 @@ class AuthServiceTest {
     }
 
     @Test
-    void should_CreateAdminUser_When_ProvisionedByAdmin() {
+    void should_RejectAdminCreation_When_ProvisionedByAdmin() {
         String email = "new.admin@healthcore.com";
+        String rawPassword = "StrongPass123!";
+
+        assertThatThrownBy(() -> authService.createUserByAdmin(email, rawPassword, Role.ADMIN, null))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Admins cannot create other administrators");
+    }
+
+    @Test
+    void should_CreateUser_When_ProvisionedByAdmin() {
+        String email = "new.nutri@healthcore.com";
         String rawPassword = "StrongPass123!";
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(rawPassword)).thenReturn("encodedPassword123");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = authService.createUserByAdmin(email, rawPassword, Role.ADMIN, null);
+        User result = authService.createUserByAdmin(email, rawPassword, Role.NUTRITIONIST, null);
 
-        assertThat(result.getRole()).isEqualTo(Role.ADMIN);
+        assertThat(result.getRole()).isEqualTo(Role.NUTRITIONIST);
         assertThat(result.getProvider()).isEqualTo(AuthProvider.LOCAL);
     }
 
@@ -181,6 +191,7 @@ class AuthServiceTest {
         User existingUser = User.builder()
                 .email(email)
                 .passwordHash("correctHashedPassword")
+                .enabled(true)
                 .build();
 
         when(loginAttemptService.isBlocked(email)).thenReturn(false);
@@ -202,6 +213,7 @@ class AuthServiceTest {
                 .email(email)
                 .passwordHash("hashedPassword")
                 .role(Role.PATIENT)
+                .enabled(true)
                 .build();
 
         when(loginAttemptService.isBlocked(email)).thenReturn(false);
@@ -332,7 +344,7 @@ class AuthServiceTest {
 
         when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
         when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.of(active));
-        when(userRepository.findByEmail("user@healthcore.com")).thenReturn(Optional.of(User.builder().email("user@healthcore.com").role(Role.PATIENT).build()));
+        when(userRepository.findByEmail("user@healthcore.com")).thenReturn(Optional.of(User.builder().email("user@healthcore.com").role(Role.PATIENT).enabled(true).build()));
         when(jwtUtil.generateAccessToken(any(), any())).thenReturn("access");
         when(jwtUtil.generateRefreshToken(any())).thenReturn("refresh");
         when(refreshTokenRepository.revokeIfActive(any(), any())).thenReturn(false);
@@ -398,7 +410,7 @@ class AuthServiceTest {
 
         when(jwtUtil.extractEmail(refreshToken)).thenReturn("user@healthcore.com");
         when(refreshTokenRepository.findByTokenHash(any())).thenReturn(Optional.of(active));
-        when(userRepository.findByEmail("user@healthcore.com")).thenReturn(Optional.of(User.builder().email("user@healthcore.com").role(Role.PATIENT).build()));
+        when(userRepository.findByEmail("user@healthcore.com")).thenReturn(Optional.of(User.builder().email("user@healthcore.com").role(Role.PATIENT).enabled(true).build()));
 
         AtomicInteger tokenCounter = new AtomicInteger();
         when(jwtUtil.generateAccessToken(any(), any())).thenAnswer(invocation -> "access-" + tokenCounter.incrementAndGet());

@@ -1,74 +1,201 @@
 {
-  "step1": {
-    "title": "Cuéntanos sobre ti",
-    "subtitle": "Estos datos nos ayudan a personalizar tu plan nutricional de manera precisa.",
-    "age": "Edad",
-    "height": "Estatura (cm)",
-    "weight": "Peso Actual (kg)",
-    "gender": "Género Biológico",
-    "activityLevel": "Nivel de Actividad Física",
-    "next": "Siguiente Paso",
-    "editLater": "Podrás editar estos datos más adelante en tu perfil."
-  },
-  "step2": {
-    "title": "¿Cuál es tu meta principal?",
-    "subtitle": "Selecciona el objetivo que mejor se adapte a lo que buscas conseguir con nosotros.",
-    "goals": {
-      "weightLoss": { "title": "Perder Peso", "desc": "Reduce grasa corporal de forma saludable" },
-      "muscleGain": { "title": "Ganar Masa Muscular", "desc": "Aumenta tu fuerza y volumen muscular" },
-      "health": { "title": "Mejorar Salud", "desc": "Optimiza tus hábitos y bienestar general" },
-      "performance": { "title": "Rendimiento Deportivo", "desc": "Lleva tu energía y potencia al siguiente nivel" }
-    },
+  "common": {
+    "back": "Atras",
     "continue": "Continuar",
-    "changeLater": "Puedes cambiar este objetivo más tarde en la configuración."
-  },
-  "step3": {
-    "title": "Tus Preferencias Alimentarias",
-    "subtitle": "Esto nos ayuda a filtrar recetas y planes que no se adapten a ti.",
-    "dietType": "Tipo de Dieta",
-    "diets": {
-      "omnivore": "Omnívora",
-      "vegetarian": "Vegetariana",
-      "vegan": "Vegana",
-      "keto": "Keto",
-      "paleo": "Paleo"
-    },
-    "allergies": "Alergias e Intolerancias",
-    "allergyItems": {
-      "gluten": "Gluten",
-      "lactose": "Lactosa",
-      "nuts": "Frutos Secos",
-      "seafood": "Mariscos",
-      "egg": "Huevo"
-    },
-    "avoidFoods": "Alimentos a evitar",
-    "avoidPlaceholder": "Ej. Cilantro, Cebolla, Pimiento...",
-    "back": "Atrás",
-    "continue": "Continuar"
-  },
-  "step4": {
-    "title": "¡Todo listo para comenzar!",
-    "subtitle": "Revisa tu resumen y confirma para empezar tu viaje hacia una vida más saludable.",
-    "physicalData": "Datos Físicos",
-    "mainGoal": "Objetivo Principal",
-    "preferences": "Preferencias",
-    "finishBtn": "Finalizar y ver mi Dashboard",
-    "editBtn": "Editar mis datos",
-    "secure": "Tus datos están seguros con HealthCore"
+    "saveChanges": "Guardar cambios",
+    "finishAndContinue": "Finalizar y continuar",
+    "creating": "Creando perfil...",
+    "saving": "Guardando cambios..."
   },
   "stepper": {
     "step": "Paso {{current}} de {{total}}"
   },
-  "gender": {
-    "MALE": "Hombre",
-    "FEMALE": "Mujer",
-    "OTHER": "Otro"
+  "validation": {
+    "required": "{{label}} es obligatorio.",
+    "maxLength": "{{label}} no puede exceder {{max}} caracteres.",
+    "namePattern": "{{label}} solo puede contener letras, espacios, apostrofes o guiones.",
+    "birthDateRequired": "La fecha de nacimiento es obligatoria.",
+    "birthDateInvalid": "La fecha de nacimiento es invalida.",
+    "birthDateOutOfRange": "La fecha de nacimiento debe representar una edad entre 1 y 120 anos."
   },
-  "activityLevels": {
-    "SEDENTARY": "Sedentario (Poco o nada de ejercicio)",
-    "LIGHTLY_ACTIVE": "Ligero (1-3 días a la semana)",
-    "MODERATELY_ACTIVE": "Moderado (3-5 días a la semana)",
-    "VERY_ACTIVE": "Intenso (6-7 días a la semana)",
-    "EXTRA_ACTIVE": "Atleta (Entrenamientos dobles)"
+  "options": {
+    "gender": {
+      "MALE": { "label": "Hombre" },
+      "FEMALE": { "label": "Mujer" }
+    },
+    "activityLevels": {
+      "SEDENTARY": { "label": "Sedentario", "description": "Poco o nada de ejercicio" },
+      "LIGHTLY_ACTIVE": { "label": "Ligero", "description": "1-3 dias a la semana" },
+      "MODERATELY_ACTIVE": { "label": "Moderado", "description": "3-5 dias a la semana" },
+      "VERY_ACTIVE": { "label": "Intenso", "description": "6-7 dias a la semana" },
+      "EXTRA_ACTIVE": { "label": "Atleta", "description": "Entrenamientos dobles" }
+    },
+    "goals": {
+      "weight-loss": { "label": "Perder peso", "description": "Reducir grasa corporal de forma saludable." },
+      "muscle-gain": { "label": "Ganar masa muscular", "description": "Aumentar fuerza y composicion corporal." },
+      "health": { "label": "Mejorar salud", "description": "Optimizar habitos y bienestar general." },
+      "performance": { "label": "Rendimiento deportivo", "description": "Acompanar objetivos de entrenamiento." }
+    },
+    "diets": {
+      "omnivore": { "label": "Omnivora" },
+      "vegetarian": { "label": "Vegetariana" },
+      "vegan": { "label": "Vegana" },
+      "keto": { "label": "Keto" },
+      "paleo": { "label": "Paleo" }
+    },
+    "allergies": {
+      "gluten": { "label": "Gluten" },
+      "lactose": { "label": "Lactosa" },
+      "nuts": { "label": "Frutos secos" },
+      "seafood": { "label": "Mariscos" },
+      "egg": { "label": "Huevo" }
+    },
+    "specializations": {
+      "CLINICAL": { "label": "Clinica" },
+      "SPORTS": { "label": "Deportiva" },
+      "PEDIATRIC": { "label": "Pediatrica" },
+      "GERIATRIC": { "label": "Geriatrica" },
+      "FOOD_SAFETY": { "label": "Seguridad Alimentaria" },
+      "PERINATAL": { "label": "Perinatal" },
+      "FOOD_TECHNOLOGY": { "label": "Tecnologia de Alimentos" },
+      "OTHER": { "label": "Otra" }
+    },
+    "legacySpecializations": {
+      "WOMENS_HEALTH": { "label": "Salud femenina" },
+      "GASTROINTESTINAL": { "label": "Gastrointestinal" },
+      "METABOLIC": { "label": "Metabolica" },
+      "RENAL": { "label": "Renal" }
+    },
+    "consultationTypes": {
+      "PRESENTIAL": { "label": "Presencial" },
+      "ONLINE": { "label": "En linea" },
+      "HOME_VISIT": { "label": "Visita a domicilio" }
+    }
+  },
+  "patient": {
+    "common": {
+      "saveError": "No se pudo guardar tu perfil."
+    },
+    "identity": {
+      "title": "Cuentanos quien eres",
+      "subtitle": "Necesitamos tus datos personales para construir tu perfil clinico.",
+      "fields": {
+        "firstName": "Nombre",
+        "paternalLastName": "Apellido paterno",
+        "maternalLastName": "Apellido materno",
+        "maternalLastNameOptional": "Apellido materno (opcional)"
+      }
+    },
+    "physical": {
+      "title": "Tus datos de salud",
+      "subtitle": "Esto nos ayuda a personalizar tu experiencia de forma precisa.",
+      "birthDateLabel": "Fecha de nacimiento",
+      "birthDatePlaceholder": "dd/mm/aaaa",
+      "heightLabel": "Estatura (cm)",
+      "weightLabel": "Peso actual (kg)",
+      "genderLabel": "Genero biologico",
+      "activityLabel": "Nivel de actividad fisica",
+      "birthDateErrors": {
+        "required": "La fecha de nacimiento es obligatoria.",
+        "incomplete": "Completa la fecha con formato dd/mm/aaaa.",
+        "invalid": "La fecha de nacimiento es invalida.",
+        "outOfRange": "La fecha de nacimiento debe representar una edad entre 1 y 120 anos."
+      }
+    },
+    "goals": {
+      "title": "Cual es tu meta principal",
+      "subtitle": "Selecciona el objetivo que mejor se adapte a lo que quieres lograr."
+    },
+    "preferences": {
+      "title": "Tus preferencias alimentarias",
+      "subtitle": "Nos ayudan a adaptar recetas y recomendaciones a tu realidad.",
+      "dietType": "Tipo de dieta",
+      "allergies": "Alergias e intolerancias",
+      "avoidFoods": "Alimentos a evitar",
+      "avoidPlaceholder": "Ej. cilantro, cebolla, pimiento"
+    },
+    "summary": {
+      "title": "Revisa tu perfil",
+      "subtitle": "Confirma que toda la informacion esta correcta antes de continuar.",
+      "editButton": "Editar mis datos",
+      "noAllergies": "Sin alergias registradas",
+      "sections": {
+        "identity": "Identidad",
+        "physical": "Datos fisicos",
+        "goal": "Meta principal",
+        "preferences": "Preferencias"
+      },
+      "physicalValue": "{{age}} anos, {{height}} cm, {{weight}} kg",
+      "physicalDescription": "{{birthDate}}, {{gender}}, {{activity}}",
+      "allergiesDescription": "Alergias: {{allergies}}"
+    }
+  },
+  "nutritionist": {
+    "common": {
+      "saveError": "No se pudo guardar tu perfil profesional."
+    },
+    "identity": {
+      "title": "Completa tu identidad",
+      "subtitle": "Estos datos se mostraran en tu perfil profesional.",
+      "fields": {
+        "firstName": "Nombre",
+        "paternalLastName": "Apellido paterno",
+        "maternalLastName": "Apellido materno",
+        "maternalLastNameOptional": "Apellido materno (opcional)"
+      }
+    },
+    "professional": {
+      "title": "Perfil profesional",
+      "subtitle": "Define tu especialidad y tus credenciales.",
+      "specializationsLabel": "Especialidades (maximo 3)",
+      "customSpecializationLabel": "Especialidad personalizada",
+      "licenseLabel": "Cedula profesional"
+    },
+    "consultation": {
+      "title": "Tipo de consulta",
+      "subtitle": "Selecciona como atiendes a tus pacientes."
+    },
+    "contact": {
+      "title": "Contacto y consultorio",
+      "subtitle": "Estos datos son opcionales, pero dejan listo el perfil para futuras integraciones.",
+      "fields": {
+        "phoneOptional": "Telefono celular (opcional)",
+        "postalCode": "Codigo postal",
+        "state": "Estado",
+        "city": "Ciudad",
+        "neighborhood": "Colonia",
+        "street": "Calle",
+        "exteriorNumber": "Numero exterior",
+        "interiorNumberOptional": "Numero interior (opcional)"
+      }
+    },
+    "summary": {
+      "title": "Tu perfil profesional",
+      "subtitle": "Revisa la informacion antes de guardar.",
+      "bioLabel": "Biografia profesional",
+      "noPhone": "Sin telefono capturado",
+      "customSpecialization": "Especialidad personalizada: {{value}}",
+      "sections": {
+        "identity": "Identidad",
+        "specializations": "Especialidades",
+        "consultation": "Tipo de consulta",
+        "contact": "Contacto"
+      }
+    },
+    "validation": {
+      "specializationsRequired": "Selecciona al menos una especialidad.",
+      "specializationsMax": "Selecciona como maximo tres especialidades.",
+      "customSpecializationRequired": "Especifica tu especialidad personalizada.",
+      "professionalLicense": "La cedula debe contener entre 7 y 10 digitos.",
+      "consultationTypesRequired": "Selecciona al menos un tipo de consulta.",
+      "phone": "El telefono debe contener 10 digitos.",
+      "postalCode": "El codigo postal debe contener 5 digitos.",
+      "state": "El estado es obligatorio.",
+      "city": "La ciudad es obligatoria.",
+      "neighborhood": "La colonia es obligatoria.",
+      "street": "La calle es obligatoria.",
+      "exteriorNumber": "El numero exterior es obligatorio.",
+      "bio": "La biografia es obligatoria."
+    }
   }
 }

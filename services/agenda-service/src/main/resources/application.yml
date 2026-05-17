@@ -11,13 +11,11 @@ spring:
     password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 grpc:
-  client:
-    clinical:
-      address: ${GRPC_CLIENT_CLINICAL_ADDRESS:static://clinical-service:50051}
+  clinical:
+    target: ${GRPC_CLIENT_CLINICAL_TARGET:clinical-service:50051}
 
 agenda:
-  clinical:
-    allow-all: ${AGENDA_CLINICAL_ALLOW_ALL:true}
+  default-time-zone: ${AGENDA_DEFAULT_TIME_ZONE:America/Mexico_City}
   confirmation:
     reconcile-delay-ms: ${AGENDA_CONFIRMATION_RECONCILE_DELAY_MS:30000}
   reminders:

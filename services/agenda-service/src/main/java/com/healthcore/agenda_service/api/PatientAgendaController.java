@@ -164,7 +164,9 @@ public class PatientAgendaController {
             slot.getStartTime(),
             slot.getEndTime(),
             slot.getOrigin(),
-            slot.getVersion()
+            slot.getVersion(),
+            slot.isReserved(),
+            slot.isActive()
         );
     }
 }

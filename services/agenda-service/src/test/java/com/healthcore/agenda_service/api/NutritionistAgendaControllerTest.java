@@ -1,7 +1,7 @@
 package com.healthcore.agenda_service.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.healthcore.agenda_service.api.dto.GenerateSlotsRequest;
+import com.healthcore.agenda_service.application.GenerateSlotsCommand;
 import com.healthcore.agenda_service.application.NutritionistAvailabilityService;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
@@ -18,12 +18,13 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -67,8 +68,8 @@ class NutritionistAgendaControllerTest {
         slot = TimeSlot.builder()
             .id("slot-1")
             .nutritionistId("nutri-1")
-            .startTime(Instant.parse("2026-04-22T10:00:00Z"))
-            .endTime(Instant.parse("2026-04-22T10:30:00Z"))
+            .startTime(Instant.parse("2027-04-22T10:00:00Z"))
+            .endTime(Instant.parse("2027-04-22T10:30:00Z"))
             .reserved(false)
             .active(true)
             .version(1L)
@@ -90,12 +91,45 @@ class NutritionistAgendaControllerTest {
     @Test
     @WithMockUser(username = "nutri-1")
     void generateSlots_shouldReturnCreatedSlots() throws Exception {
-        GenerateSlotsRequest request = new GenerateSlotsRequest(
-            LocalDate.parse("2026-05-10"),
-            LocalDate.parse("2026-05-10"),
-            LocalTime.parse("10:00:00"),
-            LocalTime.parse("11:00:00"),
-            30
+        Map<String, Object> request = Map.of(
+            "timeZone", "America/Mexico_City",
+            "durationMinutes", 30,
+            "days", List.of(Map.of(
+                "date", "2027-05-10",
+                "blocks", List.of(
+                    Map.of("startTime", "10:00", "endTime", "11:00")
+                )
+            ))
+        );
+
+        when(nutritionistAvailabilityService.generateTimeSlots(eq("nutri-1"), any())).thenReturn(List.of(slot));
+
+        mockMvc.perform(post("/api/v1/agenda/nutritionist/slots/generate")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$[0].id").value("slot-1"))
+            .andExpect(jsonPath("$[0].reserved").value(false))
+            .andExpect(jsonPath("$[0].active").value(true));
+
+        var captor = forClass(GenerateSlotsCommand.class);
+        verify(nutritionistAvailabilityService).generateTimeSlots(eq("nutri-1"), captor.capture());
+        GenerateSlotsCommand command = captor.getValue();
+        org.assertj.core.api.Assertions.assertThat(command.timeZone()).isEqualTo(ZoneId.of("America/Mexico_City"));
+        org.assertj.core.api.Assertions.assertThat(command.days()).hasSize(1);
+        org.assertj.core.api.Assertions.assertThat(command.days().getFirst().blocks()).hasSize(1);
+    }
+
+    @Test
+    @WithMockUser(username = "nutri-1")
+    void generateSlots_shouldAcceptLegacyPayloadWithDefaultTimeZone() throws Exception {
+        Map<String, Object> request = Map.of(
+            "durationMinutes", 30,
+            "startDate", "2027-05-10",
+            "endDate", "2027-05-11",
+            "startTime", "10:00",
+            "endTime", "11:00"
         );
 
         when(nutritionistAvailabilityService.generateTimeSlots(eq("nutri-1"), any())).thenReturn(List.of(slot));
@@ -106,6 +140,12 @@ class NutritionistAgendaControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$[0].id").value("slot-1"));
+
+        var captor = forClass(GenerateSlotsCommand.class);
+        verify(nutritionistAvailabilityService).generateTimeSlots(eq("nutri-1"), captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().timeZone())
+            .isEqualTo(ZoneId.of("America/Mexico_City"));
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().days()).hasSize(2);
     }
 
     @Test
@@ -125,8 +165,8 @@ class NutritionistAgendaControllerTest {
             .thenReturn(List.of(slot));
 
         mockMvc.perform(get("/api/v1/agenda/nutritionist/slots")
-                .param("from", "2026-04-20T00:00:00Z")
-                .param("to", "2026-04-25T00:00:00Z"))
+                .param("from", "2027-04-20T00:00:00Z")
+                .param("to", "2027-04-25T00:00:00Z"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value("slot-1"));
     }
@@ -138,8 +178,8 @@ class NutritionistAgendaControllerTest {
             .thenReturn(List.of(appointment));
 
         mockMvc.perform(get("/api/v1/agenda/nutritionist/appointments")
-                .param("from", "2026-04-20T00:00:00Z")
-                .param("to", "2026-04-25T00:00:00Z"))
+                .param("from", "2027-04-20T00:00:00Z")
+                .param("to", "2027-04-25T00:00:00Z"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value("app-1"));
     }

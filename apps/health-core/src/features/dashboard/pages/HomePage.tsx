@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/shared/ui/button';
+import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
@@ -10,22 +12,34 @@ import { useAuthStore } from '@/features/auth/store/useAuthStore';
  * Automatically redirects users to role-specific dashboards:
  * - PATIENT → /dashboard/patient
  * - NUTRITIONIST → /dashboard/nutritionist
- * - ADMIN → /dashboard/admin (placeholder)
+ * - ADMIN → /dashboard/admin
  */
 export const HomePage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('auth');
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const role = user?.role;
 
-  // Auto-redirect based on user role
-  if (user?.role === 'PATIENT') {
+  useEffect(() => {
+    console.info('[HomePage] Render', { role });
+  }, [role]);
+
+  if (!role) {
+    return (
+      <div className="flex items-center justify-center min-h-[100dvh] bg-background">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (role === 'PATIENT') {
     return <Navigate to="/dashboard/patient" replace />;
   }
-  if (user?.role === 'NUTRITIONIST') {
+  if (role === 'NUTRITIONIST') {
     return <Navigate to="/dashboard/nutritionist" replace />;
   }
-  if (user?.role === 'ADMIN') {
+  if (role === 'ADMIN') {
     return <Navigate to="/dashboard/admin" replace />;
   }
 
@@ -48,12 +62,9 @@ export const HomePage = () => {
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-8 bg-background text-foreground font-sans relative transition-colors duration-500 ease-in-out">
-
       <SettingsBar />
 
       <div className="w-full max-w-md space-y-6 animate-in fade-in zoom-in-95 duration-500">
-
-        {/* Header */}
         <div className="flex flex-col items-center space-y-4">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center shadow-inner">
             <svg
@@ -72,10 +83,7 @@ export const HomePage = () => {
           <h1 className="text-2xl font-bold tracking-tight">HealthCore</h1>
         </div>
 
-        {/* Dashboard Card */}
         <div className="bg-card text-card-foreground p-6 sm:p-8 rounded-xl sm:rounded-2xl border border-border shadow-md space-y-6 transition-colors duration-500">
-
-          {/* User Info */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Email</span>
@@ -105,7 +113,6 @@ export const HomePage = () => {
 
           <div className="border-t border-border" />
 
-          {/* Placeholder message */}
           <div className="text-center py-4">
             <p className="text-muted-foreground text-sm leading-relaxed">
               Dashboard content for <span className={`font-semibold ${roleColor}`}>{roleLabel}</span> coming soon.

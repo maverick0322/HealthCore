@@ -8,25 +8,17 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { ENV } from "@/core/config/env";
 import { useLogin } from "../hooks/useLogin";
-import type { UserRole } from "../types/auth.types";
 
 export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"paciente" | "nutriologo">("paciente");
   const { t, i18n } = useTranslation("auth");
   const { handleLogin, isLoading, error } = useLogin();
 
-  // Map UI role to API role (stored for post-login routing, not sent to login API)
-  const _roleMap: Record<string, UserRole> = {
-    paciente: "PATIENT",
-    nutriologo: "NUTRITIONIST",
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleLogin({ email, password }, _roleMap[role]);
+    await handleLogin({ email, password });
   };
 
   return (
@@ -67,37 +59,11 @@ export const LoginPage = () => {
         {/* Card Form */}
         <div className="bg-card text-card-foreground p-5 sm:p-8 rounded-xl sm:rounded-2xl border border-border shadow-md space-y-5 sm:space-y-6 transition-colors duration-500">
 
-          <div className="relative flex w-full p-1 bg-muted rounded-lg select-none">
-            {/* Animated Pill Container */}
-            <div className="absolute inset-1 flex">
-              <div
-                className={`w-1/2 h-full bg-background rounded-md shadow-sm transition-transform duration-300 ease-in-out ${role === "paciente" ? "translate-x-0" : "translate-x-full"
-                  }`}
-              />
-            </div>
-
-            <button
-              onClick={() => setRole("paciente")}
-              className={`relative z-10 w-1/2 py-1.5 text-sm font-medium transition-colors duration-300 rounded-md ${role === "paciente" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              {t("patient")}
-            </button>
-            <button
-              onClick={() => setRole("nutriologo")}
-              className={`relative z-10 w-1/2 py-1.5 text-sm font-medium transition-colors duration-300 rounded-md ${role === "nutriologo" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              {t("nutritionist")}
-            </button>
-          </div>
-
           <div className="space-y-3">
             <Button
               variant="outline"
               className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
               onClick={() => {
-                sessionStorage.setItem("expectedRole", _roleMap[role]);
                 window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0?ui_locales=${i18n.language}`;
               }}
             >

@@ -7,8 +7,10 @@ import com.healthcore.agenda_service.application.GenerateSlotsCommand;
 import com.healthcore.agenda_service.application.NutritionistAvailabilityService;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.TimeSlot;
+import com.healthcore.agenda_service.domain.exception.BadRequestException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -28,7 +30,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 
 @Tag(name = "Agenda Nutriólogo", description = "Operaciones de configuración de disponibilidad y agenda para nutriólogos")
@@ -38,6 +44,9 @@ import java.util.List;
 public class NutritionistAgendaController {
 
     private final NutritionistAvailabilityService nutritionistAvailabilityService;
+
+    @Value("${agenda.default-time-zone:America/Mexico_City}")
+    private String defaultTimeZone;
 
     @Operation(summary = "Generar slots de disponibilidad", description = "Genera en bloque los horarios de atención (TimeSlots) para el nutriólogo autenticado.")
     @ApiResponses({
@@ -54,13 +63,7 @@ public class NutritionistAgendaController {
         String nutritionistId = currentNutritionistId(authentication);
         return nutritionistAvailabilityService.generateTimeSlots(
             nutritionistId,
-            new GenerateSlotsCommand(
-                request.startDate(),
-                request.endDate(),
-                request.startTime(),
-                request.endTime(),
-                request.durationMinutes()
-            )
+            toGenerateSlotsCommand(request)
         ).stream().map(this::toAvailabilityResponse).toList();
     }
 
@@ -133,6 +136,73 @@ public class NutritionistAgendaController {
         return authentication.getName();
     }
 
+    private GenerateSlotsCommand toGenerateSlotsCommand(GenerateSlotsRequest request) {
+        if (request == null) {
+            throw new BadRequestException("Payload invalido");
+        }
+
+        ZoneId timeZone = resolveTimeZone(request.timeZone());
+        Integer durationMinutes = request.durationMinutes();
+        if (durationMinutes == null) {
+            throw new BadRequestException("La duracion del slot es requerida");
+        }
+
+        List<GenerateSlotsCommand.DaySchedule> days = request.days() != null && !request.days().isEmpty()
+            ? mapExplicitDays(request)
+            : mapLegacyRange(request);
+
+        return new GenerateSlotsCommand(timeZone, durationMinutes, days);
+    }
+
+    private ZoneId resolveTimeZone(String requestedTimeZone) {
+        String zone = requestedTimeZone == null || requestedTimeZone.isBlank()
+            ? defaultTimeZone
+            : requestedTimeZone.trim();
+        try {
+            return ZoneId.of(zone);
+        } catch (DateTimeException ex) {
+            throw new BadRequestException("Zona horaria invalida");
+        }
+    }
+
+    private List<GenerateSlotsCommand.DaySchedule> mapExplicitDays(GenerateSlotsRequest request) {
+        return request.days().stream()
+            .map(day -> day == null
+                ? new GenerateSlotsCommand.DaySchedule(null, List.of())
+                : new GenerateSlotsCommand.DaySchedule(
+                    day.date(),
+                    day.blocks() == null
+                    ? List.of()
+                    : day.blocks().stream()
+                        .map(block -> block == null
+                            ? new GenerateSlotsCommand.TimeBlock(null, null)
+                            : new GenerateSlotsCommand.TimeBlock(block.startTime(), block.endTime()))
+                        .toList()
+                ))
+            .toList();
+    }
+
+    private List<GenerateSlotsCommand.DaySchedule> mapLegacyRange(GenerateSlotsRequest request) {
+        if (request.startDate() == null || request.endDate() == null
+            || request.startTime() == null || request.endTime() == null) {
+            throw new BadRequestException("Debes enviar dias con bloques o el formato legacy completo");
+        }
+        if (request.startDate().isAfter(request.endDate())) {
+            throw new BadRequestException("La fecha inicial debe ser anterior o igual a la fecha final");
+        }
+
+        List<GenerateSlotsCommand.DaySchedule> days = new ArrayList<>();
+        LocalDate currentDate = request.startDate();
+        while (!currentDate.isAfter(request.endDate())) {
+            days.add(new GenerateSlotsCommand.DaySchedule(
+                currentDate,
+                List.of(new GenerateSlotsCommand.TimeBlock(request.startTime(), request.endTime()))
+            ));
+            currentDate = currentDate.plusDays(1);
+        }
+        return days;
+    }
+
     private AppointmentResponse toAppointmentResponse(Appointment appointment) {
         return new AppointmentResponse(
             appointment.getId(),
@@ -153,7 +223,9 @@ public class NutritionistAgendaController {
             slot.getStartTime(),
             slot.getEndTime(),
             slot.getOrigin(),
-            slot.getVersion()
+            slot.getVersion(),
+            slot.isReserved(),
+            slot.isActive()
         );
     }
 }

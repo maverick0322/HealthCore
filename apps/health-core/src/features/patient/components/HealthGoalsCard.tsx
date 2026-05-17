@@ -103,7 +103,6 @@ export const HealthGoalsCard = () => {
     );
   }
 
-  // 3. Sustituimos los 0s por la data real (con fallback a 0 por si summary es null)
   const caloriesConsumed = summary?.totalCalories ?? 0;
   const proteinConsumed = summary?.totalProteins ?? 0;
   const carbsConsumed = summary?.totalCarbs ?? 0;

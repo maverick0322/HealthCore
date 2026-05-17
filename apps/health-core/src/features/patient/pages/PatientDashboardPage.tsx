@@ -26,6 +26,10 @@ import {
   formatNutritionistSpecializationLabel,
 } from "@/features/onboarding/utils/profilePresentation";
 
+// --- NUESTRAS IMPORTACIONES DE TRACKING ---
+import { useTodaySummary } from "@/features/tracking/hooks/useTodaySummary";
+import { WaterTrackerCard } from "@/features/tracking/components/WaterTrackerCard";
+
 const getFirstName = (name: string | null | undefined) =>
   name?.trim().split(/\s+/)[0] ?? null;
 
@@ -46,6 +50,9 @@ export const PatientDashboardPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("patient");
   const user = useAuthStore((state) => state.user);
+
+  // --- NUESTRO HOOK DE TRACKING (Agua) ---
+  const { summary, addWater } = useTodaySummary();
 
   const [profile, setProfile] = useState<PatientProfileResponse | null>(null);
   const [nutritionistProfile, setNutritionistProfile] =
@@ -155,12 +162,24 @@ export const PatientDashboardPage = () => {
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-6 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+          
+          {/* COLUMNA IZQUIERDA */}
           <div className="space-y-5">
+            {/* Aquí el HealthGoalsCard ya tiene nuestra lógica inyectada por dentro */}
             <HealthGoalsCard />
             <WeightChart />
           </div>
 
+          {/* COLUMNA DERECHA */}
           <div className="space-y-5">
+            
+            {/* NUESTRA TARJETA DE AGUA CREADA DESDE CERO */}
+            <WaterTrackerCard 
+              totalWaterMl={summary?.totalWaterMl ?? 0} 
+              onAddWater={addWater} 
+            />
+
+            {/* TODO EL CÓDIGO ORIGINAL DE ARTURO Y CITAS SE MANTIENE INTACTO */}
             <Card id="card-appointment">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">

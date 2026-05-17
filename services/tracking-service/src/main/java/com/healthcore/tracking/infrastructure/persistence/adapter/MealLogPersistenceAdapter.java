@@ -3,6 +3,7 @@ package com.healthcore.tracking.infrastructure.persistence.adapter;
 import com.healthcore.tracking.domain.model.MealItem;
 import com.healthcore.tracking.domain.model.MealLog;
 import com.healthcore.tracking.domain.port.MealLogPort;
+import com.healthcore.tracking.domain.model.DailyMacroSummary;
 import com.healthcore.tracking.infrastructure.persistence.entity.MealItemDocument;
 import com.healthcore.tracking.infrastructure.persistence.entity.MealLogDocument;
 import com.healthcore.tracking.infrastructure.persistence.repository.SpringDataMongoMealLogRepository;
@@ -39,6 +40,22 @@ public class MealLogPersistenceAdapter implements MealLogPort {
         return repository.findByUserIdAndConsumedAtBetween(userId, start, end).stream()
                 .map(this::toDomain)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DailyMacroSummary> aggregateHistoricalMacros(String userId, LocalDateTime start, LocalDateTime end) {
+        if (userId == null || start == null || end == null) {
+            log.error("Invalid parameters for historical macro aggregation.");
+            throw new IllegalArgumentException("Parameters cannot be null for macro aggregation");
+        }
+
+        try {
+            log.debug("Executing native MongoDB aggregation for historical macros. User: {} between {} and {}", userId, start, end);
+            return repository.aggregateHistoricalMacros(userId, start, end);
+        } catch (org.springframework.dao.DataAccessException ex) {
+            log.error("Database error while aggregating historical macros for user: {}. Error: {}", userId, ex.getMessage());
+            throw new RuntimeException("Failed to aggregate macros due to DB error", ex);
+        }
     }
 
     // --- Mappers: Domain to Document ---

@@ -2,6 +2,8 @@ import { Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { useHealthGoals } from '../hooks/useHealthGoals';
+// INYECTAMOS NUESTRO HOOK DE TRACKING
+import { useTodaySummary } from '@/features/tracking/hooks/useTodaySummary';
 
 function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
   const pct = goal > 0 ? Math.min(consumed / goal, 1) : 0;
@@ -56,9 +58,10 @@ function MacroBar({
 
 export const HealthGoalsCard = () => {
   const { t } = useTranslation('patient');
-  const { data, isLoading, isError } = useHealthGoals();
+  const { data, isLoading: isGoalsLoading, isError: isGoalsError } = useHealthGoals();
+  const { summary, isLoading: isTrackingLoading } = useTodaySummary();
 
-  if (isLoading) {
+  if (isGoalsLoading || isTrackingLoading) {
     return (
       <Card id="card-health-goals">
         <CardHeader className="pb-0">
@@ -84,7 +87,7 @@ export const HealthGoalsCard = () => {
     );
   }
 
-  if (isError || !data) {
+  if (isGoalsError || !data) {
     return (
       <Card id="card-health-goals">
         <CardHeader className="pb-0">
@@ -100,7 +103,12 @@ export const HealthGoalsCard = () => {
     );
   }
 
-  const caloriesConsumed = 0;
+  // 3. Sustituimos los 0s por la data real (con fallback a 0 por si summary es null)
+  const caloriesConsumed = summary?.totalCalories ?? 0;
+  const proteinConsumed = summary?.totalProteins ?? 0;
+  const carbsConsumed = summary?.totalCarbs ?? 0;
+  const fatConsumed = summary?.totalFats ?? 0;
+
   const caloriesGoal = data.targetCalories;
   const remaining = caloriesGoal - caloriesConsumed;
   const caloriePct = caloriesGoal > 0 ? Math.round((caloriesConsumed / caloriesGoal) * 100) : 0;
@@ -142,9 +150,9 @@ export const HealthGoalsCard = () => {
         </div>
 
         <div className="w-full space-y-4">
-          <MacroBar label={t('dashboard.protein')} value={0} goal={data.targetProtein} color="bg-primary" />
-          <MacroBar label={t('dashboard.carbs')} value={0} goal={data.targetCarbs} color="bg-amber-400" />
-          <MacroBar label={t('dashboard.fat')} value={0} goal={data.targetFat} color="bg-sky-400" />
+          <MacroBar label={t('dashboard.protein')} value={proteinConsumed} goal={data.targetProtein} color="bg-primary" />
+          <MacroBar label={t('dashboard.carbs')} value={carbsConsumed} goal={data.targetCarbs} color="bg-amber-400" />
+          <MacroBar label={t('dashboard.fat')} value={fatConsumed} goal={data.targetFat} color="bg-sky-400" />
         </div>
       </CardContent>
     </Card>

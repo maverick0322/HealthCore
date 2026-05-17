@@ -1,14 +1,16 @@
 package com.healthcore.tracking.infrastructure.persistence.adapter;
 
+import com.healthcore.tracking.domain.model.DailyMacroSummary;
 import com.healthcore.tracking.domain.model.MealItem;
 import com.healthcore.tracking.domain.model.MealLog;
 import com.healthcore.tracking.domain.port.MealLogPort;
-import com.healthcore.tracking.domain.model.DailyMacroSummary;
 import com.healthcore.tracking.infrastructure.persistence.entity.MealItemDocument;
 import com.healthcore.tracking.infrastructure.persistence.entity.MealLogDocument;
+import com.healthcore.tracking.infrastructure.persistence.exception.MealLogPersistenceException;
 import com.healthcore.tracking.infrastructure.persistence.repository.SpringDataMongoMealLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -28,18 +30,44 @@ public class MealLogPersistenceAdapter implements MealLogPort {
 
     @Override
     public MealLog save(MealLog mealLog) {
-        log.debug("Saving MealLog to MongoDB for user: {}", mealLog.getUserId());
-        MealLogDocument document = toDocument(mealLog);
-        MealLogDocument savedDocument = repository.save(document);
-        return toDomain(savedDocument);
+        if (mealLog == null) {
+            log.error("Attempted to save a null MealLog entity.");
+            throw new IllegalArgumentException("MealLog domain entity cannot be null for persistence");
+        }
+
+        try {
+            log.debug("Saving MealLog to MongoDB for user: {}", mealLog.getUserId());
+            MealLogDocument document = toDocument(mealLog);
+            MealLogDocument savedDocument = repository.save(document);
+            return toDomain(savedDocument);
+        } catch (DataAccessException ex) {
+            log.error("Database error occurred while saving MealLog for user: {}. Error: {}", mealLog.getUserId(), ex.getMessage());
+            throw new MealLogPersistenceException("Failed to persist meal log due to a database error.", ex);
+        } catch (Exception ex) {
+            log.error("Unexpected infrastructure error while saving MealLog for user: {}. Error: {}", mealLog.getUserId(), ex.getMessage());
+            throw new MealLogPersistenceException("An unexpected error occurred during meal log persistence.", ex);
+        }
     }
 
     @Override
     public List<MealLog> findByUserIdAndDateRange(String userId, LocalDateTime start, LocalDateTime end) {
-        log.debug("Querying MongoDB for MealLogs by user and date range.");
-        return repository.findByUserIdAndConsumedAtBetween(userId, start, end).stream()
-                .map(this::toDomain)
-                .collect(Collectors.toList());
+        if (userId == null || start == null || end == null) {
+            log.error("Invalid parameters for findByUserIdAndDateRange. Parameters cannot be null.");
+            throw new IllegalArgumentException("Parameters cannot be null for querying meal logs");
+        }
+
+        try {
+            log.debug("Querying MongoDB for MealLogs by user: {} between {} and {}", userId, start, end);
+            return repository.findByUserIdAndConsumedAtBetween(userId, start, end).stream()
+                    .map(this::toDomain)
+                    .collect(Collectors.toList());
+        } catch (DataAccessException ex) {
+            log.error("Database error querying MealLogs for user: {}. Error: {}", userId, ex.getMessage());
+            throw new MealLogPersistenceException("Failed to fetch meal logs due to a database error.", ex);
+        } catch (Exception ex) {
+            log.error("Unexpected infrastructure error querying MealLogs for user: {}. Error: {}", userId, ex.getMessage());
+            throw new MealLogPersistenceException("Unexpected error during meal log retrieval.", ex);
+        }
     }
 
     @Override
@@ -52,7 +80,7 @@ public class MealLogPersistenceAdapter implements MealLogPort {
         try {
             log.debug("Executing native MongoDB aggregation for historical macros. User: {} between {} and {}", userId, start, end);
             return repository.aggregateHistoricalMacros(userId, start, end);
-        } catch (org.springframework.dao.DataAccessException ex) {
+        } catch (DataAccessException ex) {
             log.error("Database error while aggregating historical macros for user: {}. Error: {}", userId, ex.getMessage());
             throw new MealLogPersistenceException("Failed to aggregate macros due to DB error", ex);
         } catch (Exception ex) {
@@ -105,8 +133,6 @@ public class MealLogPersistenceAdapter implements MealLogPort {
                 .map(this::toItemDomain)
                 .collect(Collectors.toList());
 
-        // Using toBuilder() or explicit builder to reconstruct the aggregate
-        // bypassing strict factory validations since data is already trusted (from DB).
         return MealLog.builder()
                 .id(document.getId())
                 .userId(document.getUserId())

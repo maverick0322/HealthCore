@@ -309,6 +309,14 @@
     "unavailable": "The nutrition plan is not available right now.",
     "contextTitle": "Previous self-managed plan",
     "contextDescription": "Previous context preserved for the professional review.",
+    "validation": {
+      "nameRequired": "Enter a name for the dish.",
+      "nameTooLong": "The dish name can contain up to {{max}} characters.",
+      "ingredientsRequired": "Add at least one ingredient before saving the dish.",
+      "quantityInvalid": "Every ingredient quantity must be greater than 0.",
+      "instructionsTooLong": "Instructions can contain up to {{max}} characters.",
+      "notesTooLong": "Notes can contain up to {{max}} characters."
+    },
     "units": {
       "GRAMS": "Grams",
       "MILLILITERS": "Milliliters"

@@ -80,6 +80,13 @@ interface EditorState {
   ingredients: EditableIngredient[];
 }
 
+interface EditorValidationErrors {
+  name?: string;
+  ingredients?: string;
+  instructions?: string;
+  notes?: string;
+}
+
 interface NutritionPlanWorkspaceProps {
   namespace: Namespace;
   view: NutritionPlanViewResponse | null;
@@ -94,6 +101,11 @@ const EMPTY_EDITOR_STATE: EditorState = {
   notes: '',
   ingredients: [],
 };
+
+const EMPTY_EDITOR_ERRORS: EditorValidationErrors = {};
+const DISH_NAME_MAX_LENGTH = 120;
+const INSTRUCTIONS_MAX_LENGTH = 1200;
+const NOTES_MAX_LENGTH = 600;
 
 const EMPTY_SECTIONS: EditableSection[] = [
   { mealSlot: 'BREAKFAST', options: [] },
@@ -128,6 +140,7 @@ export function NutritionPlanWorkspace({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<CatalogFoodResponse[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [editorErrors, setEditorErrors] = useState<EditorValidationErrors>(EMPTY_EDITOR_ERRORS);
 
   useEffect(() => {
     if (!view) {
@@ -371,6 +384,7 @@ export function NutritionPlanWorkspace({
     setEditorSection(mealSlot);
     setEditingOptionId(null);
     setEditorState(EMPTY_EDITOR_STATE);
+    setEditorErrors(EMPTY_EDITOR_ERRORS);
     setSearchQuery('');
     setSearchResults([]);
     setEditorOpen(true);
@@ -391,6 +405,7 @@ export function NutritionPlanWorkspace({
       notes: option.notes,
       ingredients: option.ingredients,
     });
+    setEditorErrors(EMPTY_EDITOR_ERRORS);
     setSearchQuery('');
     setSearchResults([]);
     setEditorOpen(true);
@@ -413,6 +428,7 @@ export function NutritionPlanWorkspace({
       ...current,
       ingredients: [...current.ingredients, nextIngredient],
     }));
+    setEditorErrors((current) => ({ ...current, ingredients: undefined }));
     setSearchQuery('');
     setSearchResults([]);
   }
@@ -434,6 +450,12 @@ export function NutritionPlanWorkspace({
   }
 
   function saveEditorOption() {
+    const validationErrors = validateEditorState(editorState, t);
+    if (hasValidationErrors(validationErrors)) {
+      setEditorErrors(validationErrors);
+      return;
+    }
+
     const normalized = normalizeOption(editorState, editingOptionId);
     if (!normalized) {
       return;
@@ -457,6 +479,7 @@ export function NutritionPlanWorkspace({
     );
     setEditorOpen(false);
     setEditorState(EMPTY_EDITOR_STATE);
+    setEditorErrors(EMPTY_EDITOR_ERRORS);
     setEditingOptionId(null);
     setIsDirty(true);
   }
@@ -529,15 +552,26 @@ export function NutritionPlanWorkspace({
                 <label className="text-sm font-medium">{t('nutritionPlan.dishName')}</label>
                 <Input
                   value={editorState.name}
-                  onChange={(event) => setEditorState((current) => ({ ...current, name: event.target.value }))}
+                  maxLength={DISH_NAME_MAX_LENGTH}
+                  onChange={(event) => {
+                    setEditorState((current) => ({ ...current, name: event.target.value }));
+                    setEditorErrors((current) => ({ ...current, name: undefined }));
+                  }}
                   placeholder={t('nutritionPlan.dishNamePlaceholder')}
+                  aria-invalid={Boolean(editorErrors.name)}
                 />
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-destructive">{editorErrors.name ?? ''}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {editorState.name.length}/{DISH_NAME_MAX_LENGTH}
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-medium">{t('nutritionPlan.searchFood')}</label>
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-3.5 size-4 text-muted-foreground" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     className="pl-9"
                     value={searchQuery}
@@ -575,6 +609,9 @@ export function NutritionPlanWorkspace({
                   <label className="text-sm font-medium">{t('nutritionPlan.ingredients')}</label>
                   <span className="text-xs text-muted-foreground">{editorState.ingredients.length}</span>
                 </div>
+                {editorErrors.ingredients ? (
+                  <p className="text-xs text-destructive">{editorErrors.ingredients}</p>
+                ) : null}
 
                 {editorState.ingredients.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
@@ -638,25 +675,45 @@ export function NutritionPlanWorkspace({
                 <label className="text-sm font-medium">{t('nutritionPlan.instructions')}</label>
                 <Textarea
                   value={editorState.instructions}
-                  onChange={(event) =>
-                    setEditorState((current) => ({ ...current, instructions: event.target.value }))
-                  }
+                  maxLength={INSTRUCTIONS_MAX_LENGTH}
+                  onChange={(event) => {
+                    setEditorState((current) => ({ ...current, instructions: event.target.value }));
+                    setEditorErrors((current) => ({ ...current, instructions: undefined }));
+                  }}
                   placeholder={t('nutritionPlan.instructionsPlaceholder')}
+                  aria-invalid={Boolean(editorErrors.instructions)}
                 />
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-destructive">{editorErrors.instructions ?? ''}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {editorState.instructions.length}/{INSTRUCTIONS_MAX_LENGTH}
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-medium">{t('nutritionPlan.notes')}</label>
                 <Textarea
                   value={editorState.notes}
-                  onChange={(event) => setEditorState((current) => ({ ...current, notes: event.target.value }))}
+                  maxLength={NOTES_MAX_LENGTH}
+                  onChange={(event) => {
+                    setEditorState((current) => ({ ...current, notes: event.target.value }));
+                    setEditorErrors((current) => ({ ...current, notes: undefined }));
+                  }}
                   placeholder={t('nutritionPlan.notesPlaceholder')}
+                  aria-invalid={Boolean(editorErrors.notes)}
                 />
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-destructive">{editorErrors.notes ?? ''}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {editorState.notes.length}/{NOTES_MAX_LENGTH}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-border/60 px-6 pb-6 pt-4">
             <Button variant="outline" onClick={() => setEditorOpen(false)}>
               {t('nutritionPlan.cancel')}
             </Button>
@@ -671,7 +728,9 @@ export function NutritionPlanWorkspace({
 function MetricCard({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="rounded-2xl border border-border/60 bg-muted/20 px-3 py-4 text-center">
-      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+      <div className="min-h-8 text-[11px] font-semibold leading-tight text-muted-foreground sm:text-xs">
+        {label}
+      </div>
       <div className="mt-2 text-lg font-black tracking-tight text-foreground">{value}</div>
     </div>
   );
@@ -809,4 +868,43 @@ function normalizeOption(editorState: EditorState, editingOptionId: string | nul
 
 function formatAmount(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+function validateEditorState(
+  editorState: EditorState,
+  t: (key: string, options?: Record<string, unknown>) => string
+): EditorValidationErrors {
+  const errors: EditorValidationErrors = {};
+
+  if (!editorState.name.trim()) {
+    errors.name = t('nutritionPlan.validation.nameRequired');
+  } else if (editorState.name.trim().length > DISH_NAME_MAX_LENGTH) {
+    errors.name = t('nutritionPlan.validation.nameTooLong', { max: DISH_NAME_MAX_LENGTH });
+  }
+
+  if (editorState.ingredients.length === 0) {
+    errors.ingredients = t('nutritionPlan.validation.ingredientsRequired');
+  } else if (
+    editorState.ingredients.some(
+      (ingredient) => !Number.isFinite(ingredient.quantityAmount) || ingredient.quantityAmount <= 0
+    )
+  ) {
+    errors.ingredients = t('nutritionPlan.validation.quantityInvalid');
+  }
+
+  if (editorState.instructions.trim().length > INSTRUCTIONS_MAX_LENGTH) {
+    errors.instructions = t('nutritionPlan.validation.instructionsTooLong', {
+      max: INSTRUCTIONS_MAX_LENGTH,
+    });
+  }
+
+  if (editorState.notes.trim().length > NOTES_MAX_LENGTH) {
+    errors.notes = t('nutritionPlan.validation.notesTooLong', { max: NOTES_MAX_LENGTH });
+  }
+
+  return errors;
+}
+
+function hasValidationErrors(errors: EditorValidationErrors): boolean {
+  return Object.values(errors).some(Boolean);
 }

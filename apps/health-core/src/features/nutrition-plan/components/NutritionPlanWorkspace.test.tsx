@@ -74,6 +74,26 @@ describe('NutritionPlanWorkspace', () => {
     expect(screen.getByText('Save dish')).toBeInTheDocument();
   });
 
+  it('shows validation feedback when trying to save an empty dish', async () => {
+    const user = userEvent.setup();
+    render(
+      <NutritionPlanWorkspace
+        namespace="patient"
+        view={baseView}
+        onSave={vi.fn().mockResolvedValue(baseView)}
+        onSearchFoods={vi.fn().mockResolvedValue([])}
+      />
+    );
+
+    await user.click(screen.getAllByText('Add dish')[0]);
+    await user.click(screen.getByText('Save dish'));
+
+    expect(screen.getByText('Enter a name for the dish.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Add at least one ingredient before saving the dish.'),
+    ).toBeInTheDocument();
+  });
+
   it('renders read-only linked patient mode with the tracking placeholder button', () => {
     render(
       <NutritionPlanWorkspace

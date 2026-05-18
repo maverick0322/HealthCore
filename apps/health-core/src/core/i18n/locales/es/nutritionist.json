@@ -131,6 +131,14 @@
     "unavailable": "El plan nutricional no estÃ¡ disponible en este momento.",
     "contextTitle": "Plan autogestionado previo",
     "contextDescription": "Se conserva para darte contexto antes de redefinir el plan del paciente.",
+    "validation": {
+      "nameRequired": "Ingresa un nombre para el platillo.",
+      "nameTooLong": "El nombre del platillo puede tener hasta {{max}} caracteres.",
+      "ingredientsRequired": "Agrega al menos un ingrediente antes de guardar el platillo.",
+      "quantityInvalid": "Cada cantidad de ingrediente debe ser mayor a 0.",
+      "instructionsTooLong": "Las instrucciones pueden tener hasta {{max}} caracteres.",
+      "notesTooLong": "Las notas pueden tener hasta {{max}} caracteres."
+    },
     "units": {
       "GRAMS": "Gramos",
       "MILLILITERS": "Mililitros"

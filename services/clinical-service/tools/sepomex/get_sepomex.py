@@ -53,26 +53,54 @@ def build_snapshot(rows: list[dict[str, str]]) -> list[dict[str, object]]:
             entry = {
                 "postalCode": postal_code,
                 "state": state,
-                "city": city,
                 "municipality": municipality,
+                "cityCandidates": [],
                 "colonies": [],
             }
             grouped[postal_code] = entry
         else:
-            if (
-                entry["state"] != state
-                or entry["city"] != city
-                or entry["municipality"] != municipality
-            ):
+            if entry["state"] != state or entry["municipality"] != municipality:
                 raise ValueError(
                     f"Conflicting metadata for postal code {postal_code}: {entry} vs {state}/{city}/{municipality}"
                 )
+
+        city_candidates: list[str] = entry["cityCandidates"]  # type: ignore[assignment]
+        if city and city not in city_candidates:
+            city_candidates.append(city)
 
         colonies: list[str] = entry["colonies"]  # type: ignore[assignment]
         if colony and colony not in colonies:
             colonies.append(colony)
 
-    return list(grouped.values())
+    snapshot: list[dict[str, object]] = []
+    for entry in grouped.values():
+        municipality = entry["municipality"]
+        city_candidates: list[str] = entry["cityCandidates"]  # type: ignore[assignment]
+        city = resolve_city(city_candidates, municipality)
+        snapshot.append(
+            {
+                "postalCode": entry["postalCode"],
+                "state": entry["state"],
+                "city": city,
+                "municipality": municipality,
+                "colonies": entry["colonies"],
+            }
+        )
+
+    return snapshot
+
+
+def resolve_city(city_candidates: list[str], municipality: str) -> str:
+    if not city_candidates:
+        return municipality
+
+    if len(city_candidates) == 1:
+        return city_candidates[0]
+
+    if municipality in city_candidates:
+        return municipality
+
+    return municipality
 
 
 def main() -> None:

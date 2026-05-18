@@ -311,7 +311,18 @@ describe('clinicalService', () => {
     (httpClient.get as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(mockPlanResponse)
       .mockResolvedValueOnce(mockPlanResponse)
-      .mockResolvedValueOnce({ data: [{ barcode: 'food-1', name: 'Avena' }] });
+      .mockResolvedValueOnce({ data: [{ barcode: 'food-1', name: 'Avena' }] })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 'obs-1',
+            patientId: 'patient-1',
+            nutritionistId: 'nutri-1',
+            note: 'Ajustar hidratacion',
+            createdAt: '2026-05-18T12:00:00Z',
+          },
+        ],
+      });
     (httpClient.put as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(mockPlanResponse)
       .mockResolvedValueOnce(mockPlanResponse);
@@ -321,14 +332,19 @@ describe('clinicalService', () => {
     const nutritionistPlan = await clinicalApi.getNutritionistPatientNutritionPlan('patient-1');
     const savedNutritionistPlan = await clinicalApi.upsertNutritionistPatientNutritionPlan('patient-1', payload);
     const foods = await clinicalApi.searchCatalogFoods('avena');
+    const observations = await clinicalApi.getMyObservations();
 
     expect(myPlan.dailyGoals.targetWaterGlasses).toBe(10);
     expect(savedMyPlan.canEdit).toBe(true);
     expect(nutritionistPlan.mode).toBe('SELF_MANAGED');
     expect(savedNutritionistPlan.authorType).toBe('SELF_MANAGED');
     expect(foods[0].barcode).toBe('food-1');
+    expect(observations[0].note).toBe('Ajustar hidratacion');
     expect(httpClient.get).toHaveBeenCalledWith('/clinical/catalog/foods/search', {
       params: { query: 'avena' },
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/observations/me', {
       headers: { 'X-User-Id': MOCK_USER_ID },
     });
   });

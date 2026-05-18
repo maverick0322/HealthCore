@@ -56,6 +56,20 @@ public class ObservationController {
         return ResponseEntity.ok(observations);
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<List<ObservationResponse>> getMyObservations() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String patientId = auth.getName();
+
+        List<ObservationResponse> observations = manageObservationsUseCase.getPatientObservations(patientId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(observations);
+    }
+
     private ObservationResponse toResponse(ClinicalObservation domain) {
         return new ObservationResponse(
                 domain.getId(),

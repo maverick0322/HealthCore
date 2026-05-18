@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { AlertCircle, FileDown, RefreshCcw } from 'lucide-react';
 
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
-import type { NutritionPlanViewResponse } from '@/features/clinical/types/clinical.types';
+import type {
+  NutritionPlanViewResponse,
+  ObservationResponse,
+} from '@/features/clinical/types/clinical.types';
 import { NutritionPlanWorkspace } from '@/features/nutrition-plan/components/NutritionPlanWorkspace';
 import { PatientNav } from '@/features/patient/components/PatientNav';
 import { logClientError, logClientInfo } from '@/core/utils/logger';
@@ -14,6 +17,7 @@ import { Card, CardContent } from '@/shared/ui/card';
 export const PatientPlanPage = () => {
   const { t } = useTranslation('patient');
   const [view, setView] = useState<NutritionPlanViewResponse | null>(null);
+  const [observations, setObservations] = useState<ObservationResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -25,13 +29,21 @@ export const PatientPlanPage = () => {
         logClientInfo('PatientPlanPage.load.start');
         setLoadError(null);
         const response = await clinicalApi.getMyNutritionPlan();
+        let observationResponse: ObservationResponse[] = [];
+        try {
+          observationResponse = await clinicalApi.getMyObservations();
+        } catch (error) {
+          logClientError('PatientPlanPage.observations.load.error', error);
+        }
         if (mounted) {
           setView(response);
+          setObservations(observationResponse);
         }
         logClientInfo('PatientPlanPage.load.success', {
           mode: response.mode,
           canEdit: response.canEdit,
           sections: response.sections.length,
+          observations: observationResponse.length,
         });
       } catch (error) {
         logClientError('PatientPlanPage.load.error', error);
@@ -71,11 +83,19 @@ export const PatientPlanPage = () => {
     setIsLoading(true);
     try {
       const response = await clinicalApi.getMyNutritionPlan();
+      let observationResponse: ObservationResponse[] = [];
+      try {
+        observationResponse = await clinicalApi.getMyObservations();
+      } catch (error) {
+        logClientError('PatientPlanPage.observations.retry.error', error);
+      }
       setView(response);
+      setObservations(observationResponse);
       setLoadError(null);
       logClientInfo('PatientPlanPage.retry.success', {
         mode: response.mode,
         canEdit: response.canEdit,
+        observations: observationResponse.length,
       });
     } catch (error) {
       logClientError('PatientPlanPage.retry.error', error);
@@ -131,6 +151,7 @@ export const PatientPlanPage = () => {
         <NutritionPlanWorkspace
           namespace="patient"
           view={view}
+          observations={observations}
           isLoading={isLoading}
           onSave={handleSave}
           onSearchFoods={clinicalApi.searchCatalogFoods}

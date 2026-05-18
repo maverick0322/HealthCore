@@ -5,12 +5,14 @@ import { render, screen, waitFor } from '@/test/test-utils';
 
 const {
   mockGetMyNutritionPlan,
+  mockGetMyObservations,
   mockUpsertMyNutritionPlan,
   mockSearchCatalogFoods,
   mockLogClientError,
   mockLogClientInfo,
 } = vi.hoisted(() => ({
   mockGetMyNutritionPlan: vi.fn(),
+  mockGetMyObservations: vi.fn(),
   mockUpsertMyNutritionPlan: vi.fn(),
   mockSearchCatalogFoods: vi.fn(),
   mockLogClientError: vi.fn(),
@@ -20,6 +22,7 @@ const {
 vi.mock('@/features/clinical/services/clinicalService', () => ({
   clinicalApi: {
     getMyNutritionPlan: mockGetMyNutritionPlan,
+    getMyObservations: mockGetMyObservations,
     upsertMyNutritionPlan: mockUpsertMyNutritionPlan,
     searchCatalogFoods: mockSearchCatalogFoods,
   },
@@ -41,13 +44,15 @@ vi.mock('@/shared/components/SettingsBar', () => ({
 vi.mock('@/features/nutrition-plan/components/NutritionPlanWorkspace', () => ({
   NutritionPlanWorkspace: ({
     view,
+    observations,
     isLoading,
   }: {
     view: { mode?: string } | null;
+    observations?: Array<{ note: string }>;
     isLoading?: boolean;
   }) => (
     <div data-testid="nutrition-plan-workspace">
-      {isLoading ? 'loading' : view?.mode ?? 'no-view'}
+      {isLoading ? 'loading' : `${view?.mode ?? 'no-view'}:${observations?.length ?? 0}`}
     </div>
   ),
 }));
@@ -72,6 +77,15 @@ const mockView = {
 describe('PatientPlanPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetMyObservations.mockResolvedValue([
+      {
+        id: 'obs-1',
+        patientId: 'patient-1',
+        nutritionistId: 'nutri-1',
+        note: 'Ajustar hidratacion',
+        createdAt: '2026-05-18T12:00:00Z',
+      },
+    ]);
     mockSearchCatalogFoods.mockResolvedValue([]);
     mockUpsertMyNutritionPlan.mockResolvedValue(mockView);
   });
@@ -82,7 +96,7 @@ describe('PatientPlanPage', () => {
     render(<PatientPlanPage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('nutrition-plan-workspace')).toHaveTextContent('SELF_MANAGED');
+      expect(screen.getByTestId('nutrition-plan-workspace')).toHaveTextContent('SELF_MANAGED:1');
     });
 
     expect(mockLogClientInfo).toHaveBeenCalledWith(
@@ -111,7 +125,9 @@ describe('PatientPlanPage', () => {
       expect(screen.getByTestId('nutrition-plan-workspace')).toHaveTextContent('SELF_MANAGED');
     });
 
+    expect(screen.getByTestId('nutrition-plan-workspace')).toHaveTextContent('SELF_MANAGED:1');
     expect(mockGetMyNutritionPlan).toHaveBeenCalledTimes(2);
+    expect(mockGetMyObservations).toHaveBeenCalledTimes(1);
     expect(mockLogClientInfo).toHaveBeenCalledWith('PatientPlanPage.retry.start');
   });
 });

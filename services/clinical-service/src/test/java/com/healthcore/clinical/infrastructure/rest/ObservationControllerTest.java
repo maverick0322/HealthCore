@@ -108,4 +108,23 @@ class ObservationControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Forbidden"));
     }
+
+    @Test
+    void getMyObservations_ReturnsPatientObservations() throws Exception {
+        setSecurityContext("patient-123", "PATIENT");
+        List<ClinicalObservation> observations = List.of(
+                new ClinicalObservation("obs-1", "patient-123", "nutri-123", "Nota clínica.", LocalDateTime.now())
+        );
+
+        when(manageObservationsUseCase.getPatientObservations("patient-123"))
+                .thenReturn(observations);
+
+        mockMvc.perform(get("/api/v1/clinical/observations/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].patientId").value("patient-123"))
+                .andExpect(jsonPath("$[0].nutritionistId").value("nutri-123"));
+
+        verify(manageObservationsUseCase).getPatientObservations("patient-123");
+    }
 }

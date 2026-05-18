@@ -95,6 +95,12 @@
       "DINNER": "Dinner",
       "SNACK": "Snack"
     },
+    "mealWindows": {
+      "BREAKFAST": "7:00 - 9:00",
+      "LUNCH": "13:00 - 15:00",
+      "DINNER": "19:00 - 21:00",
+      "SNACK": "11:00 - 12:00 / 16:00 - 18:00"
+    },
     "sectionSubtitle": "Options the patient will see for this meal time.",
     "addDish": "Add dish",
     "emptyEditable": "There are no dishes in this section yet.",
@@ -120,6 +126,8 @@
     "searchFood": "Search ingredient",
     "searchFoodPlaceholder": "Search a food from the catalog...",
     "searching": "Searching foods...",
+    "searchNoResults": "We could not find ingredients for \"{{query}}\". Try another term or try again later.",
+    "searchServiceUnavailable": "The ingredient search service is not available right now. Please try again later.",
     "emptyIngredients": "Add at least one ingredient to calculate macros.",
     "instructionsPlaceholder": "Describe how the dish is prepared.",
     "notesPlaceholder": "Ex. If there is no apple, use pear.",

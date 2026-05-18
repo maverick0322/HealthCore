@@ -306,6 +306,14 @@ export const clinicalApi = {
     );
     return response.data;
   },
+
+  getMyObservations: async (): Promise<ObservationResponse[]> => {
+    const response = await httpClient.get<ObservationResponse[]>(
+      `${CLINICAL_API_URL}/observations/me`,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
 };
 
 export const createObservation = async (

@@ -95,6 +95,12 @@
       "DINNER": "Cena",
       "SNACK": "Snack"
     },
+    "mealWindows": {
+      "BREAKFAST": "7:00 - 9:00",
+      "LUNCH": "13:00 - 15:00",
+      "DINNER": "19:00 - 21:00",
+      "SNACK": "11:00 - 12:00 / 16:00 - 18:00"
+    },
     "sectionSubtitle": "Opciones que verá el paciente en este tiempo de comida.",
     "addDish": "Añadir platillo",
     "emptyEditable": "Todavía no hay platillos en esta sección.",
@@ -120,6 +126,8 @@
     "searchFood": "Buscar ingrediente",
     "searchFoodPlaceholder": "Busca un alimento del catálogo...",
     "searching": "Buscando alimentos...",
+    "searchNoResults": "No encontramos ingredientes para \"{{query}}\". Intenta con otro término o vuelve a intentarlo más tarde.",
+    "searchServiceUnavailable": "El servicio de búsqueda de ingredientes no está disponible en este momento. Inténtalo más tarde.",
     "emptyIngredients": "Agrega al menos un ingrediente para calcular las macros.",
     "instructionsPlaceholder": "Describe cómo se prepara el platillo.",
     "notesPlaceholder": "Ej. Si no tienes manzana, usa pera.",
@@ -128,7 +136,7 @@
     "loadError": "No pudimos cargar el plan nutricional.",
     "loadErrorHelp": "Revisa la consola del navegador para ver los logs de HealthCore y vuelve a intentarlo.",
     "retry": "Reintentar",
-    "unavailable": "El plan nutricional no estÃ¡ disponible en este momento.",
+    "unavailable": "El plan nutricional no está disponible en este momento.",
     "contextTitle": "Plan autogestionado previo",
     "contextDescription": "Se conserva para darte contexto antes de redefinir el plan del paciente.",
     "validation": {

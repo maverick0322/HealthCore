@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 
 import type { NutritionPlanViewResponse } from '@/features/clinical/types/clinical.types';
-import { render, screen } from '@/test/test-utils';
+import { render, screen, waitFor } from '@/test/test-utils';
 
 import { NutritionPlanWorkspace } from './NutritionPlanWorkspace';
 
@@ -68,6 +68,7 @@ describe('NutritionPlanWorkspace', () => {
 
     expect(screen.getByText('Daily goals')).toBeInTheDocument();
     expect(screen.getAllByText('Add dish').length).toBeGreaterThan(0);
+    expect(screen.getByText('7:00 - 9:00')).toBeInTheDocument();
 
     await user.click(screen.getAllByText('Add dish')[0]);
 
@@ -92,6 +93,48 @@ describe('NutritionPlanWorkspace', () => {
     expect(
       screen.getByText('Add at least one ingredient before saving the dish.'),
     ).toBeInTheDocument();
+  });
+
+  it('shows a no-results message when the ingredient search returns no foods', async () => {
+    const user = userEvent.setup();
+    render(
+      <NutritionPlanWorkspace
+        namespace="patient"
+        view={baseView}
+        onSave={vi.fn().mockResolvedValue(baseView)}
+        onSearchFoods={vi.fn().mockResolvedValue([])}
+      />
+    );
+
+    await user.click(screen.getAllByText('Add dish')[0]);
+    await user.type(screen.getByPlaceholderText('Search a food from the catalog...'), 'Chicken');
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('We could not find ingredients for "Chicken". Try another term or try again later.'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('shows a service-unavailable message when the ingredient search fails', async () => {
+    const user = userEvent.setup();
+    render(
+      <NutritionPlanWorkspace
+        namespace="patient"
+        view={baseView}
+        onSave={vi.fn().mockResolvedValue(baseView)}
+        onSearchFoods={vi.fn().mockRejectedValue(new Error('catalog down'))}
+      />
+    );
+
+    await user.click(screen.getAllByText('Add dish')[0]);
+    await user.type(screen.getByPlaceholderText('Search a food from the catalog...'), 'Chicken');
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('The ingredient search service is not available right now. Please try again later.'),
+      ).toBeInTheDocument();
+    });
   });
 
   it('renders read-only linked patient mode with the tracking placeholder button', () => {
@@ -132,5 +175,26 @@ describe('NutritionPlanWorkspace', () => {
     render(<NutritionPlanWorkspace namespace="patient" view={null} />);
 
     expect(screen.getByText('The nutrition plan is not available right now.')).toBeInTheDocument();
+  });
+
+  it('renders patient observations below the daily goals', () => {
+    render(
+      <NutritionPlanWorkspace
+        namespace="patient"
+        view={baseView}
+        observations={[
+          {
+            id: 'obs-1',
+            patientId: 'patient-1',
+            nutritionistId: 'nutri-1',
+            note: 'Increase hydration during the afternoon.',
+            createdAt: '2026-05-18T12:00:00Z',
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Nutritionist observations')).toBeInTheDocument();
+    expect(screen.getByText('Increase hydration during the afternoon.')).toBeInTheDocument();
   });
 });

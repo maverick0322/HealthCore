@@ -20,6 +20,7 @@ import type {
   NutritionPlanSectionRequest,
   NutritionPlanUpsertRequest,
   NutritionPlanViewResponse,
+  ObservationResponse,
   PlanIngredientUnit,
   ReadonlyNutritionPlanResponse,
 } from '@/features/clinical/types/clinical.types';
@@ -87,9 +88,12 @@ interface EditorValidationErrors {
   notes?: string;
 }
 
+type SearchFeedbackState = 'idle' | 'no-results' | 'service-unavailable';
+
 interface NutritionPlanWorkspaceProps {
   namespace: Namespace;
   view: NutritionPlanViewResponse | null;
+  observations?: ObservationResponse[];
   isLoading?: boolean;
   onSave?: (payload: NutritionPlanUpsertRequest) => Promise<NutritionPlanViewResponse>;
   onSearchFoods?: (query: string) => Promise<CatalogFoodResponse[]>;
@@ -125,6 +129,7 @@ function MacroBadge({ value }: Readonly<{ value: string }>) {
 export function NutritionPlanWorkspace({
   namespace,
   view,
+  observations = [],
   isLoading = false,
   onSave,
   onSearchFoods,
@@ -140,6 +145,7 @@ export function NutritionPlanWorkspace({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<CatalogFoodResponse[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchFeedbackState, setSearchFeedbackState] = useState<SearchFeedbackState>('idle');
   const [editorErrors, setEditorErrors] = useState<EditorValidationErrors>(EMPTY_EDITOR_ERRORS);
 
   useEffect(() => {
@@ -155,6 +161,7 @@ export function NutritionPlanWorkspace({
   useEffect(() => {
     if (!editorOpen || !onSearchFoods || searchQuery.trim().length < 3) {
       setSearchResults([]);
+      setSearchFeedbackState('idle');
       return;
     }
 
@@ -163,6 +170,7 @@ export function NutritionPlanWorkspace({
       try {
         const results = await onSearchFoods(searchQuery.trim());
         setSearchResults(results);
+        setSearchFeedbackState(results.length === 0 ? 'no-results' : 'idle');
       } catch (error) {
         logClientWarn('NutritionPlanWorkspace.search.error', {
           namespace,
@@ -170,6 +178,7 @@ export function NutritionPlanWorkspace({
           error,
         });
         setSearchResults([]);
+        setSearchFeedbackState('service-unavailable');
       } finally {
         setIsSearching(false);
       }
@@ -181,14 +190,20 @@ export function NutritionPlanWorkspace({
   const goals = view?.dailyGoals;
   const canEdit = Boolean(view?.canEdit);
   const showRegisterAction = namespace === 'patient' && !canEdit;
+  const showObservations = namespace === 'patient';
 
   const sectionCards = sections.map((section) => (
         <section key={section.mealSlot} className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-bold tracking-tight">
-                {t(`nutritionPlan.mealSlots.${section.mealSlot}`)}
-              </h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-bold tracking-tight">
+                  {t(`nutritionPlan.mealSlots.${section.mealSlot}`)}
+                </h3>
+                <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                  {t(`nutritionPlan.mealWindows.${section.mealSlot}`)}
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground">
                 {t('nutritionPlan.sectionSubtitle')}
               </p>
@@ -387,6 +402,7 @@ export function NutritionPlanWorkspace({
     setEditorErrors(EMPTY_EDITOR_ERRORS);
     setSearchQuery('');
     setSearchResults([]);
+    setSearchFeedbackState('idle');
     setEditorOpen(true);
   }
 
@@ -408,6 +424,7 @@ export function NutritionPlanWorkspace({
     setEditorErrors(EMPTY_EDITOR_ERRORS);
     setSearchQuery('');
     setSearchResults([]);
+    setSearchFeedbackState('idle');
     setEditorOpen(true);
   }
 
@@ -431,6 +448,7 @@ export function NutritionPlanWorkspace({
     setEditorErrors((current) => ({ ...current, ingredients: undefined }));
     setSearchQuery('');
     setSearchResults([]);
+    setSearchFeedbackState('idle');
   }
 
   function updateEditorIngredient(index: number, nextQuantity: number, nextUnit: PlanIngredientUnit) {
@@ -527,6 +545,39 @@ export function NutritionPlanWorkspace({
                 {isSaving ? t('nutritionPlan.saving') : t('nutritionPlan.savePlan')}
               </Button>
             ) : null}
+
+            {showObservations ? (
+              <div className="space-y-3 rounded-3xl border border-border/60 bg-muted/10 p-4">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold tracking-tight">{t('nutritionPlan.observationsTitle')}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {t('nutritionPlan.observationsSubtitle')}
+                  </p>
+                </div>
+
+                {observations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t('nutritionPlan.noObservations')}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {observations.map((observation) => (
+                      <div
+                        key={observation.id}
+                        className="rounded-2xl border border-border/60 bg-background px-3 py-3"
+                      >
+                        <p className="text-sm leading-relaxed text-foreground/90">
+                          {observation.note}
+                        </p>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {formatObservationDate(observation.createdAt)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -575,12 +626,25 @@ export function NutritionPlanWorkspace({
                   <Input
                     className="pl-9"
                     value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      setSearchFeedbackState('idle');
+                    }}
                     placeholder={t('nutritionPlan.searchFoodPlaceholder')}
                   />
                 </div>
                 {isSearching ? (
                   <p className="text-sm text-muted-foreground">{t('nutritionPlan.searching')}</p>
+                ) : null}
+                {!isSearching && searchFeedbackState === 'service-unavailable' ? (
+                  <p className="text-sm text-destructive">
+                    {t('nutritionPlan.searchServiceUnavailable')}
+                  </p>
+                ) : null}
+                {!isSearching && searchFeedbackState === 'no-results' ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t('nutritionPlan.searchNoResults', { query: searchQuery.trim() })}
+                  </p>
                 ) : null}
                 {searchResults.length > 0 ? (
                   <div className="grid gap-2 rounded-2xl border border-border/60 bg-muted/20 p-3">
@@ -868,6 +932,19 @@ function normalizeOption(editorState: EditorState, editingOptionId: string | nul
 
 function formatAmount(value: number): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+function formatObservationDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
 }
 
 function validateEditorState(

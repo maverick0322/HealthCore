@@ -59,9 +59,7 @@ export const DetailedMealTimeline = ({ logs, isLoading, error }: DetailedMealTim
 
               <Card className="overflow-hidden border-border/60 shadow-sm transition-shadow hover:shadow-md">
                 <div className="flex flex-col sm:flex-row">
-                  {/* Imagen (Placeholder preparado para el Media Service) */}
                   <div className="h-32 sm:h-auto sm:w-32 bg-muted shrink-0 flex items-center justify-center border-b sm:border-b-0 sm:border-r border-border/50">
-                     {/* Cuando integremos Cloudflare R2, aquí irá <img src={log.photoUrl} /> */}
                      <Utensils className="text-muted-foreground/30" size={32} />
                   </div>
 
@@ -69,7 +67,8 @@ export const DetailedMealTimeline = ({ logs, isLoading, error }: DetailedMealTim
                     <div>
                       <div className="flex justify-between items-start">
                         <h3 className="font-bold text-base text-foreground">
-                          {t(`tracking.mealType.${log.mealType}`, log.mealType)}
+                          {/* CORRECCIÓN DE TIPADO AQUÍ */}
+                          {String(t(`tracking.mealType.${log.mealType}`, { defaultValue: log.mealType }))}
                         </h3>
                         <span className="text-xs font-medium text-muted-foreground">
                           {formatLocalTime(log.consumedAt)}
@@ -105,7 +104,6 @@ export const DetailedMealTimeline = ({ logs, isLoading, error }: DetailedMealTim
           );
         })}
 
-        {/* Tarjeta de "Pendiente" (Elemento visual decorativo para invitar a registrar más) */}
         <div className="relative pl-8 md:pl-10 opacity-60 hover:opacity-100 transition-opacity">
           <div className="absolute -left-[17px] top-4 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-background bg-muted text-muted-foreground ring-1 ring-border border-dashed">
             <Plus size={16} />
@@ -127,7 +125,7 @@ export const DetailedMealTimeline = ({ logs, isLoading, error }: DetailedMealTim
   return (
     <div className="mt-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Registros de la Fecha</h2>
+        <h2 className="text-lg font-bold">Registros de Hoy</h2>
         <button className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
           Ver calendario
         </button>

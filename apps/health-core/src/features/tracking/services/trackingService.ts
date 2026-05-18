@@ -36,6 +36,11 @@ export const trackingService = {
     return response.data;
   },
 
+  getDailyLogs: async (date: string) => {
+    const response = await httpClient.get(`/tracking/logs/daily?date=${date}`);
+    return response.data;
+  },
+
   getHistoricalMacros: async (startDate: string, endDate: string): Promise<DailyMacroSummary[]> => {
     const response = await httpClient.get<DailyMacroSummary[]>(
       `/tracking/dashboard/history?startDate=${startDate}&endDate=${endDate}`

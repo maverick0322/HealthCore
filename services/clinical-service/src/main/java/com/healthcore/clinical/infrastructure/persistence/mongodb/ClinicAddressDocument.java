@@ -5,6 +5,7 @@ public class ClinicAddressDocument {
     private String postalCode;
     private String state;
     private String city;
+    private String municipality;
     private String neighborhood;
     private String street;
     private String exteriorNumber;
@@ -32,6 +33,14 @@ public class ClinicAddressDocument {
 
     public void setCity(String city) {
         this.city = city;
+    }
+
+    public String getMunicipality() {
+        return municipality;
+    }
+
+    public void setMunicipality(String municipality) {
+        this.municipality = municipality;
     }
 
     public String getNeighborhood() {

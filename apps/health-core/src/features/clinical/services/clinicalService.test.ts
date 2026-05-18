@@ -163,9 +163,10 @@ describe('clinicalService', () => {
       phone: '5512345678',
       clinicAddress: {
         postalCode: '03100',
-        state: 'CDMX',
-        city: 'Benito Juarez',
-        neighborhood: 'Narvarte',
+        state: 'Ciudad de Mexico',
+        city: 'Ciudad de Mexico',
+        municipality: 'Benito Juarez',
+        neighborhood: 'Narvarte Oriente',
         street: 'Xola',
         exteriorNumber: '123',
         interiorNumber: '',
@@ -185,6 +186,26 @@ describe('clinicalService', () => {
 
     const result = await clinicalApi.getMyNutritionistProfile();
     expect(result.fullName).toBe('Daniel Martinez');
+    expect(result.clinicAddress?.municipality).toBe('Benito Juarez');
+  });
+
+  it('should lookup postal code suggestions with auth headers', async () => {
+    (httpClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: {
+        postalCode: '03100',
+        state: 'Ciudad de Mexico',
+        city: 'Ciudad de Mexico',
+        municipality: 'Benito Juarez',
+        colonies: ['Narvarte Oriente', 'Narvarte Poniente'],
+      },
+    });
+
+    const result = await clinicalApi.lookupPostalCode('03100');
+
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/reference/postal-codes/03100', {
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+    expect(result.municipality).toBe('Benito Juarez');
   });
 
   it('should fetch nutritionist patients and one patient detail', async () => {

@@ -317,7 +317,16 @@ class ClinicalControllerTest {
                 "12345678",
                 List.of("PRESENTIAL", "ONLINE"),
                 "5512345678",
-                new ClinicAddressRequest("03100", "CDMX", "Benito Juarez", "Narvarte", "Xola", "123", null),
+                new ClinicAddressRequest(
+                        "03100",
+                        "Ciudad de Mexico",
+                        "Ciudad de Mexico",
+                        "Benito Juarez",
+                        "Narvarte Oriente",
+                        "Xola",
+                        "123",
+                        null
+                ),
                 "Especialista en nutricion clinica."
         );
     }
@@ -333,7 +342,16 @@ class ClinicalControllerTest {
                 "12345678",
                 List.of("PRESENTIAL", "ONLINE"),
                 "5512345678",
-                new ClinicAddress("03100", "CDMX", "Benito Juarez", "Narvarte", "Xola", "123", null),
+                new ClinicAddress(
+                        "03100",
+                        "Ciudad de Mexico",
+                        "Ciudad de Mexico",
+                        "Benito Juarez",
+                        "Narvarte Oriente",
+                        "Xola",
+                        "123",
+                        null
+                ),
                 "Especialista en nutricion clinica."
         );
     }

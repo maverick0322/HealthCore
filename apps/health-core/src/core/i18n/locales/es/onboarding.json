@@ -163,10 +163,18 @@
         "postalCode": "Codigo postal",
         "state": "Estado",
         "city": "Ciudad",
+        "municipality": "Municipio o alcaldia",
         "neighborhood": "Colonia",
         "street": "Calle",
         "exteriorNumber": "Numero exterior",
         "interiorNumberOptional": "Numero interior (opcional)"
+      },
+      "lookup": {
+        "loading": "Buscando informacion del codigo postal...",
+        "match": "Codigo postal encontrado. Selecciona la colonia correspondiente.",
+        "manualFallback": "No encontramos ese codigo postal en el catalogo local. Puedes capturar la direccion manualmente.",
+        "error": "No pudimos consultar el catalogo postal en este momento.",
+        "neighborhoodPlaceholder": "Selecciona una colonia"
       }
     },
     "summary": {
@@ -192,7 +200,9 @@
       "postalCode": "El codigo postal debe contener 5 digitos.",
       "state": "El estado es obligatorio.",
       "city": "La ciudad es obligatoria.",
+      "municipality": "El municipio o alcaldia es obligatorio.",
       "neighborhood": "La colonia es obligatoria.",
+      "neighborhoodSelection": "Selecciona una colonia de la lista disponible para ese codigo postal.",
       "street": "La calle es obligatoria.",
       "exteriorNumber": "El numero exterior es obligatorio.",
       "bio": "La biografia es obligatoria."

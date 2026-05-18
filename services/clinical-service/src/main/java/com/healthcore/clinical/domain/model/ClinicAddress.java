@@ -5,6 +5,7 @@ public class ClinicAddress {
     private String postalCode;
     private String state;
     private String city;
+    private String municipality;
     private String neighborhood;
     private String street;
     private String exteriorNumber;
@@ -17,6 +18,7 @@ public class ClinicAddress {
             String postalCode,
             String state,
             String city,
+            String municipality,
             String neighborhood,
             String street,
             String exteriorNumber,
@@ -25,6 +27,7 @@ public class ClinicAddress {
         this.postalCode = ProfileFieldValidator.validatePostalCode(postalCode);
         this.state = ProfileFieldValidator.validateRequiredText(state, 80, "State");
         this.city = ProfileFieldValidator.validateRequiredText(city, 80, "City");
+        this.municipality = ProfileFieldValidator.validateRequiredText(municipality, 80, "Municipality");
         this.neighborhood = ProfileFieldValidator.validateRequiredText(neighborhood, 80, "Neighborhood");
         this.street = ProfileFieldValidator.validateRequiredText(street, 120, "Street");
         this.exteriorNumber = ProfileFieldValidator.validateRequiredText(exteriorNumber, 20, "Exterior number");
@@ -35,6 +38,7 @@ public class ClinicAddress {
             String postalCode,
             String state,
             String city,
+            String municipality,
             String neighborhood,
             String street,
             String exteriorNumber,
@@ -43,6 +47,7 @@ public class ClinicAddress {
         if (ProfileFieldValidator.normalizeText(postalCode) == null
                 && ProfileFieldValidator.normalizeText(state) == null
                 && ProfileFieldValidator.normalizeText(city) == null
+                && ProfileFieldValidator.normalizeText(municipality) == null
                 && ProfileFieldValidator.normalizeText(neighborhood) == null
                 && ProfileFieldValidator.normalizeText(street) == null
                 && ProfileFieldValidator.normalizeText(exteriorNumber) == null
@@ -55,6 +60,7 @@ public class ClinicAddress {
                 : ProfileFieldValidator.validatePostalCode(postalCode);
         address.state = ProfileFieldValidator.validateOptionalText(state, 80, "State");
         address.city = ProfileFieldValidator.validateOptionalText(city, 80, "City");
+        address.municipality = ProfileFieldValidator.validateOptionalText(municipality, 80, "Municipality");
         address.neighborhood = ProfileFieldValidator.validateOptionalText(neighborhood, 80, "Neighborhood");
         address.street = ProfileFieldValidator.validateOptionalText(street, 120, "Street");
         address.exteriorNumber = ProfileFieldValidator.validateOptionalText(exteriorNumber, 20, "Exterior number");
@@ -66,6 +72,7 @@ public class ClinicAddress {
         return postalCode != null
                 && state != null
                 && city != null
+                && municipality != null
                 && neighborhood != null
                 && street != null
                 && exteriorNumber != null;
@@ -81,6 +88,10 @@ public class ClinicAddress {
 
     public String getCity() {
         return city;
+    }
+
+    public String getMunicipality() {
+        return municipality;
     }
 
     public String getNeighborhood() {

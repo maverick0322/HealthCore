@@ -161,10 +161,19 @@ export interface ClinicAddressPayload {
   postalCode: string;
   state: string;
   city: string;
+  municipality: string;
   neighborhood: string;
   street: string;
   exteriorNumber: string;
   interiorNumber?: string | null;
+}
+
+export interface PostalCodeLookupResponse {
+  postalCode: string;
+  state: string;
+  city: string;
+  municipality: string;
+  colonies: string[];
 }
 
 export interface NutritionistProfilePayload {

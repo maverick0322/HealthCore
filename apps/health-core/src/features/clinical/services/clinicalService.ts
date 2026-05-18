@@ -7,6 +7,7 @@ import type {
   NutritionistProfilePayload,
   NutritionistProfileResponse,
   ObservationResponse,
+  PostalCodeLookupResponse,
   CreateObservationRequest,
   NutritionPlanViewResponse,
   NutritionPlanUpsertRequest,
@@ -57,7 +58,18 @@ const normalizeNutritionistProfile = (
   professionalLicense: profile.professionalLicense ?? '',
   consultationTypes: profile.consultationTypes ?? [],
   phone: profile.phone ?? '',
-  clinicAddress: profile.clinicAddress ?? null,
+  clinicAddress: profile.clinicAddress
+    ? {
+        postalCode: profile.clinicAddress.postalCode ?? '',
+        state: profile.clinicAddress.state ?? '',
+        city: profile.clinicAddress.city ?? '',
+        municipality: profile.clinicAddress.municipality ?? '',
+        neighborhood: profile.clinicAddress.neighborhood ?? '',
+        street: profile.clinicAddress.street ?? '',
+        exteriorNumber: profile.clinicAddress.exteriorNumber ?? '',
+        interiorNumber: profile.clinicAddress.interiorNumber ?? '',
+      }
+    : null,
   bio: profile.bio ?? '',
   profileCompleted: profile.profileCompleted ?? false,
 });
@@ -142,6 +154,14 @@ export const clinicalApi = {
       { headers: getXUserIdHeader() }
     );
     return normalizeNutritionistProfile(response.data);
+  },
+
+  lookupPostalCode: async (postalCode: string): Promise<PostalCodeLookupResponse> => {
+    const response = await httpClient.get<PostalCodeLookupResponse>(
+      `${CLINICAL_API_URL}/reference/postal-codes/${encodeURIComponent(postalCode)}`,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
   },
 
   getNutritionistPatients: async (): Promise<NutritionistPatientProfileResponse[]> => {

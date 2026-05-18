@@ -53,6 +53,7 @@ const initialClinicAddress: ClinicAddressPayload = {
   postalCode: '',
   state: '',
   city: '',
+  municipality: '',
   neighborhood: '',
   street: '',
   exteriorNumber: '',
@@ -149,7 +150,9 @@ export const useNutritionistOnboardingStore = create<NutritionistOnboardingState
       consultationTypes: profile.consultationTypes,
       contact: {
         phone: profile.phone ?? '',
-        clinicAddress: profile.clinicAddress ?? initialClinicAddress,
+        clinicAddress: profile.clinicAddress
+          ? { ...initialClinicAddress, ...profile.clinicAddress }
+          : initialClinicAddress,
       },
       bio: profile.bio,
       hasExistingProfile,

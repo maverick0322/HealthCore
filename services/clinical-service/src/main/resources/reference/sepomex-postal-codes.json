@@ -1,0 +1,30 @@
+[
+  {
+    "postalCode": "03100",
+    "state": "Ciudad de Mexico",
+    "city": "Ciudad de Mexico",
+    "municipality": "Benito Juarez",
+    "colonies": [
+      "Narvarte Oriente",
+      "Narvarte Poniente"
+    ]
+  },
+  {
+    "postalCode": "44100",
+    "state": "Jalisco",
+    "city": "Guadalajara",
+    "municipality": "Guadalajara",
+    "colonies": [
+      "Guadalajara Centro"
+    ]
+  },
+  {
+    "postalCode": "64000",
+    "state": "Nuevo Leon",
+    "city": "Monterrey",
+    "municipality": "Monterrey",
+    "colonies": [
+      "Monterrey Centro"
+    ]
+  }
+]

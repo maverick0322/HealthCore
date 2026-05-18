@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ComponentType, type InputHTMLAttributes, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText, Phone, ShieldCheck, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import type {
   ConsultationType,
   NutritionistProfilePayload,
   NutritionistSpecialization,
+  PostalCodeLookupResponse,
 } from '@/features/clinical/types/clinical.types';
 import { OnboardingLayout } from '@/features/onboarding/layouts/OnboardingLayout';
 import { useNutritionistOnboardingStore } from '@/features/onboarding/store/useNutritionistOnboardingStore';
@@ -24,6 +25,7 @@ import { normalizeText, validateOptionalName, validateRequiredName } from '@/fea
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
 
 interface NutritionistOnboardingPageProps {
@@ -57,6 +59,9 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [postalLookup, setPostalLookup] = useState<PostalCodeLookupResponse | null>(null);
+  const [isPostalLookupLoading, setIsPostalLookupLoading] = useState(false);
+  const [postalLookupMessage, setPostalLookupMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -86,6 +91,62 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
     void loadProfile();
   }, [hydrateFromProfile, reset, setHasExistingProfile]);
 
+  useEffect(() => {
+    const postalCode = contact.clinicAddress.postalCode.trim();
+
+    if (postalCode.length !== 5) {
+      setPostalLookup(null);
+      setPostalLookupMessage(null);
+      setIsPostalLookupLoading(false);
+      return;
+    }
+
+    let isActive = true;
+    setIsPostalLookupLoading(true);
+    setPostalLookupMessage(null);
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const lookupResult = await clinicalApi.lookupPostalCode(postalCode);
+        if (!isActive) {
+          return;
+        }
+
+        const currentNeighborhood = useNutritionistOnboardingStore.getState().contact.clinicAddress.neighborhood.trim();
+        const normalizedNeighborhood = lookupResult.colonies.includes(currentNeighborhood) ? currentNeighborhood : '';
+
+        setPostalLookup(lookupResult);
+        setClinicAddress({
+          postalCode: lookupResult.postalCode,
+          state: lookupResult.state,
+          city: lookupResult.city,
+          municipality: lookupResult.municipality,
+          neighborhood: normalizedNeighborhood,
+        });
+        setPostalLookupMessage(t('nutritionist.contact.lookup.match'));
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setPostalLookup(null);
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        setPostalLookupMessage(
+          status === 404 ? t('nutritionist.contact.lookup.manualFallback') : t('nutritionist.contact.lookup.error')
+        );
+      } finally {
+        if (isActive) {
+          setIsPostalLookupLoading(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [contact.clinicAddress.postalCode, setClinicAddress, t]);
+
   const payload = useMemo<NutritionistProfilePayload>(
     () => ({
       firstName: identity.firstName.trim(),
@@ -109,7 +170,7 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
       consultationTypes,
       contact,
       bio,
-    });
+    }, postalLookup);
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) {
       return;
@@ -124,7 +185,7 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
       consultationTypes,
       contact,
       bio,
-    });
+    }, postalLookup);
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) {
       return;
@@ -160,6 +221,29 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
       </div>
     );
   }
+
+  const isCatalogPostalCode =
+    postalLookup?.postalCode === contact.clinicAddress.postalCode.trim() && postalLookup.colonies.length > 0;
+
+  const handlePostalCodeChange = (value: string) => {
+    const sanitizedValue = value.replace(/\D/g, '').slice(0, 5);
+    const currentPostalCode = contact.clinicAddress.postalCode;
+
+    if (sanitizedValue === currentPostalCode) {
+      setClinicAddress({ postalCode: sanitizedValue });
+      return;
+    }
+
+    setPostalLookup(null);
+    setPostalLookupMessage(null);
+    setClinicAddress({
+      postalCode: sanitizedValue,
+      state: '',
+      city: '',
+      municipality: '',
+      neighborhood: '',
+    });
+  };
 
   return (
     <OnboardingLayout currentStep={step} totalSteps={5}>
@@ -330,14 +414,21 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
             value={contact.clinicAddress.postalCode}
             maxLength={5}
             error={errors.postalCode}
-            onChange={(value) => setClinicAddress({ postalCode: value })}
+            inputMode="numeric"
+            onChange={handlePostalCodeChange}
           />
+          {isPostalLookupLoading ? (
+            <p className="text-xs text-muted-foreground">{t('nutritionist.contact.lookup.loading')}</p>
+          ) : postalLookupMessage ? (
+            <p className="text-xs text-muted-foreground">{postalLookupMessage}</p>
+          ) : null}
           <CounterField
             id="nutri-state"
             label={t('nutritionist.contact.fields.state')}
             value={contact.clinicAddress.state}
             maxLength={80}
             error={errors.state}
+            disabled={isCatalogPostalCode}
             onChange={(value) => setClinicAddress({ state: value })}
           />
           <CounterField
@@ -346,16 +437,63 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
             value={contact.clinicAddress.city}
             maxLength={80}
             error={errors.city}
+            disabled={isCatalogPostalCode}
             onChange={(value) => setClinicAddress({ city: value })}
           />
           <CounterField
-            id="nutri-neighborhood"
-            label={t('nutritionist.contact.fields.neighborhood')}
-            value={contact.clinicAddress.neighborhood}
+            id="nutri-municipality"
+            label={t('nutritionist.contact.fields.municipality')}
+            value={contact.clinicAddress.municipality}
             maxLength={80}
-            error={errors.neighborhood}
-            onChange={(value) => setClinicAddress({ neighborhood: value })}
+            error={errors.municipality}
+            disabled={isCatalogPostalCode}
+            onChange={(value) => setClinicAddress({ municipality: value })}
           />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="nutri-neighborhood" className="text-sm font-semibold text-foreground">
+                {t('nutritionist.contact.fields.neighborhood')}
+              </label>
+              {isCatalogPostalCode ? (
+                <span className="text-xs text-muted-foreground">{postalLookup.colonies.length}</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  {contact.clinicAddress.neighborhood.length}/80
+                </span>
+              )}
+            </div>
+            {isCatalogPostalCode ? (
+              <Select
+                value={contact.clinicAddress.neighborhood}
+                onValueChange={(value) => setClinicAddress({ neighborhood: value })}
+              >
+                <SelectTrigger
+                  id="nutri-neighborhood"
+                  aria-invalid={Boolean(errors.neighborhood)}
+                  className="h-12 bg-card"
+                >
+                  <SelectValue placeholder={t('nutritionist.contact.lookup.neighborhoodPlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {postalLookup.colonies.map((colony) => (
+                    <SelectItem key={colony} value={colony}>
+                      {colony}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="nutri-neighborhood"
+                value={contact.clinicAddress.neighborhood}
+                maxLength={80}
+                aria-invalid={Boolean(errors.neighborhood)}
+                onChange={(event) => setClinicAddress({ neighborhood: event.target.value })}
+                className="h-12 bg-card"
+              />
+            )}
+            {errors.neighborhood ? <p className="text-xs text-destructive">{errors.neighborhood}</p> : null}
+          </div>
           <CounterField
             id="nutri-street"
             label={t('nutritionist.contact.fields.street')}
@@ -517,10 +655,12 @@ interface CounterFieldProps {
   value: string;
   maxLength: number;
   error?: string | null;
+  disabled?: boolean;
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode'];
   onChange: (value: string) => void;
 }
 
-const CounterField = ({ id, label, value, maxLength, error, onChange }: CounterFieldProps) => (
+const CounterField = ({ id, label, value, maxLength, error, disabled = false, inputMode, onChange }: CounterFieldProps) => (
   <div className="space-y-2">
     <div className="flex items-center justify-between gap-3">
       <label htmlFor={id} className="text-sm font-semibold text-foreground">
@@ -535,6 +675,8 @@ const CounterField = ({ id, label, value, maxLength, error, onChange }: CounterF
       value={value}
       maxLength={maxLength}
       aria-invalid={Boolean(error)}
+      disabled={disabled}
+      inputMode={inputMode}
       onChange={(event) => onChange(event.target.value)}
       className="h-12 bg-card"
     />
@@ -570,6 +712,7 @@ const sanitizeAddress = (address: ClinicAddressPayload): ClinicAddressPayload =>
   postalCode: address.postalCode.trim(),
   state: normalizeText(address.state),
   city: normalizeText(address.city),
+  municipality: normalizeText(address.municipality),
   neighborhood: normalizeText(address.neighborhood),
   street: normalizeText(address.street),
   exteriorNumber: normalizeText(address.exteriorNumber),
@@ -582,7 +725,8 @@ const formatManualAddress = (address: ClinicAddressPayload): string | undefined 
     address.exteriorNumber?.trim(),
     address.interiorNumber?.trim() ? `Int. ${address.interiorNumber.trim()}` : null,
     address.neighborhood?.trim(),
-    address.city?.trim(),
+    address.municipality?.trim(),
+    address.city?.trim() && address.city?.trim() !== address.municipality?.trim() ? address.city.trim() : null,
     address.state?.trim(),
     address.postalCode?.trim(),
   ].filter(Boolean);
@@ -610,7 +754,8 @@ const getStepErrors = (
       clinicAddress: ClinicAddressPayload;
     };
     bio: string;
-  }
+  },
+  postalLookup: PostalCodeLookupResponse | null
 ): Record<string, string | null> => {
   if (step === 1) {
     return {
@@ -656,6 +801,8 @@ const getStepErrors = (
   if (step === 4) {
     const address = data.contact.clinicAddress;
     const hasAddress = hasAnyAddressValue(address);
+    const requiresCatalogNeighborhood =
+      postalLookup?.postalCode === address.postalCode.trim() && postalLookup.colonies.length > 0;
     return {
       phone:
         data.contact.phone.trim() && !/^\d{10}$/.test(data.contact.phone.trim())
@@ -665,7 +812,13 @@ const getStepErrors = (
         hasAddress && !/^\d{5}$/.test(address.postalCode.trim()) ? t('nutritionist.validation.postalCode') : null,
       state: hasAddress && !address.state.trim() ? t('nutritionist.validation.state') : null,
       city: hasAddress && !address.city.trim() ? t('nutritionist.validation.city') : null,
-      neighborhood: hasAddress && !address.neighborhood.trim() ? t('nutritionist.validation.neighborhood') : null,
+      municipality: hasAddress && !address.municipality.trim() ? t('nutritionist.validation.municipality') : null,
+      neighborhood:
+        hasAddress && !address.neighborhood.trim()
+          ? t('nutritionist.validation.neighborhood')
+          : requiresCatalogNeighborhood && !postalLookup.colonies.includes(address.neighborhood.trim())
+            ? t('nutritionist.validation.neighborhoodSelection')
+            : null,
       street: hasAddress && !address.street.trim() ? t('nutritionist.validation.street') : null,
       exteriorNumber: hasAddress && !address.exteriorNumber.trim() ? t('nutritionist.validation.exteriorNumber') : null,
       interiorNumber: null,

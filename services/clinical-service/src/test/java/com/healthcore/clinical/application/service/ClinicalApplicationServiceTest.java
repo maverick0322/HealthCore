@@ -7,9 +7,11 @@ import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.HealthGoal;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
 import com.healthcore.clinical.domain.model.PatientProfile;
+import com.healthcore.clinical.domain.model.PostalCodeCatalogEntry;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.NutritionistProfileRepositoryPort;
+import com.healthcore.clinical.domain.port.out.PostalCodeCatalogPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,6 +34,9 @@ class ClinicalApplicationServiceTest {
 
     @Mock
     private NutritionistProfileRepositoryPort nutritionistRepositoryPort;
+
+    @Mock
+    private PostalCodeCatalogPort postalCodeCatalogPort;
 
     @InjectMocks
     private ClinicalApplicationService service;
@@ -128,6 +133,7 @@ class ClinicalApplicationServiceTest {
     @Test
     void shouldCreateNutritionistProfile() {
         NutritionistProfile profile = createNutritionistProfile("nutri-123");
+        when(postalCodeCatalogPort.findByPostalCode("03100")).thenReturn(Optional.of(createPostalCodeEntry("03100")));
         when(nutritionistRepositoryPort.save(profile)).thenReturn(profile);
 
         NutritionistProfile savedProfile = service.createNutritionistProfile(profile);
@@ -149,11 +155,21 @@ class ClinicalApplicationServiceTest {
                 "123456789",
                 List.of("ONLINE"),
                 "5512345678",
-                new ClinicAddress("03100", "CDMX", "Benito Juarez", "Narvarte", "Xola", "456", "7B"),
+                new ClinicAddress(
+                        "03100",
+                        "Ciudad de Mexico",
+                        "Ciudad de Mexico",
+                        "Benito Juarez",
+                        "Narvarte Oriente",
+                        "Xola",
+                        "456",
+                        "7B"
+                ),
                 "Bio actualizada"
         );
 
         when(nutritionistRepositoryPort.findByUserId("nutri-123")).thenReturn(Optional.of(existingProfile));
+        when(postalCodeCatalogPort.findByPostalCode("03100")).thenReturn(Optional.of(createPostalCodeEntry("03100")));
         when(nutritionistRepositoryPort.save(existingProfile)).thenReturn(existingProfile);
 
         NutritionistProfile result = service.updateNutritionistProfile("nutri-123", updatedProfile);
@@ -161,6 +177,76 @@ class ClinicalApplicationServiceTest {
         assertEquals("Daniela", result.getFirstName());
         assertEquals(List.of("ONLINE"), result.getConsultationTypes());
         verify(nutritionistRepositoryPort).save(existingProfile);
+    }
+
+    @Test
+    void shouldAllowManualClinicAddressWhenPostalCodeIsUnknown() {
+        NutritionistProfile profile = new NutritionistProfile(
+                "nutri-123",
+                "Daniel",
+                "Martinez",
+                null,
+                List.of("CLINICAL"),
+                null,
+                "12345678",
+                List.of("PRESENTIAL"),
+                "5512345678",
+                new ClinicAddress(
+                        "99999",
+                        "Estado Manual",
+                        "Ciudad Manual",
+                        "Municipio Manual",
+                        "Colonia Manual",
+                        "Calle Uno",
+                        "123",
+                        null
+                ),
+                "Especialista en nutricion clinica."
+        );
+
+        when(postalCodeCatalogPort.findByPostalCode("99999")).thenReturn(Optional.empty());
+        when(nutritionistRepositoryPort.save(profile)).thenReturn(profile);
+
+        NutritionistProfile savedProfile = service.createNutritionistProfile(profile);
+
+        assertEquals("99999", savedProfile.getClinicAddress().getPostalCode());
+        verify(nutritionistRepositoryPort).save(profile);
+    }
+
+    @Test
+    void shouldRejectClinicAddressThatDoesNotMatchKnownPostalCode() {
+        NutritionistProfile profile = new NutritionistProfile(
+                "nutri-123",
+                "Daniel",
+                "Martinez",
+                null,
+                List.of("CLINICAL"),
+                null,
+                "12345678",
+                List.of("PRESENTIAL"),
+                "5512345678",
+                new ClinicAddress(
+                        "03100",
+                        "Ciudad de Mexico",
+                        "Ciudad de Mexico",
+                        "Benito Juarez",
+                        "Colonia Invalida",
+                        "Xola",
+                        "123",
+                        null
+                ),
+                "Especialista en nutricion clinica."
+        );
+
+        when(postalCodeCatalogPort.findByPostalCode("03100")).thenReturn(Optional.of(createPostalCodeEntry("03100")));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.createNutritionistProfile(profile)
+        );
+
+        assertEquals("Clinic address does not match the postal code catalog.", exception.getMessage());
+        verify(nutritionistRepositoryPort, never()).save(any());
     }
 
     private PatientProfile createPatientProfile(String userId) {
@@ -192,8 +278,27 @@ class ClinicalApplicationServiceTest {
                 "12345678",
                 List.of("PRESENTIAL", "ONLINE"),
                 "5512345678",
-                new ClinicAddress("03100", "CDMX", "Benito Juarez", "Narvarte", "Xola", "123", null),
+                new ClinicAddress(
+                        "03100",
+                        "Ciudad de Mexico",
+                        "Ciudad de Mexico",
+                        "Benito Juarez",
+                        "Narvarte Oriente",
+                        "Xola",
+                        "123",
+                        null
+                ),
                 "Especialista en nutricion clinica."
+        );
+    }
+
+    private PostalCodeCatalogEntry createPostalCodeEntry(String postalCode) {
+        return new PostalCodeCatalogEntry(
+                postalCode,
+                "Ciudad de Mexico",
+                "Ciudad de Mexico",
+                "Benito Juarez",
+                List.of("Narvarte Oriente", "Narvarte Poniente")
         );
     }
 }

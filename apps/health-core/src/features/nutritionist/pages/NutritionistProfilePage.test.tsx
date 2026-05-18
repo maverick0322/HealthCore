@@ -77,7 +77,8 @@ describe('NutritionistProfilePage', () => {
       clinicAddress: {
         postalCode: '01000',
         state: 'Ciudad de Mexico',
-        city: 'Alvaro Obregon',
+        city: 'Ciudad de Mexico',
+        municipality: 'Alvaro Obregon',
         neighborhood: 'Florida',
         street: 'Insurgentes Sur',
         exteriorNumber: '123',

@@ -107,4 +107,10 @@ describe('NutritionPlanWorkspace', () => {
     expect(screen.getByText('Previous self-managed plan')).toBeInTheDocument();
     expect(screen.getAllByText('Protein Oats').length).toBeGreaterThan(0);
   });
+
+  it('renders an unavailable state when there is no plan view and it is not loading', () => {
+    render(<NutritionPlanWorkspace namespace="patient" view={null} />);
+
+    expect(screen.getByText('The nutrition plan is not available right now.')).toBeInTheDocument();
+  });
 });

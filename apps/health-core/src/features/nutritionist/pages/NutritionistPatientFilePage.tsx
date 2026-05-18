@@ -33,6 +33,7 @@ import type {
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
+import { logClientError, logClientInfo } from "@/core/utils/logger";
 
 const getDisplayIdentity = (userId: string): string => {
   const normalized = userId.trim();
@@ -80,6 +81,7 @@ export const NutritionistPatientFilePage = () => {
   const [observations, setObservations] = useState<ObservationResponse[]>([]);
   const [nutritionPlanView, setNutritionPlanView] = useState<NutritionPlanViewResponse | null>(null);
   const [isLoadingNutritionPlan, setIsLoadingNutritionPlan] = useState(false);
+  const [nutritionPlanLoadError, setNutritionPlanLoadError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const navigate = useNavigate();
@@ -100,10 +102,15 @@ export const NutritionistPatientFilePage = () => {
       try {
         setIsLoadingPatient(true);
         setPatientLoadError(null);
+        logClientInfo("NutritionistPatientFilePage.patient.load.start", { patientId });
         const response = await clinicalApi.getNutritionistPatientProfile(patientId);
         setPatient(response);
+        logClientInfo("NutritionistPatientFilePage.patient.load.success", {
+          patientId,
+          patientUserId: response.userId,
+        });
       } catch (error) {
-        console.error("Error loading patient profile:", error);
+        logClientError("NutritionistPatientFilePage.patient.load.error", error, { patientId });
         setPatientLoadError(t("patients.file.error"));
       } finally {
         setIsLoadingPatient(false);
@@ -129,10 +136,20 @@ export const NutritionistPatientFilePage = () => {
     const loadNutritionPlan = async () => {
       try {
         setIsLoadingNutritionPlan(true);
+        setNutritionPlanLoadError(null);
+        logClientInfo("NutritionistPatientFilePage.plan.load.start", { patientId });
         const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
         setNutritionPlanView(response);
+        logClientInfo("NutritionistPatientFilePage.plan.load.success", {
+          patientId,
+          mode: response.mode,
+          canEdit: response.canEdit,
+          sections: response.sections.length,
+        });
       } catch (error) {
-        console.error("Error loading nutrition plan:", error);
+        logClientError("NutritionistPatientFilePage.plan.load.error", error, { patientId });
+        setNutritionPlanView(null);
+        setNutritionPlanLoadError(t("nutritionPlan.loadError"));
       } finally {
         setIsLoadingNutritionPlan(false);
       }
@@ -146,7 +163,7 @@ export const NutritionistPatientFilePage = () => {
       const data = await getPatientObservations(patientId);
       setObservations(data);
     } catch (error) {
-      console.error("Error loading observations:", error);
+      logClientError("NutritionistPatientFilePage.observations.load.error", error, { patientId });
     }
   };
 
@@ -160,7 +177,7 @@ export const NutritionistPatientFilePage = () => {
       await clinicalApi.unlinkNutritionist(patientId);
       navigate("/patients/nutritionist");
     } catch (error) {
-      console.error("Error unlinking patient:", error);
+      logClientError("NutritionistPatientFilePage.unlink.error", error, { patientId });
       setIsUnlinking(false);
       setShowUnlinkModal(false);
     }
@@ -177,7 +194,7 @@ export const NutritionistPatientFilePage = () => {
       setNewNote("");
       await loadObservations();
     } catch (error) {
-      console.error("Error saving observation:", error);
+      logClientError("NutritionistPatientFilePage.observation.save.error", error, { patientId });
     } finally {
       setIsSavingNote(false);
     }
@@ -189,9 +206,53 @@ export const NutritionistPatientFilePage = () => {
   const handleSaveNutritionPlan = async (
     payload: Parameters<typeof clinicalApi.upsertNutritionistPatientNutritionPlan>[1]
   ) => {
-    const response = await clinicalApi.upsertNutritionistPatientNutritionPlan(patientId, payload);
-    setNutritionPlanView(response);
-    return response;
+    try {
+      logClientInfo("NutritionistPatientFilePage.plan.save.start", {
+        patientId,
+        sections: payload.sections.length,
+      });
+      const response = await clinicalApi.upsertNutritionistPatientNutritionPlan(patientId, payload);
+      setNutritionPlanView(response);
+      setNutritionPlanLoadError(null);
+      logClientInfo("NutritionistPatientFilePage.plan.save.success", {
+        patientId,
+        mode: response.mode,
+        canEdit: response.canEdit,
+      });
+      return response;
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.plan.save.error", error, {
+        patientId,
+        sections: payload.sections.length,
+      });
+      throw error;
+    }
+  };
+
+  const retryNutritionPlanLoad = async () => {
+    if (!patientId) {
+      return;
+    }
+
+    setIsLoadingNutritionPlan(true);
+    setNutritionPlanLoadError(null);
+    logClientInfo("NutritionistPatientFilePage.plan.retry.start", { patientId });
+
+    try {
+      const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
+      setNutritionPlanView(response);
+      logClientInfo("NutritionistPatientFilePage.plan.retry.success", {
+        patientId,
+        mode: response.mode,
+        canEdit: response.canEdit,
+      });
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.plan.retry.error", error, { patientId });
+      setNutritionPlanView(null);
+      setNutritionPlanLoadError(t("nutritionPlan.loadError"));
+    } finally {
+      setIsLoadingNutritionPlan(false);
+    }
   };
 
   const renderMainContent = () => {
@@ -304,6 +365,26 @@ export const NutritionistPatientFilePage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
+            {nutritionPlanLoadError && !isLoadingNutritionPlan ? (
+              <Card className="mb-6 border-destructive/20">
+                <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+                  <AlertCircle className="size-8 text-destructive" />
+                  <div className="space-y-1">
+                    <p className="font-semibold">{nutritionPlanLoadError}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("nutritionPlan.loadErrorHelp")}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => void retryNutritionPlanLoad()}
+                  >
+                    {t("nutritionPlan.retry")}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : null}
             <NutritionPlanWorkspace
               namespace="nutritionist"
               view={nutritionPlanView}

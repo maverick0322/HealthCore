@@ -125,6 +125,10 @@
     "notesPlaceholder": "Ex. If there is no apple, use pear.",
     "cancel": "Cancel",
     "confirmDish": "Save dish",
+    "loadError": "We could not load the nutrition plan.",
+    "loadErrorHelp": "Check the browser console for HealthCore logs and try again.",
+    "retry": "Retry",
+    "unavailable": "The nutrition plan is not available right now.",
     "contextTitle": "Previous self-managed plan",
     "contextDescription": "It is preserved to give you context before redefining the patient's plan.",
     "units": {

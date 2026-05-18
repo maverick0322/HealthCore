@@ -12,6 +12,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 
+import { logClientWarn } from '@/core/utils/logger';
 import type {
   CatalogFoodResponse,
   MealSlot,
@@ -149,7 +150,12 @@ export function NutritionPlanWorkspace({
       try {
         const results = await onSearchFoods(searchQuery.trim());
         setSearchResults(results);
-      } catch {
+      } catch (error) {
+        logClientWarn('NutritionPlanWorkspace.search.error', {
+          namespace,
+          query: searchQuery.trim(),
+          error,
+        });
         setSearchResults([]);
       } finally {
         setIsSearching(false);
@@ -298,7 +304,7 @@ export function NutritionPlanWorkspace({
         </section>
       ));
 
-  if (isLoading || !view || !goals) {
+  if (isLoading) {
     return (
       <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <Card>
@@ -319,6 +325,16 @@ export function NutritionPlanWorkspace({
           ))}
         </div>
       </div>
+    );
+  }
+
+  if (!view || !goals) {
+    return (
+      <Card className="border-dashed bg-muted/20">
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          {t('nutritionPlan.unavailable')}
+        </CardContent>
+      </Card>
     );
   }
 

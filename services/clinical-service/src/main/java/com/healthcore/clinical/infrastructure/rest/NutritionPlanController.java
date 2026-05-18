@@ -25,6 +25,8 @@ import com.healthcore.clinical.infrastructure.rest.dto.NutritionPlanUpsertReques
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionPlanViewResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.ReadonlyNutritionPlanResponse;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +44,8 @@ import java.util.List;
 @RequestMapping("/api/v1/clinical")
 public class NutritionPlanController {
 
+    private static final Logger logger = LoggerFactory.getLogger(NutritionPlanController.class);
+
     private final ManageNutritionPlanUseCase manageNutritionPlanUseCase;
 
     public NutritionPlanController(ManageNutritionPlanUseCase manageNutritionPlanUseCase) {
@@ -51,6 +55,7 @@ public class NutritionPlanController {
     @GetMapping("/nutrition-plan/me")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<NutritionPlanViewResponse> getMyNutritionPlan(@RequestHeader("X-User-Id") String patientId) {
+        logger.info("[NutritionPlanController] GET /nutrition-plan/me patientId={}", patientId);
         return ResponseEntity.ok(toViewResponse(manageNutritionPlanUseCase.getMyNutritionPlan(patientId)));
     }
 
@@ -60,6 +65,8 @@ public class NutritionPlanController {
             @RequestHeader("X-User-Id") String patientId,
             @Valid @RequestBody NutritionPlanUpsertRequest request
     ) {
+        logger.info("[NutritionPlanController] PUT /nutrition-plan/me patientId={} sections={}",
+                patientId, request.sections().size());
         NutritionPlanDraft draft = toDraft(request);
         return ResponseEntity.ok(toViewResponse(manageNutritionPlanUseCase.upsertMyNutritionPlan(patientId, draft)));
     }
@@ -69,6 +76,8 @@ public class NutritionPlanController {
     public ResponseEntity<NutritionPlanViewResponse> getNutritionistPatientNutritionPlan(
             @PathVariable String patientId
     ) {
+        logger.info("[NutritionPlanController] GET /nutritionist/patients/{}/nutrition-plan nutritionistId={}",
+                patientId, getCurrentUserId());
         return ResponseEntity.ok(toViewResponse(
                 manageNutritionPlanUseCase.getNutritionistPatientNutritionPlan(getCurrentUserId(), patientId)
         ));
@@ -80,6 +89,8 @@ public class NutritionPlanController {
             @PathVariable String patientId,
             @Valid @RequestBody NutritionPlanUpsertRequest request
     ) {
+        logger.info("[NutritionPlanController] PUT /nutritionist/patients/{}/nutrition-plan nutritionistId={} sections={}",
+                patientId, getCurrentUserId(), request.sections().size());
         return ResponseEntity.ok(toViewResponse(manageNutritionPlanUseCase.upsertNutritionistPatientNutritionPlan(
                 getCurrentUserId(),
                 patientId,
@@ -90,6 +101,7 @@ public class NutritionPlanController {
     @GetMapping("/catalog/foods/search")
     @PreAuthorize("hasAnyRole('PATIENT','NUTRITIONIST')")
     public ResponseEntity<List<CatalogFoodResponse>> searchCatalogFoods(@RequestParam String query) {
+        logger.info("[NutritionPlanController] GET /catalog/foods/search query='{}'", query);
         List<CatalogFoodResponse> response = manageNutritionPlanUseCase.searchCatalogFoods(query).stream()
                 .map(this::toCatalogFoodResponse)
                 .toList();

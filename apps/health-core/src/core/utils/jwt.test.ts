@@ -27,6 +27,15 @@ describe('JWT Utilities', () => {
 
       expect(() => decodeJwt(malformedToken)).toThrow('Failed to decode JWT');
     });
+
+    it('should decode base64url payloads that contain url-safe characters', () => {
+      const tokenWithBase64UrlPayload = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyXzEyMy1hYmMiLCJlbWFpbCI6InRlc3QtdXNlcl9vbmVAZXhhbXBsZS5jb20iLCJpYXQiOjE2MTM2MTc2ODcsImV4cCI6MTYxMzYyMTI4N30.signature';
+
+      const payload = decodeJwt(tokenWithBase64UrlPayload);
+
+      expect(payload.sub).toBe('user_123-abc');
+      expect(payload.email).toBe('test-user_one@example.com');
+    });
   });
 
   describe('extractUserIdFromToken', () => {

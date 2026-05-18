@@ -25,8 +25,11 @@ export const decodeJwt = (token: string): JwtPayload => {
       throw new Error('Invalid JWT format');
     }
 
-    // Decode base64url payload
-    const payloadBase64 = parts[1];
+    const payloadBase64Url = parts[1];
+    const payloadBase64 = payloadBase64Url
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(payloadBase64Url.length / 4) * 4, '=');
     const payload = JSON.parse(atob(payloadBase64));
 
     return payload as JwtPayload;

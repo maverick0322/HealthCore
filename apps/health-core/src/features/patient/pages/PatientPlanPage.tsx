@@ -1,30 +1,43 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileDown } from 'lucide-react';
+import { AlertCircle, FileDown, RefreshCcw } from 'lucide-react';
 
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type { NutritionPlanViewResponse } from '@/features/clinical/types/clinical.types';
 import { NutritionPlanWorkspace } from '@/features/nutrition-plan/components/NutritionPlanWorkspace';
 import { PatientNav } from '@/features/patient/components/PatientNav';
+import { logClientError, logClientInfo } from '@/core/utils/logger';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { Button } from '@/shared/ui/button';
+import { Card, CardContent } from '@/shared/ui/card';
 
 export const PatientPlanPage = () => {
   const { t } = useTranslation('patient');
   const [view, setView] = useState<NutritionPlanViewResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
     const loadPlan = async () => {
       try {
+        logClientInfo('PatientPlanPage.load.start');
+        setLoadError(null);
         const response = await clinicalApi.getMyNutritionPlan();
         if (mounted) {
           setView(response);
         }
+        logClientInfo('PatientPlanPage.load.success', {
+          mode: response.mode,
+          canEdit: response.canEdit,
+          sections: response.sections.length,
+        });
       } catch (error) {
-        console.error('Error loading patient nutrition plan:', error);
+        logClientError('PatientPlanPage.load.error', error);
+        if (mounted) {
+          setLoadError(t('nutritionPlan.loadError'));
+        }
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -40,9 +53,36 @@ export const PatientPlanPage = () => {
   }, []);
 
   const handleSave = async (payload: Parameters<typeof clinicalApi.upsertMyNutritionPlan>[0]) => {
-    const response = await clinicalApi.upsertMyNutritionPlan(payload);
-    setView(response);
-    return response;
+    try {
+      logClientInfo('PatientPlanPage.save.start', { sections: payload.sections.length });
+      const response = await clinicalApi.upsertMyNutritionPlan(payload);
+      setView(response);
+      setLoadError(null);
+      logClientInfo('PatientPlanPage.save.success', { mode: response.mode, canEdit: response.canEdit });
+      return response;
+    } catch (error) {
+      logClientError('PatientPlanPage.save.error', error, { sections: payload.sections.length });
+      throw error;
+    }
+  };
+
+  const retryLoad = async () => {
+    logClientInfo('PatientPlanPage.retry.start');
+    setIsLoading(true);
+    try {
+      const response = await clinicalApi.getMyNutritionPlan();
+      setView(response);
+      setLoadError(null);
+      logClientInfo('PatientPlanPage.retry.success', {
+        mode: response.mode,
+        canEdit: response.canEdit,
+      });
+    } catch (error) {
+      logClientError('PatientPlanPage.retry.error', error);
+      setLoadError(t('nutritionPlan.loadError'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -73,6 +113,21 @@ export const PatientPlanPage = () => {
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 pb-24 sm:px-6 md:pl-56">
+        {loadError && !isLoading ? (
+          <Card className="mb-6 border-destructive/20">
+            <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+              <AlertCircle className="size-8 text-destructive" />
+              <div className="space-y-1">
+                <p className="font-semibold">{loadError}</p>
+                <p className="text-sm text-muted-foreground">{t('nutritionPlan.loadErrorHelp')}</p>
+              </div>
+              <Button variant="outline" className="gap-2" onClick={() => void retryLoad()}>
+                <RefreshCcw size={14} />
+                {t('nutritionPlan.retry')}
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
         <NutritionPlanWorkspace
           namespace="patient"
           view={view}

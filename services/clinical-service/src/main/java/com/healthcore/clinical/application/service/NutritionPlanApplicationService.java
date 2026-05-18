@@ -20,6 +20,8 @@ import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.NutritionCatalogPort;
 import com.healthcore.clinical.domain.port.out.NutritionPlanRepositoryPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +33,8 @@ import java.util.UUID;
 
 @Service
 public class NutritionPlanApplicationService implements ManageNutritionPlanUseCase {
+
+    private static final Logger logger = LoggerFactory.getLogger(NutritionPlanApplicationService.class);
 
     private static final String MODE_SELF_MANAGED = "SELF_MANAGED";
     private static final String MODE_READ_ONLY = "READ_ONLY";
@@ -52,6 +56,7 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
 
     @Override
     public NutritionPlanView getMyNutritionPlan(String patientId) {
+        logger.info("[NutritionPlanApplicationService] Resolving patient nutrition plan for patientId={}", patientId);
         PatientProfile profile = getRequiredProfile(patientId);
         DailyGoalsSnapshot dailyGoals = buildDailyGoals(profile);
 
@@ -92,8 +97,12 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
 
     @Override
     public NutritionPlanView upsertMyNutritionPlan(String patientId, NutritionPlanDraft nutritionPlanDraft) {
+        logger.info("[NutritionPlanApplicationService] Upserting self-managed plan for patientId={} sections={}",
+                patientId, nutritionPlanDraft.sections().size());
         PatientProfile profile = getRequiredProfile(patientId);
         if (isLinked(profile)) {
+            logger.warn("[NutritionPlanApplicationService] Denied self-managed plan update for linked patientId={}",
+                    patientId);
             throw new AccessDeniedException("Linked patients cannot edit their nutrition plan.");
         }
 
@@ -120,6 +129,8 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
 
     @Override
     public NutritionPlanView getNutritionistPatientNutritionPlan(String nutritionistId, String patientId) {
+        logger.info("[NutritionPlanApplicationService] Resolving nutritionist plan view for nutritionistId={} patientId={}",
+                nutritionistId, patientId);
         PatientProfile profile = getProfileForNutritionist(nutritionistId, patientId);
         DailyGoalsSnapshot dailyGoals = buildDailyGoals(profile);
 
@@ -154,6 +165,8 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
             String patientId,
             NutritionPlanDraft nutritionPlanDraft
     ) {
+        logger.info("[NutritionPlanApplicationService] Upserting nutritionist plan for nutritionistId={} patientId={} sections={}",
+                nutritionistId, patientId, nutritionPlanDraft.sections().size());
         PatientProfile profile = getProfileForNutritionist(nutritionistId, patientId);
         DailyGoalsSnapshot dailyGoals = buildDailyGoals(profile);
         List<MealSection> calculatedSections = calculateSections(nutritionPlanDraft.sections());
@@ -186,11 +199,14 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
 
     @Override
     public List<CatalogFoodItem> searchCatalogFoods(String query) {
+        logger.info("[NutritionPlanApplicationService] Searching catalog foods query='{}'", query);
         return nutritionCatalogPort.searchFoods(query);
     }
 
     @Override
     public void archivePlansAfterUnlink(String patientId, String nutritionistId) {
+        logger.info("[NutritionPlanApplicationService] Archiving plans after unlink for patientId={} nutritionistId={}",
+                patientId, nutritionistId);
         nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
                 patientId,
                 AuthorType.NUTRITIONIST,
@@ -205,6 +221,7 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
     }
 
     private PatientProfile getRequiredProfile(String patientId) {
+        logger.debug("[NutritionPlanApplicationService] Looking up patient profile patientId={}", patientId);
         return clinicalRepositoryPort.findByUserId(patientId)
                 .orElseThrow(() -> new ProfileNotFoundException("Patient clinical profile not found."));
     }
@@ -212,6 +229,8 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
     private PatientProfile getProfileForNutritionist(String nutritionistId, String patientId) {
         PatientProfile profile = getRequiredProfile(patientId);
         if (!nutritionistId.equals(profile.getNutritionistId())) {
+            logger.warn("[NutritionPlanApplicationService] Nutritionist access denied nutritionistId={} patientId={} linkedNutritionistId={}",
+                    nutritionistId, patientId, profile.getNutritionistId());
             throw new AccessDeniedException("Action denied: Patient is not linked to this nutritionist.");
         }
         return profile;
@@ -231,6 +250,7 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
     }
 
     private List<MealSection> calculateSections(List<MealSectionDraft> sectionDrafts) {
+        logger.debug("[NutritionPlanApplicationService] Calculating sections count={}", sectionDrafts.size());
         return Arrays.stream(MealSlot.values())
                 .map(mealSlot -> {
                     MealSectionDraft matchingSection = sectionDrafts.stream()
@@ -246,6 +266,8 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
     }
 
     private MealOption calculateMealOption(MealOptionDraft mealOptionDraft) {
+        logger.debug("[NutritionPlanApplicationService] Calculating meal option name={} ingredients={}",
+                mealOptionDraft.name(), mealOptionDraft.ingredients().size());
         List<PlanIngredient> ingredients = mealOptionDraft.ingredients().stream()
                 .map(this::calculateIngredient)
                 .toList();
@@ -269,6 +291,8 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
     }
 
     private PlanIngredient calculateIngredient(PlanIngredientDraft ingredientDraft) {
+        logger.debug("[NutritionPlanApplicationService] Calculating ingredient barcode={} quantity={} unit={}",
+                ingredientDraft.barcode(), ingredientDraft.quantityAmount(), ingredientDraft.unit());
         CatalogFoodItem catalogFoodItem = nutritionCatalogPort.getFoodByBarcode(ingredientDraft.barcode())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Catalog food not found for barcode: " + ingredientDraft.barcode()

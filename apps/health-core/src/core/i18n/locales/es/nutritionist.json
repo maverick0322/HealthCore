@@ -125,6 +125,10 @@
     "notesPlaceholder": "Ej. Si no tienes manzana, usa pera.",
     "cancel": "Cancelar",
     "confirmDish": "Guardar platillo",
+    "loadError": "No pudimos cargar el plan nutricional.",
+    "loadErrorHelp": "Revisa la consola del navegador para ver los logs de HealthCore y vuelve a intentarlo.",
+    "retry": "Reintentar",
+    "unavailable": "El plan nutricional no estÃ¡ disponible en este momento.",
     "contextTitle": "Plan autogestionado previo",
     "contextDescription": "Se conserva para darte contexto antes de redefinir el plan del paciente.",
     "units": {

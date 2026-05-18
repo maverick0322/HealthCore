@@ -8,4 +8,8 @@ public abstract class TrackingDomainException extends RuntimeException {
     public TrackingDomainException(String message) {
         super(message);
     }
+
+    public TrackingDomainException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

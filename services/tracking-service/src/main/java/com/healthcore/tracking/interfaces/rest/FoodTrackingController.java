@@ -10,11 +10,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -102,5 +104,21 @@ public class FoodTrackingController {
         log.info("REST request to fetch today's meal logs for user: {}", userId);
         List<MealLog> todayLogs = trackingUseCase.getTodayLogs(userId);
         return ResponseEntity.ok(todayLogs);
+    }
+
+    @GetMapping("/logs/daily")
+    @Operation(
+            summary = "Obtener consumos por fecha específica",
+            description = "Devuelve los registros de comidas de un día exacto. Ideal para la vista de Historial.",
+            security = @SecurityRequirement(name = "Bearer Authentication")
+    )
+    public ResponseEntity<List<MealLog>> getLogsByDate(
+            @Parameter(hidden = true) @AuthenticationPrincipal String userId,
+            @Parameter(description = "Fecha a consultar (YYYY-MM-DD)", example = "2024-05-15")
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        log.info("REST request to fetch meal logs for user: {} on date: {}", userId, date);
+        List<MealLog> dailyLogs = trackingUseCase.getDailyLogs(userId, date);
+        return ResponseEntity.ok(dailyLogs);
     }
 }

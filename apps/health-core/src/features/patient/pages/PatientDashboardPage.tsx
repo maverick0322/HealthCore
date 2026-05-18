@@ -26,6 +26,11 @@ import {
   formatNutritionistSpecializationLabel,
 } from "@/features/onboarding/utils/profilePresentation";
 
+import { useTodaySummary } from "@/features/tracking/hooks/useTodaySummary";
+import { WaterTrackerCard } from "@/features/tracking/components/WaterTrackerCard";
+import { useTodayMeals } from "@/features/tracking/hooks/useTodayMeals";
+import { TodayMealsList } from "@/features/tracking/components/TodayMealsList";
+
 const getFirstName = (name: string | null | undefined) =>
   name?.trim().split(/\s+/)[0] ?? null;
 
@@ -46,6 +51,9 @@ export const PatientDashboardPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("patient");
   const user = useAuthStore((state) => state.user);
+
+  const { summary, addWater } = useTodaySummary();
+  const { meals, isLoading: isMealsLoading } = useTodayMeals();
 
   const [profile, setProfile] = useState<PatientProfileResponse | null>(null);
   const [nutritionistProfile, setNutritionistProfile] =
@@ -154,67 +162,81 @@ export const PatientDashboardPage = () => {
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-6 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
-          <div className="space-y-5">
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 xl:gap-6 items-start">
+          
+          <div className="h-full">
             <HealthGoalsCard />
-            <WeightChart />
           </div>
 
           <div className="space-y-5">
-            <Card id="card-appointment">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <CalendarDays size={16} className="text-primary" />
-                  {t("dashboard.nextAppointment")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {appointmentsLoading ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-4 text-sm text-muted-foreground">
-                    <Loader2 size={16} className="animate-spin" />
-                    {t("dashboard.loadingAppointments")}
-                  </div>
-                ) : appointmentsError ? (
-                  <div className="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-4 text-sm text-destructive">
-                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                    <span>{appointmentsError}</span>
-                  </div>
-                ) : nextAppointment ? (
-                  <div className="rounded-lg border border-border bg-muted/40 p-4">
-                    <p className="text-sm font-semibold">
-                      {formatLocalDate(nextAppointment.startTime)}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatLocalTime(nextAppointment.startTime)} -{" "}
-                      {formatLocalTime(nextAppointment.endTime)}
-                    </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                        {nutritionistName}
-                      </span>
-                      <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        {t(`appointments.status.${nextAppointment.status}`)}
-                      </span>
+            <WeightChart />
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <Card id="card-appointment" className="flex flex-col">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <CalendarDays size={16} className="text-primary" />
+                    <span className="uppercase text-xs text-muted-foreground">{t("dashboard.nextAppointment")}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 flex-1 flex flex-col justify-between">
+                  {appointmentsLoading ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-4 text-sm text-muted-foreground">
+                      <Loader2 size={16} className="animate-spin" />
+                      {t("dashboard.loadingAppointments")}
                     </div>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed border-border px-3 py-5 text-center text-sm text-muted-foreground">
-                    {t("dashboard.noAppointment")}
-                  </div>
-                )}
+                  ) : appointmentsError ? (
+                    <div className="flex items-start gap-2 rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-4 text-sm text-destructive">
+                      <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                      <span>{appointmentsError}</span>
+                    </div>
+                  ) : nextAppointment ? (
+                    <div className="rounded-lg border border-border bg-muted/40 p-4">
+                      <p className="text-sm font-semibold">
+                        {formatLocalDate(nextAppointment.startTime)}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {formatLocalTime(nextAppointment.startTime)} -{" "}
+                        {formatLocalTime(nextAppointment.endTime)}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                          {nutritionistName}
+                        </span>
+                        <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {t(`appointments.status.${nextAppointment.status}`)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-border px-3 py-5 text-center text-sm text-muted-foreground">
+                      {t("dashboard.noAppointment")}
+                    </div>
+                  )}
 
-                <Button
-                  id="btn-schedule-appointment"
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-1.5 text-xs"
-                  onClick={() => navigate("/appointments/patient")}
-                >
-                  <Plus size={13} />
-                  {t("dashboard.scheduleAppointment")}
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button
+                    id="btn-schedule-appointment"
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 text-xs mt-3"
+                    onClick={() => navigate("/appointments/patient")}
+                  >
+                    {nextAppointment ? "Reagendar" : (
+                      <>
+                        <Plus size={13} />
+                        {t("dashboard.scheduleAppointment")}
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <WaterTrackerCard 
+                totalWaterMl={summary?.totalWaterMl ?? 0} 
+                onAddWater={addWater} 
+              />
+            </div>
 
             <Card id="card-nutritionist">
               <CardHeader className="pb-2">
@@ -284,6 +306,10 @@ export const PatientDashboardPage = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        <div className="w-full mt-2">
+          <TodayMealsList meals={meals} isLoading={isMealsLoading} />
         </div>
       </main>
     </div>

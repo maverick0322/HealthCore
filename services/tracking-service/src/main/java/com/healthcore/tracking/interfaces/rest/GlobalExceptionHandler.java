@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Ultimate fallback for unhandled internal bugs (NullPointer, DB connection drops, etc).
+     * Ultimate fallback for unhandled internal bugs (NullPointer, DB connection drops, etc.).
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneralError(Exception ex) {

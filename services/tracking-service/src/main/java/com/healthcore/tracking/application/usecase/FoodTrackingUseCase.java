@@ -28,11 +28,14 @@ import java.util.stream.Collectors;
 public class FoodTrackingUseCase {
 
     private final FoodCatalogPort catalogPort;
-    private final MealLogPort logPort; // Note: You'll need to rename FoodLogPort to MealLogPort
+    private final MealLogPort logPort;
 
     private static final int MIN_SEARCH_QUERY_LENGTH = 3;
 
     public FoodNutrients getFoodFromCatalog(String barcode) {
+        if (barcode == null || barcode.trim().isEmpty()) {
+            throw new InvalidDomainDataException("Barcode cannot be null or empty.");
+        }
         log.debug("Delegating catalog lookup for barcode: {}", barcode);
         return catalogPort.getNutrientsByBarcode(barcode)
                 .orElseThrow(() -> new ResourceNotFoundException("Barcode [" + barcode + "] not found in external catalog."));
@@ -50,10 +53,12 @@ public class FoodTrackingUseCase {
      * Registers a complete meal by fetching necessary nutritional data and building the Aggregate.
      */
     public MealLog logMealConsumption(String userId, MealType mealType, LocalDateTime consumedAt, String photoKey, List<MealItemCommand> requestedItems) {
+        if (userId == null || userId.isBlank()) {
+            throw new InvalidDomainDataException("User ID is required to log a meal.");
+        }
         log.info("Processing meal consumption log for user: {}, mealType: {}, items count: {}", userId, mealType, requestedItems.size());
 
         // 1. Fetch nutrients and build MealItems (Children Entities)
-        // Note: Using stream to maintain immutability and functional purity
         List<MealItem> mealItems = requestedItems.stream()
                 .map(item -> {
                     FoodNutrients baseNutrients = getFoodFromCatalog(item.barcode());
@@ -68,11 +73,26 @@ public class FoodTrackingUseCase {
         return logPort.save(newMealLog);
     }
 
+    /**
+     * Retrieves meal logs for the current day.
+     * Reuses getDailyLogs to maintain DRY principle.
+     */
     public List<MealLog> getTodayLogs(String userId) {
         log.debug("Retrieving today's meal logs for user: {}", userId);
+        return getDailyLogs(userId, LocalDate.now());
+    }
 
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+    /**
+     * Retrieves meal logs for a specific historical date.
+     */
+    public List<MealLog> getDailyLogs(String userId, LocalDate date) {
+        if (userId == null || userId.isBlank() || date == null) {
+            throw new InvalidDomainDataException("User ID and date are required to fetch daily logs.");
+        }
+        log.debug("Retrieving meal logs for user: {} on date: {}", userId, date);
+
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
         return logPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
     }

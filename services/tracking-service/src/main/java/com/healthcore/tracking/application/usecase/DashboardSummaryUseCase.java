@@ -36,16 +36,13 @@ public class DashboardSummaryUseCase {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
-        // 1. Obtenemos las comidas del día
         List<MealLog> todayMeals = mealLogPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
 
-        // 2. Sumamos los macros en memoria (O(n) donde n es pequeño, usualmente < 10 comidas al día)
         double totalCalories = todayMeals.stream().mapToDouble(MealLog::getTotalCalories).sum();
         double totalProteins = todayMeals.stream().mapToDouble(MealLog::getTotalProteins).sum();
         double totalCarbs = todayMeals.stream().mapToDouble(MealLog::getTotalCarbs).sum();
         double totalFats = todayMeals.stream().mapToDouble(MealLog::getTotalFats).sum();
 
-        // 3. Obtenemos el agua total a través del puerto
         int totalWater = waterLogPort.getConsumedWaterBetween(userId, startOfDay, endOfDay);
 
         return new TodayDashboardSummary(totalCalories, totalProteins, totalCarbs, totalFats, totalWater);
@@ -54,7 +51,6 @@ public class DashboardSummaryUseCase {
     public List<DailyMacroSummary> getHistoricalMacros(String userId, LocalDate startDate, LocalDate endDate) {
         validateUserId(userId);
 
-        // Programación Defensiva: Integridad cronológica
         if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
             log.warn("Invalid date range requested for historical macros. Start: {}, End: {}", startDate, endDate);
             throw new InvalidDomainDataException("Start date must be provided and cannot be after end date.");
@@ -65,12 +61,9 @@ public class DashboardSummaryUseCase {
 
         log.info("Fetching historical macros for user: {} between {} and {}", userId, start, end);
 
-        // Delegamos la agregación pesada a la base de datos a través del puerto
-        // Nota: Asegúrate de tener este método definido en la interfaz MealLogPort
         return mealLogPort.aggregateHistoricalMacros(userId, start, end);
     }
 
-    // --- Métodos Auxiliares ---
 
     private void validateUserId(String userId) {
         if (userId == null || userId.isBlank()) {

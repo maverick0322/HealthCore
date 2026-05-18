@@ -123,14 +123,8 @@ export const DetailedMealTimeline = ({ logs, isLoading, error }: DetailedMealTim
   };
 
   return (
-    <div className="mt-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Registros de Hoy</h2>
-        <button className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
-          Ver calendario
-        </button>
-      </div>
-      {renderContent()}
-    </div>
-  );
+  <div className="mt-4">
+    {renderContent()}
+  </div>
+);
 };

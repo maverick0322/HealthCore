@@ -6,11 +6,15 @@ import {
   PieChart,
   Target,
   Award,
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { PatientNav } from "@/features/patient/components/PatientNav";
+import { Button } from "@/shared/ui/button";
 
 // --- NUESTRAS IMPORTACIONES DE TRACKING ---
 import { useDailyLogs } from "@/features/tracking/hooks/useDailyLogs";
@@ -65,8 +69,18 @@ function MacroDonut({ p, c, f }: { p: number; c: number; f: number }) {
 export const PatientHistoryPage = () => {
   const { t } = useTranslation("patient");
 
-  const [selectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  // --- CONTROL DE FECHA PARA EL TIMELINE ---
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState(todayStr);
+  
   const { logs, isLoading, error } = useDailyLogs(selectedDate);
+
+  // Función segura para sumar o restar días sin problemas de Timezone
+  const changeDate = (offsetDays: number) => {
+    const d = new Date(selectedDate + "T12:00:00");
+    d.setDate(d.getDate() + offsetDays);
+    setSelectedDate(d.toISOString().split('T')[0]);
+  };
 
   const weightLost = HISTORY_DUMMY.weightStart - HISTORY_DUMMY.weightCurrent;
   const weightRemaining = HISTORY_DUMMY.weightCurrent - HISTORY_DUMMY.weightTarget;
@@ -229,7 +243,31 @@ export const PatientHistoryPage = () => {
           </Card>
         </div>
 
-        <DetailedMealTimeline logs={logs} isLoading={isLoading} error={error} />
+        {/* --- CONTROLES DE FECHA Y TIMELINE DE COMIDAS --- */}
+        <div className="mt-8 pt-4 border-t border-border/50">
+          <div className="flex items-center justify-between mb-4 bg-muted/30 p-2 rounded-lg border border-border/50">
+            <Button variant="ghost" size="sm" onClick={() => changeDate(-1)} className="gap-1 hover:bg-background">
+              <ChevronLeft size={16} /> Anterior
+            </Button>
+            
+            <div className="flex items-center gap-2 font-medium">
+              <CalendarIcon size={16} className="text-primary" />
+              {selectedDate === todayStr ? "Hoy" : selectedDate}
+            </div>
+
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => changeDate(1)} 
+              disabled={selectedDate === todayStr}
+              className="gap-1 hover:bg-background"
+            >
+              Siguiente <ChevronRight size={16} />
+            </Button>
+          </div>
+          
+          <DetailedMealTimeline logs={logs} isLoading={isLoading} error={error} />
+        </div>
 
       </main>
     </div>

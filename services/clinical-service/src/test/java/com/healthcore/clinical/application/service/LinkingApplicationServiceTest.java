@@ -6,6 +6,7 @@ import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.LinkingCode;
 import com.healthcore.clinical.domain.model.PatientProfile;
+import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.LinkingCodeRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,9 @@ class LinkingApplicationServiceTest {
 
     @Mock
     private ClinicalRepositoryPort clinicalRepositoryPort;
+
+    @Mock
+    private ManageNutritionPlanUseCase manageNutritionPlanUseCase;
 
     @InjectMocks
     private LinkingApplicationService service;
@@ -169,6 +173,28 @@ class LinkingApplicationServiceTest {
 
         assertThrows(IllegalStateException.class, () -> service.unlinkNutritionist("nutri-FAKE", "patient-123"));
         verify(clinicalRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void unlinkPatient_ArchivesPlansAfterSuccessfulUnlink() {
+        testProfile.assignNutritionist("nutri-777");
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(testProfile));
+
+        service.unlinkPatient("patient-123");
+
+        verify(clinicalRepositoryPort).save(testProfile);
+        verify(manageNutritionPlanUseCase).archivePlansAfterUnlink("patient-123", "nutri-777");
+    }
+
+    @Test
+    void unlinkNutritionist_ArchivesPlansAfterSuccessfulUnlink() {
+        testProfile.assignNutritionist("nutri-777");
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(testProfile));
+
+        service.unlinkNutritionist("nutri-777", "patient-123");
+
+        verify(clinicalRepositoryPort).save(testProfile);
+        verify(manageNutritionPlanUseCase).archivePlansAfterUnlink("patient-123", "nutri-777");
     }
 
     @Test

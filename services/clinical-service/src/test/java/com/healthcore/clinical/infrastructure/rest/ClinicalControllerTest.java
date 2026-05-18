@@ -111,6 +111,7 @@ class ClinicalControllerTest {
         when(mockGoal.targetProtein()).thenReturn(150);
         when(mockGoal.targetCarbs()).thenReturn(250);
         when(mockGoal.targetFat()).thenReturn(70);
+        when(mockGoal.targetWaterGlasses()).thenReturn(10);
 
         PatientProfile mockProfile = Mockito.mock(PatientProfile.class);
         when(mockProfile.generateHealthGoals()).thenReturn(mockGoal);
@@ -131,6 +132,7 @@ class ClinicalControllerTest {
         when(mockGoal.targetProtein()).thenReturn(160);
         when(mockGoal.targetCarbs()).thenReturn(260);
         when(mockGoal.targetFat()).thenReturn(75);
+        when(mockGoal.targetWaterGlasses()).thenReturn(11);
 
         when(manageProfileUseCase.updateWeight(eq("user-123"), eq(80.5))).thenReturn(mockGoal);
 
@@ -139,7 +141,8 @@ class ClinicalControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.targetCalories").value(2600));
+                .andExpect(jsonPath("$.targetCalories").value(2600))
+                .andExpect(jsonPath("$.targetWaterGlasses").value(11));
 
         verify(manageProfileUseCase).updateWeight("user-123", 80.5);
     }

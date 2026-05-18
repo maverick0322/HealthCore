@@ -70,6 +70,7 @@ class ClinicalApplicationServiceTest {
         assertNotNull(newGoal);
         assertEquals(75.0, profile.getWeightKg());
         assertEquals(2, profile.getWeightHistory().size());
+        assertTrue(newGoal.targetWaterGlasses() > 0);
         verify(repositoryPort).save(profile);
     }
 

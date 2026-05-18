@@ -4,5 +4,6 @@ public record HealthGoal(
     Integer targetCalories,
     Integer targetProtein,
     Integer targetCarbs,
-    Integer targetFat
+    Integer targetFat,
+    Integer targetWaterGlasses
 ) {}

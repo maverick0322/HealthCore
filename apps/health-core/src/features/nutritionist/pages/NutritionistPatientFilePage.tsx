@@ -28,9 +28,11 @@ import {
 import type {
   ObservationResponse,
   NutritionistPatientProfileResponse,
+  NutritionPlanViewResponse,
 } from "../../clinical/types/clinical.types";
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
+import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
 
 const getDisplayIdentity = (userId: string): string => {
   const normalized = userId.trim();
@@ -76,6 +78,8 @@ export const NutritionistPatientFilePage = () => {
   const [isLoadingPatient, setIsLoadingPatient] = useState(true);
   const [patientLoadError, setPatientLoadError] = useState<string | null>(null);
   const [observations, setObservations] = useState<ObservationResponse[]>([]);
+  const [nutritionPlanView, setNutritionPlanView] = useState<NutritionPlanViewResponse | null>(null);
+  const [isLoadingNutritionPlan, setIsLoadingNutritionPlan] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const navigate = useNavigate();
@@ -116,6 +120,26 @@ export const NutritionistPatientFilePage = () => {
 
     void loadObservations();
   }, [patientId]);
+
+  useEffect(() => {
+    if (!patientId || activeTab !== "plan") {
+      return;
+    }
+
+    const loadNutritionPlan = async () => {
+      try {
+        setIsLoadingNutritionPlan(true);
+        const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
+        setNutritionPlanView(response);
+      } catch (error) {
+        console.error("Error loading nutrition plan:", error);
+      } finally {
+        setIsLoadingNutritionPlan(false);
+      }
+    };
+
+    void loadNutritionPlan();
+  }, [activeTab, patientId]);
 
   const loadObservations = async () => {
     try {
@@ -161,6 +185,14 @@ export const NutritionistPatientFilePage = () => {
 
   const patientIdentity = patient ? patient.fullName?.trim() || getDisplayIdentity(patient.userId) : "";
   const patientAge = patient ? getAgeFromBirthDate(patient.birthDate) : null;
+
+  const handleSaveNutritionPlan = async (
+    payload: Parameters<typeof clinicalApi.upsertNutritionistPatientNutritionPlan>[1]
+  ) => {
+    const response = await clinicalApi.upsertNutritionistPatientNutritionPlan(patientId, payload);
+    setNutritionPlanView(response);
+    return response;
+  };
 
   const renderMainContent = () => {
     if (isLoadingPatient) {
@@ -266,18 +298,19 @@ export const NutritionistPatientFilePage = () => {
     if (activeTab === "plan") {
       return (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+          <CardHeader className="pb-3 border-b border-border/50">
             <CardTitle className="text-base flex items-center gap-2">
               <UtensilsCrossed size={18} className="text-primary" /> {t("patients.file.tabPlan")}
             </CardTitle>
-            <Button variant="outline" size="sm" className="h-8">
-              {t("patients.file.editPlan")}
-            </Button>
           </CardHeader>
-          <CardContent className="pt-8 pb-12 flex flex-col items-center justify-center text-muted-foreground min-h-[300px]">
-            <UtensilsCrossed size={48} className="mb-4 opacity-20" />
-            <p className="text-sm font-medium">{t("patients.file.planPlaceholder")}</p>
-            <p className="text-xs opacity-70 mt-1">{t("patients.file.planDescription")}</p>
+          <CardContent className="pt-6">
+            <NutritionPlanWorkspace
+              namespace="nutritionist"
+              view={nutritionPlanView}
+              isLoading={isLoadingNutritionPlan}
+              onSave={handleSaveNutritionPlan}
+              onSearchFoods={clinicalApi.searchCatalogFoods}
+            />
           </CardContent>
         </Card>
       );

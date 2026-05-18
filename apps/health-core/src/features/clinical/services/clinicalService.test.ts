@@ -12,6 +12,7 @@ import {
 import type {
   CreateProfilePayload,
   NutritionistProfilePayload,
+  NutritionPlanUpsertRequest,
 } from '../types/clinical.types';
 
 vi.mock('@/core/http/httpClient', () => ({
@@ -258,6 +259,57 @@ describe('clinicalService', () => {
     expect(history).toHaveLength(1);
     expect(currentCode?.code).toBe('XYZ123');
     expect(noCode).toBeNull();
+  });
+
+  it('should handle nutrition plan endpoints', async () => {
+    const mockPlanResponse = {
+      data: {
+        mode: 'SELF_MANAGED',
+        authorType: 'SELF_MANAGED',
+        canEdit: true,
+        dailyGoals: {
+          targetCalories: 2000,
+          targetProtein: 120,
+          targetCarbs: 200,
+          targetFat: 60,
+          targetWaterGlasses: 10,
+        },
+        sections: [],
+        contextSelfManagedPlan: null,
+      },
+    };
+    const payload: NutritionPlanUpsertRequest = {
+      sections: [
+        { mealSlot: 'BREAKFAST', options: [] },
+        { mealSlot: 'LUNCH', options: [] },
+        { mealSlot: 'DINNER', options: [] },
+        { mealSlot: 'SNACK', options: [] },
+      ],
+    };
+
+    (httpClient.get as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(mockPlanResponse)
+      .mockResolvedValueOnce(mockPlanResponse)
+      .mockResolvedValueOnce({ data: [{ barcode: 'food-1', name: 'Avena' }] });
+    (httpClient.put as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(mockPlanResponse)
+      .mockResolvedValueOnce(mockPlanResponse);
+
+    const myPlan = await clinicalApi.getMyNutritionPlan();
+    const savedMyPlan = await clinicalApi.upsertMyNutritionPlan(payload);
+    const nutritionistPlan = await clinicalApi.getNutritionistPatientNutritionPlan('patient-1');
+    const savedNutritionistPlan = await clinicalApi.upsertNutritionistPatientNutritionPlan('patient-1', payload);
+    const foods = await clinicalApi.searchCatalogFoods('avena');
+
+    expect(myPlan.dailyGoals.targetWaterGlasses).toBe(10);
+    expect(savedMyPlan.canEdit).toBe(true);
+    expect(nutritionistPlan.mode).toBe('SELF_MANAGED');
+    expect(savedNutritionistPlan.authorType).toBe('SELF_MANAGED');
+    expect(foods[0].barcode).toBe('food-1');
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/catalog/foods/search', {
+      params: { query: 'avena' },
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
   });
 
   it('should send linking and observation requests with auth headers', async () => {

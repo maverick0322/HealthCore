@@ -155,8 +155,9 @@ public class PatientProfile {
         int targetProtein = (int) Math.round((tdee * 0.30) / 4.0);
         int targetCarbs = (int) Math.round((tdee * 0.40) / 4.0);
         int targetFat = (int) Math.round((tdee * 0.30) / 9.0);
+        int targetWaterGlasses = (int) Math.ceil((this.weightKg * 35.0) / 250.0);
 
-        return new HealthGoal(targetCalories, targetProtein, targetCarbs, targetFat);
+        return new HealthGoal(targetCalories, targetProtein, targetCarbs, targetFat, targetWaterGlasses);
     }
 
     public void assignNutritionist(String nutritionistId) {

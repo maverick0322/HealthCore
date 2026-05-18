@@ -8,6 +8,9 @@ import type {
   NutritionistProfileResponse,
   ObservationResponse,
   CreateObservationRequest,
+  NutritionPlanViewResponse,
+  NutritionPlanUpsertRequest,
+  CatalogFoodResponse,
 } from '../types/clinical.types';
 
 import httpClient from '@/core/http/httpClient';
@@ -230,6 +233,58 @@ export const clinicalApi = {
     } catch {
       return false;
     }
+  },
+
+  getMyNutritionPlan: async (): Promise<NutritionPlanViewResponse> => {
+    const response = await httpClient.get<NutritionPlanViewResponse>(
+      `${CLINICAL_API_URL}/nutrition-plan/me`,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
+
+  upsertMyNutritionPlan: async (
+    payload: NutritionPlanUpsertRequest
+  ): Promise<NutritionPlanViewResponse> => {
+    const response = await httpClient.put<NutritionPlanViewResponse>(
+      `${CLINICAL_API_URL}/nutrition-plan/me`,
+      payload,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
+
+  getNutritionistPatientNutritionPlan: async (
+    patientId: string
+  ): Promise<NutritionPlanViewResponse> => {
+    const response = await httpClient.get<NutritionPlanViewResponse>(
+      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/nutrition-plan`,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
+
+  upsertNutritionistPatientNutritionPlan: async (
+    patientId: string,
+    payload: NutritionPlanUpsertRequest
+  ): Promise<NutritionPlanViewResponse> => {
+    const response = await httpClient.put<NutritionPlanViewResponse>(
+      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/nutrition-plan`,
+      payload,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
+
+  searchCatalogFoods: async (query: string): Promise<CatalogFoodResponse[]> => {
+    const response = await httpClient.get<CatalogFoodResponse[]>(
+      `${CLINICAL_API_URL}/catalog/foods/search`,
+      {
+        params: { query },
+        headers: getXUserIdHeader(),
+      }
+    );
+    return response.data;
   },
 };
 

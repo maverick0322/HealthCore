@@ -4,6 +4,7 @@ import com.healthcore.clinical.domain.exception.AlreadyLinkedToNutritionistExcep
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.LinkingCode;
 import com.healthcore.clinical.domain.model.PatientProfile;
+import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
 import com.healthcore.clinical.domain.port.in.LinkingUseCase;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.LinkingCodeRepositoryPort;
@@ -19,14 +20,20 @@ public class LinkingApplicationService implements LinkingUseCase {
 
     private final LinkingCodeRepositoryPort linkingCodeRepositoryPort;
     private final ClinicalRepositoryPort clinicalRepositoryPort;
+    private final ManageNutritionPlanUseCase manageNutritionPlanUseCase;
     
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int CODE_LENGTH = 6;
     private final SecureRandom random = new SecureRandom();
 
-    public LinkingApplicationService(LinkingCodeRepositoryPort linkingCodeRepositoryPort, ClinicalRepositoryPort clinicalRepositoryPort) {
+    public LinkingApplicationService(
+            LinkingCodeRepositoryPort linkingCodeRepositoryPort,
+            ClinicalRepositoryPort clinicalRepositoryPort,
+            ManageNutritionPlanUseCase manageNutritionPlanUseCase
+    ) {
         this.linkingCodeRepositoryPort = linkingCodeRepositoryPort;
         this.clinicalRepositoryPort = clinicalRepositoryPort;
+        this.manageNutritionPlanUseCase = manageNutritionPlanUseCase;
     }
 
     @Override
@@ -83,8 +90,12 @@ public class LinkingApplicationService implements LinkingUseCase {
         PatientProfile profile = clinicalRepositoryPort.findByUserId(patientId)
                 .orElseThrow(() -> new ProfileNotFoundException("Patient clinical profile not found."));
 
+        String nutritionistId = profile.getNutritionistId();
         profile.removeNutritionist();
         clinicalRepositoryPort.save(profile);
+        if (nutritionistId != null && !nutritionistId.isBlank()) {
+            manageNutritionPlanUseCase.archivePlansAfterUnlink(patientId, nutritionistId);
+        }
     }
 
     @Override
@@ -98,6 +109,7 @@ public class LinkingApplicationService implements LinkingUseCase {
 
         profile.removeNutritionist();
         clinicalRepositoryPort.save(profile);
+        manageNutritionPlanUseCase.archivePlansAfterUnlink(patientId, nutritionistId);
     }
 
     private String generateRandomCode() {

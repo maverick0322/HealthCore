@@ -74,7 +74,8 @@ public class ClinicalController {
                 goal.targetCalories(),
                 goal.targetProtein(),
                 goal.targetCarbs(),
-                goal.targetFat()
+                goal.targetFat(),
+                goal.targetWaterGlasses()
         );
         return ResponseEntity.ok(response);
     }
@@ -91,7 +92,8 @@ public class ClinicalController {
                 newGoal.targetCalories(),
                 newGoal.targetProtein(),
                 newGoal.targetCarbs(),
-                newGoal.targetFat()
+                newGoal.targetFat(),
+                newGoal.targetWaterGlasses()
         );
         return ResponseEntity.ok(response);
     }

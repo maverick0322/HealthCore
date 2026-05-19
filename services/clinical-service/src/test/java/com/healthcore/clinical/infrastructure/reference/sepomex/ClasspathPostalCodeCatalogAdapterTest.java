@@ -19,7 +19,7 @@ class ClasspathPostalCodeCatalogAdapterTest {
         var entry = adapter.findByPostalCode("03100");
 
         assertTrue(entry.isPresent());
-        assertEquals("Benito Juarez", entry.get().municipality());
+        assertEquals("Benito Juárez", entry.get().municipality());
         assertTrue(entry.get().colonies().contains("Narvarte Oriente"));
     }
 }

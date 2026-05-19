@@ -74,7 +74,8 @@ public class ClinicalController {
                 goal.targetCalories(),
                 goal.targetProtein(),
                 goal.targetCarbs(),
-                goal.targetFat()
+                goal.targetFat(),
+                goal.targetWaterGlasses()
         );
         return ResponseEntity.ok(response);
     }
@@ -91,7 +92,8 @@ public class ClinicalController {
                 newGoal.targetCalories(),
                 newGoal.targetProtein(),
                 newGoal.targetCarbs(),
-                newGoal.targetFat()
+                newGoal.targetFat(),
+                newGoal.targetWaterGlasses()
         );
         return ResponseEntity.ok(response);
     }
@@ -223,6 +225,7 @@ public class ClinicalController {
                 request.postalCode(),
                 request.state(),
                 request.city(),
+                request.municipality(),
                 request.neighborhood(),
                 request.street(),
                 request.exteriorNumber(),
@@ -277,6 +280,7 @@ public class ClinicalController {
                 address.getPostalCode(),
                 address.getState(),
                 address.getCity(),
+                address.getMunicipality(),
                 address.getNeighborhood(),
                 address.getStreet(),
                 address.getExteriorNumber(),

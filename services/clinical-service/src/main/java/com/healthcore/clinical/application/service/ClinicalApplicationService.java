@@ -2,12 +2,15 @@ package com.healthcore.clinical.application.service;
 
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.HealthGoal;
+import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
 import com.healthcore.clinical.domain.model.PatientProfile;
+import com.healthcore.clinical.domain.model.PostalCodeCatalogEntry;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.NutritionistProfileRepositoryPort;
+import com.healthcore.clinical.domain.port.out.PostalCodeCatalogPort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +22,16 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
 
     private final ClinicalRepositoryPort patientRepositoryPort;
     private final NutritionistProfileRepositoryPort nutritionistRepositoryPort;
+    private final PostalCodeCatalogPort postalCodeCatalogPort;
 
     public ClinicalApplicationService(
             ClinicalRepositoryPort patientRepositoryPort,
-            NutritionistProfileRepositoryPort nutritionistRepositoryPort
+            NutritionistProfileRepositoryPort nutritionistRepositoryPort,
+            PostalCodeCatalogPort postalCodeCatalogPort
     ) {
         this.patientRepositoryPort = patientRepositoryPort;
         this.nutritionistRepositoryPort = nutritionistRepositoryPort;
+        this.postalCodeCatalogPort = postalCodeCatalogPort;
     }
 
     @Override
@@ -97,6 +103,7 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
 
     @Override
     public NutritionistProfile createNutritionistProfile(NutritionistProfile profile) {
+        validateClinicAddress(profile.getClinicAddress());
         return nutritionistRepositoryPort.save(profile);
     }
 
@@ -118,11 +125,27 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
                 profile.getBio()
         );
 
+        validateClinicAddress(existingProfile.getClinicAddress());
         return nutritionistRepositoryPort.save(existingProfile);
     }
 
     @Override
     public Optional<NutritionistProfile> getNutritionistProfileByUserId(String userId) {
         return nutritionistRepositoryPort.findByUserId(userId);
+    }
+
+    private void validateClinicAddress(ClinicAddress clinicAddress) {
+        if (clinicAddress == null) {
+            return;
+        }
+
+        if (!clinicAddress.isComplete()) {
+            throw new IllegalArgumentException("Clinic address must be complete when provided.");
+        }
+
+        Optional<PostalCodeCatalogEntry> catalogEntry = postalCodeCatalogPort.findByPostalCode(clinicAddress.getPostalCode());
+        if (catalogEntry.isPresent() && !catalogEntry.get().matches(clinicAddress)) {
+            throw new IllegalArgumentException("Clinic address does not match the postal code catalog.");
+        }
     }
 }

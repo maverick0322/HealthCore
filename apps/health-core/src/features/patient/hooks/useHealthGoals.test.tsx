@@ -49,6 +49,7 @@ describe('useHealthGoals', () => {
       targetProtein: 140,
       targetCarbs: 210,
       targetFat: 60,
+      targetWaterGlasses: 10,
     };
 
     vi.mocked(clinicalApi.getMyGoals).mockResolvedValue(mockGoals);

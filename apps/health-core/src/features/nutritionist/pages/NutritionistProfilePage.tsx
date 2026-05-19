@@ -28,7 +28,8 @@ const formatAddress = (address?: ClinicAddressPayload | null) => {
     [address.street?.trim(), address.exteriorNumber?.trim()].filter(Boolean).join(' '),
     address.interiorNumber?.trim() ? `Int. ${address.interiorNumber.trim()}` : null,
     address.neighborhood?.trim(),
-    address.city?.trim(),
+    address.municipality?.trim(),
+    address.city?.trim() && address.city?.trim() !== address.municipality?.trim() ? address.city.trim() : null,
     address.state?.trim(),
     address.postalCode?.trim(),
   ].filter(Boolean);

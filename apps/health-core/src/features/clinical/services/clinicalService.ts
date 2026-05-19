@@ -7,7 +7,11 @@ import type {
   NutritionistProfilePayload,
   NutritionistProfileResponse,
   ObservationResponse,
+  PostalCodeLookupResponse,
   CreateObservationRequest,
+  NutritionPlanViewResponse,
+  NutritionPlanUpsertRequest,
+  CatalogFoodResponse,
 } from '../types/clinical.types';
 
 import httpClient from '@/core/http/httpClient';
@@ -54,7 +58,18 @@ const normalizeNutritionistProfile = (
   professionalLicense: profile.professionalLicense ?? '',
   consultationTypes: profile.consultationTypes ?? [],
   phone: profile.phone ?? '',
-  clinicAddress: profile.clinicAddress ?? null,
+  clinicAddress: profile.clinicAddress
+    ? {
+        postalCode: profile.clinicAddress.postalCode ?? '',
+        state: profile.clinicAddress.state ?? '',
+        city: profile.clinicAddress.city ?? '',
+        municipality: profile.clinicAddress.municipality ?? '',
+        neighborhood: profile.clinicAddress.neighborhood ?? '',
+        street: profile.clinicAddress.street ?? '',
+        exteriorNumber: profile.clinicAddress.exteriorNumber ?? '',
+        interiorNumber: profile.clinicAddress.interiorNumber ?? '',
+      }
+    : null,
   bio: profile.bio ?? '',
   profileCompleted: profile.profileCompleted ?? false,
 });
@@ -139,6 +154,14 @@ export const clinicalApi = {
       { headers: getXUserIdHeader() }
     );
     return normalizeNutritionistProfile(response.data);
+  },
+
+  lookupPostalCode: async (postalCode: string): Promise<PostalCodeLookupResponse> => {
+    const response = await httpClient.get<PostalCodeLookupResponse>(
+      `${CLINICAL_API_URL}/reference/postal-codes/${encodeURIComponent(postalCode)}`,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
   },
 
   getNutritionistPatients: async (): Promise<NutritionistPatientProfileResponse[]> => {
@@ -230,6 +253,66 @@ export const clinicalApi = {
     } catch {
       return false;
     }
+  },
+
+  getMyNutritionPlan: async (): Promise<NutritionPlanViewResponse> => {
+    const response = await httpClient.get<NutritionPlanViewResponse>(
+      `${CLINICAL_API_URL}/nutrition-plan/me`,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
+
+  upsertMyNutritionPlan: async (
+    payload: NutritionPlanUpsertRequest
+  ): Promise<NutritionPlanViewResponse> => {
+    const response = await httpClient.put<NutritionPlanViewResponse>(
+      `${CLINICAL_API_URL}/nutrition-plan/me`,
+      payload,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
+
+  getNutritionistPatientNutritionPlan: async (
+    patientId: string
+  ): Promise<NutritionPlanViewResponse> => {
+    const response = await httpClient.get<NutritionPlanViewResponse>(
+      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/nutrition-plan`,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
+
+  upsertNutritionistPatientNutritionPlan: async (
+    patientId: string,
+    payload: NutritionPlanUpsertRequest
+  ): Promise<NutritionPlanViewResponse> => {
+    const response = await httpClient.put<NutritionPlanViewResponse>(
+      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/nutrition-plan`,
+      payload,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
+  },
+
+  searchCatalogFoods: async (query: string): Promise<CatalogFoodResponse[]> => {
+    const response = await httpClient.get<CatalogFoodResponse[]>(
+      `${CLINICAL_API_URL}/catalog/foods/search`,
+      {
+        params: { query },
+        headers: getXUserIdHeader(),
+      }
+    );
+    return response.data;
+  },
+
+  getMyObservations: async (): Promise<ObservationResponse[]> => {
+    const response = await httpClient.get<ObservationResponse[]>(
+      `${CLINICAL_API_URL}/observations/me`,
+      { headers: getXUserIdHeader() }
+    );
+    return response.data;
   },
 };
 

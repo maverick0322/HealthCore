@@ -28,9 +28,12 @@ import {
 import type {
   ObservationResponse,
   NutritionistPatientProfileResponse,
+  NutritionPlanViewResponse,
 } from "../../clinical/types/clinical.types";
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
+import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
+import { logClientError, logClientInfo } from "@/core/utils/logger";
 
 const getDisplayIdentity = (userId: string): string => {
   const normalized = userId.trim();
@@ -76,12 +79,15 @@ export const NutritionistPatientFilePage = () => {
   const [isLoadingPatient, setIsLoadingPatient] = useState(true);
   const [patientLoadError, setPatientLoadError] = useState<string | null>(null);
   const [observations, setObservations] = useState<ObservationResponse[]>([]);
+  const [nutritionPlanView, setNutritionPlanView] = useState<NutritionPlanViewResponse | null>(null);
+  const [isLoadingNutritionPlan, setIsLoadingNutritionPlan] = useState(false);
+  const [nutritionPlanLoadError, setNutritionPlanLoadError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation("nutritionist");
 
-  const [activeTab, setActiveTab] = useState<"overview" | "plan" | "history">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "plan" | "observations">("overview");
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
 
@@ -96,10 +102,15 @@ export const NutritionistPatientFilePage = () => {
       try {
         setIsLoadingPatient(true);
         setPatientLoadError(null);
+        logClientInfo("NutritionistPatientFilePage.patient.load.start", { patientId });
         const response = await clinicalApi.getNutritionistPatientProfile(patientId);
         setPatient(response);
+        logClientInfo("NutritionistPatientFilePage.patient.load.success", {
+          patientId,
+          patientUserId: response.userId,
+        });
       } catch (error) {
-        console.error("Error loading patient profile:", error);
+        logClientError("NutritionistPatientFilePage.patient.load.error", error, { patientId });
         setPatientLoadError(t("patients.file.error"));
       } finally {
         setIsLoadingPatient(false);
@@ -117,12 +128,42 @@ export const NutritionistPatientFilePage = () => {
     void loadObservations();
   }, [patientId]);
 
+  useEffect(() => {
+    if (!patientId || activeTab !== "plan") {
+      return;
+    }
+
+    const loadNutritionPlan = async () => {
+      try {
+        setIsLoadingNutritionPlan(true);
+        setNutritionPlanLoadError(null);
+        logClientInfo("NutritionistPatientFilePage.plan.load.start", { patientId });
+        const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
+        setNutritionPlanView(response);
+        logClientInfo("NutritionistPatientFilePage.plan.load.success", {
+          patientId,
+          mode: response.mode,
+          canEdit: response.canEdit,
+          sections: response.sections.length,
+        });
+      } catch (error) {
+        logClientError("NutritionistPatientFilePage.plan.load.error", error, { patientId });
+        setNutritionPlanView(null);
+        setNutritionPlanLoadError(t("nutritionPlan.loadError"));
+      } finally {
+        setIsLoadingNutritionPlan(false);
+      }
+    };
+
+    void loadNutritionPlan();
+  }, [activeTab, patientId]);
+
   const loadObservations = async () => {
     try {
       const data = await getPatientObservations(patientId);
       setObservations(data);
     } catch (error) {
-      console.error("Error loading observations:", error);
+      logClientError("NutritionistPatientFilePage.observations.load.error", error, { patientId });
     }
   };
 
@@ -136,7 +177,7 @@ export const NutritionistPatientFilePage = () => {
       await clinicalApi.unlinkNutritionist(patientId);
       navigate("/patients/nutritionist");
     } catch (error) {
-      console.error("Error unlinking patient:", error);
+      logClientError("NutritionistPatientFilePage.unlink.error", error, { patientId });
       setIsUnlinking(false);
       setShowUnlinkModal(false);
     }
@@ -153,7 +194,7 @@ export const NutritionistPatientFilePage = () => {
       setNewNote("");
       await loadObservations();
     } catch (error) {
-      console.error("Error saving observation:", error);
+      logClientError("NutritionistPatientFilePage.observation.save.error", error, { patientId });
     } finally {
       setIsSavingNote(false);
     }
@@ -161,6 +202,58 @@ export const NutritionistPatientFilePage = () => {
 
   const patientIdentity = patient ? patient.fullName?.trim() || getDisplayIdentity(patient.userId) : "";
   const patientAge = patient ? getAgeFromBirthDate(patient.birthDate) : null;
+
+  const handleSaveNutritionPlan = async (
+    payload: Parameters<typeof clinicalApi.upsertNutritionistPatientNutritionPlan>[1]
+  ) => {
+    try {
+      logClientInfo("NutritionistPatientFilePage.plan.save.start", {
+        patientId,
+        sections: payload.sections.length,
+      });
+      const response = await clinicalApi.upsertNutritionistPatientNutritionPlan(patientId, payload);
+      setNutritionPlanView(response);
+      setNutritionPlanLoadError(null);
+      logClientInfo("NutritionistPatientFilePage.plan.save.success", {
+        patientId,
+        mode: response.mode,
+        canEdit: response.canEdit,
+      });
+      return response;
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.plan.save.error", error, {
+        patientId,
+        sections: payload.sections.length,
+      });
+      throw error;
+    }
+  };
+
+  const retryNutritionPlanLoad = async () => {
+    if (!patientId) {
+      return;
+    }
+
+    setIsLoadingNutritionPlan(true);
+    setNutritionPlanLoadError(null);
+    logClientInfo("NutritionistPatientFilePage.plan.retry.start", { patientId });
+
+    try {
+      const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
+      setNutritionPlanView(response);
+      logClientInfo("NutritionistPatientFilePage.plan.retry.success", {
+        patientId,
+        mode: response.mode,
+        canEdit: response.canEdit,
+      });
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.plan.retry.error", error, { patientId });
+      setNutritionPlanView(null);
+      setNutritionPlanLoadError(t("nutritionPlan.loadError"));
+    } finally {
+      setIsLoadingNutritionPlan(false);
+    }
+  };
 
   const renderMainContent = () => {
     if (isLoadingPatient) {
@@ -266,18 +359,39 @@ export const NutritionistPatientFilePage = () => {
     if (activeTab === "plan") {
       return (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/50">
+          <CardHeader className="pb-3 border-b border-border/50">
             <CardTitle className="text-base flex items-center gap-2">
               <UtensilsCrossed size={18} className="text-primary" /> {t("patients.file.tabPlan")}
             </CardTitle>
-            <Button variant="outline" size="sm" className="h-8">
-              {t("patients.file.editPlan")}
-            </Button>
           </CardHeader>
-          <CardContent className="pt-8 pb-12 flex flex-col items-center justify-center text-muted-foreground min-h-[300px]">
-            <UtensilsCrossed size={48} className="mb-4 opacity-20" />
-            <p className="text-sm font-medium">{t("patients.file.planPlaceholder")}</p>
-            <p className="text-xs opacity-70 mt-1">{t("patients.file.planDescription")}</p>
+          <CardContent className="pt-6">
+            {nutritionPlanLoadError && !isLoadingNutritionPlan ? (
+              <Card className="mb-6 border-destructive/20">
+                <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+                  <AlertCircle className="size-8 text-destructive" />
+                  <div className="space-y-1">
+                    <p className="font-semibold">{nutritionPlanLoadError}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("nutritionPlan.loadErrorHelp")}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => void retryNutritionPlanLoad()}
+                  >
+                    {t("nutritionPlan.retry")}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : null}
+            <NutritionPlanWorkspace
+              namespace="nutritionist"
+              view={nutritionPlanView}
+              isLoading={isLoadingNutritionPlan}
+              onSave={handleSaveNutritionPlan}
+              onSearchFoods={clinicalApi.searchCatalogFoods}
+            />
           </CardContent>
         </Card>
       );
@@ -287,7 +401,7 @@ export const NutritionistPatientFilePage = () => {
       <Card>
         <CardHeader className="pb-3 border-b border-border/50">
           <CardTitle className="text-base flex items-center gap-2">
-            <FileText size={18} className="text-primary" /> {t("patients.file.tabHistory")}
+            <FileText size={18} className="text-primary" /> {t("patients.file.tabObservations")}
           </CardTitle>
         </CardHeader>
 
@@ -421,14 +535,14 @@ export const NutritionistPatientFilePage = () => {
               {t("patients.file.tabPlan")}
             </button>
             <button
-              onClick={() => setActiveTab("history")}
+              onClick={() => setActiveTab("observations")}
               className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
-                activeTab === "history"
+                activeTab === "observations"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("patients.file.tabHistory")}
+              {t("patients.file.tabObservations")}
             </button>
           </div>
         </div>

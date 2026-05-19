@@ -11,7 +11,10 @@ export default defineConfig({
     basicSsl(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
+      includeAssets: ['favicon.svg', 'icon-192.png'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      },
       manifest: {
         name: 'HealthCore',
         short_name: 'HealthCore',
@@ -26,12 +29,6 @@ export default defineConfig({
             sizes: '192x192',
             type: 'image/png',
           },
-          {
-            src: '/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable',
-          },
         ],
       },
     }),
@@ -40,6 +37,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    cssMinify: false,
+    chunkSizeWarningLimit: 1600,
   },
   server: {
     host: true, // expose to local network for phone testing

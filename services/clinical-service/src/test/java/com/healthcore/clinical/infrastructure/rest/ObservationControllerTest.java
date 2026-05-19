@@ -73,6 +73,7 @@ class ObservationControllerTest {
                 .thenReturn(observation);
 
         mockMvc.perform(post("/api/v1/clinical/observations")
+                        .header("X-User-Id", "nutri-123")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -90,7 +91,8 @@ class ObservationControllerTest {
         when(manageObservationsUseCase.getPatientObservations("patient-123", "nutri-123"))
                 .thenReturn(observations);
 
-        mockMvc.perform(get("/api/v1/clinical/observations/patient/patient-123"))
+        mockMvc.perform(get("/api/v1/clinical/observations/patient/patient-123")
+                        .header("X-User-Id", "nutri-123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].nutritionistId").value("nutri-123"));
@@ -104,8 +106,29 @@ class ObservationControllerTest {
         when(manageObservationsUseCase.getPatientObservations(anyString(), anyString()))
                 .thenThrow(new AccessDeniedException("Action denied: Patient is not linked to this nutritionist."));
 
-        mockMvc.perform(get("/api/v1/clinical/observations/patient/patient-123"))
+        mockMvc.perform(get("/api/v1/clinical/observations/patient/patient-123")
+                        .header("X-User-Id", "nutri-123"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Forbidden"));
+    }
+
+    @Test
+    void getMyObservations_ReturnsPatientObservations() throws Exception {
+        setSecurityContext("patient-subject", "PATIENT");
+        List<ClinicalObservation> observations = List.of(
+                new ClinicalObservation("obs-1", "patient-123", "nutri-123", "Nota clínica.", LocalDateTime.now())
+        );
+
+        when(manageObservationsUseCase.getPatientObservations("patient-123"))
+                .thenReturn(observations);
+
+        mockMvc.perform(get("/api/v1/clinical/observations/me")
+                        .header("X-User-Id", "patient-123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].patientId").value("patient-123"))
+                .andExpect(jsonPath("$[0].nutritionistId").value("nutri-123"));
+
+        verify(manageObservationsUseCase).getPatientObservations("patient-123");
     }
 }

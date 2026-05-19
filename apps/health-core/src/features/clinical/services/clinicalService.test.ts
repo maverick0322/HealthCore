@@ -12,6 +12,7 @@ import {
 import type {
   CreateProfilePayload,
   NutritionistProfilePayload,
+  NutritionPlanUpsertRequest,
 } from '../types/clinical.types';
 
 vi.mock('@/core/http/httpClient', () => ({
@@ -162,9 +163,10 @@ describe('clinicalService', () => {
       phone: '5512345678',
       clinicAddress: {
         postalCode: '03100',
-        state: 'CDMX',
-        city: 'Benito Juarez',
-        neighborhood: 'Narvarte',
+        state: 'Ciudad de Mexico',
+        city: 'Ciudad de Mexico',
+        municipality: 'Benito Juarez',
+        neighborhood: 'Narvarte Oriente',
         street: 'Xola',
         exteriorNumber: '123',
         interiorNumber: '',
@@ -184,6 +186,26 @@ describe('clinicalService', () => {
 
     const result = await clinicalApi.getMyNutritionistProfile();
     expect(result.fullName).toBe('Daniel Martinez');
+    expect(result.clinicAddress?.municipality).toBe('Benito Juarez');
+  });
+
+  it('should lookup postal code suggestions with auth headers', async () => {
+    (httpClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: {
+        postalCode: '03100',
+        state: 'Ciudad de Mexico',
+        city: 'Ciudad de Mexico',
+        municipality: 'Benito Juarez',
+        colonies: ['Narvarte Oriente', 'Narvarte Poniente'],
+      },
+    });
+
+    const result = await clinicalApi.lookupPostalCode('03100');
+
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/reference/postal-codes/03100', {
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+    expect(result.municipality).toBe('Benito Juarez');
   });
 
   it('should fetch nutritionist patients and one patient detail', async () => {
@@ -258,6 +280,73 @@ describe('clinicalService', () => {
     expect(history).toHaveLength(1);
     expect(currentCode?.code).toBe('XYZ123');
     expect(noCode).toBeNull();
+  });
+
+  it('should handle nutrition plan endpoints', async () => {
+    const mockPlanResponse = {
+      data: {
+        mode: 'SELF_MANAGED',
+        authorType: 'SELF_MANAGED',
+        canEdit: true,
+        dailyGoals: {
+          targetCalories: 2000,
+          targetProtein: 120,
+          targetCarbs: 200,
+          targetFat: 60,
+          targetWaterGlasses: 10,
+        },
+        sections: [],
+        contextSelfManagedPlan: null,
+      },
+    };
+    const payload: NutritionPlanUpsertRequest = {
+      sections: [
+        { mealSlot: 'BREAKFAST', options: [] },
+        { mealSlot: 'LUNCH', options: [] },
+        { mealSlot: 'DINNER', options: [] },
+        { mealSlot: 'SNACK', options: [] },
+      ],
+    };
+
+    (httpClient.get as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(mockPlanResponse)
+      .mockResolvedValueOnce(mockPlanResponse)
+      .mockResolvedValueOnce({ data: [{ barcode: 'food-1', name: 'Avena' }] })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 'obs-1',
+            patientId: 'patient-1',
+            nutritionistId: 'nutri-1',
+            note: 'Ajustar hidratacion',
+            createdAt: '2026-05-18T12:00:00Z',
+          },
+        ],
+      });
+    (httpClient.put as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(mockPlanResponse)
+      .mockResolvedValueOnce(mockPlanResponse);
+
+    const myPlan = await clinicalApi.getMyNutritionPlan();
+    const savedMyPlan = await clinicalApi.upsertMyNutritionPlan(payload);
+    const nutritionistPlan = await clinicalApi.getNutritionistPatientNutritionPlan('patient-1');
+    const savedNutritionistPlan = await clinicalApi.upsertNutritionistPatientNutritionPlan('patient-1', payload);
+    const foods = await clinicalApi.searchCatalogFoods('avena');
+    const observations = await clinicalApi.getMyObservations();
+
+    expect(myPlan.dailyGoals.targetWaterGlasses).toBe(10);
+    expect(savedMyPlan.canEdit).toBe(true);
+    expect(nutritionistPlan.mode).toBe('SELF_MANAGED');
+    expect(savedNutritionistPlan.authorType).toBe('SELF_MANAGED');
+    expect(foods[0].barcode).toBe('food-1');
+    expect(observations[0].note).toBe('Ajustar hidratacion');
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/catalog/foods/search', {
+      params: { query: 'avena' },
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/observations/me', {
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
   });
 
   it('should send linking and observation requests with auth headers', async () => {

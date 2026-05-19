@@ -163,10 +163,18 @@
         "postalCode": "Postal code",
         "state": "State",
         "city": "City",
+        "municipality": "Municipality or borough",
         "neighborhood": "Neighborhood",
         "street": "Street",
         "exteriorNumber": "Exterior number",
         "interiorNumberOptional": "Interior number (optional)"
+      },
+      "lookup": {
+        "loading": "Looking up the postal code...",
+        "match": "Postal code found. Select the matching neighborhood.",
+        "manualFallback": "We could not find that postal code in the local catalog. You can enter the address manually.",
+        "error": "We could not query the postal catalog right now.",
+        "neighborhoodPlaceholder": "Select a neighborhood"
       }
     },
     "summary": {
@@ -192,7 +200,9 @@
       "postalCode": "The postal code must contain 5 digits.",
       "state": "State is required.",
       "city": "City is required.",
+      "municipality": "Municipality or borough is required.",
       "neighborhood": "Neighborhood is required.",
+      "neighborhoodSelection": "Select a neighborhood from the list available for that postal code.",
       "street": "Street is required.",
       "exteriorNumber": "Exterior number is required.",
       "bio": "Bio is required."

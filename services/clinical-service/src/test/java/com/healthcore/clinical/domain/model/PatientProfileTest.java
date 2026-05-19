@@ -19,6 +19,7 @@ class PatientProfileTest {
         assertNotNull(goal);
         assertEquals(2009, goal.targetCalories());
         assertTrue(goal.targetProtein() > 0);
+        assertEquals(10, goal.targetWaterGlasses());
     }
 
     @Test

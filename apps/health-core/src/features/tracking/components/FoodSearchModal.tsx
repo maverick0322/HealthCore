@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ScanLine, Plus, Loader2, X } from 'lucide-react';
 import { trackingService } from '../services/trackingService';
-import { useTranslation } from 'react-i18next';
 import type { SelectedFoodItem } from '../types/tracking.types';
 
 // Extendemos temporalmente el tipo local para incluir la imagen que solo vive en la búsqueda
@@ -15,7 +14,6 @@ interface FoodSearchModalProps {
 }
 
 export const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ onClose, onSelectFood }) => {
-  const { t } = useTranslation('tracking');
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);

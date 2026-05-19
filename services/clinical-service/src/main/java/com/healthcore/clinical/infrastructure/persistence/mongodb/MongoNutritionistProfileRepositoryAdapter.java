@@ -66,6 +66,7 @@ public class MongoNutritionistProfileRepositoryAdapter implements NutritionistPr
         document.setPostalCode(clinicAddress.getPostalCode());
         document.setState(clinicAddress.getState());
         document.setCity(clinicAddress.getCity());
+        document.setMunicipality(clinicAddress.getMunicipality());
         document.setNeighborhood(clinicAddress.getNeighborhood());
         document.setStreet(clinicAddress.getStreet());
         document.setExteriorNumber(clinicAddress.getExteriorNumber());
@@ -81,6 +82,7 @@ public class MongoNutritionistProfileRepositoryAdapter implements NutritionistPr
                 document.getPostalCode(),
                 document.getState(),
                 document.getCity(),
+                document.getMunicipality(),
                 document.getNeighborhood(),
                 document.getStreet(),
                 document.getExteriorNumber(),

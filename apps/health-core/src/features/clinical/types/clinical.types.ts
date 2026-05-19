@@ -45,6 +45,91 @@ export interface HealthGoalResponse {
   targetProtein: number;
   targetCarbs: number;
   targetFat: number;
+  targetWaterGlasses: number;
+}
+
+export type NutritionPlanMode = 'SELF_MANAGED' | 'READ_ONLY' | 'NUTRITIONIST';
+export type NutritionPlanAuthorType = 'SELF_MANAGED' | 'NUTRITIONIST';
+export type MealSlot = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+export type PlanIngredientUnit = 'GRAMS' | 'MILLILITERS';
+
+export interface CatalogFoodResponse {
+  barcode: string;
+  name: string;
+  brand: string;
+  imageUrl: string;
+  caloriesPer100Units: number;
+  proteinPer100Units: number;
+  carbsPer100Units: number;
+  fatPer100Units: number;
+}
+
+export interface NutritionPlanIngredientRequest {
+  barcode: string;
+  unit: PlanIngredientUnit;
+  quantityAmount: number;
+}
+
+export interface NutritionPlanMealOptionRequest {
+  name: string;
+  instructions: string;
+  notes: string;
+  ingredients: NutritionPlanIngredientRequest[];
+}
+
+export interface NutritionPlanSectionRequest {
+  mealSlot: MealSlot;
+  options: NutritionPlanMealOptionRequest[];
+}
+
+export interface NutritionPlanUpsertRequest {
+  sections: NutritionPlanSectionRequest[];
+}
+
+export interface NutritionPlanIngredientResponse {
+  barcode: string;
+  name: string;
+  brand: string;
+  imageUrl: string;
+  unit: PlanIngredientUnit;
+  quantityAmount: number;
+  calories: number;
+  proteinGrams: number;
+  carbsGrams: number;
+  fatGrams: number;
+}
+
+export interface NutritionPlanMealOptionResponse {
+  id: string;
+  name: string;
+  instructions: string;
+  notes: string;
+  ingredients: NutritionPlanIngredientResponse[];
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+}
+
+export interface NutritionPlanSectionResponse {
+  mealSlot: MealSlot;
+  options: NutritionPlanMealOptionResponse[];
+}
+
+export interface ReadonlyNutritionPlanResponse {
+  authorType: NutritionPlanAuthorType;
+  dailyGoals: HealthGoalResponse;
+  sections: NutritionPlanSectionResponse[];
+  updatedAt: string;
+}
+
+export interface NutritionPlanViewResponse {
+  mode: NutritionPlanMode;
+  authorType: NutritionPlanAuthorType | null;
+  canEdit: boolean;
+  dailyGoals: HealthGoalResponse;
+  sections: NutritionPlanSectionResponse[];
+  contextSelfManagedPlan: ReadonlyNutritionPlanResponse | null;
 }
 
 export interface WeightRecord {
@@ -76,10 +161,19 @@ export interface ClinicAddressPayload {
   postalCode: string;
   state: string;
   city: string;
+  municipality: string;
   neighborhood: string;
   street: string;
   exteriorNumber: string;
   interiorNumber?: string | null;
+}
+
+export interface PostalCodeLookupResponse {
+  postalCode: string;
+  state: string;
+  city: string;
+  municipality: string;
+  colonies: string[];
 }
 
 export interface NutritionistProfilePayload {

@@ -39,6 +39,12 @@ public class JwtValidationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // Guard early: a missing secret means the service is misconfigured — reject all authenticated requests.
+        if (!StringUtils.hasText(jwtSecret)) {
+            unauthorized(response, "JWT secret is not configured");
+            return;
+        }
+
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             filterChain.doFilter(request, response);
             return;
@@ -47,11 +53,6 @@ public class JwtValidationFilter extends OncePerRequestFilter {
         String bearerToken = resolveBearerToken(request);
         if (bearerToken == null) {
             filterChain.doFilter(request, response);
-            return;
-        }
-
-        if (!StringUtils.hasText(jwtSecret)) {
-            unauthorized(response, "JWT secret is not configured");
             return;
         }
 

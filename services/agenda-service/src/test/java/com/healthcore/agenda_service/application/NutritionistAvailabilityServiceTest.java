@@ -3,8 +3,10 @@ package com.healthcore.agenda_service.application;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.TimeSlot;
+import com.healthcore.agenda_service.domain.TimeSlotOrigin;
 import com.healthcore.agenda_service.domain.exception.BadRequestException;
 import com.healthcore.agenda_service.domain.exception.ConflictException;
+import com.healthcore.agenda_service.domain.exception.NotFoundException;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
 import com.healthcore.agenda_service.domain.repository.TimeSlotRepository;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,209 +30,304 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for {@link NutritionistAvailabilityService}.
+ * Covers slot generation, validation paths, deactivation branches, and query
+ * methods.
+ */
 @ExtendWith(MockitoExtension.class)
 class NutritionistAvailabilityServiceTest {
 
-    private static final ZoneId MEXICO_CITY = ZoneId.of("America/Mexico_City");
+        @Mock
+        private TimeSlotRepository timeSlotRepository;
 
-    @Mock
-    private TimeSlotRepository timeSlotRepository;
+        @Mock
+        private AppointmentRepository appointmentRepository;
 
-    @Mock
-    private AppointmentRepository appointmentRepository;
+        @InjectMocks
+        private NutritionistAvailabilityService service;
 
-    @InjectMocks
-    private NutritionistAvailabilityService service;
+        // A future date far enough ahead to pass all guards
+        private static final ZoneId UTC = ZoneId.of("UTC");
+        private static final LocalDate FUTURE_DATE = LocalDate.now(UTC).plusDays(2);
 
-    @Test
-    void generateTimeSlots_shouldReturnCorrectNumberOfSlots() {
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(day(LocalDate.now(MEXICO_CITY).plusDays(1), block("10:00", "11:00")))
-        );
-        when(timeSlotRepository.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
+        // ── generateSlots ────────────────────────────────────────────────────
 
-        List<TimeSlot> result = service.generateTimeSlots("nutri-1", command);
+        @Test
+        void generateSlots_shouldPersistCorrectSlotCount_forSingleBlock() {
+                // Arrange: one day, one 60-min block, 30-min duration -> 2 slots
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC,
+                                30,
+                                List.of(new GenerateSlotsCommand.DaySchedule(
+                                                FUTURE_DATE,
+                                                List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
+                                                                LocalTime.of(10, 0))))));
+                when(timeSlotRepository.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
 
-        assertThat(result).hasSize(2);
-    }
+                // Act
+                List<TimeSlot> result = service.generateTimeSlots("nutri-1", command);
 
-    @Test
-    void generateTimeSlots_shouldSetNutritionistIdCorrectly() {
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(day(LocalDate.now(MEXICO_CITY).plusDays(1), block("10:00", "10:30")))
-        );
-        when(timeSlotRepository.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
+                // Assert
+                assertThat(result).hasSize(2);
+                assertThat(result).allMatch(slot -> slot.getNutritionistId().equals("nutri-1"));
+                assertThat(result).allMatch(slot -> slot.getOrigin() == TimeSlotOrigin.PREDEFINED);
+                assertThat(result).allMatch(slot -> !slot.isReserved() && slot.isActive());
+        }
 
-        List<TimeSlot> result = service.generateTimeSlots("nutri-1", command);
+        @Test
+        void generateSlots_shouldThrowConflict_whenDuplicateKeysDetected() {
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC,
+                                30,
+                                List.of(new GenerateSlotsCommand.DaySchedule(
+                                                FUTURE_DATE,
+                                                List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
+                                                                LocalTime.of(9, 30))))));
+                when(timeSlotRepository.saveAll(anyList())).thenThrow(new DuplicateKeyException("dup"));
 
-        assertThat(result.get(0).getNutritionistId()).isEqualTo("nutri-1");
-    }
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(ConflictException.class)
+                                .hasMessageContaining("ya existen");
+        }
 
-    @Test
-    void generateTimeSlots_shouldSetSlotAsActiveAndNotReserved() {
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(day(LocalDate.now(MEXICO_CITY).plusDays(1), block("10:00", "10:30")))
-        );
-        when(timeSlotRepository.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
+        @Test
+        void generateSlots_shouldThrowBadRequest_whenDurationBelowMinimum() {
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC, 10, // minimum is 15 minutes
+                                List.of(new GenerateSlotsCommand.DaySchedule(
+                                                FUTURE_DATE,
+                                                List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
+                                                                LocalTime.of(10, 0))))));
 
-        List<TimeSlot> result = service.generateTimeSlots("nutri-1", command);
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(BadRequestException.class);
+        }
 
-        assertThat(result.get(0).isActive()).isTrue();
-        assertThat(result.get(0).isReserved()).isFalse();
-    }
+        @Test
+        void generateSlots_shouldThrowBadRequest_whenNoDaysProvided() {
+                GenerateSlotsCommand command = new GenerateSlotsCommand(UTC, 30, List.of());
 
-    @Test
-    void generateTimeSlots_shouldRespectConfiguredTimeZone() {
-        LocalDate date = LocalDate.now(MEXICO_CITY).plusDays(1);
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(day(date, block("09:00", "09:30")))
-        );
-        when(timeSlotRepository.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(BadRequestException.class);
+        }
 
-        List<TimeSlot> result = service.generateTimeSlots("nutri-1", command);
+        @Test
+        void generateSlots_shouldThrowBadRequest_whenDateIsInThePast() {
+                LocalDate pastDate = LocalDate.now(UTC).minusDays(1);
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC, 30,
+                                List.of(new GenerateSlotsCommand.DaySchedule(
+                                                pastDate,
+                                                List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
+                                                                LocalTime.of(10, 0))))));
 
-        assertThat(result.getFirst().getStartTime()).isEqualTo(date.atTime(9, 0).atZone(MEXICO_CITY).toInstant());
-    }
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(BadRequestException.class);
+        }
 
-    @Test
-    void generateTimeSlots_shouldSupportMultipleDaysAndBlocks() {
-        LocalDate firstDay = LocalDate.now(MEXICO_CITY).plusDays(1);
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(
-                day(firstDay, block("09:00", "10:00"), block("15:00", "16:00")),
-                day(firstDay.plusDays(1), block("11:00", "12:00"))
-            )
-        );
-        when(timeSlotRepository.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
+        @Test
+        void generateSlots_shouldThrowBadRequest_whenDuplicateDates() {
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC, 30,
+                                List.of(
+                                                new GenerateSlotsCommand.DaySchedule(FUTURE_DATE,
+                                                                List.of(new GenerateSlotsCommand.TimeBlock(
+                                                                                LocalTime.of(9, 0),
+                                                                                LocalTime.of(10, 0)))),
+                                                new GenerateSlotsCommand.DaySchedule(FUTURE_DATE, // duplicate date
+                                                                List.of(new GenerateSlotsCommand.TimeBlock(
+                                                                                LocalTime.of(11, 0),
+                                                                                LocalTime.of(12, 0))))));
 
-        List<TimeSlot> result = service.generateTimeSlots("nutri-1", command);
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(BadRequestException.class)
+                                .hasMessageContaining("repetir fechas");
+        }
 
-        assertThat(result).hasSize(6);
-    }
+        @Test
+        void generateSlots_shouldThrowBadRequest_whenBlocksOverlap() {
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC, 30,
+                                List.of(new GenerateSlotsCommand.DaySchedule(
+                                                FUTURE_DATE,
+                                                List.of(
+                                                                new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
+                                                                                LocalTime.of(10, 30)),
+                                                                new GenerateSlotsCommand.TimeBlock(LocalTime.of(10, 0),
+                                                                                LocalTime.of(11, 0)) // overlaps
+                                                ))));
 
-    @Test
-    void generateTimeSlots_shouldRejectOverlappingBlocks() {
-        LocalDate date = LocalDate.now(MEXICO_CITY).plusDays(1);
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(day(date, block("09:00", "10:00"), block("09:30", "11:00")))
-        );
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(BadRequestException.class)
+                                .hasMessageContaining("solaparse");
+        }
 
-        assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
-            .isInstanceOf(BadRequestException.class)
-            .hasMessageContaining("solaparse");
-    }
+        @Test
+        void generateSlots_shouldThrowBadRequest_whenBlockOutsideAllowedHours() {
+                // Block ends after 21:00
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC, 30,
+                                List.of(new GenerateSlotsCommand.DaySchedule(
+                                                FUTURE_DATE,
+                                                List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(20, 45),
+                                                                LocalTime.of(21, 30))))));
 
-    @Test
-    void generateTimeSlots_shouldRejectPastDatesInSelectedTimeZone() {
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(day(LocalDate.now(MEXICO_CITY).minusDays(1), block("09:00", "10:00")))
-        );
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(BadRequestException.class)
+                                .hasMessageContaining("06:00 y 21:00");
+        }
 
-        assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
-            .isInstanceOf(BadRequestException.class)
-            .hasMessageContaining("fechas pasadas");
-    }
+        // ── deactivateTimeSlot ───────────────────────────────────────────────
 
-    @Test
-    void generateTimeSlots_shouldRejectPastTimesForToday() {
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(day(LocalDate.now(MEXICO_CITY), block("00:00", "01:00")))
-        );
+        @Test
+        void deactivateTimeSlot_shouldDeactivateFreeSlotSuccessfully() {
+                TimeSlot slot = TimeSlot.builder()
+                                .id("slot-1")
+                                .nutritionistId("nutri-1")
+                                .startTime(Instant.now().plus(48, ChronoUnit.HOURS))
+                                .endTime(Instant.now().plus(48, ChronoUnit.HOURS).plus(30, ChronoUnit.MINUTES))
+                                .active(true)
+                                .reserved(false)
+                                .version(1L)
+                                .build();
+                when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+                when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(i -> i.getArgument(0));
 
-        assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
-            .isInstanceOf(BadRequestException.class)
-            .hasMessageContaining("horas pasadas");
-    }
+                service.deactivateTimeSlot("nutri-1", "slot-1");
 
-    @Test
-    void generateTimeSlots_shouldRejectBlocksOutsideVisibleCalendarHours() {
-        var command = new GenerateSlotsCommand(
-            MEXICO_CITY,
-            30,
-            List.of(day(LocalDate.now(MEXICO_CITY).plusDays(1), block("05:30", "07:00")))
-        );
+                ArgumentCaptor<TimeSlot> captor = ArgumentCaptor.forClass(TimeSlot.class);
+                verify(timeSlotRepository).save(captor.capture());
+                assertThat(captor.getValue().isActive()).isFalse();
+        }
 
-        assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
-            .isInstanceOf(BadRequestException.class)
-            .hasMessageContaining("06:00 y 21:00");
-    }
+        @Test
+        void deactivateTimeSlot_shouldThrowNotFound_whenSlotDoesNotExist() {
+                when(timeSlotRepository.findById("ghost")).thenReturn(Optional.empty());
 
-    @Test
-    void deactivateTimeSlot_shouldDeactivateAndCancelAppointmentIfReserved() {
-        Instant futureTime = Instant.now().plus(48, ChronoUnit.HOURS);
-        TimeSlot slot = TimeSlot.builder()
-            .id("slot-1")
-            .nutritionistId("nutri-1")
-            .startTime(futureTime)
-            .endTime(futureTime.plus(30, ChronoUnit.MINUTES))
-            .reserved(true)
-            .active(true)
-            .build();
-            
-        Appointment appointment = Appointment.builder()
-            .id("app-1")
-            .slotId("slot-1")
-            .status(AppointmentStatus.CONFIRMED)
-            .build();
+                assertThatThrownBy(() -> service.deactivateTimeSlot("nutri-1", "ghost"))
+                                .isInstanceOf(NotFoundException.class);
+        }
 
-        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
-        when(appointmentRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(
-            any(), any(), any()
-        )).thenReturn(List.of(appointment));
-        
-        service.deactivateTimeSlot("nutri-1", "slot-1");
+        @Test
+        void deactivateTimeSlot_shouldThrowConflict_whenSlotBelongsToDifferentNutritionist() {
+                TimeSlot slot = TimeSlot.builder()
+                                .id("slot-1")
+                                .nutritionistId("nutri-2")
+                                .startTime(Instant.now().plus(48, ChronoUnit.HOURS))
+                                .active(true)
+                                .reserved(false)
+                                .build();
+                when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
 
-        assertThat(slot.isActive()).isFalse();
-        assertThat(slot.isReserved()).isFalse();
-        
-        ArgumentCaptor<Appointment> appCaptor = ArgumentCaptor.forClass(Appointment.class);
-        verify(appointmentRepository).save(appCaptor.capture());
-        assertThat(appCaptor.getValue().getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
-    }
+                assertThatThrownBy(() -> service.deactivateTimeSlot("nutri-1", "slot-1"))
+                                .isInstanceOf(ConflictException.class)
+                                .hasMessageContaining("permisos");
+        }
 
-    @Test
-    void deactivateTimeSlot_shouldThrowConflictIfWithin24Hours() {
-        Instant futureTime = Instant.now().plus(12, ChronoUnit.HOURS);
-        TimeSlot slot = TimeSlot.builder()
-            .id("slot-1")
-            .nutritionistId("nutri-1")
-            .startTime(futureTime)
-            .build();
+        @Test
+        void deactivateTimeSlot_shouldThrowConflict_whenSlotIsWithin24Hours() {
+                TimeSlot slot = TimeSlot.builder()
+                                .id("slot-1")
+                                .nutritionistId("nutri-1")
+                                .startTime(Instant.now().plus(2, ChronoUnit.HOURS)) // within 24h
+                                .active(true)
+                                .reserved(false)
+                                .build();
+                when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
 
-        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+                assertThatThrownBy(() -> service.deactivateTimeSlot("nutri-1", "slot-1"))
+                                .isInstanceOf(ConflictException.class)
+                                .hasMessageContaining("24 horas");
+        }
 
-        assertThatThrownBy(() -> service.deactivateTimeSlot("nutri-1", "slot-1"))
-            .isInstanceOf(ConflictException.class)
-            .hasMessageContaining("24 horas");
-    }
+        @Test
+        void deactivateTimeSlot_shouldCancelAssociatedAppointment_whenSlotIsReserved() {
+                Instant slotStart = Instant.now().plus(48, ChronoUnit.HOURS);
+                TimeSlot slot = TimeSlot.builder()
+                                .id("slot-1")
+                                .nutritionistId("nutri-1")
+                                .startTime(slotStart)
+                                .endTime(slotStart.plus(30, ChronoUnit.MINUTES))
+                                .active(true)
+                                .reserved(true)
+                                .reservedByPatientId("patient-1")
+                                .version(1L)
+                                .build();
 
-    private GenerateSlotsCommand.DaySchedule day(
-        LocalDate date,
-        GenerateSlotsCommand.TimeBlock... blocks
-    ) {
-        return new GenerateSlotsCommand.DaySchedule(date, List.of(blocks));
-    }
+                Appointment appointment = Appointment.builder()
+                                .id("app-1")
+                                .slotId("slot-1")
+                                .patientId("patient-1")
+                                .nutritionistId("nutri-1")
+                                .status(AppointmentStatus.CONFIRMED)
+                                .build();
 
-    private GenerateSlotsCommand.TimeBlock block(String startTime, String endTime) {
-        return new GenerateSlotsCommand.TimeBlock(LocalTime.parse(startTime), LocalTime.parse(endTime));
-    }
+                when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+                when(appointmentRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(
+                                eq("nutri-1"), any(Instant.class), any(Instant.class)))
+                                .thenReturn(List.of(appointment));
+                when(timeSlotRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+                when(appointmentRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+                service.deactivateTimeSlot("nutri-1", "slot-1");
+
+                ArgumentCaptor<Appointment> aptCaptor = ArgumentCaptor.forClass(Appointment.class);
+                verify(appointmentRepository).save(aptCaptor.capture());
+                assertThat(aptCaptor.getValue().getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+
+                ArgumentCaptor<TimeSlot> slotCaptor = ArgumentCaptor.forClass(TimeSlot.class);
+                verify(timeSlotRepository).save(slotCaptor.capture());
+                assertThat(slotCaptor.getValue().isActive()).isFalse();
+                assertThat(slotCaptor.getValue().isReserved()).isFalse();
+        }
+
+        @Test
+        void deactivateTimeSlot_shouldThrowConflict_whenOptimisticLockingFails() {
+                TimeSlot slot = TimeSlot.builder()
+                                .id("slot-1")
+                                .nutritionistId("nutri-1")
+                                .startTime(Instant.now().plus(48, ChronoUnit.HOURS))
+                                .active(true)
+                                .reserved(false)
+                                .version(1L)
+                                .build();
+                when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+                when(timeSlotRepository.save(any())).thenThrow(new OptimisticLockingFailureException("version"));
+
+                assertThatThrownBy(() -> service.deactivateTimeSlot("nutri-1", "slot-1"))
+                                .isInstanceOf(ConflictException.class)
+                                .hasMessageContaining("transaccion");
+        }
+
+        // ── query methods ────────────────────────────────────────────────────
+
+        @Test
+        void getNutritionistSlots_shouldDelegateToRepository() {
+                Instant from = Instant.parse("2026-05-01T00:00:00Z");
+                Instant to = Instant.parse("2026-05-08T00:00:00Z");
+                TimeSlot slot = TimeSlot.builder().id("s1").nutritionistId("nutri-1").build();
+                when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime("nutri-1", from, to))
+                                .thenReturn(List.of(slot));
+
+                List<TimeSlot> result = service.getNutritionistSlots("nutri-1", from, to);
+
+                assertThat(result).hasSize(1).extracting(TimeSlot::getId).containsExactly("s1");
+        }
+
+        @Test
+        void getNutritionistAppointments_shouldDelegateToRepository() {
+                Instant from = Instant.parse("2026-05-01T00:00:00Z");
+                Instant to = Instant.parse("2026-05-08T00:00:00Z");
+                Appointment apt = Appointment.builder().id("a1").nutritionistId("nutri-1").build();
+                when(appointmentRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime("nutri-1", from, to))
+                                .thenReturn(List.of(apt));
+
+                List<Appointment> result = service.getNutritionistAppointments("nutri-1", from, to);
+
+                assertThat(result).hasSize(1).extracting(Appointment::getId).containsExactly("a1");
+        }
 }

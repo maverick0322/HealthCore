@@ -7,8 +7,6 @@ import com.healthcore.clinical.infrastructure.rest.dto.ObservationResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,10 +24,9 @@ public class ObservationController {
 
     @PostMapping
     @PreAuthorize("hasRole('NUTRITIONIST')")
-    public ResponseEntity<ObservationResponse> recordObservation(@RequestBody CreateObservationRequest request) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String nutritionistId = auth.getName(); 
-
+    public ResponseEntity<ObservationResponse> recordObservation(
+            @RequestHeader("X-User-Id") String nutritionistId,
+            @RequestBody CreateObservationRequest request) {
         ClinicalObservation observation = manageObservationsUseCase.recordObservation(
                 request.patientId(),
                 nutritionistId,
@@ -41,10 +38,9 @@ public class ObservationController {
 
     @GetMapping("/patient/{patientId}")
     @PreAuthorize("hasRole('NUTRITIONIST')")
-    public ResponseEntity<List<ObservationResponse>> getPatientObservations(@PathVariable String patientId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String nutritionistId = auth.getName();
-
+    public ResponseEntity<List<ObservationResponse>> getPatientObservations(
+            @RequestHeader("X-User-Id") String nutritionistId,
+            @PathVariable String patientId) {
         List<ObservationResponse> observations = manageObservationsUseCase.getPatientObservations(
                         patientId,
                         nutritionistId
@@ -58,10 +54,8 @@ public class ObservationController {
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<List<ObservationResponse>> getMyObservations() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String patientId = auth.getName();
-
+    public ResponseEntity<List<ObservationResponse>> getMyObservations(
+            @RequestHeader("X-User-Id") String patientId) {
         List<ObservationResponse> observations = manageObservationsUseCase.getPatientObservations(patientId)
                 .stream()
                 .map(this::toResponse)

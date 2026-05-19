@@ -173,4 +173,33 @@ describe('NutritionistPatientFilePage', () => {
 
     expect(mockGetNutritionistPatientNutritionPlan).toHaveBeenCalledTimes(2);
   });
+
+  it('renders the observations tab and shows saved observations', async () => {
+    const user = userEvent.setup();
+    mockGetPatientObservations.mockResolvedValue([
+      {
+        id: 'obs-1',
+        patientId: 'patient-1',
+        nutritionistId: 'nutri-1',
+        note: 'Increase hydration and keep breakfast consistent.',
+        createdAt: '2026-05-18T12:00:00Z',
+      },
+    ]);
+
+    render(
+      <Routes>
+        <Route path="/patients/nutritionist/:id" element={<NutritionistPatientFilePage />} />
+      </Routes>,
+      { initialEntries: ['/patients/nutritionist/patient-1'] },
+    );
+
+    await screen.findByText('Ana Lopez Ruiz');
+
+    const observationsTab = screen.getByRole('button', { name: 'Observations' });
+    expect(observationsTab).toBeInTheDocument();
+
+    await user.click(observationsTab);
+
+    expect(await screen.findByText('Increase hydration and keep breakfast consistent.')).toBeInTheDocument();
+  });
 });

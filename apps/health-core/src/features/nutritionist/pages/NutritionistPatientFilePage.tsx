@@ -87,7 +87,7 @@ export const NutritionistPatientFilePage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("nutritionist");
 
-  const [activeTab, setActiveTab] = useState<"overview" | "plan" | "history">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "plan" | "observations">("overview");
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
 
@@ -401,7 +401,7 @@ export const NutritionistPatientFilePage = () => {
       <Card>
         <CardHeader className="pb-3 border-b border-border/50">
           <CardTitle className="text-base flex items-center gap-2">
-            <FileText size={18} className="text-primary" /> {t("patients.file.tabHistory")}
+            <FileText size={18} className="text-primary" /> {t("patients.file.tabObservations")}
           </CardTitle>
         </CardHeader>
 
@@ -535,14 +535,14 @@ export const NutritionistPatientFilePage = () => {
               {t("patients.file.tabPlan")}
             </button>
             <button
-              onClick={() => setActiveTab("history")}
+              onClick={() => setActiveTab("observations")}
               className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
-                activeTab === "history"
+                activeTab === "observations"
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t("patients.file.tabHistory")}
+              {t("patients.file.tabObservations")}
             </button>
           </div>
         </div>

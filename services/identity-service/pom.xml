@@ -30,6 +30,7 @@
 		<java.version>21</java.version>
 		<grpc.version>1.62.2</grpc.version>
 		<protobuf.version>3.25.3</protobuf.version>
+		<jjwt.version>0.12.6</jjwt.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -98,18 +99,18 @@
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
-			<version>0.12.5</version>
+			<version>${jjwt.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
-			<version>0.12.6</version>
+			<version>${jjwt.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
-			<version>0.12.5</version>
+			<version>${jjwt.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -122,6 +123,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Explicit Mockito 5 + JUnit 5 bridge — avoids ByteBuddy agent failures on Java 21 -->
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
 
@@ -228,6 +236,36 @@
 								<format>XML</format>
 								<format>HTML</format>
 							</formats>
+						</configuration>
+					</execution>
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.80</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+							<!-- Exclude generated protobuf stubs, app bootstrap, and DTOs -->
+							<excludes>
+								<exclude>com/healthcore/identity/grpc/**</exclude>
+								<exclude>com/healthcore/identity/IdentityServiceApplication.class</exclude>
+								<exclude>com/healthcore/identity/domain/Role.class</exclude>
+								<exclude>com/healthcore/identity/domain/AuthProvider.class</exclude>
+								<exclude>com/healthcore/identity/interfaces/rest/dto/**</exclude>
+								<exclude>com/healthcore/identity/infrastructure/persistence/document/**</exclude>
+							</excludes>
 						</configuration>
 					</execution>
 				</executions>

@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, UtensilsCrossed, History, User, Leaf, CalendarDays, Apple } from "lucide-react";
+import { LayoutDashboard, UtensilsCrossed, History, User, CalendarDays, Apple } from "lucide-react";
 
 const NAV_ITEMS = [
   { id: "nav-dashboard", labelKey: "dashboard.navDashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard/patient" },
@@ -22,12 +22,12 @@ export const PatientNav = () => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-full w-56 flex-col bg-card border-r border-border z-40 pt-16 pb-6 shadow-sm">
-        <div className="px-5 pb-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-            <Leaf size={16} className="text-primary" />
+      <aside className="hidden md:flex flex-col w-56 fixed inset-y-0 left-0 bg-card border-r border-border z-40">
+        <div className="p-6">
+          <div className="flex items-center gap-2 text-primary font-bold text-xl tracking-tight">
+            <img src="/icon-192.png" alt="HealthCore" className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground" />
+            <span className="font-bold tracking-tight text-black dark:text-white">HealthCore</span>
           </div>
-          <span className="font-bold text-sm tracking-tight">HealthCore</span>
         </div>
         <nav className="flex-1 space-y-1 px-3">
           {NAV_ITEMS.map((item) => (

@@ -18,7 +18,7 @@ const NAV_ITEMS = [
 
 export const NutritionistNav = () => {
   const { t } = useTranslation("nutritionist");
-  const location = useLocation();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
 
   return (
@@ -27,58 +27,48 @@ export const NutritionistNav = () => {
       <aside className="hidden md:flex flex-col w-56 fixed inset-y-0 left-0 bg-card border-r border-border z-40">
         <div className="p-6">
           <div className="flex items-center gap-2 text-primary font-bold text-xl tracking-tight">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-              H
-            </div>
-            HealthCore
+            <img src="/icon-192.png" alt="HealthCore" className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground" />
+            <span className="font-bold tracking-tight text-black dark:text-white">HealthCore</span>
           </div>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                  ${isActive
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }
-                `}
-              >
-                {item.icon}
-                {t(item.labelKey)}
-              </button>
-            );
-          })}
+        <nav className="flex-1 space-y-1 px-3">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              id={item.id}
+              onClick={() => navigate(item.path)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                (pathname === item.path || pathname.startsWith(item.path + "/"))
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              <span className={(pathname === item.path || pathname.startsWith(item.path + "/")) ? "text-primary" : ""}>{item.icon}</span>
+              {t(item.labelKey)}
+            </button>
+          ))}
         </nav>
       </aside>
 
       {/* ── MOBILE BOTTOM BAR ── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40 pb-safe">
-        <div className="flex justify-around items-center h-16 px-2">
-          {NAV_ITEMS.map((item) => {
-            const isActive = location.pathname.startsWith(item.path);
-            return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.path)}
-                className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors
-                  ${isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"}
-                `}
-              >
-                <div className={`p-1.5 rounded-full transition-all duration-200 ${isActive ? "bg-primary/10" : ""}`}>
-                  {item.icon}
-                </div>
-                <span className={`text-[10px] font-medium ${isActive ? "font-bold" : ""}`}>
-                  {t(item.labelKey)}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      <nav
+        id="bottom-nav"
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border flex justify-around items-center py-2 px-2 z-50"
+      >
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.id}
+            id={`${item.id}-mobile`}
+            onClick={() => navigate(item.path)}
+            className={`flex flex-col items-center gap-1 py-1 px-3 rounded-xl transition-colors ${
+              (pathname === item.path || pathname.startsWith(item.path + "/")) ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span className={(pathname === item.path || pathname.startsWith(item.path + "/")) ? "text-primary" : ""}>{item.icon}</span>
+            <span className="text-[10px] font-medium">{t(item.labelKey)}</span>
+          </button>
+        ))}
       </nav>
     </>
   );

@@ -25,19 +25,16 @@ public class CloudflareR2Adapter implements MediaStoragePort {
     public String generateUploadUrl(String fileName) {
         log.info("Generating pre-signed URL for file: {} in bucket: {}", fileName, bucketName);
 
-        // 1. Definimos la petición de subida básica (Símil HTTP PUT)
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileName)
                 .build();
 
-        // 2. Envolvemos la petición definiendo la expiración temporal (5 minutos)
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(5))
                 .putObjectRequest(objectRequest)
                 .build();
 
-        // 3. El Presigner calcula criptográficamente la firma localmente
         return s3Presigner.presignPutObject(presignRequest).url().toString();
     }
 }

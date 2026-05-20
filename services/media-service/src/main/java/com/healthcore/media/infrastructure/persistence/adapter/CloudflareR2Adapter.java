@@ -17,6 +17,7 @@ import java.time.Duration;
 public class CloudflareR2Adapter implements MediaStoragePort {
 
     private final S3Presigner s3Presigner;
+    private final int MIN_DURATION = 5;
 
     @Value("${cloudflare.r2.bucket-name}")
     private String bucketName;
@@ -31,7 +32,7 @@ public class CloudflareR2Adapter implements MediaStoragePort {
                 .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(5))
+                .signatureDuration(Duration.ofMinutes(MIN_DURATION))
                 .putObjectRequest(objectRequest)
                 .build();
 

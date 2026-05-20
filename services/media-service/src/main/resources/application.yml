@@ -7,8 +7,11 @@ server:
 
 cloudflare:
   r2:
-    endpoint: ${CLOUDFLARE_R2_ENDPOINT:https://tu-account-id.r2.cloudflarestorage.com}
-    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID:tu-access-key}
-    secret-access-key: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY:tu-secret-key}
-    bucket-name: ${CLOUDFLARE_R2_BUCKET_NAME:healthcore-media-dev}
+    endpoint: ${CLOUDFLARE_R2_ENDPOINT}
+    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID}
+    secret-access-key: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY}
+    bucket-name: ${CLOUDFLARE_R2_BUCKET_NAME}
     region: auto
+
+jwt:
+  secret: ${JWT_SECRET}

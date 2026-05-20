@@ -248,6 +248,36 @@
 							</formats>
 						</configuration>
 					</execution>
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.80</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+							<!-- Exclude generated protobuf stubs, app bootstrap, and pure DTOs -->
+							<excludes>
+								<exclude>com/healthcore/clinical/grpc/**</exclude>
+								<exclude>com/healthcore/agenda_service/AgendaServiceApplication.class</exclude>
+								<exclude>com/healthcore/agenda_service/api/dto/**</exclude>
+								<exclude>com/healthcore/agenda_service/domain/AppointmentStatus.class</exclude>
+								<exclude>com/healthcore/agenda_service/domain/TimeSlotOrigin.class</exclude>
+								<exclude>com/healthcore/agenda_service/application/events/**</exclude>
+							</excludes>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>

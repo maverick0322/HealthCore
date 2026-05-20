@@ -30,9 +30,8 @@ app:
       appointment-cancelled: ${APP_MESSAGING_ROUTING_APPOINTMENT_CANCELLED:agenda.appointment.cancelled}
       appointment-reminder: ${APP_MESSAGING_ROUTING_APPOINTMENT_REMINDER:agenda.appointment.reminder}
 
-security:
-  jwt:
-    secret: ${JWT_SECRET:}
+jwt:
+  secret: ${JWT_SECRET:}
 
 management:
   endpoints:

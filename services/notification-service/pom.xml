@@ -125,6 +125,13 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- Explicit Mockito 5 + JUnit 5 bridge — avoids ByteBuddy agent failures on Java 21 -->
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.amqp</groupId>
 			<artifactId>spring-rabbit-test</artifactId>
@@ -258,6 +265,35 @@
 								<format>XML</format>
 								<format>HTML</format>
 							</formats>
+						</configuration>
+					</execution>
+					<execution>
+						<id>check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.80</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+							<!-- Exclude generated protobuf stubs, app bootstrap, and config records -->
+							<excludes>
+								<exclude>com/healthcore/notification_service/grpc/**</exclude>
+								<exclude>com/healthcore/notification_service/NotificationServiceApplication.class</exclude>
+								<exclude>com/healthcore/notification_service/infrastructure/config/MessagingProperties*.class</exclude>
+								<exclude>com/healthcore/notification_service/infrastructure/config/ResendProperties.class</exclude>
+								<exclude>com/healthcore/notification_service/domain/events/**</exclude>
+							</excludes>
 						</configuration>
 					</execution>
 				</executions>

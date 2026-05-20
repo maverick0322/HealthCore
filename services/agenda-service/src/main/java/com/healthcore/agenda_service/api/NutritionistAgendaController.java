@@ -27,7 +27,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.time.DateTimeException;
@@ -49,11 +48,9 @@ public class NutritionistAgendaController {
     private String defaultTimeZone;
 
     @Operation(summary = "Generar slots de disponibilidad", description = "Genera en bloque los horarios de atención (TimeSlots) para el nutriólogo autenticado.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Horarios generados exitosamente"),
-        @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
-        @ApiResponse(responseCode = "401", description = "No autorizado")
-    })
+    @ApiResponse(responseCode = "201", description = "Horarios generados exitosamente")
+    @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
+    @ApiResponse(responseCode = "401", description = "No autorizado")
     @PostMapping("/slots/generate")
     @ResponseStatus(HttpStatus.CREATED)
     public List<AvailabilitySlotResponse> generateSlots(
@@ -68,11 +65,9 @@ public class NutritionistAgendaController {
     }
 
     @Operation(summary = "Consultar mis slots", description = "Devuelve la lista de horarios que el nutriólogo ha configurado en un rango de fechas.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista de horarios obtenida exitosamente"),
-        @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
-        @ApiResponse(responseCode = "401", description = "No autorizado")
-    })
+    @ApiResponse(responseCode = "200", description = "Lista de horarios obtenida exitosamente")
+    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
+    @ApiResponse(responseCode = "401", description = "No autorizado")
     @GetMapping("/slots")
     public List<AvailabilitySlotResponse> getMySlots(
         Authentication authentication,
@@ -90,13 +85,11 @@ public class NutritionistAgendaController {
     }
 
     @Operation(summary = "Desactivar un slot", description = "Deshabilita un horario. Si está reservado y faltan más de 24 hrs, cancela la cita automáticamente.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Horario desactivado exitosamente"),
-        @ApiResponse(responseCode = "400", description = "No se puede desactivar un horario a menos de 24 horas de ocurrir"),
-        @ApiResponse(responseCode = "401", description = "No autorizado"),
-        @ApiResponse(responseCode = "403", description = "El horario no pertenece al nutriólogo"),
-        @ApiResponse(responseCode = "404", description = "Horario no encontrado")
-    })
+    @ApiResponse(responseCode = "204", description = "Horario desactivado exitosamente")
+    @ApiResponse(responseCode = "400", description = "No se puede desactivar un horario a menos de 24 horas de ocurrir")
+    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @ApiResponse(responseCode = "403", description = "El horario no pertenece al nutriólogo")
+    @ApiResponse(responseCode = "404", description = "Horario no encontrado")
     @PatchMapping("/slots/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deactivateSlot(
@@ -108,11 +101,9 @@ public class NutritionistAgendaController {
     }
 
     @Operation(summary = "Consultar mis citas", description = "Devuelve las citas que han sido reservadas con el nutriólogo autenticado.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista de citas obtenida exitosamente"),
-        @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
-        @ApiResponse(responseCode = "401", description = "No autorizado")
-    })
+    @ApiResponse(responseCode = "200", description = "Lista de citas obtenida exitosamente")
+    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
+    @ApiResponse(responseCode = "401", description = "No autorizado")
     @GetMapping("/appointments")
     public List<AppointmentResponse> getMyAppointments(
         Authentication authentication,

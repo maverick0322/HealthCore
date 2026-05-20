@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -31,7 +30,8 @@ public class SecurityConfig {
             "/oauth2/**",
             "/login/**",
             "/error",
-            // Actuator endpoints are internal-only but must be unauthenticated for Prometheus scraping
+            // Actuator endpoints are internal-only but must be unauthenticated for
+            // Prometheus scraping
             "/actuator/health",
             "/actuator/prometheus"
     };
@@ -66,22 +66,25 @@ public class SecurityConfig {
         log.info("Initializing SecurityFilterChain for Identity Service...");
 
         http
-                // CSRF is disabled because we use stateless JWT authentication instead of session cookies
+                // CSRF is disabled because we use stateless JWT authentication instead of
+                // session cookies
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json");
                             response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + authException.getMessage() + "\"}");
+                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \""
+                                    + authException.getMessage() + "\"}");
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setContentType("application/json");
                             response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN);
-                            response.getWriter().write("{\"error\": \"Forbidden\", \"message\": \"" + accessDeniedException.getMessage() + "\"}");
-                        })
-                )
+                            response.getWriter().write("{\"error\": \"Forbidden\", \"message\": \""
+                                    + accessDeniedException.getMessage() + "\"}");
+                        }))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .securityContext(context -> context.securityContextRepository(new org.springframework.security.web.context.NullSecurityContextRepository()))
+                .securityContext(context -> context.securityContextRepository(
+                        new org.springframework.security.web.context.NullSecurityContextRepository()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(DOCS_ENDPOINTS).permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
@@ -89,16 +92,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/patients/**").hasRole("PATIENT")
                         .requestMatchers("/api/v1/nutritionists/**").hasRole("NUTRITIONIST")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         if (clientRegistrationRepositoryProvider.getIfAvailable() != null) {
             http.oauth2Login(oauth2 -> oauth2
                     .successHandler(oAuth2LoginSuccessHandler)
-                    .failureHandler(oAuth2LoginFailureHandler)
-            );
+                    .failureHandler(oAuth2LoginFailureHandler));
             log.info("OAuth2 login integration enabled for configured providers");
         } else {
             log.info("OAuth2 login integration disabled (no client registrations configured)");

@@ -32,7 +32,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.List;
@@ -60,7 +59,8 @@ public class AuthService {
     private static final int MIN_PASSWORD_LENGTH = 8;
     private static final int MAX_PASSWORD_LENGTH = 72;
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,72}$");
+    private static final Pattern PASSWORD_PATTERN = Pattern
+            .compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,72}$");
 
     private final UserRepository userRepository;
     private final VerificationCodeRepository verificationCodeRepository;
@@ -291,7 +291,7 @@ public class AuthService {
                 .userId(user.getId())
                 .email(email)
                 .codeHash(hashValue(code))
-            .expiresAt(expiresAt)
+                .expiresAt(expiresAt)
                 .createdAt(Instant.now())
                 .build());
 
@@ -304,7 +304,7 @@ public class AuthService {
             log.info("DEVELOPMENT MODE: Password Reset Code for {}", email);
             log.info("Code: {}", code);
             log.info("--------------------------------------------------");
-            
+
             // Save to testing store if available
             devEmailCodeStore.ifPresent(store -> store.savePasswordResetCode(email, code));
         }
@@ -347,7 +347,7 @@ public class AuthService {
             log.info("DEVELOPMENT MODE: Verification Code for {}", user.getEmail());
             log.info("Code: {}", code);
             log.info("--------------------------------------------------");
-            
+
             // Save to testing store if available
             devEmailCodeStore.ifPresent(store -> store.saveVerificationCode(user.getEmail(), code));
         }
@@ -388,8 +388,7 @@ public class AuthService {
                     throw new OAuth2ProviderConflictException(
                             "Email is already registered with a different authentication provider",
                             existing.getProvider(),
-                            provider
-                    );
+                            provider);
                 });
 
         User newSocialUser = User.builder()
@@ -413,7 +412,8 @@ public class AuthService {
         return environment != null && environment.acceptsProfiles(Profiles.of("dev", "local"));
     }
 
-    private void publishUserRegistered(User savedUser, VerificationCodeDetails verificationCodeDetails, boolean emailVerificationRequired, String locale) {
+    private void publishUserRegistered(User savedUser, VerificationCodeDetails verificationCodeDetails,
+            boolean emailVerificationRequired, String locale) {
         try {
             Instant createdAt = savedUser.getCreatedAt() == null ? Instant.now() : savedUser.getCreatedAt();
             identityEventPublisher.publishUserRegistered(new UserRegisteredEvent(
@@ -424,10 +424,10 @@ public class AuthService {
                     emailVerificationRequired,
                     verificationCodeDetails == null ? null : verificationCodeDetails.code(),
                     verificationCodeDetails == null ? null : verificationCodeDetails.expiresAt().toString(),
-                    locale != null ? locale : "es"
-            ));
+                    locale != null ? locale : "es"));
         } catch (RuntimeException ex) {
-            log.warn("Failed to publish user registered event for userId={} email={}", savedUser.getId(), savedUser.getEmail(), ex);
+            log.warn("Failed to publish user registered event for userId={} email={}", savedUser.getId(),
+                    savedUser.getEmail(), ex);
         }
     }
 
@@ -437,8 +437,7 @@ public class AuthService {
                     email,
                     code,
                     expiresAt.toString(),
-                    locale != null ? locale : "es"
-            ));
+                    locale != null ? locale : "es"));
         } catch (RuntimeException ex) {
             log.warn("Failed to publish password reset event for email={}", email, ex);
         }
@@ -467,8 +466,7 @@ public class AuthService {
                 refreshToken,
                 TOKEN_TYPE,
                 ACCESS_TOKEN_EXPIRES_IN_MS,
-                REFRESH_TOKEN_EXPIRES_IN_MS
-        );
+                REFRESH_TOKEN_EXPIRES_IN_MS);
     }
 
     private void validateEmail(String email, String message) {
@@ -498,13 +496,11 @@ public class AuthService {
             String refreshToken,
             String tokenType,
             long accessTokenExpiresInMs,
-            long refreshTokenExpiresInMs
-    ) {
+            long refreshTokenExpiresInMs) {
         public Map<String, String> toLegacyMap() {
             return Map.of(
                     ACCESS_TOKEN_KEY, accessToken,
-                    REFRESH_TOKEN_KEY, refreshToken
-            );
+                    REFRESH_TOKEN_KEY, refreshToken);
         }
     }
 }

@@ -213,7 +213,7 @@ public class RabbitMessagingConfig {
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule()); // soporte para fechas modernas (LocalDate, etc.)
+        mapper.registerModule(new JavaTimeModule()); // required for Java 8 date/time type serialization
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
     }
@@ -221,12 +221,13 @@ public class RabbitMessagingConfig {
     @Bean
     public MessageConverter messageConverter(ObjectMapper objectMapper) {
         Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter(objectMapper);
-        // Use INFERRED precedence so we trust the listener's target class type 
-        // regardless of __TypeId__ header from other services
-        org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper typeMapper = 
+        // Inferred precedence means we trust the listener's target type over the __TypeId__ header
+        // from other services — avoids class-not-found errors on cross-service deserialization.
+        org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper typeMapper =
             new org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper();
         typeMapper.setTypePrecedence(org.springframework.amqp.support.converter.Jackson2JavaTypeMapper.TypePrecedence.INFERRED);
-        typeMapper.setTrustedPackages("*");
+        // Restrict to HealthCore packages — prevents deserialization gadget attacks via __TypeId__ header.
+        typeMapper.setTrustedPackages("com.healthcore.*");
         converter.setJavaTypeMapper(typeMapper);
         return converter;
     }

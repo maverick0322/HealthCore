@@ -89,7 +89,6 @@ public class JwtValidationFilter extends OncePerRequestFilter {
             log.error("Authentication alert: Unsupported token format provided.");
             sendUnauthorizedError(response, "Unsupported security token.");
         } catch (Exception e) {
-            // Catch-all for unexpected parsing errors to prevent filter chain crashes
             log.error("Authentication error: Unexpected failure during JWT processing.", e);
             sendUnauthorizedError(response, "Internal authentication error.");
         }

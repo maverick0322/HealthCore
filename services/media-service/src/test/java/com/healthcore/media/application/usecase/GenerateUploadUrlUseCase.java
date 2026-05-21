@@ -44,12 +44,10 @@ class GenerateUploadUrlUseCaseTest {
         // Assert
         assertThat(response.presignedUrl()).isEqualTo(MOCK_PRESIGNED_URL);
 
-        // Verifies the key encapsulates the user ID and original file name, preventing path traversal
         assertThat(response.storageKey())
                 .startsWith(VALID_USER_ID + "/")
                 .endsWith("-" + VALID_FILE_NAME);
 
-        // Verifies the port was called with the exact generated secure key
         verify(mediaStoragePort).generateUploadUrl(response.storageKey());
     }
 
@@ -84,7 +82,6 @@ class GenerateUploadUrlUseCaseTest {
     @Test
     void execute_WhenPortThrowsSdkException_WrapsInMediaDomainException() {
         // Arrange
-        // Using SdkClientException as a concrete implementation of the abstract SdkException
         SdkClientException sdkException = SdkClientException.builder().message("Network timeout").build();
         when(mediaStoragePort.generateUploadUrl(anyString())).thenThrow(sdkException);
 

@@ -26,7 +26,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Web integration tests for the MediaController.
  * Validates HTTP routing, DTO constraints, and Rate Limiting state machine.
  */
-@WebMvcTest(controllers = MediaController.class)
+@WebMvcTest(
+        controllers = MediaController.class,
+        properties = {
+                "jwt.secret=esta-es-una-llave-falsa-super-larga-solo-para-que-pase-el-test-de-spring-boot"
+        }
+)
 @AutoConfigureMockMvc(addFilters = false) // Isolates controller from the global JWT filter for targeted unit testing
 class MediaControllerTest {
 

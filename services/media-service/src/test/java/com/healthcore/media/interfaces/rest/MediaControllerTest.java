@@ -3,6 +3,9 @@ package com.healthcore.media.interfaces.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.healthcore.media.application.dto.UploadMediaRequest;
 import com.healthcore.media.application.dto.UploadMediaResponse;
+import org.springframework.context.annotation.Import;
+import com.healthcore.media.infrastructure.security.SecurityConfig;
+import com.healthcore.media.infrastructure.security.JwtValidationFilter;
 import com.healthcore.media.application.usecase.GenerateUploadUrlUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "jwt.secret=esta-es-una-llave-falsa-super-larga-solo-para-que-pase-el-test-de-spring-boot"
         }
 )
-@AutoConfigureMockMvc(addFilters = false) // Isolates controller from the global JWT filter for targeted unit testing
+@Import({SecurityConfig.class, JwtValidationFilter.class}) // <-- AQUÍ ESTÁ LA MAGIA
 class MediaControllerTest {
 
     @Autowired
@@ -93,6 +96,12 @@ class MediaControllerTest {
     @Test
     void requestUploadUrl_WhenRateLimitExceeded_ReturnsTooManyRequests() throws Exception {
         // Arrange
+        // Usamos un ID de usuario completamente nuevo para que no comparta la caché
+        // de Bucket4j con las otras pruebas que ya se ejecutaron.
+        String RATE_LIMIT_USER = "usr-rate-limit-test";
+        UsernamePasswordAuthenticationToken rateLimitAuth =
+                new UsernamePasswordAuthenticationToken(RATE_LIMIT_USER, null, Collections.emptyList());
+
         UploadMediaRequest request = new UploadMediaRequest(VALID_FILE_NAME);
         when(useCase.execute(anyString(), anyString())).thenReturn(new UploadMediaResponse(MOCK_URL, "key"));
         String jsonPayload = objectMapper.writeValueAsString(request);
@@ -100,22 +109,22 @@ class MediaControllerTest {
         // Act & Assert: The controller allows exactly 3 requests per minute.
 
         // Request 1: Allowed
-        mockMvc.perform(post(API_ENDPOINT).with(authentication(getMockAuth()))
+        mockMvc.perform(post(API_ENDPOINT).with(authentication(rateLimitAuth))
                         .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isCreated());
 
         // Request 2: Allowed
-        mockMvc.perform(post(API_ENDPOINT).with(authentication(getMockAuth()))
+        mockMvc.perform(post(API_ENDPOINT).with(authentication(rateLimitAuth))
                         .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isCreated());
 
         // Request 3: Allowed (Bucket is now empty)
-        mockMvc.perform(post(API_ENDPOINT).with(authentication(getMockAuth()))
+        mockMvc.perform(post(API_ENDPOINT).with(authentication(rateLimitAuth))
                         .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isCreated());
 
         // Request 4: Blocked by Bucket4j
-        mockMvc.perform(post(API_ENDPOINT).with(authentication(getMockAuth()))
+        mockMvc.perform(post(API_ENDPOINT).with(authentication(rateLimitAuth))
                         .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isTooManyRequests());
     }

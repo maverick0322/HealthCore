@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "jwt.secret=esta-es-una-llave-falsa-super-larga-solo-para-que-pase-el-test-de-spring-boot"
         }
 )
-@Import({SecurityConfig.class, JwtValidationFilter.class}) // <-- AQUÍ ESTÁ LA MAGIA
+@Import({SecurityConfig.class, JwtValidationFilter.class})
 class MediaControllerTest {
 
     @Autowired
@@ -80,7 +80,6 @@ class MediaControllerTest {
     @Test
     void requestUploadUrl_WithMaliciousFileName_ReturnsBadRequest() throws Exception {
         // Arrange
-        // Breaking the regex pattern to simulate a Path Traversal attack attempt
         UploadMediaRequest request = new UploadMediaRequest("../../../etc/passwd");
 
         // Act & Assert
@@ -89,15 +88,12 @@ class MediaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                // Validates that the GlobalExceptionHandler properly intercepted the MethodArgumentNotValidException
                 .andExpect(jsonPath("$.error").value("Bad Request"));
     }
 
     @Test
     void requestUploadUrl_WhenRateLimitExceeded_ReturnsTooManyRequests() throws Exception {
         // Arrange
-        // Usamos un ID de usuario completamente nuevo para que no comparta la caché
-        // de Bucket4j con las otras pruebas que ya se ejecutaron.
         String RATE_LIMIT_USER = "usr-rate-limit-test";
         UsernamePasswordAuthenticationToken rateLimitAuth =
                 new UsernamePasswordAuthenticationToken(RATE_LIMIT_USER, null, Collections.emptyList());
@@ -106,24 +102,20 @@ class MediaControllerTest {
         when(useCase.execute(anyString(), anyString())).thenReturn(new UploadMediaResponse(MOCK_URL, "key"));
         String jsonPayload = objectMapper.writeValueAsString(request);
 
-        // Act & Assert: The controller allows exactly 3 requests per minute.
+        // Act & Assert
 
-        // Request 1: Allowed
         mockMvc.perform(post(API_ENDPOINT).with(authentication(rateLimitAuth))
                         .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isCreated());
 
-        // Request 2: Allowed
         mockMvc.perform(post(API_ENDPOINT).with(authentication(rateLimitAuth))
                         .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isCreated());
 
-        // Request 3: Allowed (Bucket is now empty)
         mockMvc.perform(post(API_ENDPOINT).with(authentication(rateLimitAuth))
                         .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isCreated());
 
-        // Request 4: Blocked by Bucket4j
         mockMvc.perform(post(API_ENDPOINT).with(authentication(rateLimitAuth))
                         .contentType(MediaType.APPLICATION_JSON).content(jsonPayload))
                 .andExpect(status().isTooManyRequests());
@@ -134,7 +126,6 @@ class MediaControllerTest {
         // Arrange
         UploadMediaRequest request = new UploadMediaRequest(VALID_FILE_NAME);
 
-        // Simulating a scenario where the authentication object resolves to a null principal
         UsernamePasswordAuthenticationToken nullAuth =
                 new UsernamePasswordAuthenticationToken(null, null, Collections.emptyList());
 

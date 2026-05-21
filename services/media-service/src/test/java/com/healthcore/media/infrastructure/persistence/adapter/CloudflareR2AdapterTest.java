@@ -47,7 +47,6 @@ class CloudflareR2AdapterTest {
 
     @BeforeEach
     void setUp() {
-        // Simulates Spring's @Value injection without loading the heavy ApplicationContext
         ReflectionTestUtils.setField(adapter, "bucketName", MOCK_BUCKET_NAME);
     }
 

@@ -41,8 +41,12 @@ public class MediaController {
             @Valid @RequestBody UploadMediaRequest request,
             @AuthenticationPrincipal String userId) {
 
-        log.info("Incoming signed URL request. UserID: {}", userId);
+        if (userId == null || userId.isBlank()) {
+            log.error("Security alert: Attempted to access media endpoint without a valid principal.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
+        log.info("Incoming signed URL request. UserID: {}", userId);
         Bucket bucket = resolveBucket(userId);
 
         if (!bucket.tryConsume(1)) {

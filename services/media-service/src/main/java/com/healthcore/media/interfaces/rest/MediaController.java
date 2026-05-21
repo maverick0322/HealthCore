@@ -21,6 +21,12 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 /**
  * REST endpoint for delegated media file management.
  * Includes rate limiting protection to prevent storage API billing abuse.
@@ -29,13 +35,24 @@ import java.util.concurrent.ConcurrentHashMap;
 @RestController
 @RequestMapping("/api/v1/media")
 @RequiredArgsConstructor
+@Tag(name = "Media Management", description = "Endpoints para la gestión delegada de archivos multimedia")
 public class MediaController {
 
     private final GenerateUploadUrlUseCase generateUploadUrlUseCase;
-
-    // In-memory cache to track rate limits per user.
     private final Map<String, Bucket> cache = new ConcurrentHashMap<>();
 
+    @Operation(
+            summary = "Solicitar URL firmada de subida",
+            description = "Genera una URL criptográfica de un solo uso para que el cliente (Frontend) suba el archivo directamente a Cloudflare R2. Limitado a 3 peticiones por minuto por usuario."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "URL firmada generada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "El nombre del archivo es inválido o contiene caracteres maliciosos"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente, inválido o expirado"),
+            @ApiResponse(responseCode = "429", description = "Se excedió la cuota de peticiones (Rate Limit)"),
+            @ApiResponse(responseCode = "422", description = "Error de comunicación con Cloudflare S3")
+    })
     @PostMapping("/upload-request")
     public ResponseEntity<UploadMediaResponse> requestUploadUrl(
             @Valid @RequestBody UploadMediaRequest request,
@@ -63,7 +80,7 @@ public class MediaController {
      * Resolves the rate limit bucket for a specific user.
      * Grants 3 requests per minute. Refills 3 tokens every 1 minute.
      * * @param userId The unique identifier of the authenticated user.
-     * @return A Bucket4j instance configured for this user.
+     * @return A Bucket instance configured for this user.
      */
     private Bucket resolveBucket(String userId) {
         return cache.computeIfAbsent(userId, this::createNewBucket);

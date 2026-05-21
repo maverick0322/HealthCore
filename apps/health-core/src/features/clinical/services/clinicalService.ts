@@ -190,10 +190,10 @@ export const clinicalApi = {
     return response.data;
   },
 
-  updateWeight: async (weightKg: number, userId?: string): Promise<HealthGoalResponse> => {
+  updateWeight: async (weightKg: number, date: string, userId?: string): Promise<HealthGoalResponse> => {
     const response = await httpClient.post<HealthGoalResponse>(
       `${CLINICAL_API_URL}/weight`,
-      { weightKg },
+      { weightKg, date },
       { headers: getXUserIdHeader(userId) }
     );
     return response.data;

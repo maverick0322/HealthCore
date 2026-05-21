@@ -98,6 +98,40 @@
     "startWeight": "Start weight",
     "targetWeight": "Target weight",
     "minWeight": "Minimum weight",
+    "weightErrorMessage": "We could not load your weight history.",
+    "noWeightData": "You do not have weight records yet.",
+    "weightCard": {
+      "last7Records": "Last 7 records",
+      "latestWeight": "Latest weight",
+      "changeVsPrevious": "Change vs previous",
+      "lastRecord": "Last record",
+      "recordWeight": "Record weight",
+      "emptyHelp": "Add your first weight to start tracking your progress.",
+      "noDate": "No date"
+    },
+    "weightForm": {
+      "title": "Record weight",
+      "description": "Save a new weight entry without leaving your dashboard.",
+      "weightLabel": "Weight (kg)",
+      "weightPlaceholder": "Ex. 78.4",
+      "dateLabel": "Date",
+      "save": "Continue",
+      "cancel": "Cancel",
+      "back": "Back",
+      "confirmTitle": "Do you want to save this weight entry?",
+      "confirmDescription": "Are these details correct? {{weight}} kg will be saved for {{date}}.",
+      "confirmAction": "Yes, save",
+      "saveError": "We could not save the weight entry.",
+      "validation": {
+        "weightRequired": "Enter a weight value.",
+        "weightInvalid": "Enter a valid weight.",
+        "weightPrecision": "Use a whole number or one decimal place.",
+        "weightRange": "Weight must be between 40.0 kg and 200.0 kg.",
+        "dateRequired": "Select a date.",
+        "dateInvalid": "Enter a valid date.",
+        "dateFuture": "The date cannot be in the future."
+      }
+    },
     "nextAppointment": "Next Appointment",
     "withNutritionist": "With",
     "noAppointment": "No upcoming appointments",
@@ -139,6 +173,10 @@
     "weightEvolution": "Weight Evolution",
     "weightLost": "Lost",
     "weightRemaining": "To go",
+    "currentWeight": "Current weight",
+    "periodChange": "Period change",
+    "minWeight": "Minimum weight",
+    "latestRecord": "Latest record",
     "calorieTrend": "Caloric Trend",
     "calorieAvg": "Daily average",
     "calorieGoal": "Goal",
@@ -163,6 +201,34 @@
     "streakDays": "{{count}} days",
     "bestStreak": "Best streak",
     "totalDaysTracked": "Days tracked",
+    "filtersLabel": "Choose the period and how to group the records.",
+    "periodLabel": "Period",
+    "groupByLabel": "Group by",
+    "weightErrorMessage": "We could not load the detailed weight history.",
+    "noWeightEntries": "No weight entries are available for the selected period.",
+    "noDate": "No date",
+    "today": "Today",
+    "previousDay": "Previous",
+    "nextDay": "Next",
+    "weightChartAriaLabel": "Detailed patient weight history chart",
+    "weightTableTitle": "Weight history table",
+    "ranges": {
+      "30d": "30 days",
+      "3m": "3 months",
+      "1y": "1 year",
+      "all": "All"
+    },
+    "groupings": {
+      "day": "Days",
+      "week": "Weeks",
+      "month": "Months",
+      "year": "Years"
+    },
+    "table": {
+      "date": "Date",
+      "weight": "Weight",
+      "variation": "Variation"
+    },
     "filterAll": "All",
     "filterBreakfast": "Breakfast",
     "filterLunch": "Lunch",
@@ -358,6 +424,7 @@
   },
   "common": {
     "back": "Back",
-    "or": "OR"
+    "or": "OR",
+    "retry": "Retry"
   }
 }

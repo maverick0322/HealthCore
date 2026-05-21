@@ -46,7 +46,7 @@ class MongoClinicalRepositoryAdapterTest {
 
     @Test
     void shouldSaveAndRetrievePatientProfileWithWeightHistory() {
-        PatientProfile newProfile = new PatientProfile(
+        PatientProfile newProfile = PatientProfile.rehydrate(
                 "user-integration-1",
                 "Carlos",
                 "Gomez",
@@ -59,10 +59,12 @@ class MongoClinicalRepositoryAdapterTest {
                 "weight-loss",
                 "omnivore",
                 List.of(),
-                List.of()
+                List.of(),
+                List.of(new com.healthcore.clinical.domain.model.WeightRecord(75.0, LocalDate.now().minusDays(7))),
+                null
         );
         
-        newProfile.updateWeight(73.5);
+        newProfile.registerWeight(73.5, LocalDate.now());
 
         repositoryAdapter.save(newProfile);
         Optional<PatientProfile> retrievedProfileOpt = repositoryAdapter.findByUserId("user-integration-1");

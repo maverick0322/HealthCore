@@ -124,7 +124,8 @@ class ClinicalControllerTest {
     @Test
     void shouldReturnOkWhenUpdatingWeight() throws Exception {
         setSecurityContext("user-123", "PATIENT");
-        UpdateWeightRequest request = new UpdateWeightRequest(80.5);
+        LocalDate targetDate = LocalDate.now();
+        UpdateWeightRequest request = new UpdateWeightRequest(80.5, targetDate);
 
         com.healthcore.clinical.domain.model.HealthGoal mockGoal =
                 Mockito.mock(com.healthcore.clinical.domain.model.HealthGoal.class);
@@ -134,7 +135,7 @@ class ClinicalControllerTest {
         when(mockGoal.targetFat()).thenReturn(75);
         when(mockGoal.targetWaterGlasses()).thenReturn(11);
 
-        when(manageProfileUseCase.updateWeight(eq("user-123"), eq(80.5))).thenReturn(mockGoal);
+        when(manageProfileUseCase.updateWeight(eq("user-123"), eq(80.5), eq(targetDate))).thenReturn(mockGoal);
 
         mockMvc.perform(post("/api/v1/clinical/weight")
                         .header("X-User-Id", "user-123")
@@ -144,7 +145,7 @@ class ClinicalControllerTest {
                 .andExpect(jsonPath("$.targetCalories").value(2600))
                 .andExpect(jsonPath("$.targetWaterGlasses").value(11));
 
-        verify(manageProfileUseCase).updateWeight("user-123", 80.5);
+        verify(manageProfileUseCase).updateWeight("user-123", 80.5, targetDate);
     }
 
     @Test

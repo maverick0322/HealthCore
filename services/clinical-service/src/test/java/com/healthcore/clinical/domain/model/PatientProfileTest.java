@@ -44,18 +44,45 @@ class PatientProfileTest {
     }
 
     @Test
-    void shouldAddRecordToHistoryAndRecalculateGoalsWhenUpdatingWeight() {
+    void shouldAddRecordToHistoryAndRecalculateGoalsWhenRegisteringLatestWeight() {
         PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        LocalDate latestDate = LocalDate.now();
 
         assertEquals(1, profile.getWeightHistory().size());
         assertEquals(70.0, profile.getWeightHistory().get(0).weightKg());
 
-        HealthGoal newGoal = profile.updateWeight(72.0);
+        HealthGoal newGoal = profile.registerWeight(72.0, latestDate);
 
         assertEquals(72.0, profile.getWeightKg());
         assertEquals(2, profile.getWeightHistory().size());
         assertEquals(72.0, profile.getWeightHistory().get(1).weightKg());
+        assertEquals(latestDate, profile.getWeightHistory().get(1).date());
         assertNotNull(newGoal);
+    }
+
+    @Test
+    void shouldKeepCurrentWeightWhenRegisteringHistoricalWeight() {
+        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        LocalDate originalDate = profile.getWeightHistory().get(0).date();
+
+        profile.registerWeight(72.0, LocalDate.now());
+        profile.registerWeight(68.5, originalDate.minusDays(5));
+
+        assertEquals(72.0, profile.getWeightKg());
+        assertEquals(3, profile.getWeightHistory().size());
+        assertEquals(68.5, profile.getWeightHistory().get(0).weightKg());
+    }
+
+    @Test
+    void shouldReplaceWeightRecordWhenSameDateIsRegisteredAgain() {
+        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        LocalDate existingDate = profile.getWeightHistory().get(0).date();
+
+        profile.registerWeight(69.5, existingDate);
+
+        assertEquals(1, profile.getWeightHistory().size());
+        assertEquals(69.5, profile.getWeightKg());
+        assertEquals(69.5, profile.getWeightHistory().get(0).weightKg());
     }
 
     @Test
@@ -80,7 +107,7 @@ class PatientProfileTest {
     }
 
     private PatientProfile createPatientProfile(String userId, LocalDate birthDate) {
-        return new PatientProfile(
+        return PatientProfile.rehydrate(
                 userId,
                 "Carlos",
                 "Gomez",
@@ -93,7 +120,9 @@ class PatientProfileTest {
                 "weight-loss",
                 "omnivore",
                 List.of(),
-                List.of()
+                List.of(),
+                List.of(new WeightRecord(70.0, LocalDate.now().minusDays(7))),
+                null
         );
     }
 }

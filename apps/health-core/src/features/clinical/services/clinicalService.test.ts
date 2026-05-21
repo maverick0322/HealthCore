@@ -265,8 +265,11 @@ describe('clinicalService', () => {
       data: { targetCalories: 2500, targetProtein: 150, targetCarbs: 250, targetFat: 70 },
     });
 
-    const goalResult = await clinicalApi.updateWeight(75.5);
+    const goalResult = await clinicalApi.updateWeight(75.5, '2026-05-20');
     expect(goalResult.targetCalories).toBe(2500);
+    expect(httpClient.post).toHaveBeenCalledWith('/clinical/weight', { weightKg: 75.5, date: '2026-05-20' }, {
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
 
     (httpClient.get as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ data: [{ weightKg: 80, date: '2024-01-01' }] })

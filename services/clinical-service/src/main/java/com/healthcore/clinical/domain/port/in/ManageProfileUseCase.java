@@ -5,6 +5,7 @@ import com.healthcore.clinical.domain.model.NutritionistProfile;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +15,7 @@ public interface ManageProfileUseCase {
     Optional<PatientProfile> getProfileByUserId(String userId);
     List<PatientProfile> getProfilesByNutritionistId(String nutritionistId);
     PatientProfile getProfileForNutritionist(String nutritionistId, String patientId);
-    HealthGoal updateWeight(String userId, Double weightKg);
+    HealthGoal updateWeight(String userId, Double weightKg, LocalDate date);
     List<WeightRecord> getWeightHistory(String userId);
     NutritionistProfile createNutritionistProfile(NutritionistProfile profile);
     NutritionistProfile updateNutritionistProfile(String userId, NutritionistProfile profile);

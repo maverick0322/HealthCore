@@ -86,8 +86,9 @@ public class ClinicalController {
             @RequestHeader("X-User-Id") String userId,
             @Valid @RequestBody UpdateWeightRequest request
     ) {
-        logger.info("[ClinicalController] Updating weight for userId={} weightKg={}", userId, request.weightKg());
-        HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg());
+        logger.info("[ClinicalController] Updating weight for userId={} weightKg={} date={}",
+                userId, request.weightKg(), request.date());
+        HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg(), request.date());
         HealthGoalResponse response = new HealthGoalResponse(
                 newGoal.targetCalories(),
                 newGoal.targetProtein(),

@@ -2,6 +2,7 @@ package com.healthcore.clinical.domain.model;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.Comparator;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -100,13 +101,21 @@ public class PatientProfile {
         profile.allergies = ProfileFieldValidator.validateAllergies(allergies);
         profile.excludedFoods = ProfileFieldValidator.validateExcludedFoods(excludedFoods);
         profile.weightHistory = ProfileFieldValidator.normalizeWeightHistory(weightHistory, profile.weightKg);
+        if (!profile.weightHistory.isEmpty()) {
+            profile.weightKg = profile.weightHistory.get(profile.weightHistory.size() - 1).weightKg();
+        }
         profile.nutritionistId = ProfileFieldValidator.normalizeText(nutritionistId);
         return profile;
     }
 
-    public HealthGoal updateWeight(Double newWeight) {
-        this.weightKg = ProfileFieldValidator.validateWeightKg(newWeight);
-        this.weightHistory.add(new WeightRecord(this.weightKg, LocalDate.now()));
+    public HealthGoal registerWeight(Double newWeight, LocalDate date) {
+        Double validatedWeight = ProfileFieldValidator.validateWeightKg(newWeight);
+        LocalDate validatedDate = ProfileFieldValidator.validateWeightRecordDate(date);
+
+        this.weightHistory.removeIf(record -> record.date().equals(validatedDate));
+        this.weightHistory.add(new WeightRecord(validatedWeight, validatedDate));
+        this.weightHistory.sort(Comparator.comparing(WeightRecord::date));
+        this.weightKg = this.weightHistory.get(this.weightHistory.size() - 1).weightKg();
         return generateHealthGoals();
     }
 
@@ -140,7 +149,7 @@ public class PatientProfile {
                 excludedFoods
         );
         if (previousWeight == null || Double.compare(previousWeight, this.weightKg) != 0) {
-            this.weightHistory.add(new WeightRecord(this.weightKg, LocalDate.now()));
+            registerWeight(this.weightKg, LocalDate.now());
         }
     }
 

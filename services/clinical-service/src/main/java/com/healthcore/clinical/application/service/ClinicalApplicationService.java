@@ -14,6 +14,7 @@ import com.healthcore.clinical.domain.port.out.PostalCodeCatalogPort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -85,11 +86,11 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
     }
 
     @Override
-    public HealthGoal updateWeight(String userId, Double weightKg) {
+    public HealthGoal updateWeight(String userId, Double weightKg, LocalDate date) {
         PatientProfile profile = patientRepositoryPort.findByUserId(userId)
                 .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
 
-        HealthGoal newGoal = profile.updateWeight(weightKg);
+        HealthGoal newGoal = profile.registerWeight(weightKg, date);
         patientRepositoryPort.save(profile);
         return newGoal;
     }

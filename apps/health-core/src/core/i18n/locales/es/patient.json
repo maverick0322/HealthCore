@@ -98,6 +98,40 @@
     "startWeight": "Peso inicial",
     "targetWeight": "Peso objetivo",
     "minWeight": "Peso mínimo",
+    "weightErrorMessage": "No pudimos cargar tu historial de peso.",
+    "noWeightData": "A\u00fan no tienes registros de peso.",
+    "weightCard": {
+      "last7Records": "\u00daltimos 7 registros",
+      "latestWeight": "\u00daltimo peso",
+      "changeVsPrevious": "Cambio vs anterior",
+      "lastRecord": "\u00daltimo registro",
+      "recordWeight": "Registrar peso",
+      "emptyHelp": "Agrega tu primer peso para empezar a seguir tu progreso.",
+      "noDate": "Sin fecha"
+    },
+    "weightForm": {
+      "title": "Registrar peso",
+      "description": "Registra tu peso con la fecha correspondiente para mantener actualizada tu evoluci\u00f3n.",
+      "weightLabel": "Peso (kg)",
+      "weightPlaceholder": "Ej. 78.4",
+      "dateLabel": "Fecha",
+      "save": "Continuar",
+      "cancel": "Cancelar",
+      "back": "Volver",
+      "confirmTitle": "\u00bfDeseas guardar este registro de peso?",
+      "confirmDescription": "\u00bfLos datos son correctos? Se guardar\u00e1n {{weight}} kg con fecha {{date}}.",
+      "confirmAction": "S\u00ed, guardar",
+      "saveError": "No pudimos guardar el registro de peso.",
+      "validation": {
+        "weightRequired": "Ingresa un valor de peso.",
+        "weightInvalid": "Ingresa un peso v\u00e1lido.",
+        "weightPrecision": "Usa un n\u00famero entero o un decimal.",
+        "weightRange": "El peso debe estar entre 40.0 kg y 200.0 kg.",
+        "dateRequired": "Selecciona una fecha.",
+        "dateInvalid": "Ingresa una fecha v\u00e1lida.",
+        "dateFuture": "La fecha no puede estar en el futuro."
+      }
+    },
     "nextAppointment": "Próxima Cita",
     "withNutritionist": "Con",
     "noAppointment": "Sin citas próximas",
@@ -139,6 +173,10 @@
     "weightEvolution": "Evolución de Peso",
     "weightLost": "Perdido",
     "weightRemaining": "Por bajar",
+    "currentWeight": "Peso actual",
+    "periodChange": "Cambio del per\u00edodo",
+    "minWeight": "Peso m\u00ednimo",
+    "latestRecord": "\u00daltimo registro",
     "calorieTrend": "Tendencia Calórica",
     "calorieAvg": "Promedio diario",
     "calorieGoal": "Meta",
@@ -163,6 +201,34 @@
     "streakDays": "{{count}} días",
     "bestStreak": "Mejor racha",
     "totalDaysTracked": "Días con registro",
+    "filtersLabel": "Elige el per\u00edodo y c\u00f3mo quieres agrupar los registros.",
+    "periodLabel": "Per\u00edodo",
+    "groupByLabel": "Agrupar por",
+    "weightErrorMessage": "No pudimos cargar el historial detallado de peso.",
+    "noWeightEntries": "No hay registros de peso para el per\u00edodo seleccionado.",
+    "noDate": "Sin fecha",
+    "today": "Hoy",
+    "previousDay": "Anterior",
+    "nextDay": "Siguiente",
+    "weightChartAriaLabel": "Gr\u00e1fica detallada del historial de peso del paciente",
+    "weightTableTitle": "Historial de peso",
+    "ranges": {
+      "30d": "30 d\u00edas",
+      "3m": "3 meses",
+      "1y": "1 a\u00f1o",
+      "all": "Todo"
+    },
+    "groupings": {
+      "day": "D\u00edas",
+      "week": "Semanas",
+      "month": "Meses",
+      "year": "A\u00f1os"
+    },
+    "table": {
+      "date": "Fecha",
+      "weight": "Peso",
+      "variation": "Variaci\u00f3n"
+    },
     "filterAll": "Todos",
     "filterBreakfast": "Desayuno",
     "filterLunch": "Comida",
@@ -358,6 +424,7 @@
   },
   "common": {
     "back": "Regresar",
-    "or": "O"
+    "or": "O",
+    "retry": "Reintentar"
   }
 }

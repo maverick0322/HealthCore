@@ -6,6 +6,7 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { FieldError } from "@/shared/components/FieldError";
 import { useForgotPassword } from "../hooks/useForgotPassword";
 
 interface LocationState {
@@ -18,7 +19,7 @@ export const ForgotPasswordPage = () => {
   const state = (location.state as LocationState) || {};
 
   const [email, setEmail] = useState(state.email ?? "");
-  const { handleForgotPassword, isLoading, error } = useForgotPassword();
+  const { handleForgotPassword, isLoading, error, fieldErrors } = useForgotPassword();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,14 +53,14 @@ export const ForgotPasswordPage = () => {
             </p>
           </div>
 
-          {/* Error message */}
+          {/* Server error banner */}
           {error && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300 mb-6">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium leading-none">
                 {t("email")}
@@ -70,13 +71,15 @@ export const ForgotPasswordPage = () => {
                   name="email"
                   type="email"
                   placeholder={t("emailPlaceholder")}
-                  className="h-12 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground transition-all duration-200" 
-                  required
+                  className="h-12 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground transition-all duration-200"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
+                  aria-describedby={fieldErrors.email ? "forgot-email-error" : undefined}
+                  aria-invalid={!!fieldErrors.email}
                 />
               </div>
+              <FieldError id="forgot-email-error" message={fieldErrors.email} />
             </div>
             <Button
               type="submit"

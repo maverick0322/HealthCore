@@ -5,10 +5,23 @@ import axios from 'axios';
 
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import type { RegisterRequest } from '@/features/auth/types/auth.types';
+import {
+  validateEmail,
+  validatePassword,
+  validatePasswordMatch,
+} from '../validators/authValidation';
+
+interface RegisterFieldErrors {
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+}
 
 /**
  * Hook that wraps the auth store's register action.
  * On success navigates to /verify-code passing the email via router state.
+ * Validates fields before calling the service; password mismatch is
+ * detected here so the page stays thin.
  */
 export const useRegister = () => {
   const navigate = useNavigate();
@@ -16,12 +29,33 @@ export const useRegister = () => {
   const register = useAuthStore((s) => s.register);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<RegisterFieldErrors>({});
 
-  const handleRegister = async (data: RegisterRequest) => {
+  const handleRegister = async (
+    data: RegisterRequest & { confirmPassword?: string },
+  ) => {
     setError(null);
+
+    const emailError = validateEmail(data.email);
+    const passwordError = validatePassword(data.password, 'register');
+    const confirmError = data.confirmPassword !== undefined
+      ? validatePasswordMatch(data.password, data.confirmPassword)
+      : null;
+
+    const errors: RegisterFieldErrors = {};
+    if (emailError) errors.email = t(emailError);
+    if (passwordError) errors.password = t(passwordError);
+    if (confirmError) errors.confirmPassword = t(confirmError);
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+
+    setFieldErrors({});
     setIsLoading(true);
     try {
-      await register({ ...data, locale: i18n.language });
+      await register({ email: data.email, password: data.password, role: data.role, locale: i18n.language });
       navigate('/verify-code', {
         state: { email: data.email, flow: 'email-verification' },
         replace: true,
@@ -47,5 +81,5 @@ export const useRegister = () => {
     }
   };
 
-  return { handleRegister, isLoading, error };
+  return { handleRegister, isLoading, error, fieldErrors };
 };

@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Activity,
@@ -21,34 +20,20 @@ import {
   Zap,
 } from 'lucide-react';
 
-import { clinicalApi } from '@/features/clinical/services/clinicalService';
-import type { PatientProfileResponse } from '@/features/clinical/types/clinical.types';
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { PatientNav } from '@/features/patient/components/PatientNav';
 import {
   formatActivityLevelLabel,
-  formatAllergyLabel,
   formatDietLabel,
   formatGenderLabel,
   formatIsoDateToDisplay,
   formatPatientGoalLabel,
 } from '@/features/onboarding/utils/profilePresentation';
-import { calculateAgeFromBirthDate } from '@/features/onboarding/utils/profileValidation';
 import { ConfirmModal } from '@/shared/components/ConfirmModal';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
-
-function getBmi(weightKg: number, heightCm: number) {
-  const bmi = weightKg / Math.pow(heightCm / 100, 2);
-  let categoryKey: 'underweight' | 'normal' | 'overweight' | 'obese';
-  if (bmi < 18.5) categoryKey = 'underweight';
-  else if (bmi < 25) categoryKey = 'normal';
-  else if (bmi < 30) categoryKey = 'overweight';
-  else categoryKey = 'obese';
-  return { value: bmi.toFixed(1), categoryKey };
-}
+import { usePatientProfile } from '../hooks/usePatientProfile';
 
 function bmiColor(category: string) {
   switch (category) {
@@ -66,59 +51,25 @@ function bmiColor(category: string) {
 }
 
 export const PatientProfilePage = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation('patient');
   const { t: tAuth } = useTranslation('auth');
-  const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
-
-  const [profile, setProfile] = useState<PatientProfileResponse | null>(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [showUnlinkDialog, setShowUnlinkDialog] = useState(false);
-  const [isUnlinking, setIsUnlinking] = useState(false);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const response = await clinicalApi.getMyProfile();
-        setProfile(response);
-      } catch {
-        setProfile(null);
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-
-    void loadProfile();
-  }, []);
-
-  const handleConfirmUnlink = async () => {
-    try {
-      setIsUnlinking(true);
-      await clinicalApi.unlinkPatient();
-      setProfile((current) => (current ? { ...current, nutritionistId: null } : current));
-      setShowUnlinkDialog(false);
-    } finally {
-      setIsUnlinking(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login', { replace: true });
-  };
-
-  const bmi = useMemo(
-    () => (profile ? getBmi(profile.weightKg, profile.heightCm) : null),
-    [profile]
-  );
-  const age = profile ? calculateAgeFromBirthDate(profile.birthDate) : null;
-  const displayName = profile?.fullName || user?.email?.split('@')[0] || '--';
-  const allergyDisplay = profile
-    ? profile.allergies.length > 0
-      ? profile.allergies.map((allergy) => formatAllergyLabel(t, allergy)).join(', ')
-      : t('profile.noAllergies')
-    : t('profile.noAllergies');
+  
+  const {
+    profile,
+    isLoadingProfile,
+    showUnlinkDialog,
+    setShowUnlinkDialog,
+    isUnlinking,
+    handleConfirmUnlink,
+    handleLogout,
+    handleChangePassword,
+    bmi,
+    age,
+    displayName,
+    allergyDisplay,
+    user,
+    navigate,
+  } = usePatientProfile();
 
   if (isLoadingProfile) {
     return (
@@ -127,10 +78,6 @@ export const PatientProfilePage = () => {
       </div>
     );
   }
-
-  const handleChangePassword = () => {
-    navigate("/forgot-password", { state: { email: user?.email } });
-  };
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
@@ -399,10 +346,6 @@ interface ActionRowProps {
   variant?: 'default' | 'destructive';
 }
 
-/**
- * Tappable row for account actions (non-functional — UI only).
- * Styled as a list item with a trailing chevron to communicate interactivity.
- */
 const ActionRow = ({ id, icon, label, desc, onClick, variant = 'default' }: ActionRowProps) => (
   <button
     id={id}

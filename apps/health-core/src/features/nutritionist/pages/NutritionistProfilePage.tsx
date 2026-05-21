@@ -1,11 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { Award, FileText, LogOut, Mail, MapPin, Pencil, Phone, User } from 'lucide-react';
 
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
-import { clinicalApi } from '@/features/clinical/services/clinicalService';
-import type { ClinicAddressPayload, NutritionistProfileResponse } from '@/features/clinical/types/clinical.types';
 import { NutritionistNav } from '@/features/nutritionist/components/NutritionistNav';
 import {
   consultationTypeOptions,
@@ -18,60 +14,19 @@ import { SettingsBar } from '@/shared/components/SettingsBar';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
-
-const formatAddress = (address?: ClinicAddressPayload | null) => {
-  if (!address) {
-    return null;
-  }
-
-  const parts = [
-    [address.street?.trim(), address.exteriorNumber?.trim()].filter(Boolean).join(' '),
-    address.interiorNumber?.trim() ? `Int. ${address.interiorNumber.trim()}` : null,
-    address.neighborhood?.trim(),
-    address.municipality?.trim(),
-    address.city?.trim() && address.city?.trim() !== address.municipality?.trim() ? address.city.trim() : null,
-    address.state?.trim(),
-    address.postalCode?.trim(),
-  ].filter(Boolean);
-
-  return parts.length > 0 ? parts.join(', ') : null;
-};
+import { formatAddress, useNutritionistProfile } from '../hooks/useNutritionistProfile';
 
 export const NutritionistProfilePage = () => {
   const { t } = useTranslation('nutritionist');
-  const navigate = useNavigate();
-  const logout = useAuthStore((state) => state.logout);
-  const user = useAuthStore((state) => state.user);
-  const [profile, setProfile] = useState<NutritionistProfileResponse | null>(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const response = await clinicalApi.getMyNutritionistProfile();
-        setProfile(response);
-      } catch {
-        setProfile(null);
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-
-    void loadProfile();
-  }, []);
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login', { replace: true });
-  };
-
-  const specializationSummary = useMemo(() => {
-    if (!profile?.specializations.length) {
-      return t('profile.pendingProfile');
-    }
-
-    return profile.specializations.map((item) => formatNutritionistSpecializationLabel(t, item)).join(', ');
-  }, [profile?.specializations, t]);
+  const {
+    profile,
+    isLoadingProfile,
+    user,
+    navigate,
+    handleLogout,
+    specializationSummary,
+  } = useNutritionistProfile();
 
   if (isLoadingProfile) {
     return (

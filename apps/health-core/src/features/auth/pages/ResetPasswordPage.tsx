@@ -6,6 +6,7 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { FieldError } from "@/shared/components/FieldError";
 import { usePasswordStrength } from "../hooks/usePasswordStrength";
 import { PasswordStrengthIndicator } from "../components/PasswordStrengthIndicator";
 import { useResetPassword } from "../hooks/useResetPassword";
@@ -27,23 +28,13 @@ export const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordMismatch, setPasswordMismatch] = useState(false);
 
   const strength = usePasswordStrength(password);
-  const { handleResetPassword, isLoading, error, isSuccess } = useResetPassword();
+  const { handleResetPassword, isLoading, error, isSuccess, fieldErrors } = useResetPassword();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordMismatch(false);
-
-    if (password !== confirmPassword) {
-      setPasswordMismatch(true);
-      return;
-    }
-
-    if (strength.isValidLength) {
-      await handleResetPassword(email, code, password);
-    }
+    await handleResetPassword(email, code, password, confirmPassword);
   };
 
   return (
@@ -69,14 +60,14 @@ export const ResetPasswordPage = () => {
                 </p>
               </div>
 
-              {/* Error message */}
-              {(error || passwordMismatch) && (
+              {/* Server error banner */}
+              {error && (
                 <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300 mb-6">
-                  {passwordMismatch ? t("errorPasswordMismatch") : error}
+                  {error}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6" noValidate>
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm font-medium">
                     {t("newPassword")}
@@ -87,12 +78,11 @@ export const ResetPasswordPage = () => {
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       className="h-12 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground transition-all"
-                      required
-                      minLength={8}
-                      maxLength={15}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
+                      aria-describedby={fieldErrors.password ? "reset-password-error" : undefined}
+                      aria-invalid={!!fieldErrors.password}
                     />
                     <button
                       type="button"
@@ -105,6 +95,7 @@ export const ResetPasswordPage = () => {
                   
                   {/* Strength Indicator */}
                   <PasswordStrengthIndicator strength={strength} />
+                  <FieldError id="reset-password-error" message={fieldErrors.password} />
                   
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 leading-relaxed mt-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-primary" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -122,10 +113,11 @@ export const ResetPasswordPage = () => {
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="••••••••"
                       className="h-12 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground transition-all"
-                      required
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       disabled={isLoading}
+                      aria-describedby={fieldErrors.confirmPassword ? "reset-confirm-error" : undefined}
+                      aria-invalid={!!fieldErrors.confirmPassword}
                     />
                     <button
                       type="button"
@@ -135,6 +127,7 @@ export const ResetPasswordPage = () => {
                       {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
+                  <FieldError id="reset-confirm-error" message={fieldErrors.confirmPassword} />
                 </div>
 
                 <Button

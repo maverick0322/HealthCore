@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/shared/ui/button";
 import { Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { FieldError } from "@/shared/components/FieldError";
 import {
   InputOTP,
   InputOTPGroup,
@@ -24,7 +25,7 @@ export const VerifyCodePage = () => {
   const flow = state.flow || 'email-verification';
 
   const [code, setCode] = useState("");
-  const { handleVerifyCode, isLoading, error } = useVerifyCode();
+  const { handleVerifyCode, isLoading, error, fieldErrors } = useVerifyCode();
   const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
@@ -41,16 +42,13 @@ export const VerifyCodePage = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleResend = async () => {
-    // In a real scenario, call authService resend endpoint based on flow
+  const handleResend = () => {
     setTimeLeft(60);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length === 6) {
-      await handleVerifyCode(email, code, flow);
-    }
+    await handleVerifyCode(email, code, flow);
   };
 
   return (
@@ -81,30 +79,33 @@ export const VerifyCodePage = () => {
             </p>
           </div>
 
-          {/* Error message */}
+          {/* Server error banner */}
           {error && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300 mb-6 w-full">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col w-full gap-8">
-            <div className="flex justify-center w-full">
-              <InputOTP maxLength={6} value={code} onChange={setCode}>
-                <InputOTPGroup className="gap-2 sm:gap-4">
-                  <InputOTPSlot index={0} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
-                  <InputOTPSlot index={1} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
-                  <InputOTPSlot index={2} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
-                  <InputOTPSlot index={3} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
-                  <InputOTPSlot index={4} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
-                  <InputOTPSlot index={5} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
-                </InputOTPGroup>
-              </InputOTP>
+          <form onSubmit={handleSubmit} className="flex flex-col w-full gap-4" noValidate>
+            <div className="flex flex-col items-center gap-2 w-full">
+              <div className="flex justify-center w-full">
+                <InputOTP maxLength={6} value={code} onChange={setCode}>
+                  <InputOTPGroup className="gap-2 sm:gap-4">
+                    <InputOTPSlot index={0} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
+                    <InputOTPSlot index={1} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
+                    <InputOTPSlot index={2} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
+                    <InputOTPSlot index={3} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
+                    <InputOTPSlot index={4} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
+                    <InputOTPSlot index={5} className="w-12 h-14 sm:w-14 sm:h-16 text-xl font-bold border-2 rounded-lg bg-transparent focus-visible:border-primary focus-visible:ring-0" />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <FieldError id="code-error" message={fieldErrors.code} />
             </div>
 
             <Button
               type="submit"
-              className="w-full h-12 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+              className="w-full h-12 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 mt-4"
               disabled={isLoading || code.length !== 6}
             >
               {isLoading ? (

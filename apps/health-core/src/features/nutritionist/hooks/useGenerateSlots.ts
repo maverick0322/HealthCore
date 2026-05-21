@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import { nutritionistAgendaService } from '../services/nutritionistAgendaService';
 import type { AvailabilitySlotResponse, GenerateSlotsRequest } from '../types/agenda.types';
 
 export const useGenerateSlots = () => {
+  const { t } = useTranslation('nutritionist');
   const [slots, setSlots] = useState<AvailabilitySlotResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,12 +21,18 @@ export const useGenerateSlots = () => {
       setIsSuccess(true);
       return data;
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
-      const msg =
-        axiosError.response?.data?.message ??
-        axiosError.response?.data?.error ??
-        'Error generating slots.';
-      setError(msg);
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 409) {
+          setError(t('availability.errorGenerateSlotsConflict'));
+        } else if (status === 400) {
+          setError(t('availability.errorGenerateSlotsInvalid'));
+        } else {
+          setError(t('availability.errorGenerateSlotsUnexpected'));
+        }
+      } else {
+        setError(t('availability.errorGenerateSlotsUnexpected'));
+      }
       throw err;
     } finally {
       setIsLoading(false);

@@ -94,4 +94,13 @@ class CloudflareR2AdapterTest {
                 .isInstanceOf(SdkClientException.class)
                 .hasMessageContaining("Network failure");
     }
+
+    @Test
+    void generateUploadUrl_WhenFileNameIsNull_ThrowsNullPointerException() {
+        // Act & Assert
+        // El SDK de AWS lanza un NullPointerException (o IllegalArgumentException dependiendo de la versión)
+        // cuando se le pasa un key nulo en el builder.
+        assertThatThrownBy(() -> adapter.generateUploadUrl(null))
+                .isInstanceOf(NullPointerException.class);
+    }
 }

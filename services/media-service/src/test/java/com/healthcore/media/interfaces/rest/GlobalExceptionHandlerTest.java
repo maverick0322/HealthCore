@@ -52,7 +52,6 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(400);
         assertThat(response.getBody().error()).isEqualTo("Bad Request");
-        // Verifies that multiple DTO validation errors are gracefully joined
         assertThat(response.getBody().message()).isEqualTo("Cannot be blank. Invalid format.");
     }
 
@@ -105,7 +104,6 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(404);
         assertThat(response.getBody().error()).isEqualTo("Not Found");
-        // Verifies the exact safe message is returned, overriding the default exception message
         assertThat(response.getBody().message()).isEqualTo("The requested endpoint or resource does not exist.");
     }
 
@@ -123,7 +121,6 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().status()).isEqualTo(500);
         assertThat(response.getBody().error()).isEqualTo("Internal Server Error");
-        // Crucial security check: Ensure the real exception message ("Hidden internal error") is NEVER leaked
         assertThat(response.getBody().message())
                 .isEqualTo("An unexpected internal error occurred in the Media Service. Please try again later.");
     }

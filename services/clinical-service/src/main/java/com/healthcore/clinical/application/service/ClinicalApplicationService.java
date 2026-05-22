@@ -96,6 +96,26 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
     }
 
     @Override
+    public HealthGoal editWeight(String userId, LocalDate originalDate, Double weightKg, LocalDate date) {
+        PatientProfile profile = patientRepositoryPort.findByUserId(userId)
+                .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
+
+        HealthGoal newGoal = profile.editWeightRecord(originalDate, weightKg, date);
+        patientRepositoryPort.save(profile);
+        return newGoal;
+    }
+
+    @Override
+    public HealthGoal deleteWeight(String userId, LocalDate date) {
+        PatientProfile profile = patientRepositoryPort.findByUserId(userId)
+                .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
+
+        HealthGoal newGoal = profile.deleteWeightRecord(date);
+        patientRepositoryPort.save(profile);
+        return newGoal;
+    }
+
+    @Override
     public List<WeightRecord> getWeightHistory(String userId) {
         return patientRepositoryPort.findByUserId(userId)
                 .map(PatientProfile::getWeightHistory)

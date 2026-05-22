@@ -11,6 +11,7 @@ import {
   getLatestWeightRecords,
   getPeriodWeightStats,
   getVisibleTickIndexes,
+  getWeightRangeStates,
 } from './weightHistory';
 
 const SAMPLE_RECORDS: WeightRecord[] = [
@@ -57,18 +58,16 @@ describe('weightHistory utils', () => {
     expect(result[4].weightKg).toBe(78.1);
   });
 
-  it('builds descending table rows with variations', () => {
-    const points = aggregateWeightRecords(SAMPLE_RECORDS, 'month', 'en');
-    const rows = buildWeightTableRows(points);
+  it('builds descending table rows from filtered records with variations', () => {
+    const rows = buildWeightTableRows(SAMPLE_RECORDS, 'en');
 
     expect(rows[0].weightKg).toBe(78.1);
-    expect(rows[0].variationKg).toBeCloseTo(-1.2, 5);
+    expect(rows[0].variationKg).toBeCloseTo(-0.4, 5);
     expect(rows.at(-1)?.variationKg).toBeNull();
   });
 
   it('derives period stats from aggregated data', () => {
-    const points = aggregateWeightRecords(SAMPLE_RECORDS, 'month', 'en');
-    const stats = getPeriodWeightStats(points);
+    const stats = getPeriodWeightStats(SAMPLE_RECORDS);
 
     expect(stats.currentWeightKg).toBe(78.1);
     expect(stats.periodChangeKg).toBeCloseTo(-3.9, 5);
@@ -78,9 +77,20 @@ describe('weightHistory utils', () => {
 
   it('returns the recommended grouping for each range', () => {
     expect(getDefaultGroupingForRange('30d')).toBe('day');
-    expect(getDefaultGroupingForRange('3m')).toBe('week');
-    expect(getDefaultGroupingForRange('1y')).toBe('month');
-    expect(getDefaultGroupingForRange('all')).toBe('year');
+    expect(getDefaultGroupingForRange('90d')).toBe('week');
+    expect(getDefaultGroupingForRange('180d')).toBe('month');
+    expect(getDefaultGroupingForRange('365d')).toBe('month');
+    expect(getDefaultGroupingForRange('all', SAMPLE_RECORDS)).toBe('month');
+  });
+
+  it('returns adaptive range states based on available history', () => {
+    const states = getWeightRangeStates(SAMPLE_RECORDS);
+
+    expect(states.find((state) => state.range === '30d')?.disabled).toBe(false);
+    expect(states.find((state) => state.range === '90d')?.disabled).toBe(false);
+    expect(states.find((state) => state.range === '180d')?.disabled).toBe(true);
+    expect(states.find((state) => state.range === '365d')?.disabled).toBe(true);
+    expect(states.find((state) => state.range === 'all')?.disabled).toBe(false);
   });
 
   it('limits visible tick labels for dense datasets', () => {

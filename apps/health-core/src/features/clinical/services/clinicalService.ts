@@ -199,6 +199,28 @@ export const clinicalApi = {
     return response.data;
   },
 
+  editWeight: async (
+    originalDate: string,
+    weightKg: number,
+    date: string,
+    userId?: string
+  ): Promise<HealthGoalResponse> => {
+    const response = await httpClient.put<HealthGoalResponse>(
+      `${CLINICAL_API_URL}/weight/${encodeURIComponent(originalDate)}`,
+      { weightKg, date },
+      { headers: getXUserIdHeader(userId) }
+    );
+    return response.data;
+  },
+
+  deleteWeight: async (date: string, userId?: string): Promise<HealthGoalResponse> => {
+    const response = await httpClient.delete<HealthGoalResponse>(
+      `${CLINICAL_API_URL}/weight/${encodeURIComponent(date)}`,
+      { headers: getXUserIdHeader(userId) }
+    );
+    return response.data;
+  },
+
   getWeightHistory: async (userId?: string): Promise<WeightRecord[]> => {
     const response = await httpClient.get<WeightRecord[]>(
       `${CLINICAL_API_URL}/weight/history`,

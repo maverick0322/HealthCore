@@ -86,6 +86,46 @@ class PatientProfileTest {
     }
 
     @Test
+    void shouldEditHistoricalWeightWithoutChangingCurrentWeight() {
+        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        LocalDate originalDate = profile.getWeightHistory().get(0).date();
+        LocalDate latestDate = LocalDate.now();
+
+        profile.registerWeight(72.0, latestDate);
+        profile.editWeightRecord(originalDate, 68.0, originalDate.minusDays(3));
+
+        assertEquals(72.0, profile.getWeightKg());
+        assertEquals(2, profile.getWeightHistory().size());
+        assertEquals(68.0, profile.getWeightHistory().get(0).weightKg());
+        assertEquals(originalDate.minusDays(3), profile.getWeightHistory().get(0).date());
+    }
+
+    @Test
+    void shouldDeleteLatestWeightAndRecalculateCurrentWeight() {
+        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        LocalDate latestDate = LocalDate.now();
+
+        profile.registerWeight(72.0, latestDate);
+        profile.deleteWeightRecord(latestDate);
+
+        assertEquals(70.0, profile.getWeightKg());
+        assertEquals(1, profile.getWeightHistory().size());
+    }
+
+    @Test
+    void shouldNotDeleteLastRemainingWeightRecord() {
+        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        LocalDate onlyDate = profile.getWeightHistory().get(0).date();
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> profile.deleteWeightRecord(onlyDate)
+        );
+
+        assertEquals("At least one weight record must remain in the profile.", exception.getMessage());
+    }
+
+    @Test
     void shouldRequireNamesAndGoalForCompletedProfile() {
         assertThrows(IllegalArgumentException.class, () ->
                 new PatientProfile(

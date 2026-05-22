@@ -39,6 +39,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -146,6 +147,57 @@ class ClinicalControllerTest {
                 .andExpect(jsonPath("$.targetWaterGlasses").value(11));
 
         verify(manageProfileUseCase).updateWeight("user-123", 80.5, targetDate);
+    }
+
+    @Test
+    void shouldReturnOkWhenEditingWeight() throws Exception {
+        setSecurityContext("user-123", "PATIENT");
+        LocalDate originalDate = LocalDate.of(2026, 5, 20);
+        LocalDate updatedDate = LocalDate.of(2026, 5, 18);
+        UpdateWeightRequest request = new UpdateWeightRequest(79.8, updatedDate);
+
+        com.healthcore.clinical.domain.model.HealthGoal mockGoal =
+                Mockito.mock(com.healthcore.clinical.domain.model.HealthGoal.class);
+        when(mockGoal.targetCalories()).thenReturn(2450);
+        when(mockGoal.targetProtein()).thenReturn(150);
+        when(mockGoal.targetCarbs()).thenReturn(245);
+        when(mockGoal.targetFat()).thenReturn(70);
+        when(mockGoal.targetWaterGlasses()).thenReturn(10);
+
+        when(manageProfileUseCase.editWeight(eq("user-123"), eq(originalDate), eq(79.8), eq(updatedDate)))
+                .thenReturn(mockGoal);
+
+        mockMvc.perform(put("/api/v1/clinical/weight/{originalDate}", originalDate)
+                        .header("X-User-Id", "user-123")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targetCalories").value(2450));
+
+        verify(manageProfileUseCase).editWeight("user-123", originalDate, 79.8, updatedDate);
+    }
+
+    @Test
+    void shouldReturnOkWhenDeletingWeight() throws Exception {
+        setSecurityContext("user-123", "PATIENT");
+        LocalDate targetDate = LocalDate.of(2026, 5, 18);
+
+        com.healthcore.clinical.domain.model.HealthGoal mockGoal =
+                Mockito.mock(com.healthcore.clinical.domain.model.HealthGoal.class);
+        when(mockGoal.targetCalories()).thenReturn(2350);
+        when(mockGoal.targetProtein()).thenReturn(140);
+        when(mockGoal.targetCarbs()).thenReturn(230);
+        when(mockGoal.targetFat()).thenReturn(66);
+        when(mockGoal.targetWaterGlasses()).thenReturn(10);
+
+        when(manageProfileUseCase.deleteWeight(eq("user-123"), eq(targetDate))).thenReturn(mockGoal);
+
+        mockMvc.perform(delete("/api/v1/clinical/weight/{date}", targetDate)
+                        .header("X-User-Id", "user-123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targetCalories").value(2350));
+
+        verify(manageProfileUseCase).deleteWeight("user-123", targetDate);
     }
 
     @Test

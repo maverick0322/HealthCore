@@ -5,11 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 
-import { useRegisterWeight } from './useRegisterWeight';
+import { useEditWeightRecord } from './useEditWeightRecord';
 
 vi.mock('@/features/clinical/services/clinicalService', () => ({
   clinicalApi: {
-    updateWeight: vi.fn(),
+    editWeight: vi.fn(),
   },
 }));
 
@@ -29,13 +29,13 @@ const createWrapper = () => {
   };
 };
 
-describe('useRegisterWeight', () => {
+describe('useEditWeightRecord', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('sends the mutation payload and invalidates weight history queries', async () => {
-    vi.mocked(clinicalApi.updateWeight).mockResolvedValue({
+  it('sends the edit payload and refreshes weight queries', async () => {
+    vi.mocked(clinicalApi.editWeight).mockResolvedValue({
       targetCalories: 2000,
       targetProtein: 120,
       targetCarbs: 200,
@@ -46,20 +46,16 @@ describe('useRegisterWeight', () => {
     const { queryClient, wrapper } = createWrapper();
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
     const refetchSpy = vi.spyOn(queryClient, 'refetchQueries');
-    const { result } = renderHook(() => useRegisterWeight(), { wrapper });
+    const { result } = renderHook(() => useEditWeightRecord(), { wrapper });
 
-    result.current.mutate({ weightKg: 78.4, date: '2026-05-20' });
+    result.current.mutate({ originalDate: '2026-05-20', weightKg: 78.1, date: '2026-05-18' });
 
     await waitFor(() => {
-      expect(clinicalApi.updateWeight).toHaveBeenCalledWith(78.4, '2026-05-20');
+      expect(clinicalApi.editWeight).toHaveBeenCalledWith('2026-05-20', 78.1, '2026-05-18');
     });
     await waitFor(() => {
-      expect(invalidateSpy).toHaveBeenCalled();
+      expect(invalidateSpy).toHaveBeenCalledTimes(2);
+      expect(refetchSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
-    await waitFor(() => {
-      expect(refetchSpy).toHaveBeenCalled();
-    });
-    expect(invalidateSpy).toHaveBeenCalledTimes(2);
-    expect(refetchSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 });

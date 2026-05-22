@@ -1,18 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
+
 import { refreshWeightQueries } from './weightMutationUtils';
 
-interface RegisterWeightPayload {
-  weightKg: number;
-  date: string;
-}
-
-export const useRegisterWeight = () => {
+export const useDeleteWeightRecord = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ weightKg, date }: RegisterWeightPayload) => clinicalApi.updateWeight(weightKg, date),
+    mutationFn: (date: string) => clinicalApi.deleteWeight(date),
     onSuccess: async () => {
       await refreshWeightQueries(queryClient);
     },

@@ -3,7 +3,7 @@ import type { TFunction } from 'i18next';
 import { addDays, parseDateKey, startOfWeek, todayDateKey } from '@/features/agenda/utils/agendaDateUtils';
 import type { WeightRecord } from '@/features/clinical/types/clinical.types';
 
-export type WeightHistoryRange = '30d' | '3m' | '1y' | 'all';
+export type WeightHistoryRange = '30d' | '90d' | '180d' | '365d' | 'all';
 export type WeightHistoryGrouping = 'day' | 'week' | 'month' | 'year';
 
 export interface WeightChartPoint {
@@ -14,7 +14,10 @@ export interface WeightChartPoint {
   weightKg: number;
 }
 
-export interface WeightTableRow extends WeightChartPoint {
+export interface WeightTableRow {
+  date: string;
+  label: string;
+  weightKg: number;
   variationKg: number | null;
 }
 
@@ -25,20 +28,34 @@ export interface DashboardWeightStats {
   latestDate: string | null;
 }
 
+export interface WeightPeriodStats {
+  currentWeightKg: number | null;
+  periodChangeKg: number | null;
+  minWeightKg: number | null;
+  latestDate: string | null;
+  firstWeightKg: number | null;
+  firstDate: string | null;
+}
+
+export interface WeightRangeState {
+  range: WeightHistoryRange;
+  disabled: boolean;
+}
+
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const WEIGHT_INPUT_PATTERN = /^\d{1,3}(?:\.\d)?$/;
+const RANGE_DAY_MAP: Record<Exclude<WeightHistoryRange, 'all'>, number> = {
+  '30d': 30,
+  '90d': 90,
+  '180d': 180,
+  '365d': 365,
+};
 
 const formatDateLabel = (dateKey: string, options: Intl.DateTimeFormatOptions, locale = 'en') =>
   parseDateKey(dateKey).toLocaleDateString(locale, options);
 
 const monthKeyFromDate = (dateKey: string) => dateKey.slice(0, 7);
 const yearKeyFromDate = (dateKey: string) => dateKey.slice(0, 4);
-
-const shiftMonths = (dateKey: string, months: number) => {
-  const date = parseDateKey(dateKey);
-  date.setMonth(date.getMonth() + months);
-  return date;
-};
 
 export const isValidDateKey = (value: string) => {
   if (!DATE_KEY_PATTERN.test(value)) {
@@ -79,16 +96,67 @@ export const getDashboardWeightStats = (records: WeightRecord[] | undefined | nu
   };
 };
 
-export const getDefaultGroupingForRange = (range: WeightHistoryRange): WeightHistoryGrouping => {
+export const getWeightHistorySpanDays = (records: WeightRecord[] | undefined | null) => {
+  const sortedRecords = sortWeightRecordsAscending(records);
+  if (sortedRecords.length <= 1) {
+    return sortedRecords.length === 1 ? 1 : 0;
+  }
+
+  const firstDate = parseDateKey(sortedRecords[0].date).getTime();
+  const lastDate = parseDateKey(sortedRecords[sortedRecords.length - 1].date).getTime();
+  return Math.floor((lastDate - firstDate) / 86_400_000) + 1;
+};
+
+export const isWeightRangeAvailable = (
+  records: WeightRecord[] | undefined | null,
+  range: WeightHistoryRange
+) => {
+  const sortedRecords = sortWeightRecordsAscending(records);
+  if (sortedRecords.length === 0) {
+    return false;
+  }
+  if (range === 'all' || range === '30d') {
+    return true;
+  }
+
+  return getWeightHistorySpanDays(sortedRecords) >= RANGE_DAY_MAP[range];
+};
+
+export const getWeightRangeStates = (
+  records: WeightRecord[] | undefined | null
+): WeightRangeState[] => ([
+  { range: '30d', disabled: !isWeightRangeAvailable(records, '30d') },
+  { range: '90d', disabled: !isWeightRangeAvailable(records, '90d') },
+  { range: '180d', disabled: !isWeightRangeAvailable(records, '180d') },
+  { range: '365d', disabled: !isWeightRangeAvailable(records, '365d') },
+  { range: 'all', disabled: !isWeightRangeAvailable(records, 'all') },
+]);
+
+export const getDefaultGroupingForRange = (
+  range: WeightHistoryRange,
+  records?: WeightRecord[] | undefined | null
+): WeightHistoryGrouping => {
+  const spanDays = getWeightHistorySpanDays(records);
+
   switch (range) {
     case '30d':
       return 'day';
-    case '3m':
+    case '90d':
       return 'week';
-    case '1y':
+    case '180d':
+    case '365d':
       return 'month';
     case 'all':
     default:
+      if (spanDays <= 45) {
+        return 'day';
+      }
+      if (spanDays <= 120) {
+        return 'week';
+      }
+      if (spanDays <= 730) {
+        return 'month';
+      }
       return 'year';
   }
 };
@@ -104,23 +172,8 @@ export const filterWeightRecordsByRange = (
   }
 
   const reference = parseDateKey(referenceDate);
-  let fromDate = parseDateKey(referenceDate);
-
-  switch (range) {
-    case '30d':
-      fromDate.setDate(reference.getDate() - 29);
-      break;
-    case '3m':
-      fromDate = shiftMonths(referenceDate, -3);
-      fromDate.setDate(fromDate.getDate() + 1);
-      break;
-    case '1y':
-      fromDate = shiftMonths(referenceDate, -12);
-      fromDate.setDate(fromDate.getDate() + 1);
-      break;
-    default:
-      break;
-  }
+  const fromDate = parseDateKey(referenceDate);
+  fromDate.setDate(reference.getDate() - (RANGE_DAY_MAP[range] - 1));
 
   const fromDateKey = [
     fromDate.getFullYear(),
@@ -168,7 +221,7 @@ const getBucketLabel = (bucketKey: string, grouping: WeightHistoryGrouping, loca
       return `${formatDateLabel(weekStart, { month: 'short', day: 'numeric' }, locale)} - ${formatDateLabel(weekEnd, { month: 'short', day: 'numeric' }, locale)}`;
     }
     case 'month':
-      return parseDateKey(`${bucketKey}-01`).toLocaleDateString(locale, { month: 'short', year: 'numeric' });
+      return parseDateKey(`${bucketKey}-01`).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
     case 'year':
       return bucketKey;
     default:
@@ -197,33 +250,44 @@ export const aggregateWeightRecords = (
   return [...grouped.values()].sort((left, right) => left.sortDate.localeCompare(right.sortDate));
 };
 
-export const buildWeightTableRows = (points: WeightChartPoint[]): WeightTableRow[] => {
-  const rowsAscending = points.map((point, index) => ({
-    ...point,
-    variationKg: index === 0 ? null : point.weightKg - points[index - 1].weightKg,
+export const buildWeightTableRows = (
+  records: WeightRecord[] | undefined | null,
+  locale = 'en'
+): WeightTableRow[] => {
+  const sortedRecords = sortWeightRecordsAscending(records);
+  const rowsAscending = sortedRecords.map((record, index) => ({
+    date: record.date,
+    label: formatDateLabel(record.date, { day: 'numeric', month: 'long', year: 'numeric' }, locale),
+    weightKg: record.weightKg,
+    variationKg: index === 0 ? null : record.weightKg - sortedRecords[index - 1].weightKg,
   }));
 
   return [...rowsAscending].reverse();
 };
 
-export const getPeriodWeightStats = (points: WeightChartPoint[]) => {
-  if (points.length === 0) {
+export const getPeriodWeightStats = (records: WeightRecord[] | undefined | null): WeightPeriodStats => {
+  const sortedRecords = sortWeightRecordsAscending(records);
+  if (sortedRecords.length === 0) {
     return {
       currentWeightKg: null,
       periodChangeKg: null,
       minWeightKg: null,
       latestDate: null,
+      firstWeightKg: null,
+      firstDate: null,
     };
   }
 
-  const firstPoint = points[0];
-  const latestPoint = points[points.length - 1];
+  const firstRecord = sortedRecords[0];
+  const latestRecord = sortedRecords[sortedRecords.length - 1];
 
   return {
-    currentWeightKg: latestPoint.weightKg,
-    periodChangeKg: latestPoint.weightKg - firstPoint.weightKg,
-    minWeightKg: Math.min(...points.map((point) => point.weightKg)),
-    latestDate: latestPoint.sourceDate,
+    currentWeightKg: latestRecord.weightKg,
+    periodChangeKg: latestRecord.weightKg - firstRecord.weightKg,
+    minWeightKg: Math.min(...sortedRecords.map((record) => record.weightKg)),
+    latestDate: latestRecord.date,
+    firstWeightKg: firstRecord.weightKg,
+    firstDate: firstRecord.date,
   };
 };
 

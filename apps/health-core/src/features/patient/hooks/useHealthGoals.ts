@@ -4,7 +4,7 @@ import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import type { HealthGoalResponse } from '@/features/clinical/types/clinical.types';
 
-const HEALTH_GOALS_QUERY_KEY = ['clinical', 'health-goals'];
+export const HEALTH_GOALS_QUERY_KEY = ['clinical', 'health-goals'] as const;
 const HEALTH_GOALS_STALE_TIME = 5 * 60 * 1000;
 
 interface UseHealthGoalsReturn {

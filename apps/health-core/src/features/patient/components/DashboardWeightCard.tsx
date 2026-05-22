@@ -34,27 +34,62 @@ const formatVariation = (value: number | null) => {
   return `${sign}${value.toFixed(1)} kg`;
 };
 
-const getSparklinePoints = (values: number[]) => {
+const getSparklineChart = (records: { weightKg: number; date: string }[]) => {
+  const width = 280;
+  const height = 112;
+  const paddingX = 16;
+  const paddingTop = 24;
+  const paddingBottom = 20;
+  const values = records.map((record) => record.weightKg);
+
   if (values.length === 0) {
-    return '';
+    return {
+      height,
+      points: '',
+      coordinates: [] as Array<{ x: number; y: number; weightKg: number; date: string }>,
+      width,
+    };
   }
 
-  const width = 280;
-  const height = 96;
-  const paddingX = 16;
-  const paddingY = 12;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const yRange = max - min || 1;
 
-  return values
-    .map((value, index) => {
-      const x = paddingX + (index * (width - paddingX * 2)) / Math.max(values.length - 1, 1);
-      const y = height - paddingY - ((value - min) / yRange) * (height - paddingY * 2);
-      return `${x},${y}`;
-    })
-    .join(' ');
+  const coordinates = records.map((record, index) => {
+    const value = record.weightKg;
+    const x = paddingX + (index * (width - paddingX * 2)) / Math.max(values.length - 1, 1);
+    const y = height - paddingBottom - ((value - min) / yRange) * (height - paddingTop - paddingBottom);
+
+    return {
+      date: record.date,
+      weightKg: record.weightKg,
+      x,
+      y,
+    };
+  });
+
+  return {
+    height,
+    points: coordinates.map((point) => `${point.x},${point.y}`).join(' '),
+    coordinates,
+    width,
+  };
 };
+
+const formatChartDate = (date: string, locale: string) =>
+  new Date(`${date}T12:00:00`).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'short',
+  });
+
+const formatLongDate = (date: string, locale: string) =>
+  new Date(`${date}T12:00:00`).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+const formatChartWeight = (value: number) => `${value.toFixed(1)} kg`;
 
 export const DashboardWeightCard = () => {
   const { t, i18n } = useTranslation('patient');
@@ -70,8 +105,8 @@ export const DashboardWeightCard = () => {
 
   const latestRecords = useMemo(() => getLatestWeightRecords(data, 7), [data]);
   const stats = useMemo(() => getDashboardWeightStats(latestRecords), [latestRecords]);
-  const sparklinePoints = useMemo(
-    () => getSparklinePoints(latestRecords.map((record) => record.weightKg)),
+  const sparklineChart = useMemo(
+    () => getSparklineChart(latestRecords),
     [latestRecords]
   );
 
@@ -83,11 +118,24 @@ export const DashboardWeightCard = () => {
     setConfirmOpen(false);
   };
 
-  const closeDialog = (open: boolean) => {
-    setDialogOpen(open);
-    if (!open) {
-      resetDialog();
+  const openEntryDialog = () => {
+    setDialogOpen(true);
+    setConfirmOpen(false);
+  };
+
+  const dismissEntryFlow = () => {
+    setDialogOpen(false);
+    setConfirmOpen(false);
+    resetDialog();
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    if (open) {
+      setDialogOpen(true);
+      return;
     }
+
+    dismissEntryFlow();
   };
 
   const handleReviewBeforeSave = () => {
@@ -99,11 +147,13 @@ export const DashboardWeightCard = () => {
       return;
     }
 
+    setDialogOpen(false);
     setConfirmOpen(true);
   };
 
   const handleBackToForm = () => {
     setConfirmOpen(false);
+    setDialogOpen(true);
   };
 
   const handleConfirmSave = async () => {
@@ -112,9 +162,10 @@ export const DashboardWeightCard = () => {
         weightKg: Number(weightInput),
         date: dateInput,
       });
-      closeDialog(false);
+      dismissEntryFlow();
     } catch (error: any) {
       setConfirmOpen(false);
+      setDialogOpen(true);
       setSubmitError(
         error?.response?.data?.message ?? t('dashboard.weightForm.saveError')
       );
@@ -175,42 +226,44 @@ export const DashboardWeightCard = () => {
                   <span>{latestDateLabel}</span>
                 </div>
 
-                <svg viewBox="0 0 280 96" className="h-28 w-full overflow-visible">
-                  <defs>
-                    <linearGradient id="weight-sparkline-fill" x1="0%" x2="0%" y1="0%" y2="100%">
-                      <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
-                    </linearGradient>
-                  </defs>
+                <svg viewBox={`0 0 ${sparklineChart.width} ${sparklineChart.height}`} className="h-32 w-full overflow-visible">
                   <polyline
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="3"
                     className="text-primary"
-                    points={sparklinePoints}
+                    points={sparklineChart.points}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  {latestRecords.map((record, index) => {
-                    const values = latestRecords.map((entry) => entry.weightKg);
-                    const min = Math.min(...values);
-                    const max = Math.max(...values);
-                    const yRange = max - min || 1;
-                    const x = 16 + (index * (280 - 32)) / Math.max(latestRecords.length - 1, 1);
-                    const y = 96 - 12 - ((record.weightKg - min) / yRange) * (96 - 24);
-
-                    return (
-                      <circle
-                        key={record.date}
-                        cx={x}
-                        cy={y}
-                        r={index === latestRecords.length - 1 ? 4.5 : 3.5}
-                        className={index === latestRecords.length - 1 ? 'fill-primary' : 'fill-primary/60'}
+                  {sparklineChart.coordinates.map((point, index) => (
+                    <g key={point.date}>
+                      <text
+                        x={point.x}
+                        y={Math.max(point.y - 10, 12)}
+                        textAnchor="middle"
+                        className="fill-foreground text-[10px] font-medium"
                       >
-                        <title>{`${record.date}: ${record.weightKg.toFixed(1)} kg`}</title>
+                        {formatChartWeight(point.weightKg)}
+                      </text>
+                      <circle
+                        cx={point.x}
+                        cy={point.y}
+                        r={index === sparklineChart.coordinates.length - 1 ? 4.5 : 3.5}
+                        className={index === sparklineChart.coordinates.length - 1 ? 'fill-primary' : 'fill-primary/60'}
+                      >
+                        <title>{`${point.date}: ${point.weightKg.toFixed(1)} kg`}</title>
                       </circle>
-                    );
-                  })}
+                      <text
+                        x={point.x}
+                        y={sparklineChart.height - 4}
+                        textAnchor="middle"
+                        className="fill-muted-foreground text-[9px]"
+                      >
+                        {formatChartDate(point.date, i18n.language)}
+                      </text>
+                    </g>
+                  ))}
                 </svg>
               </div>
 
@@ -218,6 +271,10 @@ export const DashboardWeightCard = () => {
                 <div className="rounded-xl border border-border/70 bg-background p-3">
                   <p className="text-xs text-muted-foreground">{t('dashboard.weightCard.latestWeight')}</p>
                   <p className="mt-1 text-sm font-semibold">{formatWeight(stats.latestWeightKg)}</p>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background p-3">
+                  <p className="text-xs text-muted-foreground">{t('dashboard.weightCard.lastRecord')}</p>
+                  <p className="mt-1 text-sm font-semibold">{latestDateLabel}</p>
                 </div>
                 <div className="rounded-xl border border-border/70 bg-background p-3">
                   <p className="text-xs text-muted-foreground">{t('dashboard.weightCard.changeVsPrevious')}</p>
@@ -237,22 +294,18 @@ export const DashboardWeightCard = () => {
                     )}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border/70 bg-background p-3">
-                  <p className="text-xs text-muted-foreground">{t('dashboard.weightCard.lastRecord')}</p>
-                  <p className="mt-1 text-sm font-semibold">{latestDateLabel}</p>
-                </div>
               </div>
             </>
           )}
 
-          <Button type="button" className="w-full gap-2" onClick={() => setDialogOpen(true)}>
+          <Button type="button" className="w-full gap-2" onClick={openEntryDialog}>
             <Plus size={16} />
             {t('dashboard.weightCard.recordWeight')}
           </Button>
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={closeDialog}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>{t('dashboard.weightForm.title')}</DialogTitle>
@@ -293,7 +346,7 @@ export const DashboardWeightCard = () => {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => closeDialog(false)} disabled={registerWeight.isPending}>
+            <Button type="button" variant="outline" onClick={dismissEntryFlow} disabled={registerWeight.isPending}>
               {t('dashboard.weightForm.cancel')}
             </Button>
             <Button type="button" onClick={handleReviewBeforeSave} disabled={registerWeight.isPending}>
@@ -312,7 +365,7 @@ export const DashboardWeightCard = () => {
         title={t('dashboard.weightForm.confirmTitle')}
         description={t('dashboard.weightForm.confirmDescription', {
           weight: Number(weightInput || 0).toFixed(1),
-          date: dateInput,
+          date: formatLongDate(dateInput, i18n.language),
         })}
         confirmText={t('dashboard.weightForm.confirmAction')}
         cancelText={t('dashboard.weightForm.back')}

@@ -16,6 +16,8 @@ public interface ManageProfileUseCase {
     List<PatientProfile> getProfilesByNutritionistId(String nutritionistId);
     PatientProfile getProfileForNutritionist(String nutritionistId, String patientId);
     HealthGoal updateWeight(String userId, Double weightKg, LocalDate date);
+    HealthGoal editWeight(String userId, LocalDate originalDate, Double weightKg, LocalDate date);
+    HealthGoal deleteWeight(String userId, LocalDate date);
     List<WeightRecord> getWeightHistory(String userId);
     NutritionistProfile createNutritionistProfile(NutritionistProfile profile);
     NutritionistProfile updateNutritionistProfile(String userId, NutritionistProfile profile);

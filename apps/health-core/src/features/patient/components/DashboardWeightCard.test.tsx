@@ -10,30 +10,6 @@ import { DashboardWeightCard } from './DashboardWeightCard';
 
 vi.mock('@/features/patient/hooks/useWeightHistory');
 vi.mock('@/features/patient/hooks/useRegisterWeight');
-vi.mock('@/shared/components/ConfirmModal', () => ({
-  ConfirmModal: ({
-    isOpen,
-    title,
-    confirmText,
-    cancelText,
-    onConfirm,
-    onClose,
-  }: {
-    isOpen: boolean;
-    title: string;
-    confirmText: string;
-    cancelText: string;
-    onConfirm: () => void;
-    onClose: () => void;
-  }) =>
-    isOpen ? (
-      <div>
-        <p>{title}</p>
-        <button type="button" data-testid="confirm-submit" onClick={onConfirm}>{confirmText}</button>
-        <button type="button" data-testid="confirm-back" onClick={onClose}>{cancelText}</button>
-      </div>
-    ) : null,
-}));
 
 describe('DashboardWeightCard', () => {
   const mutateAsync = vi.fn();
@@ -69,9 +45,11 @@ describe('DashboardWeightCard', () => {
     render(<DashboardWeightCard />);
 
     expect(screen.getByText('Latest weight')).toBeInTheDocument();
-    expect(screen.getByText('78.1 kg')).toBeInTheDocument();
-    expect(screen.getByText('Change vs previous')).toBeInTheDocument();
+    expect(screen.getByText('Latest weight record date')).toBeInTheDocument();
+    expect(screen.getByText('Change compared with previous')).toBeInTheDocument();
+    expect(screen.getAllByText('78.1 kg').length).toBeGreaterThan(0);
     expect(screen.getByText('-0.4 kg')).toBeInTheDocument();
+    expect(screen.getAllByText('78.5 kg').length).toBeGreaterThan(0);
   });
 
   it('validates and submits a new weight entry through confirmation', async () => {
@@ -85,8 +63,9 @@ describe('DashboardWeightCard', () => {
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
     expect(await screen.findByText('Do you want to save this weight entry?')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Weight (kg)')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId('confirm-submit'));
+    await user.click(screen.getByRole('button', { name: 'Yes, save' }));
 
     expect(mutateAsync).toHaveBeenCalledWith({ weightKg: 77.9, date: '2026-05-20' });
   });
@@ -101,8 +80,9 @@ describe('DashboardWeightCard', () => {
 
     await user.click(screen.getByRole('button', { name: 'Continue' }));
     expect(await screen.findByText('Do you want to save this weight entry?')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Weight (kg)')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId('confirm-back'));
+    await user.click(screen.getByRole('button', { name: 'Back' }));
 
     expect(screen.queryByText('Do you want to save this weight entry?')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Weight (kg)')).toHaveValue('77.9');
@@ -116,7 +96,7 @@ describe('DashboardWeightCard', () => {
     await user.click(screen.getByRole('button', { name: 'Record weight' }));
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
-    expect(screen.getByText('Enter a weight value.')).toBeInTheDocument();
+    expect(screen.getByText('Enter a weight to continue.')).toBeInTheDocument();
     expect(screen.queryByText('Do you want to save this weight entry?')).not.toBeInTheDocument();
   });
 });

@@ -21,8 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,14 +91,31 @@ public class ClinicalController {
         logger.info("[ClinicalController] Updating weight for userId={} weightKg={} date={}",
                 userId, request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg(), request.date());
-        HealthGoalResponse response = new HealthGoalResponse(
-                newGoal.targetCalories(),
-                newGoal.targetProtein(),
-                newGoal.targetCarbs(),
-                newGoal.targetFat(),
-                newGoal.targetWaterGlasses()
-        );
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(toHealthGoalResponse(newGoal));
+    }
+
+    @PutMapping("/weight/{originalDate}")
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<HealthGoalResponse> editWeight(
+            @RequestHeader("X-User-Id") String userId,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate originalDate,
+            @Valid @RequestBody UpdateWeightRequest request
+    ) {
+        logger.info("[ClinicalController] Editing weight for userId={} originalDate={} weightKg={} date={}",
+                userId, originalDate, request.weightKg(), request.date());
+        HealthGoal newGoal = manageProfileUseCase.editWeight(userId, originalDate, request.weightKg(), request.date());
+        return ResponseEntity.ok(toHealthGoalResponse(newGoal));
+    }
+
+    @DeleteMapping("/weight/{date}")
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<HealthGoalResponse> deleteWeight(
+            @RequestHeader("X-User-Id") String userId,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        logger.info("[ClinicalController] Deleting weight for userId={} date={}", userId, date);
+        HealthGoal newGoal = manageProfileUseCase.deleteWeight(userId, date);
+        return ResponseEntity.ok(toHealthGoalResponse(newGoal));
     }
 
     @GetMapping("/weight/history")
@@ -252,6 +271,16 @@ public class ClinicalController {
                 profile.getExcludedFoods() != null ? profile.getExcludedFoods() : List.of(),
                 profile.getNutritionistId(),
                 profile.isProfileCompleted()
+        );
+    }
+
+    private HealthGoalResponse toHealthGoalResponse(HealthGoal goal) {
+        return new HealthGoalResponse(
+                goal.targetCalories(),
+                goal.targetProtein(),
+                goal.targetCarbs(),
+                goal.targetFat(),
+                goal.targetWaterGlasses()
         );
     }
 

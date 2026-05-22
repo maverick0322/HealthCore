@@ -119,6 +119,38 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void shouldEditWeightAndRecalculateCurrentProfileState() {
+        PatientProfile profile = createPatientProfile("user-123");
+        LocalDate initialDate = profile.getWeightHistory().get(0).date();
+        LocalDate latestDate = LocalDate.now();
+        profile.registerWeight(74.0, latestDate);
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        HealthGoal goal = service.editWeight("user-123", latestDate, 73.0, latestDate.minusDays(1));
+
+        assertNotNull(goal);
+        assertEquals(73.0, profile.getWeightKg());
+        assertEquals(2, profile.getWeightHistory().size());
+        assertEquals(initialDate, profile.getWeightHistory().get(0).date());
+        verify(repositoryPort).save(profile);
+    }
+
+    @Test
+    void shouldDeleteLatestWeightAndRestorePreviousCurrentWeight() {
+        PatientProfile profile = createPatientProfile("user-123");
+        LocalDate latestDate = LocalDate.now();
+        profile.registerWeight(74.0, latestDate);
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        HealthGoal goal = service.deleteWeight("user-123", latestDate);
+
+        assertNotNull(goal);
+        assertEquals(70.0, profile.getWeightKg());
+        assertEquals(1, profile.getWeightHistory().size());
+        verify(repositoryPort).save(profile);
+    }
+
+    @Test
     void shouldUpdatePatientProfile() {
         PatientProfile existingProfile = createPatientProfile("user-123");
         PatientProfile updatedProfile = new PatientProfile(

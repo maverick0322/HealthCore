@@ -2,15 +2,27 @@ import { render, screen } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import * as useDeleteWeightRecordModule from '@/features/patient/hooks/useDeleteWeightRecord';
+import * as useEditWeightRecordModule from '@/features/patient/hooks/useEditWeightRecord';
 import * as useWeightHistoryModule from '@/features/patient/hooks/useWeightHistory';
 
 import { WeightHistorySection } from './WeightHistorySection';
 
 vi.mock('@/features/patient/hooks/useWeightHistory');
+vi.mock('@/features/patient/hooks/useEditWeightRecord');
+vi.mock('@/features/patient/hooks/useDeleteWeightRecord');
+
+class ResizeObserverMock {
+  observe() {}
+  disconnect() {}
+  unobserve() {}
+}
 
 describe('WeightHistorySection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+
     vi.mocked(useWeightHistoryModule.useWeightHistory).mockReturnValue({
       data: [
         { weightKg: 82.0, date: '2026-01-03' },
@@ -24,24 +36,53 @@ describe('WeightHistorySection', () => {
       error: null,
       refetch: vi.fn(),
     } as any);
+
+    vi.mocked(useEditWeightRecordModule.useEditWeightRecord).mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as any);
+
+    vi.mocked(useDeleteWeightRecordModule.useDeleteWeightRecord).mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    } as any);
   });
 
-  it('renders period stats and history table', () => {
+  it('renders the analysis view with adaptive filters and history table', () => {
     render(<WeightHistorySection />);
 
-    expect(screen.getByText('Current weight')).toBeInTheDocument();
-    expect(screen.getByText('Weight history table')).toBeInTheDocument();
+    expect(screen.getByText('My weight progress')).toBeInTheDocument();
+    expect(screen.getByText('Previous records')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '6 months' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: '1 year' })).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getAllByText('78.1 kg').length).toBeGreaterThan(0);
   });
 
-  it('changes the displayed aggregation when filters change', async () => {
+  it('updates the filtered table when the range changes', async () => {
     const user = userEvent.setup();
     render(<WeightHistorySection />);
 
-    await user.click(screen.getByRole('button', { name: 'All' }));
-    await user.click(screen.getByRole('button', { name: 'Months' }));
+    expect(screen.queryByText('January 3, 2026')).not.toBeInTheDocument();
 
-    expect(screen.getAllByText('May 2026').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Apr 2026').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: 'From the start' }));
+
+    expect(screen.getByText('January 3, 2026')).toBeInTheDocument();
+    expect(screen.getAllByText('May 18, 2026').length).toBeGreaterThan(0);
+  });
+
+  it('shows the educational empty state when only one record is available in the selected view', () => {
+    vi.mocked(useWeightHistoryModule.useWeightHistory).mockReturnValue({
+      data: [{ weightKg: 80.0, date: '2026-05-18' }],
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as any);
+
+    render(<WeightHistorySection />);
+
+    expect(screen.getByText('Your starting point is 80.0 kg.')).toBeInTheDocument();
+    expect(screen.getByText('Log your next weight to start seeing your progress here.')).toBeInTheDocument();
+    expect(screen.getAllByText('May 18, 2026').length).toBeGreaterThan(0);
   });
 });

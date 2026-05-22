@@ -115,7 +115,45 @@ public class PatientProfile {
         this.weightHistory.removeIf(record -> record.date().equals(validatedDate));
         this.weightHistory.add(new WeightRecord(validatedWeight, validatedDate));
         this.weightHistory.sort(Comparator.comparing(WeightRecord::date));
-        this.weightKg = this.weightHistory.get(this.weightHistory.size() - 1).weightKg();
+        syncCurrentWeightFromHistory();
+        return generateHealthGoals();
+    }
+
+    public HealthGoal editWeightRecord(LocalDate originalDate, Double newWeight, LocalDate newDate) {
+        LocalDate validatedOriginalDate = ProfileFieldValidator.validateWeightRecordDate(originalDate);
+        Double validatedWeight = ProfileFieldValidator.validateWeightKg(newWeight);
+        LocalDate validatedNewDate = ProfileFieldValidator.validateWeightRecordDate(newDate);
+
+        boolean originalRecordExists = this.weightHistory.stream()
+                .anyMatch(record -> record.date().equals(validatedOriginalDate));
+        if (!originalRecordExists) {
+            throw new IllegalArgumentException("Weight record not found for the provided date.");
+        }
+
+        this.weightHistory.removeIf(record ->
+                record.date().equals(validatedOriginalDate)
+                        || (!validatedOriginalDate.equals(validatedNewDate) && record.date().equals(validatedNewDate))
+        );
+        this.weightHistory.add(new WeightRecord(validatedWeight, validatedNewDate));
+        this.weightHistory.sort(Comparator.comparing(WeightRecord::date));
+        syncCurrentWeightFromHistory();
+        return generateHealthGoals();
+    }
+
+    public HealthGoal deleteWeightRecord(LocalDate date) {
+        LocalDate validatedDate = ProfileFieldValidator.validateWeightRecordDate(date);
+
+        if (this.weightHistory.size() <= 1) {
+            throw new IllegalStateException("At least one weight record must remain in the profile.");
+        }
+
+        boolean removed = this.weightHistory.removeIf(record -> record.date().equals(validatedDate));
+        if (!removed) {
+            throw new IllegalArgumentException("Weight record not found for the provided date.");
+        }
+
+        this.weightHistory.sort(Comparator.comparing(WeightRecord::date));
+        syncCurrentWeightFromHistory();
         return generateHealthGoals();
     }
 
@@ -221,6 +259,13 @@ public class PatientProfile {
         this.dietType = ProfileFieldValidator.validateDietType(dietType, true);
         this.allergies = ProfileFieldValidator.validateAllergies(allergies);
         this.excludedFoods = ProfileFieldValidator.validateExcludedFoods(excludedFoods);
+    }
+
+    private void syncCurrentWeightFromHistory() {
+        if (this.weightHistory == null || this.weightHistory.isEmpty()) {
+            throw new IllegalStateException("Weight history cannot be empty.");
+        }
+        this.weightKg = this.weightHistory.get(this.weightHistory.size() - 1).weightKg();
     }
 
     public boolean isProfileCompleted() {

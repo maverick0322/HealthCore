@@ -196,3 +196,19 @@ export interface NutritionistProfileResponse extends NutritionistProfilePayload 
 }
 
 export interface NutritionistPatientProfileResponse extends PatientProfileResponse {}
+
+export interface NutritionistWeightProgressReportRowResponse {
+  patientId: string;
+  fullName: string;
+  latestRecordDateInRange: string | null;
+  startWeightKg: number | null;
+  currentWeightKg: number | null;
+  netChangeKg: number | null;
+  hasRecordsInRange: boolean;
+}
+
+export interface NutritionistWeightProgressReportResponse {
+  activePatients: number;
+  patientsWithoutWeightInRange: number;
+  rows: NutritionistWeightProgressReportRowResponse[];
+}

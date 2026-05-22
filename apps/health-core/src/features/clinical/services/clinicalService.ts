@@ -12,6 +12,7 @@ import type {
   NutritionPlanViewResponse,
   NutritionPlanUpsertRequest,
   CatalogFoodResponse,
+  NutritionistWeightProgressReportResponse,
 } from '../types/clinical.types';
 
 import httpClient from '@/core/http/httpClient';
@@ -180,6 +181,20 @@ export const clinicalApi = {
       { headers: getXUserIdHeader() }
     );
     return normalizePatientProfile(response.data);
+  },
+
+  getNutritionistWeightProgressReport: async (
+    from: string,
+    to: string
+  ): Promise<NutritionistWeightProgressReportResponse> => {
+    const response = await httpClient.get<NutritionistWeightProgressReportResponse>(
+      `${CLINICAL_API_URL}/nutritionist/reports/weight-progress`,
+      {
+        params: { from, to },
+        headers: getXUserIdHeader(),
+      }
+    );
+    return response.data;
   },
 
   getMyGoals: async (userId?: string): Promise<HealthGoalResponse> => {

@@ -4,6 +4,8 @@ import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.HealthGoal;
 import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressReport;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressRow;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.PostalCodeCatalogEntry;
 import com.healthcore.clinical.domain.model.WeightRecord;
@@ -15,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -86,6 +89,38 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
     }
 
     @Override
+    public NutritionistWeightProgressReport getNutritionistWeightProgressReport(
+            String nutritionistId,
+            LocalDate from,
+            LocalDate to
+    ) {
+        if (from == null || to == null || from.isAfter(to)) {
+            throw new IllegalArgumentException("Invalid report range.");
+        }
+
+        List<NutritionistWeightProgressRow> rows = patientRepositoryPort.findAllByNutritionistId(nutritionistId)
+                .stream()
+                .sorted(Comparator.comparing(profile -> {
+                    String fullName = profile.getFullName();
+                    return fullName == null || fullName.isBlank()
+                            ? profile.getUserId()
+                            : fullName;
+                }, String.CASE_INSENSITIVE_ORDER))
+                .map(profile -> toWeightProgressRow(profile, from, to))
+                .toList();
+
+        long patientsWithoutWeightInRange = rows.stream()
+                .filter(row -> !row.hasRecordsInRange())
+                .count();
+
+        return new NutritionistWeightProgressReport(
+                rows.size(),
+                (int) patientsWithoutWeightInRange,
+                rows
+        );
+    }
+
+    @Override
     public HealthGoal updateWeight(String userId, Double weightKg, LocalDate date) {
         PatientProfile profile = patientRepositoryPort.findByUserId(userId)
                 .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
@@ -153,6 +188,48 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
     @Override
     public Optional<NutritionistProfile> getNutritionistProfileByUserId(String userId) {
         return nutritionistRepositoryPort.findByUserId(userId);
+    }
+
+    private NutritionistWeightProgressRow toWeightProgressRow(
+            PatientProfile profile,
+            LocalDate from,
+            LocalDate to
+    ) {
+        String fullName = profile.getFullName();
+        String resolvedName = fullName == null || fullName.isBlank()
+                ? profile.getUserId()
+                : fullName;
+
+        List<WeightRecord> recordsInRange = profile.getWeightHistory()
+                .stream()
+                .filter(record -> !record.date().isBefore(from) && !record.date().isAfter(to))
+                .sorted(Comparator.comparing(WeightRecord::date))
+                .toList();
+
+        if (recordsInRange.isEmpty()) {
+            return new NutritionistWeightProgressRow(
+                    profile.getUserId(),
+                    resolvedName,
+                    null,
+                    null,
+                    null,
+                    null,
+                    false
+            );
+        }
+
+        WeightRecord firstRecord = recordsInRange.get(0);
+        WeightRecord latestRecord = recordsInRange.get(recordsInRange.size() - 1);
+
+        return new NutritionistWeightProgressRow(
+                profile.getUserId(),
+                resolvedName,
+                latestRecord.date(),
+                firstRecord.weightKg(),
+                latestRecord.weightKg(),
+                latestRecord.weightKg() - firstRecord.weightKg(),
+                true
+        );
     }
 
     private void validateClinicAddress(ClinicAddress clinicAddress) {

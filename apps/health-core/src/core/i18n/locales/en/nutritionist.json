@@ -193,15 +193,49 @@
     }
   },
   "reports": {
-    "title": "Reports and Exports",
-    "subtitle": "Generate and download progress reports for your patients.",
-    "activePatients": "Active Patients",
-    "consultations": "Monthly Consultations",
-    "reportsGenerated": "Reports Generated",
-    "exportTitle": "Export Patient Data",
-    "exportDesc": "Select a patient to download their clinical history and progress.",
-    "downloadPdf": "Download PDF",
-    "downloadCsv": "Export CSV"
+    "title": "Reports and Operational Management",
+    "subtitle": "Review your patients' weight progress and your appointment activity without leaving this screen.",
+    "generatedOn": "Generated on {{date}}",
+    "exportPdf": "Export report PDF",
+    "exportingPdf": "Exporting PDF...",
+    "retry": "Retry",
+    "error": "We could not load the nutritionist reports.",
+    "ranges": {
+      "1m": "1 month",
+      "3m": "3 months",
+      "6m": "6 months",
+      "12m": "12 months"
+    },
+    "kpis": {
+      "activePatients": "Active patients",
+      "attendedAppointments": "Attended appointments",
+      "patientsWithoutWeight": "Patients without weight records"
+    },
+    "appointments": {
+      "title": "Appointment overview",
+      "attended": "Attended",
+      "cancelled": "Cancelled",
+      "percent": "{{percent}}% of the relevant appointments",
+      "empty": "There were no attended or cancelled appointments in this period.",
+      "summary": {
+        "withData": "In this period you attended {{attended}} appointments and {{cancelled}} were cancelled.",
+        "empty": "There is no attended or cancelled appointment activity in this period yet."
+      }
+    },
+    "weightTable": {
+      "title": "Patient weight control",
+      "latestDate": "Latest weight record in this period: {{date}}",
+      "noLatestDate": "There are no weight records in the selected period yet.",
+      "empty": "There are no linked patients to display in this report.",
+      "noRecords": "No records in this period",
+      "columns": {
+        "patient": "Patient",
+        "latestRecord": "Latest record",
+        "startWeight": "Start weight",
+        "currentWeight": "Current weight",
+        "netChange": "Net change"
+      }
+    }
   },
   "availability": {
     "title": "Availability",

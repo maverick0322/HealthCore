@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.Gender;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressReport;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressRow;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
@@ -323,6 +325,54 @@ class ClinicalControllerTest {
                 .andExpect(jsonPath("$.userId").value(patientId))
                 .andExpect(jsonPath("$.fullName").value("Carlos Gomez"))
                 .andExpect(jsonPath("$.nutritionistId").value(nutritionistId));
+    }
+
+    @Test
+    void shouldReturnNutritionistWeightProgressReport() throws Exception {
+        String nutritionistId = "nutri-123";
+        LocalDate from = LocalDate.of(2026, 5, 1);
+        LocalDate to = LocalDate.of(2026, 5, 22);
+        setSecurityContext(nutritionistId, "NUTRITIONIST");
+
+        NutritionistWeightProgressReport report = new NutritionistWeightProgressReport(
+                2,
+                1,
+                List.of(
+                        new NutritionistWeightProgressRow(
+                                "patient-1",
+                                "Ana Lopez",
+                                LocalDate.of(2026, 5, 21),
+                                72.0,
+                                70.5,
+                                -1.5,
+                                true
+                        ),
+                        new NutritionistWeightProgressRow(
+                                "patient-2",
+                                "patient-2",
+                                null,
+                                null,
+                                null,
+                                null,
+                                false
+                        )
+                )
+        );
+
+        when(manageProfileUseCase.getNutritionistWeightProgressReport(nutritionistId, from, to))
+                .thenReturn(report);
+
+        mockMvc.perform(
+                        get("/api/v1/clinical/nutritionist/reports/weight-progress")
+                                .param("from", from.toString())
+                                .param("to", to.toString())
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activePatients").value(2))
+                .andExpect(jsonPath("$.patientsWithoutWeightInRange").value(1))
+                .andExpect(jsonPath("$.rows[0].fullName").value("Ana Lopez"))
+                .andExpect(jsonPath("$.rows[0].netChangeKg").value(-1.5))
+                .andExpect(jsonPath("$.rows[1].hasRecordsInRange").value(false));
     }
 
     private CreateProfileRequest createPatientRequest() {

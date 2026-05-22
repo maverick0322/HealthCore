@@ -5,6 +5,8 @@ import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.HealthGoal;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressReport;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressRow;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
@@ -13,6 +15,8 @@ import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.HealthGoalResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistProfileResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressReportResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressRowResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.PatientProfileResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
@@ -23,7 +27,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.http.HttpStatus;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -203,6 +209,28 @@ public class ClinicalController {
         return ResponseEntity.ok(toPatientProfileResponse(profile));
     }
 
+    @GetMapping("/nutritionist/reports/weight-progress")
+    @PreAuthorize("hasRole('NUTRITIONIST')")
+    public ResponseEntity<NutritionistWeightProgressReportResponse> getNutritionistWeightProgressReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        if (from == null || to == null || from.isAfter(to)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid report range.");
+        }
+
+        String nutritionistId = getCurrentUserId();
+        logger.info("[ClinicalController] Getting weight progress report for nutritionistId={} from={} to={}",
+                nutritionistId, from, to);
+
+        NutritionistWeightProgressReport report = manageProfileUseCase.getNutritionistWeightProgressReport(
+                nutritionistId,
+                from,
+                to
+        );
+        return ResponseEntity.ok(toNutritionistWeightProgressReportResponse(report));
+    }
+
     private PatientProfile toPatientProfile(String userId, CreateProfileRequest request) {
         return new PatientProfile(
                 userId,
@@ -299,6 +327,32 @@ public class ClinicalController {
                 toClinicAddressResponse(profile.getClinicAddress()),
                 profile.getBio(),
                 profile.isProfileCompleted()
+        );
+    }
+
+    private NutritionistWeightProgressReportResponse toNutritionistWeightProgressReportResponse(
+            NutritionistWeightProgressReport report
+    ) {
+        return new NutritionistWeightProgressReportResponse(
+                report.activePatients(),
+                report.patientsWithoutWeightInRange(),
+                report.rows().stream()
+                        .map(this::toNutritionistWeightProgressRowResponse)
+                        .toList()
+        );
+    }
+
+    private NutritionistWeightProgressRowResponse toNutritionistWeightProgressRowResponse(
+            NutritionistWeightProgressRow row
+    ) {
+        return new NutritionistWeightProgressRowResponse(
+                row.patientId(),
+                row.fullName(),
+                row.latestRecordDateInRange(),
+                row.startWeightKg(),
+                row.currentWeightKg(),
+                row.netChangeKg(),
+                row.hasRecordsInRange()
         );
     }
 

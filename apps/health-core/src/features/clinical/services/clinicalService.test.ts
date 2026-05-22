@@ -261,6 +261,34 @@ describe('clinicalService', () => {
     expect(patient.userId).toBe('patient-one@example.com');
   });
 
+  it('should fetch the nutritionist weight progress report', async () => {
+    (httpClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: {
+        activePatients: 2,
+        patientsWithoutWeightInRange: 1,
+        rows: [
+          {
+            patientId: 'patient-one@example.com',
+            fullName: 'Carlos Gomez',
+            latestRecordDateInRange: '2026-05-20',
+            startWeightKg: 80,
+            currentWeightKg: 77.5,
+            netChangeKg: -2.5,
+            hasRecordsInRange: true,
+          },
+        ],
+      },
+    });
+
+    const result = await clinicalApi.getNutritionistWeightProgressReport('2026-05-01', '2026-05-22');
+
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/nutritionist/reports/weight-progress', {
+      params: { from: '2026-05-01', to: '2026-05-22' },
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+    expect(result.rows[0].netChangeKg).toBe(-2.5);
+  });
+
   it('should handle weight endpoints and linking helpers', async () => {
     (httpClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       data: { targetCalories: 2500, targetProtein: 150, targetCarbs: 250, targetFat: 70 },

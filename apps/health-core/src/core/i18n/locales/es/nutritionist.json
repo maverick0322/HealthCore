@@ -193,15 +193,49 @@
     }
   },
   "reports": {
-    "title": "Reportes y Exportacion",
-    "subtitle": "Genera y descarga reportes del progreso de tus pacientes.",
-    "activePatients": "Pacientes Activos",
-    "consultations": "Consultas Mensuales",
-    "reportsGenerated": "Reportes Generados",
-    "exportTitle": "Exportar Datos de Pacientes",
-    "exportDesc": "Selecciona un paciente para descargar su historial clinico y progreso.",
-    "downloadPdf": "Descargar PDF",
-    "downloadCsv": "Exportar CSV"
+    "title": "Reportes y gestión operativa",
+    "subtitle": "Revisa el progreso de peso de tus pacientes y la actividad de tus citas sin salir de esta pantalla.",
+    "generatedOn": "Generado el {{date}}",
+    "exportPdf": "Exportar reporte PDF",
+    "exportingPdf": "Exportando PDF...",
+    "retry": "Reintentar",
+    "error": "No pudimos cargar los reportes del nutriólogo.",
+    "ranges": {
+      "1m": "1 mes",
+      "3m": "3 meses",
+      "6m": "6 meses",
+      "12m": "12 meses"
+    },
+    "kpis": {
+      "activePatients": "Pacientes activos",
+      "attendedAppointments": "Consultas atendidas",
+      "patientsWithoutWeight": "Pacientes sin registro de peso"
+    },
+    "appointments": {
+      "title": "Resumen de citas",
+      "attended": "Atendidas",
+      "cancelled": "Canceladas",
+      "percent": "{{percent}}% de las citas relevantes",
+      "empty": "No hubo citas atendidas ni canceladas en este período.",
+      "summary": {
+        "withData": "En este período atendiste {{attended}} consultas y se cancelaron {{cancelled}}.",
+        "empty": "Todavía no hay actividad de citas atendidas o canceladas en este período."
+      }
+    },
+    "weightTable": {
+      "title": "Control de peso de pacientes",
+      "latestDate": "Último registro de peso en este período: {{date}}",
+      "noLatestDate": "Todavía no hay registros de peso en el período seleccionado.",
+      "empty": "No hay pacientes vinculados para mostrar en este reporte.",
+      "noRecords": "Sin registros en este período",
+      "columns": {
+        "patient": "Paciente",
+        "latestRecord": "Último registro",
+        "startWeight": "Peso inicial",
+        "currentWeight": "Peso actual",
+        "netChange": "Cambio neto"
+      }
+    }
   },
   "availability": {
     "title": "Disponibilidad",

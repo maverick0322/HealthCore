@@ -53,7 +53,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
     @Cacheable(value = "foodNutrients", key = "#barcode", unless = "#result == null")
     public Optional<FoodNutrients> getNutrientsByBarcode(String barcode) {
         try {
-            log.debug("Initiating gRPC call to fetch nutrients for barcode: {}", barcode);
+            log.debug("Initiating gRPC call to fetch nutrients. barcodeHash={}", logHash(barcode));
             FoodRequest request = FoodRequest.newBuilder().setBarcode(barcode).build();
             FoodResponse response = catalogStub.withDeadlineAfter(GRPC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .getFoodItem(request);
@@ -75,7 +75,7 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
     @Cacheable(value = "foodSearch", key = "#query", unless = "#result.isEmpty()")
     public List<FoodNutrients> searchFoodByName(String query) {
         try {
-            log.debug("Initiating gRPC call to search food by name: {}", query);
+            log.debug("Initiating gRPC call to search food by name. queryHash={} queryLength={}", logHash(query), safeLength(query));
             SearchRequest request = SearchRequest.newBuilder().setQuery(query).build();
             SearchResponse response = catalogStub.withDeadlineAfter(GRPC_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .searchFood(request);
@@ -125,5 +125,13 @@ public class CatalogGrpcClientAdapter implements FoodCatalogPort {
         } else {
             return new ExternalCatalogUnavailableException("The Catalog Service is currently unreachable or failed internally.");
         }
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
+    }
+
+    private int safeLength(String value) {
+        return value == null ? 0 : value.length();
     }
 }

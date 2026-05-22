@@ -38,7 +38,7 @@ public class WaterTrackingController {
             @Valid @RequestBody WaterLogRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal String userId) {
 
-        log.info("REST request to log {} ml of water for user {}", request.amountMl(), userId);
+        log.info("REST request to log water. amountMl={} userHash={}", request.amountMl(), logHash(userId));
 
         WaterLog savedLog = waterUseCase.logWaterConsumption(
                 userId,
@@ -47,5 +47,9 @@ public class WaterTrackingController {
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(savedLog);
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

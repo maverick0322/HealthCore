@@ -36,7 +36,7 @@ public class FoodTrackingUseCase {
         if (barcode == null || barcode.trim().isEmpty()) {
             throw new InvalidDomainDataException("Barcode cannot be null or empty.");
         }
-        log.debug("Delegating catalog lookup for barcode: {}", barcode);
+        log.debug("Delegating catalog lookup. barcodeHash={}", logHash(barcode));
         return catalogPort.getNutrientsByBarcode(barcode)
                 .orElseThrow(() -> new ResourceNotFoundException("Barcode [" + barcode + "] not found in external catalog."));
     }
@@ -45,7 +45,7 @@ public class FoodTrackingUseCase {
         if (query == null || query.trim().length() < MIN_SEARCH_QUERY_LENGTH) {
             throw new InvalidDomainDataException("Search query must contain at least 3 characters.");
         }
-        log.debug("Delegating catalog search for query: {}", query);
+        log.debug("Delegating catalog search. queryHash={} queryLength={}", logHash(query), query.length());
         return catalogPort.searchFoodByName(query);
     }
 
@@ -56,7 +56,7 @@ public class FoodTrackingUseCase {
         if (userId == null || userId.isBlank()) {
             throw new InvalidDomainDataException("User ID is required to log a meal.");
         }
-        log.info("Processing meal consumption log for user: {}, mealType: {}, items count: {}", userId, mealType, requestedItems.size());
+        log.info("Processing meal consumption log. userHash={} mealType={} itemCount={}", logHash(userId), mealType, requestedItems.size());
 
         // 1. Fetch nutrients and build MealItems (Children Entities)
         List<MealItem> mealItems = requestedItems.stream()
@@ -78,7 +78,7 @@ public class FoodTrackingUseCase {
      * Reuses getDailyLogs to maintain DRY principle.
      */
     public List<MealLog> getTodayLogs(String userId) {
-        log.debug("Retrieving today's meal logs for user: {}", userId);
+        log.debug("Retrieving today's meal logs. userHash={}", logHash(userId));
         return getDailyLogs(userId, LocalDate.now());
     }
 
@@ -89,7 +89,7 @@ public class FoodTrackingUseCase {
         if (userId == null || userId.isBlank() || date == null) {
             throw new InvalidDomainDataException("User ID and date are required to fetch daily logs.");
         }
-        log.debug("Retrieving meal logs for user: {} on date: {}", userId, date);
+        log.debug("Retrieving meal logs. userHash={} date={}", logHash(userId), date);
 
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
@@ -102,4 +102,8 @@ public class FoodTrackingUseCase {
      * Ensures the Use Case remains completely decoupled from REST/Web dependencies.
      */
     public record MealItemCommand(String barcode, double grams) {}
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
+    }
 }

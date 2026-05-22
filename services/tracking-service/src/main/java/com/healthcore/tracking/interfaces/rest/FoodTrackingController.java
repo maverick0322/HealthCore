@@ -44,7 +44,7 @@ public class FoodTrackingController {
             @Parameter(description = "Código de barras del producto (EAN/UPC)", example = "7622300336738")
             @PathVariable String barcode) {
 
-        log.info("REST request to fetch catalog details for barcode: {}", barcode);
+        log.info("REST request to fetch catalog details. barcodeHash={}", logHash(barcode));
         FoodNutrients nutrients = trackingUseCase.getFoodFromCatalog(barcode);
         return ResponseEntity.ok(nutrients);
     }
@@ -59,7 +59,7 @@ public class FoodTrackingController {
             @Parameter(description = "Nombre o palabra clave del alimento", example = "manzana")
             @RequestParam("query") String query) {
 
-        log.info("REST request to search catalog for query: {}", query);
+        log.info("REST request to search catalog. queryHash={} queryLength={}", logHash(query), safeLength(query));
         List<FoodNutrients> results = trackingUseCase.searchCatalog(query);
         return ResponseEntity.ok(results);
     }
@@ -74,8 +74,8 @@ public class FoodTrackingController {
             @Valid @RequestBody MealLogRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal String userId) {
 
-        log.info("REST request to log meal type {} with {} items for user {}",
-                request.mealType(), request.foods().size(), userId);
+        log.info("REST request to log meal. mealType={} itemCount={} userHash={}",
+                request.mealType(), request.foods().size(), logHash(userId));
 
         List<FoodTrackingUseCase.MealItemCommand> commandItems = request.foods().stream()
                 .map(item -> new FoodTrackingUseCase.MealItemCommand(item.barcode(), item.grams()))
@@ -101,7 +101,7 @@ public class FoodTrackingController {
     public ResponseEntity<List<MealLog>> getTodayLogs(
             @Parameter(hidden = true) @AuthenticationPrincipal String userId) {
 
-        log.info("REST request to fetch today's meal logs for user: {}", userId);
+        log.info("REST request to fetch today's meal logs. userHash={}", logHash(userId));
         List<MealLog> todayLogs = trackingUseCase.getTodayLogs(userId);
         return ResponseEntity.ok(todayLogs);
     }
@@ -117,8 +117,16 @@ public class FoodTrackingController {
             @Parameter(description = "Fecha a consultar (YYYY-MM-DD)", example = "2024-05-15")
             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
-        log.info("REST request to fetch meal logs for user: {} on date: {}", userId, date);
+        log.info("REST request to fetch meal logs. userHash={} date={}", logHash(userId), date);
         List<MealLog> dailyLogs = trackingUseCase.getDailyLogs(userId, date);
         return ResponseEntity.ok(dailyLogs);
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
+    }
+
+    private int safeLength(String value) {
+        return value == null ? 0 : value.length();
     }
 }

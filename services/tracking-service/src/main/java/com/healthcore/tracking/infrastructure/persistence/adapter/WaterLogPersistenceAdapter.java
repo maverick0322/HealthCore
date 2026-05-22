@@ -31,16 +31,18 @@ public class WaterLogPersistenceAdapter implements WaterLogPort {
         }
 
         try {
-            log.debug("Saving WaterLog to MongoDB for user: {}", waterLog.getUserId());
+            log.debug("Saving WaterLog to MongoDB. userHash={}", logHash(waterLog.getUserId()));
             WaterLogDocument document = toDocument(waterLog);
             WaterLogDocument savedDocument = repository.save(document);
             return toDomain(savedDocument);
 
         } catch (DataAccessException ex) {
-            log.error("MongoDB DataAccessException while saving WaterLog for user: {}. Error: {}", waterLog.getUserId(), ex.getMessage());
+            log.error("MongoDB DataAccessException while saving WaterLog. userHash={} errorClass={}",
+                    logHash(waterLog.getUserId()), ex.getClass().getSimpleName());
             throw new WaterLogPersistenceException("Database error occurred while persisting water log.", ex);
         } catch (Exception ex) {
-            log.error("Unexpected infrastructure error saving WaterLog for user: {}. Error: {}", waterLog.getUserId(), ex.getMessage());
+            log.error("Unexpected infrastructure error saving WaterLog. userHash={} errorClass={}",
+                    logHash(waterLog.getUserId()), ex.getClass().getSimpleName());
             throw new WaterLogPersistenceException("Unexpected error during water log persistence.", ex);
         }
     }
@@ -53,15 +55,17 @@ public class WaterLogPersistenceAdapter implements WaterLogPort {
         }
 
         try {
-            log.debug("Querying aggregated water consumption for user: {} between {} and {}", userId, start, end);
+            log.debug("Querying aggregated water consumption. userHash={} start={} end={}", logHash(userId), start, end);
             Integer totalMl = repository.sumWaterAmountByUserIdAndDateRange(userId, start, end);
             return totalMl != null ? totalMl : 0;
 
         } catch (DataAccessException ex) {
-            log.error("MongoDB DataAccessException querying water aggregation for user: {}. Error: {}", userId, ex.getMessage());
+            log.error("MongoDB DataAccessException querying water aggregation. userHash={} errorClass={}",
+                    logHash(userId), ex.getClass().getSimpleName());
             throw new WaterLogPersistenceException("Database error occurred while aggregating water logs.", ex);
         } catch (Exception ex) {
-            log.error("Unexpected infrastructure error querying water aggregation for user: {}. Error: {}", userId, ex.getMessage());
+            log.error("Unexpected infrastructure error querying water aggregation. userHash={} errorClass={}",
+                    logHash(userId), ex.getClass().getSimpleName());
             throw new WaterLogPersistenceException("Unexpected error during water aggregation.", ex);
         }
     }
@@ -86,5 +90,9 @@ public class WaterLogPersistenceAdapter implements WaterLogPort {
                 .amountMl(document.getAmountMl())
                 .consumedAt(document.getConsumedAt())
                 .build();
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

@@ -36,15 +36,17 @@ public class MealLogPersistenceAdapter implements MealLogPort {
         }
 
         try {
-            log.debug("Saving MealLog to MongoDB for user: {}", mealLog.getUserId());
+            log.debug("Saving MealLog to MongoDB. userHash={}", logHash(mealLog.getUserId()));
             MealLogDocument document = toDocument(mealLog);
             MealLogDocument savedDocument = repository.save(document);
             return toDomain(savedDocument);
         } catch (DataAccessException ex) {
-            log.error("Database error occurred while saving MealLog for user: {}. Error: {}", mealLog.getUserId(), ex.getMessage());
+            log.error("Database error occurred while saving MealLog. userHash={} errorClass={}",
+                    logHash(mealLog.getUserId()), ex.getClass().getSimpleName());
             throw new MealLogPersistenceException("Failed to persist meal log due to a database error.", ex);
         } catch (Exception ex) {
-            log.error("Unexpected infrastructure error while saving MealLog for user: {}. Error: {}", mealLog.getUserId(), ex.getMessage());
+            log.error("Unexpected infrastructure error while saving MealLog. userHash={} errorClass={}",
+                    logHash(mealLog.getUserId()), ex.getClass().getSimpleName());
             throw new MealLogPersistenceException("An unexpected error occurred during meal log persistence.", ex);
         }
     }
@@ -57,15 +59,17 @@ public class MealLogPersistenceAdapter implements MealLogPort {
         }
 
         try {
-            log.debug("Querying MongoDB for MealLogs by user: {} between {} and {}", userId, start, end);
+            log.debug("Querying MongoDB for MealLogs. userHash={} start={} end={}", logHash(userId), start, end);
             return repository.findByUserIdAndConsumedAtBetween(userId, start, end).stream()
                     .map(this::toDomain)
                     .collect(Collectors.toList());
         } catch (DataAccessException ex) {
-            log.error("Database error querying MealLogs for user: {}. Error: {}", userId, ex.getMessage());
+            log.error("Database error querying MealLogs. userHash={} errorClass={}",
+                    logHash(userId), ex.getClass().getSimpleName());
             throw new MealLogPersistenceException("Failed to fetch meal logs due to a database error.", ex);
         } catch (Exception ex) {
-            log.error("Unexpected infrastructure error querying MealLogs for user: {}. Error: {}", userId, ex.getMessage());
+            log.error("Unexpected infrastructure error querying MealLogs. userHash={} errorClass={}",
+                    logHash(userId), ex.getClass().getSimpleName());
             throw new MealLogPersistenceException("Unexpected error during meal log retrieval.", ex);
         }
     }
@@ -78,13 +82,15 @@ public class MealLogPersistenceAdapter implements MealLogPort {
         }
 
         try {
-            log.debug("Executing native MongoDB aggregation for historical macros. User: {} between {} and {}", userId, start, end);
+            log.debug("Executing native MongoDB aggregation for historical macros. userHash={} start={} end={}", logHash(userId), start, end);
             return repository.aggregateHistoricalMacros(userId, start, end);
         } catch (DataAccessException ex) {
-            log.error("Database error while aggregating historical macros for user: {}. Error: {}", userId, ex.getMessage());
+            log.error("Database error while aggregating historical macros. userHash={} errorClass={}",
+                    logHash(userId), ex.getClass().getSimpleName());
             throw new MealLogPersistenceException("Failed to aggregate macros due to DB error", ex);
         } catch (Exception ex) {
-            log.error("Unexpected infrastructure error while aggregating historical macros for user: {}. Error: {}", userId, ex.getMessage());
+            log.error("Unexpected infrastructure error while aggregating historical macros. userHash={} errorClass={}",
+                    logHash(userId), ex.getClass().getSimpleName());
             throw new MealLogPersistenceException("Unexpected error during macro aggregation", ex);
         }
     }
@@ -161,5 +167,9 @@ public class MealLogPersistenceAdapter implements MealLogPort {
                 .sugarGrams(docItem.getSugarGrams())
                 .potassiumMg(docItem.getPotassiumMg())
                 .build();
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

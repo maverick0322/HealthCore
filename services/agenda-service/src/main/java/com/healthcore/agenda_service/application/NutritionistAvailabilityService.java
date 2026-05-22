@@ -36,7 +36,7 @@ public class NutritionistAvailabilityService {
 
     public List<TimeSlot> generateTimeSlots(String nutritionistId, GenerateSlotsCommand command) {
         validateGenerateCommand(command);
-        log.info("Generating slots for nutritionist {} in zone {} for {} days", nutritionistId, command.timeZone(),
+        log.info("Generating slots for nutritionistHash={} in zone {} for {} days", logHash(nutritionistId), command.timeZone(),
                 command.days().size());
         List<TimeSlot> createdSlots = new ArrayList<>();
 
@@ -69,13 +69,13 @@ public class NutritionistAvailabilityService {
         try {
             return timeSlotRepository.saveAll(createdSlots);
         } catch (DuplicateKeyException ex) {
-            log.error("Duplicate slots detected for nutritionist {}", nutritionistId);
+            log.error("Duplicate slots detected for nutritionistHash={}", logHash(nutritionistId));
             throw new ConflictException("Algunos de los horarios generados ya existen.");
         }
     }
 
     public void deactivateTimeSlot(String nutritionistId, String slotId) {
-        log.info("Deactivating slot {} for nutritionist {}", slotId, nutritionistId);
+        log.info("Deactivating slotHash={} for nutritionistHash={}", logHash(slotId), logHash(nutritionistId));
         TimeSlot slot = timeSlotRepository.findById(slotId)
                 .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
 
@@ -101,7 +101,7 @@ public class NutritionistAvailabilityService {
                     .orElse(null);
 
             if (appointment != null) {
-                log.info("Cancelling appointment {} due to slot deactivation", appointment.getId());
+                log.info("Cancelling appointmentHash={} due to slot deactivation", logHash(appointment.getId()));
                 appointment.setStatus(AppointmentStatus.CANCELLED);
                 appointment.setUpdatedAt(Instant.now());
                 appointmentRepository.save(appointment);
@@ -113,20 +113,20 @@ public class NutritionistAvailabilityService {
         slot.setActive(false);
         try {
             timeSlotRepository.save(slot);
-            log.info("Slot {} successfully deactivated", slotId);
+            log.info("Slot successfully deactivated. slotHash={}", logHash(slotId));
         } catch (OptimisticLockingFailureException ex) {
-            log.error("Optimistic locking failure while deactivating slot {}", slotId);
+            log.error("Optimistic locking failure while deactivating slotHash={}", logHash(slotId));
             throw new ConflictException("El horario fue modificado por otra transaccion, por favor intenta de nuevo");
         }
     }
 
     public List<TimeSlot> getNutritionistSlots(String nutritionistId, Instant from, Instant to) {
-        log.debug("Fetching slots for nutritionist {} between {} and {}", nutritionistId, from, to);
+        log.debug("Fetching slots for nutritionistHash={} between {} and {}", logHash(nutritionistId), from, to);
         return timeSlotRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(nutritionistId, from, to);
     }
 
     public List<Appointment> getNutritionistAppointments(String nutritionistId, Instant from, Instant to) {
-        log.debug("Fetching appointments for nutritionist {} between {} and {}", nutritionistId, from, to);
+        log.debug("Fetching appointments for nutritionistHash={} between {} and {}", logHash(nutritionistId), from, to);
         return appointmentRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(nutritionistId, from, to);
     }
 
@@ -211,5 +211,9 @@ public class NutritionistAvailabilityService {
         if (block == null || block.startTime() == null || block.endTime() == null) {
             throw new BadRequestException("Cada bloque debe incluir hora de inicio y fin");
         }
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

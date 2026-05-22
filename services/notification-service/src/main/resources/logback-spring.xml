@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <springProperty name="healthcoreLogLevel" source="logging.level.com.healthcore" defaultValue="INFO"/>
 
     <appender name="CONSOLE_JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
@@ -14,5 +15,5 @@
         <appender-ref ref="CONSOLE_JSON"/>
     </root>
 
-    <logger name="com.healthcore" level="DEBUG"/>
+    <logger name="com.healthcore" level="${healthcoreLogLevel}"/>
 </configuration>

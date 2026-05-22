@@ -19,7 +19,7 @@ public class RabbitIdentityEventPublisher implements IdentityEventPublisher {
 
     @Override
     public void publishUserRegistered(UserRegisteredEvent event) {
-        log.debug("Publishing UserRegisteredEvent for userId={} email={}", event.userId(), event.email());
+        log.debug("Publishing UserRegisteredEvent userHash={} emailHash={}", hash(event.userId()), hash(event.email()));
         rabbitTemplate.convertAndSend(
                 messagingProperties.exchange(),
                 messagingProperties.routingKeys().userRegistered(),
@@ -29,11 +29,15 @@ public class RabbitIdentityEventPublisher implements IdentityEventPublisher {
 
     @Override
     public void publishPasswordResetRequested(PasswordResetRequestedEvent event) {
-        log.debug("Publishing PasswordResetRequestedEvent for email={}", event.email());
+        log.debug("Publishing PasswordResetRequestedEvent emailHash={}", hash(event.email()));
         rabbitTemplate.convertAndSend(
                 messagingProperties.exchange(),
                 messagingProperties.routingKeys().passwordResetRequested(),
                 event
         );
+    }
+
+    private String hash(String value) {
+        return value == null ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

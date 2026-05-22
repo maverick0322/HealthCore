@@ -37,9 +37,11 @@ app:
     seed:
       enabled: ${APP_MANUALDB_SEED_ENABLED:false}
       patient-email: ${APP_MANUALDB_SEED_PATIENT_EMAIL:patient.seed@healthcore.com}
-      patient-password: ${APP_MANUALDB_SEED_PATIENT_PASSWORD:SeedPatient123!}
+      patient-password: ${APP_MANUALDB_SEED_PATIENT_PASSWORD:}
       nutritionist-email: ${APP_MANUALDB_SEED_NUTRITIONIST_EMAIL:nutritionist.seed@healthcore.com}
-      nutritionist-password: ${APP_MANUALDB_SEED_NUTRITIONIST_PASSWORD:SeedNutritionist123!}
+      nutritionist-password: ${APP_MANUALDB_SEED_NUTRITIONIST_PASSWORD:}
+      admin-email: ${APP_MANUALDB_SEED_ADMIN_EMAIL:admin@healthcore.com}
+      admin-password: ${APP_MANUALDB_SEED_ADMIN_PASSWORD:}
   security:
     rate-limit:
       enabled: ${APP_SECURITY_RATE_LIMIT_ENABLED:true}

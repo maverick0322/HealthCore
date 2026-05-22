@@ -26,19 +26,19 @@ public class ManualDbSeedRunner implements CommandLineRunner {
     @Value("${app.manualdb.seed.patient-email:patient.seed@healthcore.com}")
     private String patientEmail;
 
-    @Value("${app.manualdb.seed.patient-password:SeedPatient123!}")
+    @Value("${app.manualdb.seed.patient-password:}")
     private String patientPassword;
 
     @Value("${app.manualdb.seed.nutritionist-email:nutritionist.seed@healthcore.com}")
     private String nutritionistEmail;
 
-    @Value("${app.manualdb.seed.nutritionist-password:SeedNutritionist123!}")
+    @Value("${app.manualdb.seed.nutritionist-password:}")
     private String nutritionistPassword;
 
     @Value("${app.manualdb.seed.admin-email:admin@healthcore.com}")
     private String adminEmail;
 
-    @Value("${app.manualdb.seed.admin-password:AdminSecureP@ss123!}")
+    @Value("${app.manualdb.seed.admin-password:}")
     private String adminPassword;
 
     @Override
@@ -49,8 +49,12 @@ public class ManualDbSeedRunner implements CommandLineRunner {
     }
 
     private void seedLocalUserIfMissing(String email, String rawPassword, Role role) {
+        if (rawPassword == null || rawPassword.isBlank()) {
+            throw new IllegalStateException("Manual DB seed password is required for role " + role);
+        }
+
         if (userRepository.findByEmail(email).isPresent()) {
-            log.info("manualdb seed skipped for {} (already exists)", email);
+            log.info("manualdb seed skipped for emailHash={} (already exists)", hash(email));
             return;
         }
 
@@ -66,6 +70,10 @@ public class ManualDbSeedRunner implements CommandLineRunner {
                 .build();
 
         userRepository.save(user);
-        log.info("manualdb seed user created: {} ({})", email, role);
+        log.info("manualdb seed user created: emailHash={} role={}", hash(email), role);
+    }
+
+    private String hash(String value) {
+        return value == null ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

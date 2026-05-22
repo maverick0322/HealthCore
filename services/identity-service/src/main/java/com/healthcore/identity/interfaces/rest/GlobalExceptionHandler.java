@@ -56,21 +56,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNoResourceFound(NoResourceFoundException ex) {
-        log.warn("Resource not found: {}", ex.getMessage());
+        log.warn("Resource not found");
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(buildErrorResponse("NOT_FOUND", "Resource not found"));
     }
 
     @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
-        log.warn("Malformed or missing request body: {}", ex.getMessage());
+        log.warn("Malformed or missing request body");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(buildErrorResponse("BAD_REQUEST", "Malformed or missing request body"));
     }
 
     @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, Object>> handleHttpRequestMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
-        log.warn("HTTP method not supported: {}", ex.getMessage());
+        log.warn("HTTP method not supported");
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(buildErrorResponse("METHOD_NOT_ALLOWED", "HTTP method not supported for this endpoint"));
     }

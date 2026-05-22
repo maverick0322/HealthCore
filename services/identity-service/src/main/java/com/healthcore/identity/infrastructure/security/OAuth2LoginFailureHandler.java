@@ -36,7 +36,7 @@ public class OAuth2LoginFailureHandler implements AuthenticationFailureHandler {
                 .queryParam("message", exception.getMessage())
                 .build().toUriString();
 
-        log.debug("Redirecting user to: {}", finalUrl);
+        log.debug("Redirecting OAuth2 failure response to configured callback");
         response.sendRedirect(finalUrl);
     }
 }

@@ -81,10 +81,10 @@ public class AuthService {
         validateEmail(email, "Email is required");
         validatePassword(plainPassword, "Password is required");
         Role role = sanitizeSelfRegistrationRole(requestedRole);
-        log.info("Attempting to register local user with email: {} and role: {}", email, role);
+        log.info("Attempting to register local user with emailHash={} role={}", logHash(email), role);
 
         if (userRepository.findByEmail(email).isPresent()) {
-            log.warn("Registration rejected. Email already exists: {}", email);
+            log.warn("Registration rejected. Email already exists. emailHash={}", logHash(email));
             throw new ConflictException("Email is already registered in HealthCore");
         }
 
@@ -101,7 +101,7 @@ public class AuthService {
         User savedUser = userRepository.save(newUser);
         VerificationCodeDetails verificationCodeDetails = createVerificationCode(savedUser);
         publishUserRegistered(savedUser, verificationCodeDetails, true, locale);
-        log.info("Local user registered successfully with ID: {}", savedUser.getId());
+        log.info("Local user registered successfully with userHash={}", logHash(savedUser.getId()));
 
         return savedUser;
     }
@@ -110,7 +110,7 @@ public class AuthService {
         validateEmail(email, "Email is required");
         validatePassword(plainPassword, "Password is required");
         Role role = requestedRole == null ? Role.PATIENT : requestedRole;
-        log.info("Admin provisioning local user with email: {} and role: {}", email, role);
+        log.info("Admin provisioning local user with emailHash={} role={}", logHash(email), role);
 
         if (role == Role.ADMIN) {
             log.warn("Admin provisioning rejected. Cannot create another ADMIN.");
@@ -118,7 +118,7 @@ public class AuthService {
         }
 
         if (userRepository.findByEmail(email).isPresent()) {
-            log.warn("Admin provisioning rejected. Email already exists: {}", email);
+            log.warn("Admin provisioning rejected. Email already exists. emailHash={}", logHash(email));
             throw new ConflictException("Email is already registered in HealthCore");
         }
 
@@ -135,7 +135,7 @@ public class AuthService {
         User savedUser = userRepository.save(newUser);
         VerificationCodeDetails verificationCodeDetails = createVerificationCode(savedUser);
         publishUserRegistered(savedUser, verificationCodeDetails, true, locale);
-        log.info("Admin provisioned user successfully with ID: {}", savedUser.getId());
+        log.info("Admin provisioned user successfully with userHash={}", logHash(savedUser.getId()));
 
         return savedUser;
     }
@@ -145,7 +145,7 @@ public class AuthService {
                 .orElseThrow(() -> new BadRequestException("User not found"));
         user.setEnabled(enabled);
         User savedUser = userRepository.save(user);
-        log.info("Admin updated user status. User ID: {}, new status: {}", userId, enabled ? "Enabled" : "Disabled");
+        log.info("Admin updated user status. userHash={} newStatus={}", logHash(userId), enabled ? "Enabled" : "Disabled");
         return savedUser;
     }
 
@@ -154,7 +154,7 @@ public class AuthService {
     }
 
     public AuthTokens login(String email, String plainPassword) {
-        log.info("Authentication attempt for user: {}", email);
+        log.info("Authentication attempt for emailHash={}", logHash(email));
         String loginKey = normalizeLoginKey(email);
 
         if (loginAttemptService.isBlocked(loginKey)) {
@@ -163,19 +163,19 @@ public class AuthService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
-                    log.warn("Authentication failed. User not found for email: {}", email);
+                    log.warn("Authentication failed. User not found. emailHash={}", logHash(email));
                     loginAttemptService.recordFailedAttempt(loginKey);
                     return new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
                 });
 
         if (!user.isEnabled()) {
-            log.warn("Authentication failed. User account is disabled for email: {}", email);
+            log.warn("Authentication failed. User account is disabled. emailHash={}", logHash(email));
             loginAttemptService.recordFailedAttempt(loginKey);
             throw new UnauthorizedException("User account is disabled");
         }
 
         if (!passwordEncoder.matches(plainPassword, user.getPasswordHash())) {
-            log.warn("Authentication failed. Password mismatch for email: {}", email);
+            log.warn("Authentication failed. Password mismatch. emailHash={}", logHash(email));
             loginAttemptService.recordFailedAttempt(loginKey);
             throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
         }
@@ -186,7 +186,7 @@ public class AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
         persistRefreshToken(user, refreshToken);
 
-        log.debug("JWT tokens generated successfully for user: {}", email);
+        log.debug("JWT tokens generated successfully for emailHash={}", logHash(email));
 
         return buildTokenResponse(accessToken, refreshToken);
     }
@@ -196,7 +196,7 @@ public class AuthService {
                 .orElseGet(() -> provisionSocialUser(email, provider));
 
         if (!user.isEnabled()) {
-            log.warn("Authentication failed. User account is disabled for email: {}", email);
+            log.warn("Authentication failed. User account is disabled. emailHash={}", logHash(email));
             throw new UnauthorizedException("User account is disabled");
         }
 
@@ -221,7 +221,7 @@ public class AuthService {
         userRepository.save(user);
         verificationCodeRepository.deleteByEmail(email);
 
-        log.info("Email verified successfully for user: {}", verificationCode.getEmail());
+        log.info("Email verified successfully for emailHash={}", logHash(verificationCode.getEmail()));
     }
 
     public AuthTokens refresh(String refreshToken) {
@@ -270,7 +270,7 @@ public class AuthService {
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
         refreshTokenRepository.revokeByTokenHash(tokenOwnership.getTokenHash(), null);
-        log.info("Refresh token revoked for email: {}", tokenOwnership.getEmail());
+        log.info("Refresh token revoked for emailHash={}", logHash(tokenOwnership.getEmail()));
     }
 
     public void requestPasswordReset(String email, String locale) {
@@ -278,7 +278,7 @@ public class AuthService {
         Optional<User> userOptional = userRepository.findByEmailAndProvider(email, AuthProvider.LOCAL);
 
         if (userOptional.isEmpty()) {
-            log.info("Password reset requested for unknown email: {}", email);
+            log.info("Password reset requested for unknown emailHash={}", logHash(email));
             return;
         }
 
@@ -298,10 +298,10 @@ public class AuthService {
         publishPasswordResetRequested(email, code, expiresAt, locale);
 
         // Placeholder integration point for notifier adapter.
-        log.info("Password reset code generated for user: {}", email);
+        log.info("Password reset code generated for emailHash={}", logHash(email));
         if (shouldLogSensitiveCodes()) {
             log.info("--------------------------------------------------");
-            log.info("DEVELOPMENT MODE: Password Reset Code for {}", email);
+            log.info("DEVELOPMENT MODE: Password Reset Code for emailHash={}", logHash(email));
             log.info("Code: {}", code);
             log.info("--------------------------------------------------");
 
@@ -325,7 +325,7 @@ public class AuthService {
         userRepository.save(user);
         passwordResetCodeRepository.deleteByEmail(email);
 
-        log.info("Password reset completed for user: {}", passwordResetCode.getEmail());
+        log.info("Password reset completed for emailHash={}", logHash(passwordResetCode.getEmail()));
     }
 
     private VerificationCodeDetails createVerificationCode(User user) {
@@ -341,10 +341,10 @@ public class AuthService {
                 .build());
 
         // Placeholder integration point for notifier adapter.
-        log.info("Verification code generated for user: {}", user.getEmail());
+        log.info("Verification code generated for emailHash={}", logHash(user.getEmail()));
         if (shouldLogSensitiveCodes()) {
             log.info("--------------------------------------------------");
-            log.info("DEVELOPMENT MODE: Verification Code for {}", user.getEmail());
+            log.info("DEVELOPMENT MODE: Verification Code for emailHash={}", logHash(user.getEmail()));
             log.info("Code: {}", code);
             log.info("--------------------------------------------------");
 
@@ -404,7 +404,7 @@ public class AuthService {
 
         User savedSocialUser = userRepository.save(newSocialUser);
         publishUserRegistered(savedSocialUser, null, false, "es");
-        log.info("Social user provisioned successfully for email: {} with provider: {}", email, provider);
+        log.info("Social user provisioned successfully for emailHash={} provider={}", logHash(email), provider);
         return savedSocialUser;
     }
 
@@ -426,8 +426,8 @@ public class AuthService {
                     verificationCodeDetails == null ? null : verificationCodeDetails.expiresAt().toString(),
                     locale != null ? locale : "es"));
         } catch (RuntimeException ex) {
-            log.warn("Failed to publish user registered event for userId={} email={}", savedUser.getId(),
-                    savedUser.getEmail(), ex);
+            log.warn("Failed to publish user registered event for userHash={} emailHash={}",
+                    logHash(savedUser.getId()), logHash(savedUser.getEmail()), ex);
         }
     }
 
@@ -439,7 +439,7 @@ public class AuthService {
                     expiresAt.toString(),
                     locale != null ? locale : "es"));
         } catch (RuntimeException ex) {
-            log.warn("Failed to publish password reset event for email={}", email, ex);
+            log.warn("Failed to publish password reset event for emailHash={}", logHash(email), ex);
         }
     }
 
@@ -448,6 +448,13 @@ public class AuthService {
 
     private String normalizeLoginKey(String email) {
         return email == null ? "" : email.trim().toLowerCase();
+    }
+
+    private String logHash(String value) {
+        if (value == null || value.isBlank()) {
+            return "unknown";
+        }
+        return hashValue(value).substring(0, 12);
     }
 
     private Role sanitizeSelfRegistrationRole(Role requestedRole) {

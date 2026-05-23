@@ -78,7 +78,11 @@
       "statusActive": "Activo",
       "confirmUnlink": "¿Estas seguro de que deseas desvincular a este paciente? Ya no tendras acceso a su expediente",
       "unlink": "Desvincular",
-      "unlinkTitle": "Desvincular Paciente"
+      "unlinkTitle": "Desvincular Paciente",
+      "unlinkError": "No pudimos desvincular a este paciente en este momento. Intenta de nuevo en unos minutos.",
+      "unlinkUnavailable": "Por ahora no podemos desvincular a este paciente porque primero necesitamos revisar sus citas futuras. Nada cambió; intenta de nuevo en unos minutos.",
+      "unlinkForbidden": "No pudimos desvincular a este paciente. Revisa que todavía esté vinculado a tu cuenta.",
+      "unlinkNotFound": "No encontramos el perfil del paciente. Es posible que ya no esté vinculado."
     }
   },
   "nutritionPlan": {

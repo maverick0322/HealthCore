@@ -78,7 +78,11 @@
       "statusActive": "Active",
       "confirmUnlink": "Are you sure you want to unlink this patient? You will lose access to their file",
       "unlink": "Unlink",
-      "unlinkTitle": "Unlink Patient"
+      "unlinkTitle": "Unlink Patient",
+      "unlinkError": "We could not unlink this patient right now. Please try again in a few minutes.",
+      "unlinkUnavailable": "We cannot unlink this patient yet because we first need to review their future appointments. Nothing changed; please try again in a few minutes.",
+      "unlinkForbidden": "We could not unlink this patient. Please check that they are still linked to your account.",
+      "unlinkNotFound": "We could not find this patient profile. They may no longer be linked."
     }
   },
   "nutritionPlan": {

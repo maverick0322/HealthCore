@@ -6,6 +6,7 @@ import type { PatientProfileResponse } from '@/features/clinical/types/clinical.
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { formatAllergyLabel } from '@/features/onboarding/utils/profilePresentation';
 import { calculateAgeFromBirthDate } from '@/features/onboarding/utils/profileValidation';
+import { getPatientLinkingErrorMessage } from '@/features/clinical/utils/linkingErrorMessages';
 
 function getBmi(weightKg: number, heightCm: number) {
   const bmi = weightKg / Math.pow(heightCm / 100, 2);
@@ -27,6 +28,7 @@ export const usePatientProfile = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const [unlinkFeedback, setUnlinkFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -46,9 +48,17 @@ export const usePatientProfile = () => {
   const handleConfirmUnlink = async () => {
     try {
       setIsUnlinking(true);
+      setUnlinkFeedback(null);
       await clinicalApi.unlinkPatient();
       setProfile((current) => (current ? { ...current, nutritionistId: null } : current));
       setShowUnlinkDialog(false);
+      setUnlinkFeedback({ type: 'success', message: t('linking.unlinkSuccess') });
+    } catch (error) {
+      setShowUnlinkDialog(false);
+      setUnlinkFeedback({
+        type: 'error',
+        message: getPatientLinkingErrorMessage(error, t, 'unlink'),
+      });
     } finally {
       setIsUnlinking(false);
     }
@@ -82,6 +92,7 @@ export const usePatientProfile = () => {
     showUnlinkDialog,
     setShowUnlinkDialog,
     isUnlinking,
+    unlinkFeedback,
     handleConfirmUnlink,
     handleLogout,
     handleChangePassword,

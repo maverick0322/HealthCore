@@ -22,7 +22,9 @@ export const useCancelAppointment = () => {
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
-        if (status === 404) {
+        if (status === 503) {
+          setError(t('appointments.errorServiceUnavailable'));
+        } else if (status === 404) {
           setError(t('appointments.errorCancelNotFound'));
         } else if (status === 403) {
           setError(t('appointments.errorCancelForbidden'));

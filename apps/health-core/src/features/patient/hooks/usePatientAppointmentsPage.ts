@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type { NutritionistProfileResponse } from '@/features/clinical/types/clinical.types';
@@ -29,6 +30,55 @@ interface Toast {
   msg: string;
   type: 'success' | 'error';
 }
+
+const getStatus = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    return error.response?.status ?? null;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof (error as { response?: { status?: unknown } }).response?.status === 'number'
+  ) {
+    return (error as { response: { status: number } }).response.status;
+  }
+
+  return null;
+};
+
+const getAppointmentActionMessage = (
+  error: unknown,
+  t: (key: string) => string,
+  action: 'book' | 'cancel' | 'reschedule',
+) => {
+  const status = getStatus(error);
+
+  if (status === 503) {
+    return t('appointments.errorServiceUnavailable');
+  }
+
+  if (action === 'book') {
+    if (status === 409) return t('appointments.errorBookSlotTaken');
+    if (status === 404) return t('appointments.errorBookSlotNotFound');
+    if (status === 403) return t('appointments.errorBookForbidden');
+    if (status === 400) return t('appointments.errorBookInvalid');
+    return t('appointments.errorBookUnexpected');
+  }
+
+  if (action === 'cancel') {
+    if (status === 404) return t('appointments.errorCancelNotFound');
+    if (status === 403) return t('appointments.errorCancelForbidden');
+    return t('appointments.errorCancelUnexpected');
+  }
+
+  if (status === 409) return t('appointments.errorRescheduleSlotTaken');
+  if (status === 404) return t('appointments.errorRescheduleNotFound');
+  if (status === 403) return t('appointments.errorRescheduleForbidden');
+  if (status === 400) return t('appointments.errorRescheduleInvalid');
+  return t('appointments.errorRescheduleUnexpected');
+};
 
 /**
  * Master hook that composes all patient appointment sub-hooks.
@@ -197,8 +247,8 @@ export const usePatientAppointmentsPage = () => {
       setSelectedSlot(null);
       fetchAppointments();
       void fetchSlotsForDate();
-    } catch {
-      setToast({ msg: t('appointments.errorGeneric'), type: 'error' });
+    } catch (error) {
+      setToast({ msg: getAppointmentActionMessage(error, t, 'book'), type: 'error' });
     }
   };
 
@@ -210,8 +260,8 @@ export const usePatientAppointmentsPage = () => {
       setToast({ msg: t('appointments.appointmentCancelled'), type: 'success' });
       setCancelTarget(null);
       fetchAppointments();
-    } catch {
-      setToast({ msg: t('appointments.errorGeneric'), type: 'error' });
+    } catch (error) {
+      setToast({ msg: getAppointmentActionMessage(error, t, 'cancel'), type: 'error' });
     }
   };
 
@@ -229,8 +279,8 @@ export const usePatientAppointmentsPage = () => {
       setRescheduleSlot(null);
       fetchAppointments();
       void fetchSlotsForDate();
-    } catch {
-      setToast({ msg: t('appointments.errorGeneric'), type: 'error' });
+    } catch (error) {
+      setToast({ msg: getAppointmentActionMessage(error, t, 'reschedule'), type: 'error' });
     }
   };
 

@@ -34,6 +34,7 @@ import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
 import { logClientError, logClientInfo } from "@/core/utils/logger";
+import { getNutritionistUnlinkErrorMessage } from "@/features/clinical/utils/linkingErrorMessages";
 
 const getDisplayIdentity = (userId: string): string => {
   const normalized = userId.trim();
@@ -90,6 +91,7 @@ export const NutritionistPatientFilePage = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "plan" | "observations">("overview");
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const [unlinkFeedback, setUnlinkFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -173,11 +175,16 @@ export const NutritionistPatientFilePage = () => {
     }
 
     setIsUnlinking(true);
+    setUnlinkFeedback(null);
     try {
       await clinicalApi.unlinkNutritionist(patientId);
       navigate("/patients/nutritionist");
     } catch (error) {
       logClientError("NutritionistPatientFilePage.unlink.error", error, { patientId });
+      setUnlinkFeedback({
+        type: "error",
+        message: getNutritionistUnlinkErrorMessage(error, t),
+      });
       setIsUnlinking(false);
       setShowUnlinkModal(false);
     }
@@ -549,6 +556,22 @@ export const NutritionistPatientFilePage = () => {
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {unlinkFeedback ? (
+          <div
+            className={`flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
+              unlinkFeedback.type === "success"
+                ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                : "border-destructive/25 bg-destructive/10 text-destructive"
+            }`}
+          >
+            {unlinkFeedback.type === "success" ? (
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+            ) : (
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            )}
+            <span>{unlinkFeedback.message}</span>
+          </div>
+        ) : null}
         {renderMainContent()}
       </main>
 

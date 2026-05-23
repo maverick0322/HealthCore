@@ -27,10 +27,14 @@ export const useRescheduleAppointment = () => {
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const status = err.response?.status;
-        if (status === 409) {
+        if (status === 503) {
+          setError(t('appointments.errorServiceUnavailable'));
+        } else if (status === 409) {
           setError(t('appointments.errorRescheduleSlotTaken'));
         } else if (status === 404) {
           setError(t('appointments.errorRescheduleNotFound'));
+        } else if (status === 403) {
+          setError(t('appointments.errorRescheduleForbidden'));
         } else if (status === 400) {
           setError(t('appointments.errorRescheduleInvalid'));
         } else {

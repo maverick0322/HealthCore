@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/sha
 import { Input } from '@/shared/ui/input';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
+import { getPatientLinkingErrorMessage } from '@/features/clinical/utils/linkingErrorMessages';
 import { QrScanner } from '@/shared/components/QrScanner';
 import { useProfileGuard } from '@/features/onboarding/hooks/useProfileGuard';
 import { ConfirmModal } from '@/shared/components/ConfirmModal';
@@ -30,12 +31,6 @@ export const PatientScanningPage = () => {
       try {
         const isLinked = await clinicalApi.isPatientLinked();
         setIsAlreadyLinked(isLinked);
-        if (isLinked) {
-          setFeedback({
-            type: 'error',
-            message: t('linking.alreadyLinked')
-          });
-        }
       } catch (error) {
         console.error('Error checking linking status:', error);
       }
@@ -44,7 +39,7 @@ export const PatientScanningPage = () => {
     if (!profileLoading) {
       checkLinkingStatus();
     }
-  }, [profileLoading, t]);
+  }, [profileLoading]);
 
   const handleUnlinkNutritionist = async () => {
     try {
@@ -57,12 +52,12 @@ export const PatientScanningPage = () => {
       setTimeout(() => {
         navigate('/profile');
       }, 2000);
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || t('linking.error');
+    } catch (error) {
       setFeedback({ 
         type: 'error', 
-        message: errorMessage
+        message: getPatientLinkingErrorMessage(error, t, 'unlink')
       });
+      setShowUnlinkDialog(false);
     } finally {
       setIsUnlinking(false);
     }
@@ -86,23 +81,13 @@ export const PatientScanningPage = () => {
         navigate('/profile');
       }, 2000);
     } catch (error: any) {
-      const statusCode = error.response?.status;
-      const errorData = error.response?.data;
-      
-      // Handle conflict: Patient already linked to another nutritionist
-      if (statusCode === 409) {
+      if (error.response?.status === 409) {
         setIsAlreadyLinked(true);
-        setFeedback({ 
-          type: 'error', 
-          message: t('linking.unlinkFirst') // "Debe desvincularse del nutriólogo anterior primero"
-        });
-      } else {
-        const errorMessage = errorData?.message || t('linking.error');
-        setFeedback({ 
-          type: 'error', 
-          message: errorMessage
-        });
       }
+      setFeedback({
+        type: 'error',
+        message: getPatientLinkingErrorMessage(error, t, 'link'),
+      });
     } finally {
       setIsLoading(false);
       setManualCode('');

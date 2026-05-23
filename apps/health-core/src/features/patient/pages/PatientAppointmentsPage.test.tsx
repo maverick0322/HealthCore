@@ -147,4 +147,21 @@ describe('PatientAppointmentsPage', () => {
       });
     });
   });
+
+  it('shows a friendly agenda unavailable message when booking cannot be verified', async () => {
+    (clinicalApi.getMyProfile as ReturnType<typeof vi.fn>).mockResolvedValue({
+      userId: 'patient-1',
+      nutritionistId: 'nutri-1',
+    });
+    createAppointment.mockRejectedValueOnce({ response: { status: 503 } });
+
+    render(<PatientAppointmentsPage />);
+    fireEvent.click(screen.getByText('appointments.tabSchedule'));
+
+    await screen.findByText('Dra. Elena Martinez');
+    fireEvent.click(screen.getAllByRole('button', { name: /\d{1,2}:\d{2}/ })[0]);
+    fireEvent.click(screen.getByText('appointments.bookSlot'));
+
+    expect(await screen.findByText('appointments.errorServiceUnavailable')).toBeInTheDocument();
+  });
 });

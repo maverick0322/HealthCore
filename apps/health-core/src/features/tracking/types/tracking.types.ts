@@ -34,22 +34,29 @@ export interface LogFoodResponse<T = unknown> {
 
 export interface MealLogItemDTO {
   barcode: string;
-  foodName: string;
-  grams: number;
+  foodName: string;      // <-- Coincide con el JSON
+  consumedGrams: number; // <-- Coincide con el JSON
   calories: number;
+  proteins: number;
+  carbohydrates: number;
+  fats: number;
+  fiberGrams: number;
+  sodiumMg: number;
+  sugarGrams: number;
+  potassiumMg: number;
 }
 
-/**
- * Represents a single meal event returned by the tracking service.
- * Used primarily for historical and daily list rendering.
- */
 export interface MealLogDTO {
   id: string;
+  userId: string;
   mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
-  consumedAt: string; // ISO-8601 format
+  consumedAt: string;
+  photoKey: string | null;
+  items: MealLogItemDTO[]; // <-- Coincide con el JSON
   totalCalories: number;
-  photoKey?: string | null;
-  items: MealLogItemDTO[];
+  totalProteins: number;
+  totalCarbs: number;
+  totalFats: number;
 }
 
 // --- DTOs for Dashboard and Historical Analysis (CQRS Read-Side) ---

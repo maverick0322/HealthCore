@@ -102,15 +102,23 @@ public class NutritionistAvailabilityService {
 
             if (appointment != null) {
                 log.info("Cancelling appointmentHash={} due to slot deactivation", logHash(appointment.getId()));
+                Instant timestamp = Instant.now();
                 appointment.setStatus(AppointmentStatus.CANCELLED);
-                appointment.setUpdatedAt(Instant.now());
+                appointment.setCancelledAt(timestamp);
+                appointment.setCancelledBy(nutritionistId);
+                appointment.setCancellationReason("SLOT_DEACTIVATED");
+                appointment.setUpdatedAt(timestamp);
                 appointmentRepository.save(appointment);
             }
             slot.setReserved(false);
             slot.setReservedByPatientId(null);
         }
 
+        Instant timestamp = Instant.now();
         slot.setActive(false);
+        slot.setDeactivatedAt(timestamp);
+        slot.setDeactivatedBy(nutritionistId);
+        slot.setDeactivationReason("NUTRITIONIST_DEACTIVATED");
         try {
             timeSlotRepository.save(slot);
             log.info("Slot successfully deactivated. slotHash={}", logHash(slotId));
@@ -128,6 +136,46 @@ public class NutritionistAvailabilityService {
     public List<Appointment> getNutritionistAppointments(String nutritionistId, Instant from, Instant to) {
         log.debug("Fetching appointments for nutritionistHash={} between {} and {}", logHash(nutritionistId), from, to);
         return appointmentRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(nutritionistId, from, to);
+    }
+
+    public List<Appointment> getNutritionistAppointmentReport(
+        String nutritionistId,
+        Instant from,
+        Instant to,
+        List<AppointmentStatus> statuses,
+        String patientId
+    ) {
+        List<AppointmentStatus> normalizedStatuses = statuses == null || statuses.isEmpty()
+            ? List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.CANCELLED, AppointmentStatus.ATTENDED)
+            : statuses;
+
+        if (patientId != null && !patientId.isBlank()) {
+            return appointmentRepository.findByNutritionistIdAndPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+                nutritionistId,
+                patientId.trim(),
+                from,
+                to,
+                normalizedStatuses
+            );
+        }
+
+        return appointmentRepository.findByNutritionistIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            nutritionistId,
+            from,
+            to,
+            normalizedStatuses
+        );
+    }
+
+    public List<TimeSlot> getNutritionistSlotReport(String nutritionistId, Instant from, Instant to, String state) {
+        if ("inactive".equalsIgnoreCase(state)) {
+            return timeSlotRepository.findByNutritionistIdAndStartTimeBetweenAndActiveFalseOrderByStartTime(
+                nutritionistId,
+                from,
+                to
+            );
+        }
+        return getNutritionistSlots(nutritionistId, from, to);
     }
 
     private void validateGenerateCommand(GenerateSlotsCommand command) {

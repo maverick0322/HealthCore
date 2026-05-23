@@ -12,7 +12,11 @@ public record AppointmentResponse(
     Instant startTime,
     Instant endTime,
     AppointmentStatus status,
-    Long version
+    Long version,
+    Instant cancelledAt,
+    String cancelledBy,
+    String cancellationReason,
+    Instant attendedAt
 ) {
 }
 

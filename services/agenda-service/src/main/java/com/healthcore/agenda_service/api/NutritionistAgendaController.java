@@ -6,6 +6,7 @@ import com.healthcore.agenda_service.api.dto.GenerateSlotsRequest;
 import com.healthcore.agenda_service.application.GenerateSlotsCommand;
 import com.healthcore.agenda_service.application.NutritionistAvailabilityService;
 import com.healthcore.agenda_service.domain.Appointment;
+import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.TimeSlot;
 import com.healthcore.agenda_service.domain.exception.BadRequestException;
 import jakarta.validation.Valid;
@@ -120,6 +121,52 @@ public class NutritionistAgendaController {
             .toList();
     }
 
+    @Operation(summary = "Reporte de citas", description = "Devuelve citas del nutriólogo autenticado por rango, estado y paciente opcional para reportes auditables.")
+    @ApiResponse(responseCode = "200", description = "Reporte de citas obtenido exitosamente")
+    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
+    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @GetMapping("/reports/appointments")
+    public List<AppointmentResponse> getAppointmentReport(
+        Authentication authentication,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+        @RequestParam(required = false) List<AppointmentStatus> statuses,
+        @RequestParam(required = false) String patientId
+    ) {
+        if (from == null || to == null || !from.isBefore(to)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rango de fechas invalido");
+        }
+        String nutritionistId = currentNutritionistId(authentication);
+        return nutritionistAvailabilityService.getNutritionistAppointmentReport(
+            nutritionistId,
+            from,
+            to,
+            statuses,
+            patientId
+        ).stream().map(this::toAppointmentResponse).toList();
+    }
+
+    @Operation(summary = "Reporte de slots", description = "Devuelve slots del nutriólogo autenticado por rango. Use state=inactive para consultar slots desactivados/cancelados.")
+    @ApiResponse(responseCode = "200", description = "Reporte de slots obtenido exitosamente")
+    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
+    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @GetMapping("/reports/slots")
+    public List<AvailabilitySlotResponse> getSlotReport(
+        Authentication authentication,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+        @RequestParam(required = false, defaultValue = "all") String state
+    ) {
+        if (from == null || to == null || !from.isBefore(to)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rango de fechas invalido");
+        }
+        String nutritionistId = currentNutritionistId(authentication);
+        return nutritionistAvailabilityService.getNutritionistSlotReport(nutritionistId, from, to, state)
+            .stream()
+            .map(this::toAvailabilityResponse)
+            .toList();
+    }
+
     private String currentNutritionistId(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated() || authentication.getName() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalido o ausente");
@@ -203,7 +250,11 @@ public class NutritionistAgendaController {
             appointment.getStartTime(),
             appointment.getEndTime(),
             appointment.getStatus(),
-            appointment.getVersion()
+            appointment.getVersion(),
+            appointment.getCancelledAt(),
+            appointment.getCancelledBy(),
+            appointment.getCancellationReason(),
+            appointment.getAttendedAt()
         );
     }
 
@@ -216,7 +267,10 @@ public class NutritionistAgendaController {
             slot.getOrigin(),
             slot.getVersion(),
             slot.isReserved(),
-            slot.isActive()
+            slot.isActive(),
+            slot.getDeactivatedAt(),
+            slot.getDeactivatedBy(),
+            slot.getDeactivationReason()
         );
     }
 }

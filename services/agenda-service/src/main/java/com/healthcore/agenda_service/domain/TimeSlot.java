@@ -27,6 +27,9 @@ public class TimeSlot {
     private boolean reserved;
     private String reservedByPatientId;
     private boolean active;
+    private Instant deactivatedAt;
+    private String deactivatedBy;
+    private String deactivationReason;
     private TimeSlotOrigin origin;
 
     @Version

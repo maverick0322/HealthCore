@@ -28,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -142,8 +143,56 @@ class PatientAppointmentServiceTest {
         service.cancelAppointment("patient-1", "app-1");
 
         assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        assertThat(appointment.getCancelledBy()).isEqualTo("patient-1");
+        assertThat(appointment.getCancellationReason()).isEqualTo("PATIENT_CANCELLED");
+        assertThat(appointment.getCancelledAt()).isNotNull();
         assertThat(slot.isReserved()).isFalse();
         assertThat(slot.getReservedByPatientId()).isNull();
+        verify(agendaEventPublisher).publishAppointmentCancelled(any(AppointmentCancelledEvent.class));
+    }
+
+    @Test
+    void cancelFutureAppointmentsForUnlink_shouldCancelOnlyFutureActiveAppointmentsAndReleaseSlots() {
+        TimeSlot reservedSlot = slot.toBuilder()
+            .reserved(true)
+            .reservedByPatientId("patient-1")
+            .build();
+        Appointment appointment = Appointment.builder()
+            .id("app-1")
+            .slotId("slot-1")
+            .patientId("patient-1")
+            .nutritionistId("nutri-1")
+            .startTime(Instant.now().plusSeconds(3600))
+            .endTime(Instant.now().plusSeconds(5400))
+            .status(AppointmentStatus.CONFIRMED)
+            .locale("es")
+            .build();
+
+        when(appointmentRepository.findByPatientIdAndNutritionistIdAndStartTimeAfterAndStatusInOrderByStartTime(
+            eq("patient-1"),
+            eq("nutri-1"),
+            any(Instant.class),
+            eq(List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED))
+        )).thenReturn(List.of(appointment));
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(reservedSlot));
+        when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CancelFutureAppointmentsResult result = service.cancelFutureAppointmentsForUnlink(
+            "patient-1",
+            "nutri-1",
+            "patient-1",
+            "PATIENT_UNLINKED"
+        );
+
+        assertThat(result.cancelledCount()).isEqualTo(1);
+        assertThat(result.releasedSlotCount()).isEqualTo(1);
+        assertThat(reservedSlot.isReserved()).isFalse();
+        assertThat(reservedSlot.getReservedByPatientId()).isNull();
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        assertThat(appointment.getCancelledBy()).isEqualTo("patient-1");
+        assertThat(appointment.getCancellationReason()).isEqualTo("PATIENT_UNLINKED");
+        assertThat(appointment.getCancelledAt()).isNotNull();
         verify(agendaEventPublisher).publishAppointmentCancelled(any(AppointmentCancelledEvent.class));
     }
 

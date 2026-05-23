@@ -14,12 +14,46 @@ public interface AppointmentRepository extends MongoRepository<Appointment, Stri
         List<AppointmentStatus> statuses
     );
 
+    List<Appointment> findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+        String patientId,
+        Instant from,
+        Instant to,
+        List<AppointmentStatus> statuses
+    );
+
     List<Appointment> findTop100ByStatusOrderByCreatedAtAsc(AppointmentStatus status);
+
+    List<Appointment> findTop100ByStatusInAndEndTimeLessThanEqualOrderByEndTimeAsc(
+        List<AppointmentStatus> statuses,
+        Instant now
+    );
 
     List<Appointment> findByNutritionistIdAndStartTimeBetweenOrderByStartTime(
         String nutritionistId,
         Instant from,
         Instant to
+    );
+
+    List<Appointment> findByNutritionistIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+        String nutritionistId,
+        Instant from,
+        Instant to,
+        List<AppointmentStatus> statuses
+    );
+
+    List<Appointment> findByNutritionistIdAndPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+        String nutritionistId,
+        String patientId,
+        Instant from,
+        Instant to,
+        List<AppointmentStatus> statuses
+    );
+
+    List<Appointment> findByPatientIdAndNutritionistIdAndStartTimeAfterAndStatusInOrderByStartTime(
+        String patientId,
+        String nutritionistId,
+        Instant now,
+        List<AppointmentStatus> statuses
     );
 
     List<Appointment> findByStatusAndStartTimeBetween(AppointmentStatus status, Instant from, Instant to);

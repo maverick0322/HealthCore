@@ -26,6 +26,10 @@ public class Appointment {
     private Instant endTime;
     private AppointmentStatus status;
     private String locale;
+    private Instant cancelledAt;
+    private String cancelledBy;
+    private String cancellationReason;
+    private Instant attendedAt;
     private Instant createdAt;
     private Instant updatedAt;
 

@@ -48,11 +48,16 @@ describe('agendaService', () => {
   it('reschedules and cancels appointments through agenda endpoints', async () => {
     const payload = { newSlotId: 'slot-2', newSlotVersion: 2, locale: 'es' };
     (httpClient.put as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { id: 'app-1' } });
+    (httpClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: [] });
 
     await agendaService.rescheduleAppointment('app-1', payload);
     await agendaService.cancelAppointment('app-1');
+    await agendaService.getMyAppointmentHistory('from', 'to', ['CONFIRMED', 'ATTENDED']);
 
     expect(httpClient.put).toHaveBeenCalledWith('/agenda/appointments/app-1/reschedule', payload);
     expect(httpClient.patch).toHaveBeenCalledWith('/agenda/appointments/app-1/cancel');
+    expect(httpClient.get).toHaveBeenCalledWith('/agenda/appointments/history', {
+      params: { from: 'from', to: 'to', statuses: 'CONFIRMED,ATTENDED' },
+    });
   });
 });

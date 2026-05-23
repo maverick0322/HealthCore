@@ -40,6 +40,18 @@ export const agendaService = {
     return data;
   },
 
+  getMyAppointmentHistory: async (
+    from: string,
+    to: string,
+    statuses?: string[],
+  ): Promise<AppointmentResponse[]> => {
+    const { data } = await httpClient.get<AppointmentResponse[]>(
+      '/agenda/appointments/history',
+      { params: { from, to, statuses: statuses?.join(',') } },
+    );
+    return data;
+  },
+
   /** Book a new appointment on a specific slot. */
   createAppointment: async (
     payload: CreateAppointmentRequest,

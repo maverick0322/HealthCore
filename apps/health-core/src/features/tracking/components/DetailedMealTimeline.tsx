@@ -67,7 +67,6 @@ export const DetailedMealTimeline = ({ logs, isLoading, error }: DetailedMealTim
                     <div>
                       <div className="flex justify-between items-start">
                         <h3 className="font-bold text-base text-foreground">
-                          {/* CORRECCIÓN DE TIPADO AQUÍ */}
                           {String(t(`tracking.mealType.${log.mealType}`, { defaultValue: log.mealType }))}
                         </h3>
                         <span className="text-xs font-medium text-muted-foreground">

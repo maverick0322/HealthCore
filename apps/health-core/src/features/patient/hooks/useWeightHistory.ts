@@ -27,7 +27,7 @@ export const useWeightHistory = (): UseWeightHistoryReturn => {
       }
 
       try {
-        return await clinicalApi.getWeightHistory(user.email);
+        return await clinicalApi.getWeightHistory();
       } catch (err: any) {
         if (err.response?.status === 404) {
           return [];

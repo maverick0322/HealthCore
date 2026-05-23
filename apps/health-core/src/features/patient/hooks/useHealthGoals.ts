@@ -24,7 +24,7 @@ export const useHealthGoals = (): UseHealthGoalsReturn => {
         return undefined;
       }
 
-      return clinicalApi.getMyGoals(user.email);
+      return clinicalApi.getMyGoals();
     },
     enabled: !!user?.email,
     staleTime: HEALTH_GOALS_STALE_TIME,

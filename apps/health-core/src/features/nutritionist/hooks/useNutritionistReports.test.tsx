@@ -6,11 +6,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const {
   mockGetNutritionistWeightProgressReport,
   mockGetAppointmentReport,
-  mockGetSlotReport,
 } = vi.hoisted(() => ({
   mockGetNutritionistWeightProgressReport: vi.fn(),
   mockGetAppointmentReport: vi.fn(),
-  mockGetSlotReport: vi.fn(),
 }));
 
 vi.mock('@/features/auth/store/useAuthStore', () => ({
@@ -27,7 +25,6 @@ vi.mock('@/features/clinical/services/clinicalService', () => ({
 vi.mock('@/features/nutritionist/services/nutritionistAgendaService', () => ({
   nutritionistAgendaService: {
     getAppointmentReport: mockGetAppointmentReport,
-    getSlotReport: mockGetSlotReport,
   },
 }));
 
@@ -38,7 +35,7 @@ describe('useNutritionistReports', () => {
     vi.clearAllMocks();
   });
 
-  it('loads weight report, appointment report, and inactive slots in parallel', async () => {
+  it('loads weight report and appointment report in parallel', async () => {
     mockGetNutritionistWeightProgressReport.mockResolvedValue({
       activePatients: 2,
       patientsWithoutWeightInRange: 1,
@@ -56,8 +53,6 @@ describe('useNutritionistReports', () => {
         version: 1,
       },
     ]);
-    mockGetSlotReport.mockResolvedValue([{ id: 'slot-1', active: false }]);
-
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -74,9 +69,7 @@ describe('useNutritionistReports', () => {
 
     expect(mockGetNutritionistWeightProgressReport).toHaveBeenCalledTimes(1);
     expect(mockGetAppointmentReport).toHaveBeenCalledTimes(1);
-    expect(mockGetSlotReport).toHaveBeenCalledTimes(1);
     expect(result.current.data?.appointmentSummary.attendedCount).toBe(1);
-    expect(result.current.data?.deactivatedSlots).toHaveLength(1);
     expect(result.current.data?.weightReport.activePatients).toBe(2);
   });
 });

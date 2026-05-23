@@ -19,4 +19,9 @@ public interface ClinicalObservationRepositoryPort {
      * The implementation must ensure that observations are returned sorted from newest to oldest
      */
     List<ClinicalObservation> findAllByPatientId(String patientId);
+
+    /**
+     * Remove every stored observation for a patient
+     */
+    void deleteAllByPatientId(String patientId);
 }

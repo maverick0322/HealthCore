@@ -1,6 +1,6 @@
-import type { TFunction } from 'i18next';
+﻿import type { TFunction } from 'i18next';
 
-const NAME_PATTERN = /^[A-Za-zÀ-ÿ]+(?:[A-Za-zÀ-ÿ' -]*[A-Za-zÀ-ÿ])?$/;
+const NAME_PATTERN = /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[A-Za-zÀ-ÖØ-öø-ÿ' -]*[A-Za-zÀ-ÖØ-öø-ÿ])?$/;
 
 const getValidationMessage = (
   t: TFunction | undefined,
@@ -10,17 +10,17 @@ const getValidationMessage = (
   if (!t) {
     switch (key) {
       case 'required':
-        return `${options?.label} es obligatorio.`;
+        return `${options?.label} es obligatorio`;
       case 'maxLength':
-        return `${options?.label} no puede exceder ${options?.max} caracteres.`;
+        return `${options?.label} no puede exceder ${options?.max} caracteres`;
       case 'namePattern':
-        return `${options?.label} solo puede contener letras, espacios, apostrofes o guiones.`;
+        return `${options?.label} solo puede contener letras, espacios, apóstrofes o guiones`;
       case 'birthDateRequired':
-        return 'La fecha de nacimiento es obligatoria.';
+        return 'La fecha de nacimiento es obligatoria';
       case 'birthDateInvalid':
-        return 'La fecha de nacimiento es invalida.';
+        return 'La fecha de nacimiento es inválida';
       case 'birthDateOutOfRange':
-        return 'La fecha de nacimiento debe representar una edad entre 1 y 120 años.';
+        return 'La fecha de nacimiento debe representar una edad entre 1 y 120 años';
     }
   }
 

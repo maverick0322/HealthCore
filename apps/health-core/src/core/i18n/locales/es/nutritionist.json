@@ -8,21 +8,21 @@
   },
   "dashboard": {
     "greeting": "Hola, Lic. {{name}}",
-    "greetingSubtitle": "Aqui tienes un resumen de tu actividad de hoy.",
-    "activePatients": "Pacientes Activos",
+    "greetingSubtitle": "Aquí tienes un resumen de tu actividad de hoy",
+    "activePatients": "Total de Pacientes",
     "appointmentsToday": "Citas Hoy",
     "pendingReviews": "Revisiones Pendientes",
     "pendingAppointments": "Citas Pendientes",
-    "nextAppointments": "Proximas Citas",
-    "agendaSubtitle": "Tus citas programadas para las proximas dos semanas.",
+    "nextAppointments": "Próximas Citas",
+    "agendaSubtitle": "Tus citas programadas para las próximas dos semanas",
     "recentActivity": "Actividad Reciente",
-    "patientsSubtitle": "Pacientes vinculados a tu seguimiento clinico.",
+    "patientsSubtitle": "Pacientes vinculados a tu seguimiento clínico",
     "loadingAppointments": "Cargando citas...",
     "loadingPatients": "Cargando pacientes...",
     "unknownPatient": "Paciente",
-    "noPatients": "No tienes pacientes vinculados aun.",
+    "noPatients": "No tienes pacientes vinculados aún",
     "viewAll": "Ver todas",
-    "noAppointments": "No tienes citas programadas en este periodo.",
+    "noAppointments": "No tienes citas programadas en este período",
     "patient": "Paciente",
     "time": "Hora",
     "type": "Tipo",
@@ -34,13 +34,13 @@
   },
   "patients": {
     "title": "Mis Pacientes",
-    "subtitle": "Gestiona y da seguimiento a tus pacientes.",
-    "searchPlaceholder": "Buscar paciente por nombre...",
+    "subtitle": "Gestiona y da seguimiento a tus pacientes",
+    "searchPlaceholder": "Busca a tus pacientes por nombre",
     "loading": "Cargando pacientes vinculados...",
     "error": "No se pudieron cargar los pacientes vinculados.",
     "empty": "No se encontraron pacientes vinculados.",
     "lastVisitPlaceholder": "Nuevo",
-    "objectivePlaceholder": "Perfil clinico",
+    "objectivePlaceholder": "Objetivo principal",
     "filters": {
       "all": "Todos",
       "active": "Activos",
@@ -48,8 +48,8 @@
     },
     "addPatient": "Agregar Paciente",
     "viewFile": "Ver Expediente",
-    "lastVisit": "Ultima visita: {{date}}",
-    "nextAppointment": "Proxima cita: {{date}}",
+    "lastVisit": "Última visita: {{date}}",
+    "nextAppointment": "Próxima cita: {{date}}",
     "futureAppointments": "{{count}} cita futura",
     "futureAppointments_other": "{{count}} citas futuras",
     "file": {
@@ -70,9 +70,9 @@
       "planDescription": "Conecta este espacio con el plan nutricional del paciente.",
       "planUpdatedPlaceholder": "Actualizado: Nuevo",
       "newNote": "Añadir Observación",
-      "newNotePlaceholder": "Escribe una nueva observación clínica o nota de seguimiento...",
-      "saveObservation": "Guardar Observacion",
-      "noObservations": "No hay observaciones registradas aun",
+      "newNotePlaceholder": "Escribe una nueva observación clínica o nota de seguimiento",
+      "saveObservation": "Guardar observación",
+      "noObservations": "No hay observaciones registradas aún",
       "loading": "Cargando expediente...",
       "error": "No se pudo cargar el expediente del paciente.",
       "statusActive": "Activo",
@@ -82,8 +82,10 @@
       "unlinkError": "No pudimos desvincular a este paciente en este momento. Intenta de nuevo en unos minutos.",
       "unlinkUnavailable": "Por ahora no podemos desvincular a este paciente porque primero necesitamos revisar sus citas futuras. Nada cambió; intenta de nuevo en unos minutos.",
       "unlinkForbidden": "No pudimos desvincular a este paciente. Revisa que todavía esté vinculado a tu cuenta.",
-      "unlinkNotFound": "No encontramos el perfil del paciente. Es posible que ya no esté vinculado."
-    }
+      "unlinkNotFound": "No encontramos el perfil del paciente. Es posible que ya no esté vinculado.",
+      "years": "años"
+    },
+    "searchLabel": "Busca a tus pacientes por nombre:"
   },
   "nutritionPlan": {
     "title": "Plan Nutricional",
@@ -142,7 +144,7 @@
     "cancel": "Cancelar",
     "confirmDish": "Guardar platillo",
     "loadError": "No pudimos cargar el plan nutricional.",
-    "loadErrorHelp": "Revisa la consola del navegador para ver los logs de HealthCore y vuelve a intentarlo.",
+    "loadErrorHelp": "No pudimos cargar el plan nutricional en este momento. Intenta de nuevo más tarde",
     "retry": "Reintentar",
     "unavailable": "El plan nutricional no está disponible en este momento.",
     "contextTitle": "Plan autogestionado previo",
@@ -158,7 +160,16 @@
     "units": {
       "GRAMS": "Gramos",
       "MILLILITERS": "Mililitros"
-    }
+    },
+    "sectionSubtitleNutritionist": "Opciones que verá el paciente en este tiempo de comida",
+    "sectionSubtitleSelfManaged": "Opciones que puedes organizar para este tiempo de comida",
+    "sectionSubtitleReadOnly": "Platillos asignados para este tiempo de comida",
+    "emptyEditableNutritionist": "Aún no hay platillos asignados en esta sección",
+    "emptyEditablePatient": "Aún no has agregado platillos en esta sección",
+    "emptyReadOnlyPatient": "Tu nutriólogo aún no te asigna platillos para esta sección",
+    "deleteDishTitle": "¿Estás seguro de que quieres eliminar este platillo?",
+    "deleteDishDescription": "Si eliminas \"{{name}}\" de tu plan, deberás guardar los cambios para confirmar la actualización",
+    "deleteDishConfirm": "Sí, eliminar platillo"
   },
   "agenda": {
     "title": "Agenda",
@@ -201,7 +212,7 @@
   },
   "reports": {
     "title": "Reportes y gestión operativa",
-    "subtitle": "Revisa el progreso de peso de tus pacientes y la actividad de tus citas sin salir de esta pantalla.",
+    "subtitle": "Revisa el progreso de peso de tus pacientes y la actividad de tus citas",
     "generatedOn": "Generado el {{date}}",
     "exportPdf": "Exportar reporte PDF",
     "exportingPdf": "Exportando PDF...",
@@ -230,24 +241,25 @@
       "activePatients": "Pacientes activos",
       "attendedAppointments": "Consultas atendidas",
       "patientsWithoutWeight": "Pacientes sin registro de peso",
-      "deactivatedSlots": "Slots desactivados"
+      "deactivatedSlots": "Slots desactivados",
+      "totalPatients": "Pacientes Totales"
     },
     "appointments": {
       "title": "Resumen de citas",
       "attended": "Atendidas",
       "cancelled": "Canceladas",
       "percent": "{{percent}}% de las citas relevantes",
-      "empty": "No hubo citas atendidas ni canceladas en este período.",
+      "empty": "No hubo citas atendidas ni canceladas en este período",
       "summary": {
-        "withData": "En este período atendiste {{attended}} consultas y se cancelaron {{cancelled}}.",
-        "empty": "Todavía no hay actividad de citas atendidas o canceladas en este período."
+        "withData": "En este período atendiste {{attended}} consultas y se cancelaron {{cancelled}}",
+        "empty": "Todavía no hay actividad de citas atendidas o canceladas en este período"
       }
     },
     "weightTable": {
       "title": "Control de peso de pacientes",
       "latestDate": "Último registro de peso en este período: {{date}}",
-      "noLatestDate": "Todavía no hay registros de peso en el período seleccionado.",
-      "empty": "No hay pacientes vinculados para mostrar en este reporte.",
+      "noLatestDate": "Todavía no hay registros de peso en el período seleccionado",
+      "empty": "No hay pacientes vinculados para mostrar en este reporte",
       "noRecords": "Sin registros en este período",
       "columns": {
         "patient": "Paciente",
@@ -340,12 +352,12 @@
   },
   "profile": {
     "title": "Mi Perfil",
-    "subtitle": "Gestiona tu informacion publica y profesional.",
-    "contactInfo": "Informacion de contacto",
+    "subtitle": "Gestiona tu información pública y profesional",
+    "contactInfo": "Información de contacto",
     "credentials": "Credenciales",
     "specialty": "Especialidad",
-    "license": "Cedula Profesional",
-    "bio": "Biografia Profesional",
+    "license": "Cédula Profesional",
+    "bio": "Biografía Profesional",
     "consultationType": "Tipo de Consulta",
     "editProfile": "Editar Perfil",
     "saveProfile": "Guardar Perfil",
@@ -362,11 +374,11 @@
   },
   "linking": {
     "title": "Vincular Paciente",
-    "description": "Pide a tu paciente que escanee este QR o ingrese el codigo alfanumerico en su aplicacion.",
+    "description": "Pide a tu paciente que escanee este QR o ingrese el código alfanumérico en su aplicación",
     "expiredTitle": "El tiempo del QR se acabo",
     "expiredDesc": "Por seguridad, el codigo anterior ha sido invalidado.",
     "generateNewBtn": "Generar nuevo codigo",
     "manualCodeLabel": "Codigo Manual de Respaldo",
-    "expiresIn": "El codigo expira en"
+    "expiresIn": "El código expira en"
   }
 }

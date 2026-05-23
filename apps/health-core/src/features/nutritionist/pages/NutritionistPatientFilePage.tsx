@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -35,6 +35,7 @@ import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
 import { logClientError, logClientInfo } from "@/core/utils/logger";
 import { getNutritionistUnlinkErrorMessage } from "@/features/clinical/utils/linkingErrorMessages";
+import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
 
 const getDisplayIdentity = (userId: string): string => {
   const normalized = userId.trim();
@@ -86,7 +87,7 @@ export const NutritionistPatientFilePage = () => {
   const [newNote, setNewNote] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const navigate = useNavigate();
-  const { t } = useTranslation("nutritionist");
+  const { t } = useTranslation(["nutritionist", "onboarding"]);
 
   const [activeTab, setActiveTab] = useState<"overview" | "plan" | "observations">("overview");
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
@@ -284,8 +285,8 @@ export const NutritionistPatientFilePage = () => {
 
     if (activeTab === "overview") {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="md:col-span-2">
+        <div className="grid grid-cols-1 gap-4">
+          <Card>
             <CardHeader className="pb-3 border-b border-border/50">
               <CardTitle className="text-base flex items-center gap-2">
                 <User size={18} className="text-primary" /> {t("patients.file.tabOverview")}
@@ -299,7 +300,7 @@ export const NutritionistPatientFilePage = () => {
                     {t("patients.file.age")}
                   </p>
                   <p className="text-lg font-bold">
-                    {patientAge !== null ? `${patientAge} años` : "--"}
+                    {patientAge !== null ? `${patientAge} ${t("patients.file.years")}` : "--"}
                   </p>
                 </div>
                 <div className="bg-muted/30 p-3 rounded-xl border border-border/50 text-center">
@@ -331,32 +332,10 @@ export const NutritionistPatientFilePage = () => {
                     {t("patients.file.objective")}
                   </h4>
                   <p className="text-amber-600/90 dark:text-amber-400/90 text-sm">
-                    {t("patients.objectivePlaceholder")}
+                    {formatPatientGoalLabel(t, patient.goal)}
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-1">
-            <CardHeader className="pb-3 border-b border-border/50">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText size={18} className="text-primary" /> {t("patients.file.planSummaryTitle")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-5 space-y-4">
-              <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">
-                  {t("patients.file.currentPlanLabel")}
-                </p>
-                <p className="font-semibold text-sm">{t("patients.file.planPlaceholder")}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t("patients.file.planUpdatedPlaceholder")}
-                </p>
-              </div>
-              <Button className="w-full" size="sm" onClick={() => setActiveTab("plan")}>
-                {t("patients.file.viewPlan")}
-              </Button>
             </CardContent>
           </Card>
         </div>
@@ -498,14 +477,6 @@ export const NutritionistPatientFilePage = () => {
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
                 {patientIdentity || t("patients.file.loading")}
               </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                  <CheckCircle2 size={12} /> {t("patients.file.statusActive")}
-                </span>
-                <span className="text-sm text-muted-foreground font-medium truncate">
-                  ID: {patientIdentity || "--"}
-                </span>
-              </div>
             </div>
 
             <Button
@@ -590,3 +561,4 @@ export const NutritionistPatientFilePage = () => {
     </div>
   );
 };
+

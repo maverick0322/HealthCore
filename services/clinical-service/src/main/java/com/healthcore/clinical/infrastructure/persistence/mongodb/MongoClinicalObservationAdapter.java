@@ -31,6 +31,11 @@ public class MongoClinicalObservationAdapter implements ClinicalObservationRepos
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public void deleteAllByPatientId(String patientId) {
+        repository.deleteAllByPatientId(patientId);
+    }
+
     private ClinicalObservationDocument toDocument(ClinicalObservation domain) {
         if (domain == null) return null;
         return new ClinicalObservationDocument(

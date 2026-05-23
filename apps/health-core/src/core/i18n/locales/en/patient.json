@@ -437,7 +437,7 @@
     "cancel": "Cancel",
     "confirmDish": "Save dish",
     "loadError": "We could not load your nutrition plan.",
-    "loadErrorHelp": "Check the browser console for HealthCore logs and try again.",
+    "loadErrorHelp": "We could not load your nutrition plan right now. Please try again later.",
     "retry": "Retry",
     "unavailable": "The nutrition plan is not available right now.",
     "observationsTitle": "Nutritionist observations",
@@ -456,7 +456,14 @@
     "units": {
       "GRAMS": "Grams",
       "MILLILITERS": "Milliliters"
-    }
+    },
+    "sectionSubtitleSelfManaged": "Options you can organize for this meal time",
+    "sectionSubtitleReadOnly": "Dishes assigned for this meal time",
+    "emptyEditablePatient": "You have not added dishes in this section yet",
+    "emptyReadOnlyPatient": "Your nutritionist has not assigned dishes for this section yet",
+    "deleteDishTitle": "Are you sure you want to remove this dish?",
+    "deleteDishDescription": "If you remove \"{{name}}\" from the plan, you will need to save the changes to confirm the update",
+    "deleteDishConfirm": "Yes, remove dish"
   },
   "linking": {
     "title": "Link Nutritionist",

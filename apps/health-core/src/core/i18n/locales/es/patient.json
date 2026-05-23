@@ -438,7 +438,7 @@
     "cancel": "Cancelar",
     "confirmDish": "Guardar platillo",
     "loadError": "No pudimos cargar tu plan nutricional.",
-    "loadErrorHelp": "Revisa la consola del navegador para ver los logs de HealthCore y vuelve a intentarlo.",
+    "loadErrorHelp": "No pudimos cargar tu plan nutricional en este momento. Intenta de nuevo más tarde",
     "retry": "Reintentar",
     "unavailable": "El plan nutricional no está disponible en este momento.",
     "contextTitle": "Plan autogestionado previo",
@@ -457,7 +457,14 @@
     "units": {
       "GRAMS": "Gramos",
       "MILLILITERS": "Mililitros"
-    }
+    },
+    "sectionSubtitleSelfManaged": "Opciones que puedes organizar para este tiempo de comida",
+    "sectionSubtitleReadOnly": "Platillos asignados para este tiempo de comida",
+    "emptyEditablePatient": "Aún no has agregado platillos en esta sección",
+    "emptyReadOnlyPatient": "Tu nutriólogo aún no te asigna platillos para esta sección",
+    "deleteDishTitle": "¿Estás seguro de que quieres eliminar este platillo?",
+    "deleteDishDescription": "Si eliminas \"{{name}}\" de tu plan, deberás guardar los cambios para confirmar la actualización",
+    "deleteDishConfirm": "Sí, eliminar platillo"
   },
   "linking": {
     "title": "Vincular Nutriólogo",

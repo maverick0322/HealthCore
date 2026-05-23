@@ -4,9 +4,7 @@ import {
   AlertCircle,
   CalendarCheck2,
   FileDown,
-  FileText,
   Loader2,
-  Scale,
   TrendingDown,
   Users,
 } from 'lucide-react';
@@ -54,7 +52,7 @@ export const NutritionistReportsPage = () => {
   const [isExporting, setIsExporting] = useState(false);
   const reportRef = useRef<HTMLDivElement | null>(null);
 
-  const { data, isLoading, isError, error, refetch } = useNutritionistReports(rangeKey);
+  const { data, isLoading, isError, refetch } = useNutritionistReports(rangeKey);
 
   const latestWeightReportDate = useMemo(
     () => getLatestWeightReportDate(data?.weightReport.rows ?? []),
@@ -147,8 +145,8 @@ export const NutritionistReportsPage = () => {
 
           {isLoading ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-                {[0, 1, 2, 3].map((index) => (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {[0, 1].map((index) => (
                   <div key={index} className="h-28 rounded-2xl bg-muted animate-pulse" />
                 ))}
               </div>
@@ -159,9 +157,7 @@ export const NutritionistReportsPage = () => {
             <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm">
               <div className="flex items-start gap-2 text-destructive">
                 <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                <span>
-                  {(error as Error | null)?.message ?? t('reports.error')}
-                </span>
+                <span>{t('reports.error')}</span>
               </div>
               <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
                 {t('reports.retry')}
@@ -169,11 +165,11 @@ export const NutritionistReportsPage = () => {
             </div>
           ) : data ? (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Card className="border-primary/20 bg-primary/5">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-primary">
-                      {t('reports.kpis.activePatients')}
+                      {t('reports.kpis.totalPatients')}
                     </CardTitle>
                     <Users size={16} className="text-primary" />
                   </CardHeader>
@@ -194,34 +190,6 @@ export const NutritionistReportsPage = () => {
                   <CardContent>
                     <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                       {data.appointmentSummary.attendedCount}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-amber-500/20 bg-amber-500/5">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                      {t('reports.kpis.patientsWithoutWeight')}
-                    </CardTitle>
-                    <Scale size={16} className="text-amber-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
-                      {data.weightReport.patientsWithoutWeightInRange}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-rose-500/20 bg-rose-500/5">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-rose-700 dark:text-rose-400">
-                      {t('reports.kpis.deactivatedSlots')}
-                    </CardTitle>
-                    <FileText size={16} className="text-rose-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-rose-700 dark:text-rose-400">
-                      {data.deactivatedSlots.length}
                     </div>
                   </CardContent>
                 </Card>

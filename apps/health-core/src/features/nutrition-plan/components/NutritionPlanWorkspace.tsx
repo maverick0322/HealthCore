@@ -27,6 +27,7 @@ import type {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/ui/accordion';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/shared/ui/card';
+import { ConfirmModal } from '@/shared/components/ConfirmModal';
 import {
   Dialog,
   DialogContent,
@@ -46,7 +47,7 @@ interface EditableIngredient {
   brand: string;
   imageUrl: string;
   unit: PlanIngredientUnit;
-  quantityAmount: number;
+  quantityAmount: number | null;
   calories: number;
   proteinGrams: number;
   carbsGrams: number;
@@ -79,6 +80,12 @@ interface EditorState {
   instructions: string;
   notes: string;
   ingredients: EditableIngredient[];
+}
+
+interface PendingDeletionState {
+  mealSlot: MealSlot;
+  optionId: string;
+  optionName: string;
 }
 
 interface EditorValidationErrors {
@@ -149,6 +156,7 @@ export function NutritionPlanWorkspace({
   const [isSearching, setIsSearching] = useState(false);
   const [searchFeedbackState, setSearchFeedbackState] = useState<SearchFeedbackState>('idle');
   const [editorErrors, setEditorErrors] = useState<EditorValidationErrors>(EMPTY_EDITOR_ERRORS);
+  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletionState | null>(null);
 
   useEffect(() => {
     if (!view) {
@@ -193,6 +201,16 @@ export function NutritionPlanWorkspace({
   const canEdit = Boolean(view?.canEdit);
   const showRegisterAction = namespace === 'patient' && !canEdit;
   const shouldShowObservations = showObservations ?? namespace === 'patient';
+  const sectionSubtitleKey = canEdit
+    ? namespace === 'nutritionist'
+      ? 'nutritionPlan.sectionSubtitleNutritionist'
+      : 'nutritionPlan.sectionSubtitleSelfManaged'
+    : 'nutritionPlan.sectionSubtitleReadOnly';
+  const emptySectionKey = canEdit
+    ? namespace === 'nutritionist'
+      ? 'nutritionPlan.emptyEditableNutritionist'
+      : 'nutritionPlan.emptyEditablePatient'
+    : 'nutritionPlan.emptyReadOnlyPatient';
 
   const sectionCards = sections.map((section) => (
         <section key={section.mealSlot} className="space-y-3">
@@ -207,7 +225,7 @@ export function NutritionPlanWorkspace({
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {t('nutritionPlan.sectionSubtitle')}
+                {t(sectionSubtitleKey)}
               </p>
             </div>
             {canEdit ? (
@@ -224,9 +242,9 @@ export function NutritionPlanWorkspace({
           </div>
 
           {section.options.length === 0 ? (
-            <Card className="border-dashed bg-muted/20">
+              <Card className="border-dashed bg-muted/20">
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                {t(canEdit ? 'nutritionPlan.emptyEditable' : 'nutritionPlan.emptyReadOnly')}
+                {t(emptySectionKey)}
               </CardContent>
             </Card>
           ) : (
@@ -319,7 +337,13 @@ export function NutritionPlanWorkspace({
                         <Button
                           variant="outline"
                           className="gap-2 text-destructive hover:text-destructive"
-                          onClick={() => removeOption(section.mealSlot, option.id)}
+                          onClick={() =>
+                            setPendingDeletion({
+                              mealSlot: section.mealSlot,
+                              optionId: option.id,
+                              optionName: option.name,
+                            })
+                          }
                         >
                           <Trash2 size={14} />
                           {t('nutritionPlan.delete')}
@@ -378,17 +402,17 @@ export function NutritionPlanWorkspace({
       const response = await onSave({
         sections: sections.map<NutritionPlanSectionRequest>((section) => ({
           mealSlot: section.mealSlot,
-          options: section.options.map((option) => ({
-            name: option.name,
-            instructions: option.instructions,
-            notes: option.notes,
-            ingredients: option.ingredients.map<NutritionPlanIngredientRequest>((ingredient) => ({
-              barcode: ingredient.barcode,
-              unit: ingredient.unit,
-              quantityAmount: ingredient.quantityAmount,
+            options: section.options.map((option) => ({
+              name: option.name,
+              instructions: option.instructions,
+              notes: option.notes,
+              ingredients: option.ingredients.map<NutritionPlanIngredientRequest>((ingredient) => ({
+                barcode: ingredient.barcode,
+                unit: ingredient.unit,
+                quantityAmount: ingredient.quantityAmount ?? 0,
+              })),
             })),
           })),
-        })),
       });
       setSections(toEditableSections(response.sections));
       setIsDirty(false);
@@ -441,6 +465,15 @@ export function NutritionPlanWorkspace({
     setIsDirty(true);
   }
 
+  function confirmRemoveOption() {
+    if (!pendingDeletion) {
+      return;
+    }
+
+    removeOption(pendingDeletion.mealSlot, pendingDeletion.optionId);
+    setPendingDeletion(null);
+  }
+
   function addSearchResult(food: CatalogFoodResponse) {
     const nextIngredient = toEditableIngredient(food, 100, 'GRAMS');
     setEditorState((current) => ({
@@ -453,7 +486,7 @@ export function NutritionPlanWorkspace({
     setSearchFeedbackState('idle');
   }
 
-  function updateEditorIngredient(index: number, nextQuantity: number, nextUnit: PlanIngredientUnit) {
+  function updateEditorIngredient(index: number, nextQuantity: number | null, nextUnit: PlanIngredientUnit) {
     setEditorState((current) => ({
       ...current,
       ingredients: current.ingredients.map((ingredient, ingredientIndex) =>
@@ -709,16 +742,17 @@ export function NutritionPlanWorkspace({
                         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_160px]">
                           <Input
                             type="number"
-                            min={1}
+                            min={0}
                             step={1}
-                            value={ingredient.quantityAmount}
-                            onChange={(event) =>
+                            value={ingredient.quantityAmount ?? ''}
+                            onChange={(event) => {
+                              const rawValue = event.target.value.trim();
                               updateEditorIngredient(
                                 index,
-                                Number(event.target.value || ingredient.quantityAmount),
+                                rawValue === '' ? null : Number(rawValue),
                                 ingredient.unit
-                              )
-                            }
+                              );
+                            }}
                           />
                           <select
                             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -787,6 +821,20 @@ export function NutritionPlanWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmModal
+        isOpen={pendingDeletion !== null}
+        onClose={() => setPendingDeletion(null)}
+        onConfirm={confirmRemoveOption}
+        title={t('nutritionPlan.deleteDishTitle')}
+        description={t('nutritionPlan.deleteDishDescription', {
+          name: pendingDeletion?.optionName ?? '',
+        })}
+        confirmText={t('nutritionPlan.deleteDishConfirm')}
+        cancelText={t('nutritionPlan.cancel')}
+        isDestructive
+        icon={<Trash2 size={24} />}
+      />
     </div>
   );
 }
@@ -894,23 +942,29 @@ function toEditableIngredient(
 
 function recalculateIngredient(
   ingredient: EditableIngredient,
-  quantityAmount: number,
+  quantityAmount: number | null,
   unit: PlanIngredientUnit
 ): EditableIngredient {
+  const safeQuantityAmount = quantityAmount ?? 0;
+
   return {
     ...ingredient,
     unit,
     quantityAmount,
-    calories: Math.round((ingredient.baseCaloriesPer100Units * quantityAmount) / 100),
-    proteinGrams: Math.round((ingredient.baseProteinPer100Units * quantityAmount) / 100),
-    carbsGrams: Math.round((ingredient.baseCarbsPer100Units * quantityAmount) / 100),
-    fatGrams: Math.round((ingredient.baseFatPer100Units * quantityAmount) / 100),
+    calories: Math.round((ingredient.baseCaloriesPer100Units * safeQuantityAmount) / 100),
+    proteinGrams: Math.round((ingredient.baseProteinPer100Units * safeQuantityAmount) / 100),
+    carbsGrams: Math.round((ingredient.baseCarbsPer100Units * safeQuantityAmount) / 100),
+    fatGrams: Math.round((ingredient.baseFatPer100Units * safeQuantityAmount) / 100),
   };
 }
 
 function normalizeOption(editorState: EditorState, editingOptionId: string | null): EditableMealOption | null {
   const trimmedName = editorState.name.trim();
-  if (!trimmedName || editorState.ingredients.length === 0) {
+  if (
+    !trimmedName ||
+    editorState.ingredients.length === 0 ||
+    editorState.ingredients.some((ingredient) => ingredient.quantityAmount == null || ingredient.quantityAmount <= 0)
+  ) {
     return null;
   }
 
@@ -924,7 +978,10 @@ function normalizeOption(editorState: EditorState, editingOptionId: string | nul
     name: trimmedName,
     instructions: editorState.instructions.trim(),
     notes: editorState.notes.trim(),
-    ingredients: editorState.ingredients,
+    ingredients: editorState.ingredients.map((ingredient) => ({
+      ...ingredient,
+      quantityAmount: ingredient.quantityAmount ?? 0,
+    })),
     totalCalories,
     totalProtein,
     totalCarbs,
@@ -932,7 +989,11 @@ function normalizeOption(editorState: EditorState, editingOptionId: string | nul
   };
 }
 
-function formatAmount(value: number): string {
+function formatAmount(value: number | null): string {
+  if (value == null) {
+    return '--';
+  }
+
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
 }
 
@@ -965,7 +1026,7 @@ function validateEditorState(
     errors.ingredients = t('nutritionPlan.validation.ingredientsRequired');
   } else if (
     editorState.ingredients.some(
-      (ingredient) => !Number.isFinite(ingredient.quantityAmount) || ingredient.quantityAmount <= 0
+      (ingredient) => ingredient.quantityAmount == null || !Number.isFinite(ingredient.quantityAmount) || ingredient.quantityAmount <= 0
     )
   ) {
     errors.ingredients = t('nutritionPlan.validation.quantityInvalid');

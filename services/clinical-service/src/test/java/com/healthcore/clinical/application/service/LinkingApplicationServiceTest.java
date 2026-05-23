@@ -9,6 +9,7 @@ import com.healthcore.clinical.domain.model.LinkingCode;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
 import com.healthcore.clinical.domain.port.out.AgendaLifecyclePort;
+import com.healthcore.clinical.domain.port.out.ClinicalObservationRepositoryPort;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.LinkingCodeRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,9 @@ class LinkingApplicationServiceTest {
 
     @Mock
     private ManageNutritionPlanUseCase manageNutritionPlanUseCase;
+
+    @Mock
+    private ClinicalObservationRepositoryPort clinicalObservationRepositoryPort;
 
     @Mock
     private AgendaLifecyclePort agendaLifecyclePort;
@@ -195,6 +199,7 @@ class LinkingApplicationServiceTest {
         );
         verify(clinicalRepositoryPort).save(testProfile);
         verify(manageNutritionPlanUseCase).archivePlansAfterUnlink("patient-123", "nutri-777");
+        verify(clinicalObservationRepositoryPort).deleteAllByPatientId("patient-123");
     }
 
     @Test
@@ -212,6 +217,7 @@ class LinkingApplicationServiceTest {
         );
         verify(clinicalRepositoryPort).save(testProfile);
         verify(manageNutritionPlanUseCase).archivePlansAfterUnlink("patient-123", "nutri-777");
+        verify(clinicalObservationRepositoryPort).deleteAllByPatientId("patient-123");
     }
 
     @Test
@@ -227,6 +233,7 @@ class LinkingApplicationServiceTest {
         assertEquals("nutri-777", testProfile.getNutritionistId());
         verify(clinicalRepositoryPort, never()).save(any());
         verify(manageNutritionPlanUseCase, never()).archivePlansAfterUnlink(anyString(), anyString());
+        verify(clinicalObservationRepositoryPort, never()).deleteAllByPatientId(anyString());
     }
 
     @Test
@@ -242,6 +249,7 @@ class LinkingApplicationServiceTest {
         assertEquals("nutri-777", testProfile.getNutritionistId());
         verify(clinicalRepositoryPort, never()).save(any());
         verify(manageNutritionPlanUseCase, never()).archivePlansAfterUnlink(anyString(), anyString());
+        verify(clinicalObservationRepositoryPort, never()).deleteAllByPatientId(anyString());
     }
 
     @Test

@@ -8,12 +8,10 @@ import { getCalendarMonthRange } from '@/features/nutritionist/utils/reporting';
 const {
   mockGetNutritionistWeightProgressReport,
   mockGetAppointmentReport,
-  mockGetSlotReport,
   mockExportNutritionistReportPdf,
 } = vi.hoisted(() => ({
   mockGetNutritionistWeightProgressReport: vi.fn(),
   mockGetAppointmentReport: vi.fn(),
-  mockGetSlotReport: vi.fn(),
   mockExportNutritionistReportPdf: vi.fn(),
 }));
 
@@ -31,7 +29,6 @@ vi.mock('@/features/clinical/services/clinicalService', () => ({
 vi.mock('@/features/nutritionist/services/nutritionistAgendaService', () => ({
   nutritionistAgendaService: {
     getAppointmentReport: mockGetAppointmentReport,
-    getSlotReport: mockGetSlotReport,
   },
 }));
 
@@ -114,7 +111,6 @@ describe('NutritionistReportsPage', () => {
       };
     });
 
-    mockGetSlotReport.mockResolvedValue([{ id: 'slot-1', active: false }]);
     mockGetAppointmentReport.mockImplementation(async (from: string) => {
       if (from === threeMonthRange.fromIso) {
         return [
@@ -213,7 +209,7 @@ describe('NutritionistReportsPage', () => {
     renderPage();
 
     expect(
-      await screen.findByText('There were no attended or cancelled appointments in this period.')
+      await screen.findByText('There were no attended or cancelled appointments in this period')
     ).toBeInTheDocument();
   });
 });

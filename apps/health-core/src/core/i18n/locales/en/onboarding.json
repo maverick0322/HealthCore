@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "back": "Back",
     "continue": "Continue",
@@ -78,7 +78,7 @@
     },
     "identity": {
       "title": "Tell us who you are",
-      "subtitle": "We need your personal details to build your clinical profile.",
+      "subtitle": "We need your personal details to build your clinical profile",
       "fields": {
         "firstName": "First name",
         "paternalLastName": "Paternal last name",
@@ -146,7 +146,7 @@
     },
     "professional": {
       "title": "Professional profile",
-      "subtitle": "Define your specialty and credentials.",
+      "subtitle": "Define your specialty and professional license",
       "specializationsLabel": "Specializations (max 3)",
       "customSpecializationLabel": "Custom specialization",
       "licenseLabel": "Professional license"
@@ -180,7 +180,7 @@
     },
     "summary": {
       "title": "Your professional profile",
-      "subtitle": "Review the information before saving.",
+      "subtitle": "Review the information before saving",
       "bioLabel": "Professional bio",
       "noPhone": "No phone captured",
       "noAddress": "No address registered",
@@ -211,3 +211,4 @@
     }
   }
 }
+

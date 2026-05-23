@@ -1,65 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CheckCircle2, Calendar, Clock, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLogFood } from '../hooks/useLogFood';
 import type { SelectedFoodItem } from '../types/tracking.types';
-import { MealPhotoCapture } from './MealPhotoCapture'; // <-- The newly created component
+import { MealPhotoCapture } from './MealPhotoCapture';
 
 interface FoodLogFormProps {
   selectedFoods: SelectedFoodItem[];
   onFoodsChange: (foods: SelectedFoodItem[]) => void;
+  // It's a best practice to pass the 'now' context if we need strict consistency,
+  // but generating it internally here is acceptable for purely visual display.
 }
 
+type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+
+/**
+ * Presentation Component.
+ * SRP: Strictly responsible for rendering the form UI, capturing user input, 
+ * and delegating data manipulation to the parent or custom hooks.
+ */
 export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoodsChange }) => {
   const { t } = useTranslation('tracking');
   const { logFood, isLoading, error, isSuccess } = useLogFood();
   
-  const [mealType, setMealType] = useState('BREAKFAST');
-  // State to hold the secure storage key returned from Cloudflare R2 after a successful upload
+  const [mealType, setMealType] = useState<MealType>('BREAKFAST');
   const [uploadedPhotoKey, setUploadedPhotoKey] = useState<string | undefined>(undefined);
   
-  const now = new Date();
-  const displayDate = now.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-  const displayTime = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-  const handleRegister = async () => {
-    // Constructing the payload based on the agreed DTO contract with the backend
-    const payload = {
-      mealType: mealType,
-      consumedAt: now.toISOString(),
-      photoKey: uploadedPhotoKey, // Automatically injected if the user took a photo
-      foods: selectedFoods.map(food => ({
-        barcode: food.barcode,
-        grams: food.grams
-      }))
+  // Memoizing static display values to prevent unnecessary recalculations on re-renders
+  const { displayDate, displayTime, currentIsoDate } = useMemo(() => {
+    const now = new Date();
+    return {
+      displayDate: now.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
+      displayTime: now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      currentIsoDate: now.toISOString(),
     };
+  }, []);
 
-    await logFood(payload);
-  };
-
-  const updateFoodGrams = (barcode: string, newGrams: number) => {
-    const updatedFoods = selectedFoods.map(food => 
-      food.barcode === barcode ? { ...food, grams: newGrams } : food
-    );
-    onFoodsChange(updatedFoods);
-  };
-
-  const removeFood = (barcode: string) => {
-    const filteredFoods = selectedFoods.filter(food => food.barcode !== barcode);
-    onFoodsChange(filteredFoods);
-  };
-
-  const mealOptions = [
+  // Memoizing configuration objects to avoid recreation on every render cycle
+  const mealOptions = useMemo(() => [
     { key: 'BREAKFAST', label: t('meals.breakfast', 'Desayuno') },
     { key: 'LUNCH', label: t('meals.lunch', 'Comida') },
     { key: 'DINNER', label: t('meals.dinner', 'Cena') },
     { key: 'SNACK', label: t('meals.snack', 'Snack') }
-  ];
+  ] as const, [t]);
+
+  const handleRegister = async () => {
+    // The component simply aggregates its local state and the props, 
+    // delegating the actual network request entirely to the hook.
+    await logFood({
+      mealType,
+      consumedAt: currentIsoDate,
+      photoKey: uploadedPhotoKey,
+      foods: selectedFoods.map(({ barcode, grams }) => ({ barcode, grams }))
+    });
+  };
+
+  const handleGramsChange = (barcode: string, newGrams: number) => {
+    // Defensive check: Ensure we don't dispatch negative or zero grams to the parent
+    const safeGrams = Math.max(1, newGrams);
+    onFoodsChange(selectedFoods.map(food => 
+      food.barcode === barcode ? { ...food, grams: safeGrams } : food
+    ));
+  };
+
+  const handleRemove = (barcode: string) => {
+    onFoodsChange(selectedFoods.filter(food => food.barcode !== barcode));
+  };
 
   if (isSuccess) {
+    // FIX: Replaced 'rounded-t-3xl' with 'rounded-3xl' to fix the cut-off bottom visual bug.
+    // Added 'mb-4' to ensure it doesn't stick to elements below it.
     return (
-      <div className="mt-4 rounded-t-3xl border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800 text-center flex flex-col items-center justify-center animate-in slide-in-from-bottom-4 duration-300">
-        <CheckCircle2 className="w-20 h-20 text-primary mb-4" strokeWidth={1.5} />
+      <div className="mt-4 mb-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-10 shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800 text-center flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+        <CheckCircle2 className="w-20 h-20 text-emerald-500 mb-4" strokeWidth={1.5} />
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('successTitle', '¡Registro Exitoso!')}</h2>
         <p className="text-slate-500 dark:text-slate-400 mt-2">{t('successMessage', 'Tus alimentos han sido guardados.')}</p>
       </div>
@@ -99,7 +112,9 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
           {selectedFoods.map((food) => (
             <div key={food.barcode} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 rounded-xl ring-1 ring-slate-200 dark:ring-slate-700">
               <div className="flex-1 min-w-0 pr-4">
-                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{food.name}</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white truncate" title={food.name}>
+                  {food.name}
+                </p>
                 <p className="text-xs text-slate-500">{food.baseCalories} kcal base</p>
               </div>
               
@@ -109,13 +124,13 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
                     type="number" 
                     min="1"
                     value={food.grams}
-                    onChange={(e) => updateFoodGrams(food.barcode, Number(e.target.value))}
+                    onChange={(e) => handleGramsChange(food.barcode, Number(e.target.value))}
                     className="w-12 text-right text-sm font-semibold bg-transparent border-none focus:ring-0 p-0 text-slate-900 dark:text-white outline-none"
                   />
                   <span className="text-xs text-slate-500 font-medium">g</span>
                 </div>
                 <button 
-                  onClick={() => removeFood(food.barcode)}
+                  onClick={() => handleRemove(food.barcode)}
                   className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                   aria-label="Remove food item"
                 >
@@ -145,10 +160,9 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
         </div>
       </div>
 
-      {/* Sección Multimedia (Foto) */}
+      {/* Sección Multimedia */}
       <div className="mb-8 flex flex-col gap-3">
         <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('foodPhoto', 'Foto del Platillo')}</p>
-        {/* Integrating the newly created component and listening to the successful upload event */}
         <MealPhotoCapture 
           onPhotoUploaded={(storageKey) => setUploadedPhotoKey(storageKey)} 
         />
@@ -165,7 +179,7 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
       <button 
         onClick={handleRegister}
         disabled={isLoading || selectedFoods.length === 0}
-        className="w-full rounded-xl bg-primary py-4 text-center text-lg font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+        className="w-full rounded-xl bg-primary py-4 text-center text-lg font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center"
       >
         {isLoading ? t('saving', 'Guardando...') : t('registerFood', 'Registrar Alimento')}
       </button>

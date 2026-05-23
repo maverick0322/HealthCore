@@ -23,13 +23,13 @@ import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfile
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import org.springframework.http.HttpStatus;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -49,10 +49,10 @@ public class ClinicalController {
     @PostMapping("/profile")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<Void> createProfile(
-            @RequestHeader("X-User-Id") String userId,
             @Valid @RequestBody CreateProfileRequest request
     ) {
-        logger.info("[ClinicalController] Creating patient profile for userId={}", userId);
+        String userId = getCurrentUserId();
+        logger.info("[ClinicalController] Creating patient profile for userHash={}", logHash(userId));
         manageProfileUseCase.createProfile(toPatientProfile(userId, request));
         return ResponseEntity.ok().build();
     }
@@ -61,7 +61,7 @@ public class ClinicalController {
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<PatientProfileResponse> updateMyProfile(@Valid @RequestBody CreateProfileRequest request) {
         String userId = getCurrentUserId();
-        logger.info("[ClinicalController] Updating patient profile for userId={}", userId);
+        logger.info("[ClinicalController] Updating patient profile for userHash={}", logHash(userId));
         PatientProfile updatedProfile = manageProfileUseCase.updateProfile(userId, toPatientProfile(userId, request));
         return ResponseEntity.ok(toPatientProfileResponse(updatedProfile));
     }
@@ -69,11 +69,11 @@ public class ClinicalController {
     @GetMapping("/goals/me")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<HealthGoalResponse> getMyGoals(@RequestHeader("X-User-Id") String userId) {
-        logger.info("[ClinicalController] Getting goals for userId={}", userId);
+        logger.info("[ClinicalController] Getting goals for userHash={}", logHash(userId));
         Optional<PatientProfile> profileOpt = manageProfileUseCase.getProfileByUserId(userId);
 
         if (profileOpt.isEmpty()) {
-            logger.warn("[ClinicalController] No profile found for userId={}", userId);
+            logger.warn("[ClinicalController] No profile found for userHash={}", logHash(userId));
             return ResponseEntity.notFound().build();
         }
 
@@ -94,8 +94,8 @@ public class ClinicalController {
             @RequestHeader("X-User-Id") String userId,
             @Valid @RequestBody UpdateWeightRequest request
     ) {
-        logger.info("[ClinicalController] Updating weight for userId={} weightKg={} date={}",
-                userId, request.weightKg(), request.date());
+        logger.info("[ClinicalController] Updating weight for userHash={} weightKg={} date={}",
+                logHash(userId), request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg(), request.date());
         return ResponseEntity.ok(toHealthGoalResponse(newGoal));
     }
@@ -107,8 +107,8 @@ public class ClinicalController {
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate originalDate,
             @Valid @RequestBody UpdateWeightRequest request
     ) {
-        logger.info("[ClinicalController] Editing weight for userId={} originalDate={} weightKg={} date={}",
-                userId, originalDate, request.weightKg(), request.date());
+        logger.info("[ClinicalController] Editing weight for userHash={} originalDate={} weightKg={} date={}",
+                logHash(userId), originalDate, request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.editWeight(userId, originalDate, request.weightKg(), request.date());
         return ResponseEntity.ok(toHealthGoalResponse(newGoal));
     }
@@ -119,7 +119,7 @@ public class ClinicalController {
             @RequestHeader("X-User-Id") String userId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        logger.info("[ClinicalController] Deleting weight for userId={} date={}", userId, date);
+        logger.info("[ClinicalController] Deleting weight for userHash={} date={}", logHash(userId), date);
         HealthGoal newGoal = manageProfileUseCase.deleteWeight(userId, date);
         return ResponseEntity.ok(toHealthGoalResponse(newGoal));
     }
@@ -127,7 +127,7 @@ public class ClinicalController {
     @GetMapping("/weight/history")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<List<WeightRecord>> getWeightHistory(@RequestHeader("X-User-Id") String userId) {
-        logger.info("[ClinicalController] Getting weight history for userId={}", userId);
+        logger.info("[ClinicalController] Getting weight history for userHash={}", logHash(userId));
         return ResponseEntity.ok(manageProfileUseCase.getWeightHistory(userId));
     }
 
@@ -135,7 +135,7 @@ public class ClinicalController {
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<PatientProfileResponse> getMyProfile() {
         String patientId = getCurrentUserId();
-        logger.info("[ClinicalController] Getting profile for patientId={}", patientId);
+        logger.info("[ClinicalController] Getting profile for patientHash={}", logHash(patientId));
         return manageProfileUseCase.getProfileByUserId(patientId)
                 .map(profile -> ResponseEntity.ok(toPatientProfileResponse(profile)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -145,7 +145,7 @@ public class ClinicalController {
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<NutritionistProfileResponse> getMyLinkedNutritionistProfile() {
         String patientId = getCurrentUserId();
-        logger.info("[ClinicalController] Getting linked nutritionist profile for patientId={}", patientId);
+        logger.info("[ClinicalController] Getting linked nutritionist profile for patientHash={}", logHash(patientId));
         return manageProfileUseCase.getProfileByUserId(patientId)
                 .map(PatientProfile::getNutritionistId)
                 .filter(nutritionistId -> nutritionistId != null && !nutritionistId.isBlank())
@@ -158,7 +158,7 @@ public class ClinicalController {
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<Void> createNutritionistProfile(@Valid @RequestBody UpsertNutritionistProfileRequest request) {
         String userId = getCurrentUserId();
-        logger.info("[ClinicalController] Creating nutritionist profile for userId={}", userId);
+        logger.info("[ClinicalController] Creating nutritionist profile for userHash={}", logHash(userId));
         manageProfileUseCase.createNutritionistProfile(toNutritionistProfile(userId, request));
         return ResponseEntity.ok().build();
     }
@@ -169,7 +169,7 @@ public class ClinicalController {
             @Valid @RequestBody UpsertNutritionistProfileRequest request
     ) {
         String userId = getCurrentUserId();
-        logger.info("[ClinicalController] Updating nutritionist profile for userId={}", userId);
+        logger.info("[ClinicalController] Updating nutritionist profile for userHash={}", logHash(userId));
         NutritionistProfile updatedProfile = manageProfileUseCase.updateNutritionistProfile(
                 userId,
                 toNutritionistProfile(userId, request)
@@ -181,7 +181,7 @@ public class ClinicalController {
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<NutritionistProfileResponse> getMyNutritionistProfile() {
         String userId = getCurrentUserId();
-        logger.info("[ClinicalController] Getting nutritionist profile for userId={}", userId);
+        logger.info("[ClinicalController] Getting nutritionist profile for userHash={}", logHash(userId));
         return manageProfileUseCase.getNutritionistProfileByUserId(userId)
                 .map(profile -> ResponseEntity.ok(toNutritionistProfileResponse(profile)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -191,7 +191,7 @@ public class ClinicalController {
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<List<PatientProfileResponse>> getNutritionistPatients() {
         String nutritionistId = getCurrentUserId();
-        logger.info("[ClinicalController] Getting linked patients for nutritionistId={}", nutritionistId);
+        logger.info("[ClinicalController] Getting linked patients for nutritionistHash={}", logHash(nutritionistId));
         List<PatientProfileResponse> patients = manageProfileUseCase.getProfilesByNutritionistId(nutritionistId)
                 .stream()
                 .map(this::toPatientProfileResponse)
@@ -203,8 +203,8 @@ public class ClinicalController {
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<PatientProfileResponse> getNutritionistPatientProfile(@PathVariable String patientId) {
         String nutritionistId = getCurrentUserId();
-        logger.info("[ClinicalController] Getting patient profile for nutritionistId={} patientId={}",
-                nutritionistId, patientId);
+        logger.info("[ClinicalController] Getting patient profile for nutritionistHash={} patientHash={}",
+                logHash(nutritionistId), logHash(patientId));
         PatientProfile profile = manageProfileUseCase.getProfileForNutritionist(nutritionistId, patientId);
         return ResponseEntity.ok(toPatientProfileResponse(profile));
     }
@@ -220,8 +220,8 @@ public class ClinicalController {
         }
 
         String nutritionistId = getCurrentUserId();
-        logger.info("[ClinicalController] Getting weight progress report for nutritionistId={} from={} to={}",
-                nutritionistId, from, to);
+        logger.info("[ClinicalController] Getting weight progress report for nutritionistHash={} from={} to={}",
+                logHash(nutritionistId), from, to);
 
         NutritionistWeightProgressReport report = manageProfileUseCase.getNutritionistWeightProgressReport(
                 nutritionistId,
@@ -376,5 +376,9 @@ public class ClinicalController {
         return org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

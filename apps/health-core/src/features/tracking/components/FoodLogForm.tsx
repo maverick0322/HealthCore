@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Calendar, Clock, Camera, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { CheckCircle2, Calendar, Clock, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLogFood } from '../hooks/useLogFood';
 import type { SelectedFoodItem } from '../types/tracking.types';
+import { MealPhotoCapture } from './MealPhotoCapture'; // <-- The newly created component
 
 interface FoodLogFormProps {
   selectedFoods: SelectedFoodItem[];
@@ -12,24 +13,27 @@ interface FoodLogFormProps {
 export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoodsChange }) => {
   const { t } = useTranslation('tracking');
   const { logFood, isLoading, error, isSuccess } = useLogFood();
+  
   const [mealType, setMealType] = useState('BREAKFAST');
+  // State to hold the secure storage key returned from Cloudflare R2 after a successful upload
+  const [uploadedPhotoKey, setUploadedPhotoKey] = useState<string | undefined>(undefined);
   
   const now = new Date();
   const displayDate = now.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   const displayTime = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
   const handleRegister = async () => {
+    // Constructing the payload based on the agreed DTO contract with the backend
     const payload = {
       mealType: mealType,
-      consumedAt: now.toISOString(), // ISO-8601 para el backend
-      // photoKey: "image_10741c.png", // Descomentar cuando implementemos la subida a S3/Blob
+      consumedAt: now.toISOString(),
+      photoKey: uploadedPhotoKey, // Automatically injected if the user took a photo
       foods: selectedFoods.map(food => ({
         barcode: food.barcode,
         grams: food.grams
       }))
     };
 
-    console.log('Enviando al backend:', payload);
     await logFood(payload);
   };
 
@@ -113,6 +117,7 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
                 <button 
                   onClick={() => removeFood(food.barcode)}
                   className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                  aria-label="Remove food item"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -142,20 +147,14 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
 
       {/* Sección Multimedia (Foto) */}
       <div className="mb-8 flex flex-col gap-3">
-        <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('foodPhoto', 'Evidencia Visual')}</p>
-        <div className="flex items-center gap-4">
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-4 text-slate-500 hover:border-primary hover:text-primary transition-all">
-            <Camera className="w-5 h-5" />
-            <span className="text-sm font-medium">{t('uploadPhoto', 'Añadir Foto')}</span>
-          </button>
-          <div className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-300 overflow-hidden">
-             {/* Aquí en el futuro puedes poner el tag <img> con el blob */}
-            <ImageIcon className="w-8 h-8" />
-          </div>
-        </div>
+        <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('foodPhoto', 'Foto del Platillo')}</p>
+        {/* Integrating the newly created component and listening to the successful upload event */}
+        <MealPhotoCapture 
+          onPhotoUploaded={(storageKey) => setUploadedPhotoKey(storageKey)} 
+        />
       </div>
 
-      {/* Manejo de Errores */}
+      {/* Manejo de Errores de Registro */}
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <p className="text-red-600 dark:text-red-400 text-sm font-medium text-center">{error}</p>
@@ -168,7 +167,7 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
         disabled={isLoading || selectedFoods.length === 0}
         className="w-full rounded-xl bg-primary py-4 text-center text-lg font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
       >
-        {isLoading ? t('saving', 'Guardando...') : t('registerFood', 'Registrar Comida')}
+        {isLoading ? t('saving', 'Guardando...') : t('registerFood', 'Registrar Alimento')}
       </button>
     </div>
   );

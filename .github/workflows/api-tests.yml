@@ -31,6 +31,10 @@ jobs:
           echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
           echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET=${{ secrets.AUTH0_CLIENT_SECRET }}" >> .env
           echo "SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${{ secrets.AUTH0_ISSUER_URI }}" >> .env
+          echo "APP_MANUALDB_SEED_ENABLED=true" >> .env
+          echo "APP_MANUALDB_SEED_PATIENT_PASSWORD=PostmanSeedPatient123!" >> .env
+          echo "APP_MANUALDB_SEED_NUTRITIONIST_PASSWORD=PostmanSeedNutritionist123!" >> .env
+          echo "APP_MANUALDB_SEED_ADMIN_PASSWORD=AdminSecureP@ss123!" >> .env
           
           docker compose up -d mongodb api-gateway identity-service tracking-service clinical-service agenda-service
           

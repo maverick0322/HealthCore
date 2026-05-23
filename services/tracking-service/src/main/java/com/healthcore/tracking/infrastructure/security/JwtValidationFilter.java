@@ -106,7 +106,7 @@ public class JwtValidationFilter extends OncePerRequestFilter {
         );
 
         SecurityContextHolder.getContext().setAuthentication(auth);
-        log.debug("JWT successfully validated and context set for user: {}", email);
+        log.debug("JWT successfully validated and context set for emailHash={}", logHash(email));
     }
 
     private void sendUnauthorizedError(HttpServletResponse response, String message) throws IOException {
@@ -124,5 +124,9 @@ public class JwtValidationFilter extends OncePerRequestFilter {
         );
 
         objectMapper.writeValue(response.getWriter(), errorDetails);
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

@@ -33,11 +33,11 @@ public class DeadLetteringMessageRecoverer implements MessageRecoverer {
         properties.getHeaders().put(HEADER_EXCEPTION_CLASS, cause.getClass().getName());
 
         log.warn(
-                "Publishing failed message to DLQ. queue={} routingKey={} messageId={} correlationId={} cause={}",
+                "Publishing failed message to DLQ. queue={} routingKey={} messageHash={} correlationHash={} cause={}",
                 consumerQueue,
                 routingKey,
-                properties.getMessageId(),
-                properties.getCorrelationId(),
+                hash(properties.getMessageId()),
+                hash(properties.getCorrelationId()),
                 cause.getClass().getSimpleName()
         );
 
@@ -47,6 +47,10 @@ public class DeadLetteringMessageRecoverer implements MessageRecoverer {
     private String buildDeadLetterRoutingKey(String consumerQueue) {
         String base = consumerQueue == null ? "unknown" : consumerQueue;
         return base + messagingProperties.deadLetterQueueSuffix();
+    }
+
+    private String hash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }
 

@@ -1,63 +1,28 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  AlertCircle,
-  CalendarDays,
-  Loader2,
-  RefreshCw,
-  Settings,
-} from 'lucide-react';
+import { AlertCircle, CalendarDays, Loader2, RefreshCw, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 import { NutritionistNav } from '@/features/nutritionist/components/NutritionistNav';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { Button } from '@/shared/ui/button';
-import { WeeklyCalendar, type WeeklyCalendarItem } from '@/features/agenda/components/WeeklyCalendar';
-import {
-  addDays,
-  formatLocalTime,
-  getWeekRange,
-  startOfWeek,
-  todayDateKey,
-} from '@/features/agenda/utils/agendaDateUtils';
-import { useNutritionistAppointments } from '@/features/nutritionist/hooks/useNutritionistAppointments';
-import { useNutritionistSlots } from '@/features/nutritionist/hooks/useNutritionistSlots';
+import { WeeklyCalendar } from '@/features/agenda/components/WeeklyCalendar';
+import { useNutritionistAgendaPage } from '../hooks/useNutritionistAgendaPage';
 
 export const NutritionistAgendaPage = () => {
   const { t } = useTranslation('nutritionist');
   const navigate = useNavigate();
-  const [weekStart, setWeekStart] = useState(startOfWeek(todayDateKey()));
 
   const {
-    appointments,
-    isLoading: loadingAppointments,
-    error: appointmentError,
-    fetchAppointments,
-  } = useNutritionistAppointments();
-  const {
-    slots,
-    isLoading: loadingSlots,
-    error: slotError,
-    fetchSlots,
-  } = useNutritionistSlots();
-
-  const isLoading = loadingAppointments || loadingSlots;
-  const error = appointmentError ?? slotError;
-
-  const fetchWeek = (targetWeek = weekStart) => {
-    const range = getWeekRange(targetWeek);
-    fetchAppointments(range.from, range.to);
-    fetchSlots(range.from, range.to);
-  };
-
-  useEffect(() => {
-    fetchWeek();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const goToWeek = (targetWeek: string) => {
-    setWeekStart(targetWeek);
-    fetchWeek(targetWeek);
-  };
+    weekStart,
+    isLoading,
+    error,
+    calendarItems,
+    fetchWeek,
+    goToWeek,
+    addDays,
+    todayDateKey,
+    startOfWeek,
+  } = useNutritionistAgendaPage();
 
   const calendarLabels = {
     previous: t('agenda.calendar.previousWeek'),
@@ -66,73 +31,6 @@ export const NutritionistAgendaPage = () => {
     empty: t('agenda.noSlotsOrAppointments'),
     loading: t('agenda.loading'),
   };
-
-  const calendarItems = useMemo<WeeklyCalendarItem[]>(() => {
-    const appointmentsBySlot = new Map(appointments.map((appointment) => [appointment.slotId, appointment]));
-    const usedAppointmentIds = new Set<string>();
-
-    const slotItems = slots.map((slot) => {
-      const appointment = appointmentsBySlot.get(slot.id);
-      if (appointment) {
-        usedAppointmentIds.add(appointment.id);
-      }
-
-      if (!slot.active) {
-        return {
-          id: slot.id,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          title: t('agenda.slotInactive'),
-          subtitle: `${formatLocalTime(slot.startTime)} - ${formatLocalTime(slot.endTime)}`,
-          kind: 'inactive' as const,
-        };
-      }
-
-      if (appointment?.status === 'CANCELLED') {
-        return {
-          id: slot.id,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          title: t('agenda.status.CANCELLED'),
-          subtitle: `${t('dashboard.patient')}: ${appointment.patientId}`,
-          kind: 'cancelled' as const,
-        };
-      }
-
-      if (appointment) {
-        return {
-          id: slot.id,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          title: t('agenda.bookedSlot'),
-          subtitle: `${t('dashboard.patient')}: ${appointment.patientId}`,
-          kind: 'appointment' as const,
-        };
-      }
-
-      return {
-        id: slot.id,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        title: slot.reserved ? t('agenda.reservedSlot') : t('agenda.freeSlot'),
-        subtitle: `${formatLocalTime(slot.startTime)} - ${formatLocalTime(slot.endTime)}`,
-        kind: slot.reserved ? 'reserved' as const : 'available' as const,
-      };
-    });
-
-    const appointmentItems = appointments
-      .filter((appointment) => !usedAppointmentIds.has(appointment.id))
-      .map((appointment) => ({
-        id: appointment.id,
-        startTime: appointment.startTime,
-        endTime: appointment.endTime,
-        title: appointment.status === 'CANCELLED' ? t('agenda.status.CANCELLED') : t('agenda.bookedSlot'),
-        subtitle: `${t('dashboard.patient')}: ${appointment.patientId}`,
-        kind: appointment.status === 'CANCELLED' ? 'cancelled' as const : 'appointment' as const,
-      }));
-
-    return [...slotItems, ...appointmentItems];
-  }, [appointments, slots, t]);
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">

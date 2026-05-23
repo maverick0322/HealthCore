@@ -17,6 +17,7 @@ import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFacto
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
@@ -197,11 +198,21 @@ public class RabbitMessagingConfig {
             ConnectionFactory connectionFactory,
             MessageConverter messageConverter,
             RetryTemplate retryTemplate,
-            MessageRecoverer messageRecoverer
+            MessageRecoverer messageRecoverer,
+            @Value("${app.messaging.listener.prefetch-count:5}") int prefetchCount,
+            @Value("${app.messaging.listener.concurrent-consumers:2}") int concurrentConsumers,
+            @Value("${app.messaging.listener.max-concurrent-consumers:4}") int maxConcurrentConsumers,
+            @Value("${spring.rabbitmq.listener.simple.default-requeue-rejected:false}") boolean defaultRequeueRejected,
+            @Value("${spring.rabbitmq.listener.simple.missing-queues-fatal:false}") boolean missingQueuesFatal
     ) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(messageConverter);
+        factory.setPrefetchCount(prefetchCount);
+        factory.setConcurrentConsumers(concurrentConsumers);
+        factory.setMaxConcurrentConsumers(maxConcurrentConsumers);
+        factory.setDefaultRequeueRejected(defaultRequeueRejected);
+        factory.setMissingQueuesFatal(missingQueuesFatal);
         RetryOperationsInterceptor interceptor = RetryInterceptorBuilder.stateless()
                 .retryOperations(retryTemplate)
                 .recoverer(messageRecoverer)

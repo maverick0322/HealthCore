@@ -7,6 +7,7 @@ import { Label } from "@/shared/ui/label";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { FieldError } from "@/shared/components/FieldError";
 import { ENV } from "@/core/config/env";
 import { usePasswordStrength } from "../hooks/usePasswordStrength";
 import { PasswordStrengthIndicator } from "../components/PasswordStrengthIndicator";
@@ -27,10 +28,9 @@ export const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<"paciente" | "nutriologo">("paciente");
-  const [passwordMismatch, setPasswordMismatch] = useState(false);
   const { t, i18n } = useTranslation("auth");
   const strength = usePasswordStrength(password);
-  const { handleRegister, isLoading, error } = useRegister();
+  const { handleRegister, isLoading, error, fieldErrors } = useRegister();
 
   const roleMap: Record<string, UserRole> = {
     paciente: "PATIENT",
@@ -39,16 +39,10 @@ export const SignUpPage = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordMismatch(false);
-
-    if (password !== confirmPassword) {
-      setPasswordMismatch(true);
-      return;
-    }
-
     await handleRegister({
       email,
       password,
+      confirmPassword,
       role: roleMap[role],
     });
   };
@@ -91,8 +85,8 @@ export const SignUpPage = () => {
         {/* Card Form */}
         <div className="bg-card text-card-foreground p-5 sm:p-8 rounded-xl sm:rounded-2xl border border-border shadow-md space-y-5 sm:space-y-6 transition-colors duration-500">
           
+          {/* Role toggle */}
           <div className="relative flex w-full p-1 bg-muted rounded-lg select-none">
-            {/* Animated Pill Container */}
             <div className="absolute inset-1 flex">
               <div
                 className={`w-1/2 h-full bg-background rounded-md shadow-sm transition-transform duration-300 ease-in-out ${
@@ -159,26 +153,28 @@ export const SignUpPage = () => {
             <div className="flex-grow border-t border-border"></div>
           </div>
 
-          {/* Error message */}
-          {(error || passwordMismatch) && (
+          {/* Server error banner */}
+          {error && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300">
-              {passwordMismatch ? t("errorPasswordMismatch") : error}
+              {error}
             </div>
           )}
 
-          <form className="space-y-4 sm:space-y-5" onSubmit={handleSignUp}>
+          <form className="space-y-4 sm:space-y-5" onSubmit={handleSignUp} noValidate>
             <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">{t("email")}</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder={t("emailPlaceholder")}
-                className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground" 
-                required
+                className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
+                aria-describedby={fieldErrors.email ? "signup-email-error" : undefined}
+                aria-invalid={!!fieldErrors.email}
               />
+              <FieldError id="signup-email-error" message={fieldErrors.email} />
             </div>
             
             <div className="space-y-1.5 sm:space-y-2">
@@ -189,12 +185,11 @@ export const SignUpPage = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder={t("passwordPlaceholder")}
                   className="h-11 sm:h-10 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground"
-                  required
-                  minLength={8}
-                  maxLength={15}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
+                  aria-describedby={fieldErrors.password ? "signup-password-error" : undefined}
+                  aria-invalid={!!fieldErrors.password}
                 />
                 <button
                   type="button"
@@ -205,6 +200,7 @@ export const SignUpPage = () => {
                 </button>
               </div>
               <PasswordStrengthIndicator strength={strength} />
+              <FieldError id="signup-password-error" message={fieldErrors.password} />
             </div>
             
             <div className="space-y-1.5 sm:space-y-2">
@@ -216,10 +212,11 @@ export const SignUpPage = () => {
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder={t("passwordPlaceholder")}
                   className="h-11 sm:h-10 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground"
-                  required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isLoading}
+                  aria-describedby={fieldErrors.confirmPassword ? "signup-confirm-error" : undefined}
+                  aria-invalid={!!fieldErrors.confirmPassword}
                 />
                 <button
                   type="button"
@@ -229,6 +226,7 @@ export const SignUpPage = () => {
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <FieldError id="signup-confirm-error" message={fieldErrors.confirmPassword} />
             </div>
 
             <div className="flex items-start gap-3 py-2">

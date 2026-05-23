@@ -36,7 +36,7 @@ public class SendPasswordResetEmailUseCase {
         String htmlBody = templateService.render("password-reset", variables, locale);
         String textBody = templateService.getMessage("password.reset.text", locale, event.resetCode(), event.expiresAt());
 
-        emailSender.send(new EmailMessage(event.email(), subject, htmlBody, textBody));
+        emailSender.send(new EmailMessage(event.email(), subject, htmlBody, textBody, idempotencyKey(event)));
     }
 
     private void validate(PasswordResetRequestedEvent event) {
@@ -44,5 +44,13 @@ public class SendPasswordResetEmailUseCase {
         EventValidation.requireEmail(event.email(), "event email");
         EventValidation.requireNonBlank(event.resetCode(), "reset code");
         EventValidation.requireFutureInstant(event.expiresAt(), "expiresAt", clock);
+    }
+
+    private String idempotencyKey(PasswordResetRequestedEvent event) {
+        return "password-reset:" + Integer.toHexString(Objects.hash(
+                event.email().toLowerCase(Locale.ROOT),
+                event.resetCode(),
+                event.expiresAt()
+        ));
     }
 }

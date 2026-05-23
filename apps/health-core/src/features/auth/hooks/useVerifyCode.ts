@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 
 import { authService } from '@/features/auth/services/authService';
+import { validateCode } from '../validators/authValidation';
+
+interface VerifyCodeFieldErrors {
+  code?: string;
+}
 
 /**
  * Hook for email verification and password-reset code verification.
@@ -16,6 +21,7 @@ export const useVerifyCode = () => {
   const { t } = useTranslation('auth');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<VerifyCodeFieldErrors>({});
 
   const handleVerifyCode = async (
     email: string,
@@ -23,6 +29,14 @@ export const useVerifyCode = () => {
     flow: 'email-verification' | 'password-reset',
   ) => {
     setError(null);
+
+    const codeError = validateCode(code);
+    if (codeError) {
+      setFieldErrors({ code: t(codeError) });
+      return;
+    }
+
+    setFieldErrors({});
     setIsLoading(true);
     try {
       if (flow === 'password-reset') {
@@ -42,6 +56,8 @@ export const useVerifyCode = () => {
         const status = err.response?.status;
         if (status === 401) {
           setError(t('errorInvalidCode'));
+        } else if (status === 410) {
+          setError(t('errorInvalidCode'));
         } else if (status === 403) {
           setError(t('errorForbidden'));
         } else {
@@ -55,5 +71,5 @@ export const useVerifyCode = () => {
     }
   };
 
-  return { handleVerifyCode, isLoading, error };
+  return { handleVerifyCode, isLoading, error, fieldErrors };
 };

@@ -37,7 +37,7 @@ public class SendWelcomeEmailUseCase {
         String htmlBody = templateService.render("welcome", variables, locale);
         String textBody = buildTextBody(event, locale);
 
-        emailSender.send(new EmailMessage(event.email(), subject, htmlBody, textBody));
+        emailSender.send(new EmailMessage(event.email(), subject, htmlBody, textBody, idempotencyKey(event)));
     }
 
     private void validate(UserRegisteredEvent event) {
@@ -55,5 +55,13 @@ public class SendWelcomeEmailUseCase {
                 event.verificationCode(), event.verificationExpiresAt());
         }
         return templateService.getMessage("welcome.ready.text", locale);
+    }
+
+    private String idempotencyKey(UserRegisteredEvent event) {
+        String userKey = event.userId();
+        if (userKey == null || userKey.isBlank()) {
+            userKey = Integer.toHexString(Objects.hash(event.email(), event.registeredAt()));
+        }
+        return "welcome:" + userKey.trim();
     }
 }

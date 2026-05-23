@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -7,9 +6,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Loader2,
-  Plus,
   RefreshCw,
-  Trash2,
   Zap,
 } from 'lucide-react';
 
@@ -19,136 +16,53 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/ui/dialog';
 import { WeeklyCalendar, type WeeklyCalendarItem } from '@/features/agenda/components/WeeklyCalendar';
 import {
   addDays,
-  formatLocalDate,
   formatLocalTime,
-  getBrowserTimeZone,
   getWeekDays,
-  getWeekRange,
   startOfWeek,
   todayDateKey,
 } from '@/features/agenda/utils/agendaDateUtils';
-
-import { useGenerateSlots } from '@/features/nutritionist/hooks/useGenerateSlots';
-import { useNutritionistSlots } from '@/features/nutritionist/hooks/useNutritionistSlots';
-import { useDeactivateSlot } from '@/features/nutritionist/hooks/useDeactivateSlot';
-import type {
-  AvailabilitySlotResponse,
-  GenerateSlotsTimeBlock,
-} from '@/features/nutritionist/types/agenda.types';
-
-type Tab = 'generate' | 'mySlots';
-type DayBlocksByDate = Record<string, GenerateSlotsTimeBlock[]>;
-const EARLIEST_SLOT_TIME = '06:00';
-const LATEST_SLOT_TIME = '21:00';
-
-const toTimeInputValue = (date: Date) =>
-  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-
-const getNextQuarterHour = () => {
-  const date = new Date();
-  date.setMinutes(Math.ceil((date.getMinutes() + 5) / 15) * 15, 0, 0);
-  return date;
-};
-
-const defaultBlock = (preferFutureToday = false): GenerateSlotsTimeBlock => {
-  if (!preferFutureToday) {
-    return { startTime: '09:00', endTime: '13:00' };
-  }
-  const start = getNextQuarterHour();
-  if (toTimeInputValue(start) < EARLIEST_SLOT_TIME) {
-    start.setHours(6, 0, 0, 0);
-  }
-  if (toTimeInputValue(start) >= LATEST_SLOT_TIME) {
-    return { startTime: '09:00', endTime: '13:00' };
-  }
-  const preferredEnd = new Date(start);
-  preferredEnd.setHours(start.getHours() + 4, start.getMinutes(), 0, 0);
-  const latestEnd = new Date(start);
-  latestEnd.setHours(21, 0, 0, 0);
-  const end = preferredEnd > latestEnd ? latestEnd : preferredEnd;
-  return { startTime: toTimeInputValue(start), endTime: toTimeInputValue(end) };
-};
-
-const getInitialSelectedDateKey = () => {
-  const now = new Date();
-  return now.getHours() >= 21 ? addDays(todayDateKey(), 1) : todayDateKey();
-};
-
-const createInitialScheduleState = () => {
-  const initialDate = getInitialSelectedDateKey();
-  return {
-    selectedDays: [initialDate],
-    dayBlocks: {
-      [initialDate]: [defaultBlock(initialDate === todayDateKey())],
-    },
-  };
-};
-
-const sortBlocks = (blocks: GenerateSlotsTimeBlock[]) =>
-  [...blocks].sort((left, right) => left.startTime.localeCompare(right.startTime));
-
-const hasOverlappingBlocks = (blocks: GenerateSlotsTimeBlock[]) => {
-  const sorted = sortBlocks(blocks);
-  return sorted.some((block, index) => index > 0 && block.startTime < sorted[index - 1].endTime);
-};
-
-const hasInvalidBlockOrder = (blocks: GenerateSlotsTimeBlock[]) =>
-  blocks.some((block) => !block.startTime || !block.endTime || block.startTime >= block.endTime);
-
-const hasBlockOutsideVisibleHours = (blocks: GenerateSlotsTimeBlock[]) =>
-  blocks.some((block) => block.startTime < EARLIEST_SLOT_TIME || block.endTime > LATEST_SLOT_TIME);
-
-const hasPastSameDayBlock = (dateKey: string, blocks: GenerateSlotsTimeBlock[]) => {
-  if (dateKey !== todayDateKey()) return false;
-  const now = new Date();
-  return blocks.some((block) => {
-    const [hours, minutes] = block.startTime.split(':').map(Number);
-    const start = new Date();
-    start.setHours(hours, minutes, 0, 0);
-    return start <= now;
-  });
-};
+import { useNutritionistAvailabilityPage } from '../hooks/useNutritionistAvailabilityPage';
+import { DayBlockEditor, DaySelector, DeactivateSlotDialog } from '../components/NutritionistAvailabilityComponents';
+import { useMemo } from 'react';
 
 export const NutritionistAvailabilityPage = () => {
   const { t } = useTranslation('nutritionist');
   const navigate = useNavigate();
 
-  const initialSchedule = useMemo(createInitialScheduleState, []);
-  const browserTimeZone = useMemo(() => getBrowserTimeZone(), []);
-  const [activeTab, setActiveTab] = useState<Tab>('generate');
-  const [weekStart, setWeekStart] = useState(startOfWeek(todayDateKey()));
-  const [selectedDays, setSelectedDays] = useState<string[]>(initialSchedule.selectedDays);
-  const [dayBlocks, setDayBlocks] = useState<DayBlocksByDate>(initialSchedule.dayBlocks);
-  const [duration, setDuration] = useState(45);
-  const [deactivateTarget, setDeactivateTarget] = useState<AvailabilitySlotResponse | null>(null);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-
-  const { generateSlots, isLoading: generating, error: genError, isSuccess: genSuccess, slots: generatedSlots } = useGenerateSlots();
-  const { slots, isLoading: loadingSlots, error: slotError, fetchSlots } = useNutritionistSlots();
-  const { deactivateSlot, isLoading: deactivating } = useDeactivateSlot();
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = window.setTimeout(() => setToast(null), 4000);
-    return () => window.clearTimeout(id);
-  }, [toast]);
-
-  useEffect(() => {
-    if (activeTab === 'mySlots') {
-      handleFetchSlots();
-    }
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  const {
+    activeTab,
+    setActiveTab,
+    weekStart,
+    selectedDays,
+    duration,
+    setDuration,
+    deactivateTarget,
+    setDeactivateTarget,
+    toast,
+    browserTimeZone,
+    slots,
+    generatedSlots,
+    loadingSlots,
+    slotError,
+    generating,
+    genError,
+    genSuccess,
+    deactivating,
+    handleFetchSlots,
+    goToWeek,
+    toggleSelectedDay,
+    blocksForDay,
+    updateDayBlock,
+    addDayBlock,
+    removeDayBlock,
+    handleGenerate,
+    handleDeactivate,
+    EARLIEST_SLOT_TIME,
+    LATEST_SLOT_TIME,
+  } = useNutritionistAvailabilityPage();
 
   const calendarLabels = {
     previous: t('availability.calendar.previousWeek'),
@@ -161,136 +75,6 @@ export const NutritionistAvailabilityPage = () => {
   const generatedCalendarLabels = {
     ...calendarLabels,
     empty: t('availability.noGeneratedPreview'),
-  };
-
-  const handleFetchSlots = (targetWeek = weekStart) => {
-    const range = getWeekRange(targetWeek);
-    fetchSlots(range.from, range.to);
-  };
-
-  const goToWeek = (targetWeek: string) => {
-    setWeekStart(targetWeek);
-    if (activeTab === 'mySlots') {
-      handleFetchSlots(targetWeek);
-    }
-  };
-
-  const toggleSelectedDay = (dateKey: string) => {
-    setSelectedDays((current) => {
-      if (current.includes(dateKey)) {
-        const next = current.filter((day) => day !== dateKey);
-        setDayBlocks((blocksByDate) => {
-          const copy = { ...blocksByDate };
-          delete copy[dateKey];
-          return copy;
-        });
-        return next;
-      }
-      setDayBlocks((blocksByDate) => ({
-        ...blocksByDate,
-        [dateKey]: blocksByDate[dateKey] ?? [defaultBlock(dateKey === todayDateKey())],
-      }));
-      return [...current, dateKey].sort();
-    });
-  };
-
-  const blocksForDay = (dateKey: string) => dayBlocks[dateKey] ?? [];
-
-  const updateDayBlock = (
-    dateKey: string,
-    index: number,
-    field: keyof GenerateSlotsTimeBlock,
-    value: string,
-  ) => {
-    setDayBlocks((current) => {
-      const blocks = current[dateKey] ?? [defaultBlock(dateKey === todayDateKey())];
-      return {
-        ...current,
-        [dateKey]: blocks.map((block, blockIndex) => (
-          blockIndex === index ? { ...block, [field]: value } : block
-        )),
-      };
-    });
-  };
-
-  const addDayBlock = (dateKey: string) => {
-    setDayBlocks((current) => ({
-      ...current,
-      [dateKey]: [...(current[dateKey] ?? []), defaultBlock(dateKey === todayDateKey())],
-    }));
-  };
-
-  const removeDayBlock = (dateKey: string, index: number) => {
-    setDayBlocks((current) => {
-      const blocks = current[dateKey] ?? [];
-      if (blocks.length === 1) return current;
-      return {
-        ...current,
-        [dateKey]: blocks.filter((_, blockIndex) => blockIndex !== index),
-      };
-    });
-  };
-
-  const handleGenerate = async () => {
-    if (selectedDays.length === 0) {
-      setToast({ msg: t('availability.selectAtLeastOneDay'), type: 'error' });
-      return;
-    }
-    if (duration < 15) {
-      setToast({ msg: t('availability.invalidDuration'), type: 'error' });
-      return;
-    }
-    for (const date of selectedDays) {
-      const blocks = blocksForDay(date);
-      if (blocks.length === 0 || hasInvalidBlockOrder(blocks)) {
-        setToast({ msg: t('availability.invalidBlocks'), type: 'error' });
-        return;
-      }
-      if (hasOverlappingBlocks(blocks)) {
-        setToast({ msg: t('availability.overlappingBlocks'), type: 'error' });
-        return;
-      }
-      if (hasBlockOutsideVisibleHours(blocks)) {
-        setToast({ msg: t('availability.outsideVisibleHours'), type: 'error' });
-        return;
-      }
-      if (hasPastSameDayBlock(date, blocks)) {
-        setToast({ msg: t('availability.pastTimeBlocks'), type: 'error' });
-        return;
-      }
-    }
-
-    try {
-      const sortedSelectedDays = [...selectedDays].sort();
-      const firstGeneratedWeek = startOfWeek(sortedSelectedDays[0]);
-      const data = await generateSlots({
-        timeZone: browserTimeZone,
-        durationMinutes: duration,
-        days: sortedSelectedDays.map((date) => ({
-          date,
-          blocks: sortBlocks(blocksForDay(date)),
-        })),
-      });
-      setToast({ msg: t('availability.generated', { count: data.length }), type: 'success' });
-      setWeekStart(firstGeneratedWeek);
-      const range = getWeekRange(firstGeneratedWeek);
-      await fetchSlots(range.from, range.to);
-      setActiveTab('mySlots');
-    } catch {
-      setToast({ msg: genError ?? t('availability.errorGeneric'), type: 'error' });
-    }
-  };
-
-  const handleDeactivate = async () => {
-    if (!deactivateTarget) return;
-    try {
-      await deactivateSlot(deactivateTarget.id);
-      setToast({ msg: t('availability.deactivated'), type: 'success' });
-      setDeactivateTarget(null);
-      handleFetchSlots();
-    } catch {
-      setToast({ msg: t('availability.errorGeneric'), type: 'error' });
-    }
   };
 
   const slotItems = useMemo<WeeklyCalendarItem[]>(
@@ -342,11 +126,10 @@ export const NutritionistAvailabilityPage = () => {
 
       {toast && (
         <div className="md:pl-56 px-4 sm:px-6">
-          <div className={`max-w-7xl mx-auto mt-4 px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2 ${
-            toast.type === 'success'
-              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-              : 'bg-destructive/10 text-destructive border border-destructive/25'
-          }`}
+          <div className={`max-w-7xl mx-auto mt-4 px-4 py-3 rounded-lg text-sm font-medium flex items-center gap-2 ${toast.type === 'success'
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+            : 'bg-destructive/10 text-destructive border border-destructive/25'
+            }`}
           >
             {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
             {toast.msg}
@@ -356,21 +139,30 @@ export const NutritionistAvailabilityPage = () => {
 
       <div className="md:pl-56 px-4 sm:px-6 pt-4">
         <div className="max-w-7xl mx-auto flex gap-1 bg-muted/50 p-1 rounded-lg w-fit">
-          {(['generate', 'mySlots'] as Tab[]).map((tab) => (
-            <button
-              key={tab}
-              id={`tab-${tab}`}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === tab
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+          <button
+            key="generate"
+            id="tab-generate"
+            type="button"
+            onClick={() => setActiveTab('generate')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'generate'
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
-            >
-              {tab === 'generate' ? t('availability.tabGenerate') : t('availability.tabMySlots')}
-            </button>
-          ))}
+          >
+            {t('availability.tabGenerate')}
+          </button>
+          <button
+            key="mySlots"
+            id="tab-mySlots"
+            type="button"
+            onClick={() => setActiveTab('mySlots')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'mySlots'
+              ? 'bg-card text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            {t('availability.tabMySlots')}
+          </button>
         </div>
       </div>
 
@@ -398,29 +190,12 @@ export const NutritionistAvailabilityPage = () => {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                    {getWeekDays(weekStart).map((dateKey) => {
-                      const selected = selectedDays.includes(dateKey);
-                      const disabled = dateKey < todayDateKey();
-                      return (
-                        <button
-                          key={dateKey}
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => toggleSelectedDay(dateKey)}
-                          className={`rounded-lg border px-3 py-3 text-left text-sm transition-all disabled:cursor-not-allowed ${
-                            disabled
-                              ? 'border-border bg-muted/60 text-muted-foreground/60'
-                              : selected
-                                ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                                : 'border-border bg-background hover:border-primary/50'
-                          }`}
-                        >
-                          <span className="block font-semibold">{formatLocalDate(dateKey)}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <DaySelector
+                    dateKeys={getWeekDays(weekStart)}
+                    selectedDays={selectedDays}
+                    todayDateKey={todayDateKey()}
+                    onToggleDay={toggleSelectedDay}
+                  />
                 </CardContent>
               </Card>
 
@@ -440,7 +215,7 @@ export const NutritionistAvailabilityPage = () => {
                       min={15}
                       step={5}
                       value={duration}
-                      onChange={(event) => setDuration(Number(event.target.value))}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => setDuration(Number(event.target.value))}
                     />
                   </div>
 
@@ -469,50 +244,18 @@ export const NutritionistAvailabilityPage = () => {
                 ) : (
                   <>
                     <div className="space-y-4">
-                      {[...selectedDays].sort().map((dateKey) => {
-                        const blocks = blocksForDay(dateKey);
-                        return (
-                          <section key={dateKey} className="rounded-lg border border-border bg-background p-3 space-y-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-sm font-semibold">{formatLocalDate(dateKey)}</p>
-                              <Button type="button" variant="outline" size="sm" onClick={() => addDayBlock(dateKey)}>
-                                <Plus size={14} className="mr-1.5" />
-                                {t('availability.addBlock')}
-                              </Button>
-                            </div>
-
-                            <div className="space-y-2">
-                              {blocks.map((block, index) => (
-                                <div key={`${dateKey}-${index}`} className="grid grid-cols-[1fr_1fr_auto] gap-2">
-                                  <Input
-                                    type="time"
-                                    min={EARLIEST_SLOT_TIME}
-                                    max={LATEST_SLOT_TIME}
-                                    value={block.startTime}
-                                    onChange={(event) => updateDayBlock(dateKey, index, 'startTime', event.target.value)}
-                                  />
-                                  <Input
-                                    type="time"
-                                    min={EARLIEST_SLOT_TIME}
-                                    max={LATEST_SLOT_TIME}
-                                    value={block.endTime}
-                                    onChange={(event) => updateDayBlock(dateKey, index, 'endTime', event.target.value)}
-                                  />
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removeDayBlock(dateKey, index)}
-                                    disabled={blocks.length === 1}
-                                  >
-                                    <Trash2 size={14} />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </section>
-                        );
-                      })}
+                      {[...selectedDays].sort().map((dateKey) => (
+                        <DayBlockEditor
+                          key={dateKey}
+                          dateKey={dateKey}
+                          blocks={blocksForDay(dateKey)}
+                          earliestTime={EARLIEST_SLOT_TIME}
+                          latestTime={LATEST_SLOT_TIME}
+                          onUpdateBlock={(index, field, value) => updateDayBlock(dateKey, index, field, value)}
+                          onAddBlock={() => addDayBlock(dateKey)}
+                          onRemoveBlock={(index) => removeDayBlock(dateKey, index)}
+                        />
+                      ))}
                     </div>
 
                     <Button id="btn-generate" className="w-full" onClick={handleGenerate} disabled={generating}>
@@ -598,35 +341,12 @@ export const NutritionistAvailabilityPage = () => {
         )}
       </main>
 
-      <Dialog open={!!deactivateTarget} onOpenChange={(open) => { if (!open) setDeactivateTarget(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('availability.deactivateTitle')}</DialogTitle>
-            <DialogDescription>{t('availability.deactivateConfirm')}</DialogDescription>
-          </DialogHeader>
-          {deactivateTarget && (
-            <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
-              <p className="font-medium">{formatLocalDate(deactivateTarget.startTime)}</p>
-              <p className="text-muted-foreground">
-                {formatLocalTime(deactivateTarget.startTime)} - {formatLocalTime(deactivateTarget.endTime)}
-              </p>
-            </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeactivateTarget(null)}>{t('availability.close')}</Button>
-            <Button variant="destructive" onClick={handleDeactivate} disabled={deactivating}>
-              {deactivating ? (
-                <>
-                  <Loader2 size={14} className="animate-spin mr-2" />
-                  {t('availability.deactivating')}
-                </>
-              ) : (
-                t('availability.deactivateBtn')
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeactivateSlotDialog
+        target={deactivateTarget}
+        deactivating={deactivating}
+        onClose={() => setDeactivateTarget(null)}
+        onConfirm={handleDeactivate}
+      />
     </div>
   );
 };

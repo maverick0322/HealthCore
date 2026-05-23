@@ -41,15 +41,15 @@ public class SendAppointmentCancelledEmailUseCase {
         String htmlBody = templateService.render("appointment-cancelled", variables, locale);
         String textBody = templateService.getMessage("appointment.cancelled.text", locale, event.appointmentId(), event.startTime());
 
-        sendIfPresent(patientEmail, subject, htmlBody, textBody);
-        sendIfPresent(nutritionistEmail, subject, htmlBody, textBody);
+        sendIfPresent(patientEmail, subject, htmlBody, textBody, idempotencyKey(event, "patient"));
+        sendIfPresent(nutritionistEmail, subject, htmlBody, textBody, idempotencyKey(event, "nutritionist"));
     }
 
-    private void sendIfPresent(String email, String subject, String htmlBody, String textBody) {
+    private void sendIfPresent(String email, String subject, String htmlBody, String textBody, String idempotencyKey) {
         if (email == null || email.isBlank()) {
             return;
         }
-        emailSender.send(new EmailMessage(email, subject, htmlBody, textBody));
+        emailSender.send(new EmailMessage(email, subject, htmlBody, textBody, idempotencyKey));
     }
 
     private void validate(AppointmentCancelledEvent event) {
@@ -57,5 +57,9 @@ public class SendAppointmentCancelledEmailUseCase {
         EventValidation.requireNonBlank(event.appointmentId(), "appointmentId");
         EventValidation.requireNonBlank(event.patientId(), "patientId");
         EventValidation.requireNonBlank(event.nutritionistId(), "nutritionistId");
+    }
+
+    private String idempotencyKey(AppointmentCancelledEvent event, String recipientRole) {
+        return "appointment-cancelled:" + event.appointmentId() + ":" + event.startTime() + ":" + recipientRole;
     }
 }

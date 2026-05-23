@@ -41,15 +41,15 @@ public class SendAppointmentConfirmedEmailUseCase {
         String htmlBody = templateService.render("appointment-confirmed", variables, locale);
         String textBody = templateService.getMessage("appointment.confirmed.text", locale, event.startTime(), event.endTime());
 
-        sendIfPresent(patientEmail, subject, htmlBody, textBody);
-        sendIfPresent(nutritionistEmail, subject, htmlBody, textBody);
+        sendIfPresent(patientEmail, subject, htmlBody, textBody, idempotencyKey(event, "patient"));
+        sendIfPresent(nutritionistEmail, subject, htmlBody, textBody, idempotencyKey(event, "nutritionist"));
     }
 
-    private void sendIfPresent(String email, String subject, String htmlBody, String textBody) {
+    private void sendIfPresent(String email, String subject, String htmlBody, String textBody, String idempotencyKey) {
         if (email == null || email.isBlank()) {
             return;
         }
-        emailSender.send(new EmailMessage(email, subject, htmlBody, textBody));
+        emailSender.send(new EmailMessage(email, subject, htmlBody, textBody, idempotencyKey));
     }
 
     private void validate(AppointmentConfirmedEvent event) {
@@ -58,5 +58,9 @@ public class SendAppointmentConfirmedEmailUseCase {
         EventValidation.requireNonBlank(event.patientId(), "patientId");
         EventValidation.requireNonBlank(event.nutritionistId(), "nutritionistId");
         EventValidation.requireStartBeforeEnd(event.startTime(), event.endTime(), "startTime", "endTime");
+    }
+
+    private String idempotencyKey(AppointmentConfirmedEvent event, String recipientRole) {
+        return "appointment-confirmed:" + event.appointmentId() + ":" + event.startTime() + ":" + recipientRole;
     }
 }

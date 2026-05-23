@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import { agendaService } from '../services/agendaService';
 import type { AppointmentResponse, RescheduleAppointmentRequest } from '../types/agenda.types';
 
@@ -6,6 +8,7 @@ import type { AppointmentResponse, RescheduleAppointmentRequest } from '../types
  * Hook to reschedule an existing appointment to a new slot.
  */
 export const useRescheduleAppointment = () => {
+  const { t } = useTranslation('patient');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appointment, setAppointment] = useState<AppointmentResponse | null>(null);
@@ -22,12 +25,20 @@ export const useRescheduleAppointment = () => {
       setAppointment(data);
       return data;
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
-      const msg =
-        axiosError.response?.data?.message ??
-        axiosError.response?.data?.error ??
-        'Error rescheduling appointment.';
-      setError(msg);
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 409) {
+          setError(t('appointments.errorRescheduleSlotTaken'));
+        } else if (status === 404) {
+          setError(t('appointments.errorRescheduleNotFound'));
+        } else if (status === 400) {
+          setError(t('appointments.errorRescheduleInvalid'));
+        } else {
+          setError(t('appointments.errorRescheduleUnexpected'));
+        }
+      } else {
+        setError(t('appointments.errorRescheduleUnexpected'));
+      }
       throw err;
     } finally {
       setIsLoading(false);

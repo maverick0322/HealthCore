@@ -33,19 +33,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFoundException(ResourceNotFoundException ex) {
-        log.warn("Resource not found: {}", ex.getMessage());
+        log.warn("Resource not found. exceptionClass={}", ex.getClass().getSimpleName());
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
     @ExceptionHandler(InvalidDomainDataException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidDomainDataException(InvalidDomainDataException ex) {
-        log.warn("Domain validation failed: {}", ex.getMessage());
+        log.warn("Domain validation failed. exceptionClass={}", ex.getClass().getSimpleName());
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(ExternalCatalogUnavailableException.class)
     public ResponseEntity<ApiErrorResponse> handleServiceUnavailableException(ExternalCatalogUnavailableException ex) {
-        log.error("Upstream service unavailable: {}", ex.getMessage());
+        log.error("Upstream service unavailable. exceptionClass={}", ex.getClass().getSimpleName());
         return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(TrackingDomainException.class)
     public ResponseEntity<ApiErrorResponse> handleGenericDomainException(TrackingDomainException ex) {
-        log.error("Unexpected domain rule violation: {}", ex.getMessage());
+        log.error("Unexpected domain rule violation. exceptionClass={}", ex.getClass().getSimpleName());
         return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 

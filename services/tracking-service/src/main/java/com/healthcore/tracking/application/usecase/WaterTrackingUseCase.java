@@ -26,10 +26,14 @@ public class WaterTrackingUseCase {
             throw new InvalidDomainDataException("User identification is required to log water.");
         }
 
-        log.info("Processing water consumption log for user: {}", userId);
+        log.info("Processing water consumption log. userHash={}", logHash(userId));
 
         WaterLog waterLog = WaterLog.create(userId, amountMl, consumedAt);
 
         return waterLogPort.save(waterLog);
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

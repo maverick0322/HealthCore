@@ -48,7 +48,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                     .queryParam("refreshToken", tokens.refreshToken())
                     .build().toUriString();
 
-            log.info("OAuth2 login completed for provider: {} and email: {}", provider, email);
+            log.info("OAuth2 login completed for provider={} emailHash={}", provider, logHash(email));
             response.sendRedirect(finalUrl);
         } catch (OAuth2ProviderConflictException ex) {
             log.warn("OAuth2 login conflict: {}", ex.getMessage());
@@ -93,5 +93,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 .queryParam("requestedProvider", requestedProvider)
                 .build().toUriString();
         response.sendRedirect(finalUrl);
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

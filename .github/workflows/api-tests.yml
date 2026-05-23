@@ -2,9 +2,9 @@ name: API Tests CI
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -31,12 +31,16 @@ jobs:
           echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
           echo "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET=${{ secrets.AUTH0_CLIENT_SECRET }}" >> .env
           echo "SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI=${{ secrets.AUTH0_ISSUER_URI }}" >> .env
+          echo "APP_MANUALDB_SEED_ENABLED=true" >> .env
+          echo "APP_MANUALDB_SEED_PATIENT_PASSWORD=PostmanSeedPatient123!" >> .env
+          echo "APP_MANUALDB_SEED_NUTRITIONIST_PASSWORD=PostmanSeedNutritionist123!" >> .env
+          echo "APP_MANUALDB_SEED_ADMIN_PASSWORD=AdminSecureP@ss123!" >> .env
           
-          docker compose up -d mongodb api-gateway identity-service tracking-service
+          docker compose up -d mongodb api-gateway identity-service tracking-service clinical-service agenda-service
           
       - name: Wait for Spring Boot to be ready behind Nginx
         run: |
-          echo "Esperando a que el identity-service termine de arrancar..."
+          echo "Esperando a que el API Gateway y los microservicios terminen de arrancar..."
           while true; do
             set +e 
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/v1/auth/register)
@@ -46,21 +50,43 @@ jobs:
 
             # LISTA BLANCA: Solo avanzamos si Spring Boot nos responde con un error de lógica (400, 401 o 405)
             if [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "405" ]; then
-              echo "¡El servicio está 100% arriba! Código de respuesta exacto: $STATUS"
+              echo "¡Los servicios están 100% arriba! Código de respuesta exacto: $STATUS"
               break
             fi
             
-            echo "Aún no... Estado de red/Nginx: $STATUS. Reintentando en 5 segundos..."
-            sleep 5
+            echo "Aún no... Estado de red/Nginx: $STATUS. Reintentando en 10 segundos..."
+            sleep 10
           done
 
       - name: Run Newman Tests
         working-directory: ./postman
         run: |
+          echo "Corriendo pruebas de Identity Service..."
           newman run healthCore_identity_service.postman_collection.json \
+            -e healthCore_local.postman_environment.json \
+            --bail
+
+          echo "Corriendo pruebas de Agenda Service..."
+          newman run healthCore_agenda_service.postman_collection.json \
             -e healthCore_local.postman_environment.json \
             --bail
 
       - name: Print Docker Logs on Failure
         if: failure()
-        run: docker compose logs identity-service
+        run: |
+          echo "========================================="
+          echo "🚨 ALARMA: PRUEBAS FALLIDAS 🚨"
+          echo "Imprimiendo logs de los contenedores..."
+          echo "========================================="
+          
+          echo -e "\n\n---> LOGS DE IDENTITY SERVICE <---"
+          docker compose logs --tail=150 identity-service
+          
+          echo -e "\n\n---> LOGS DE CLINICAL SERVICE <---"
+          docker compose logs --tail=150 clinical-service
+          
+          echo -e "\n\n---> LOGS DE AGENDA SERVICE <---"
+          docker compose logs --tail=150 agenda-service
+          
+          echo -e "\n\n---> LOGS DE API GATEWAY (NGINX) <---"
+          docker compose logs --tail=100 api-gateway

@@ -40,15 +40,15 @@ public class SendAppointmentReminderEmailUseCase {
         String htmlBody = templateService.render("appointment-reminder", variables, locale);
         String textBody = templateService.getMessage("appointment.reminder.text", locale, event.startTime());
 
-        sendIfPresent(patientEmail, subject, htmlBody, textBody);
-        sendIfPresent(nutritionistEmail, subject, htmlBody, textBody);
+        sendIfPresent(patientEmail, subject, htmlBody, textBody, idempotencyKey(event, "patient"));
+        sendIfPresent(nutritionistEmail, subject, htmlBody, textBody, idempotencyKey(event, "nutritionist"));
     }
 
-    private void sendIfPresent(String email, String subject, String htmlBody, String textBody) {
+    private void sendIfPresent(String email, String subject, String htmlBody, String textBody, String idempotencyKey) {
         if (email == null || email.isBlank()) {
             return;
         }
-        emailSender.send(new EmailMessage(email, subject, htmlBody, textBody));
+        emailSender.send(new EmailMessage(email, subject, htmlBody, textBody, idempotencyKey));
     }
 
     private void validate(AppointmentReminderEvent event) {
@@ -56,5 +56,9 @@ public class SendAppointmentReminderEmailUseCase {
         EventValidation.requireNonBlank(event.appointmentId(), "appointmentId");
         EventValidation.requireNonBlank(event.patientId(), "patientId");
         EventValidation.requireNonBlank(event.nutritionistId(), "nutritionistId");
+    }
+
+    private String idempotencyKey(AppointmentReminderEvent event, String recipientRole) {
+        return "appointment-reminder:" + event.appointmentId() + ":" + event.startTime() + ":" + recipientRole;
     }
 }

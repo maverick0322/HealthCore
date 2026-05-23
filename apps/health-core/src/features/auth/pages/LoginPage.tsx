@@ -6,6 +6,7 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { FieldError } from "@/shared/components/FieldError";
 import { ENV } from "@/core/config/env";
 import { useLogin } from "../hooks/useLogin";
 
@@ -14,7 +15,7 @@ export const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { t, i18n } = useTranslation("auth");
-  const { handleLogin, isLoading, error } = useLogin();
+  const { handleLogin, isLoading, error, fieldErrors } = useLogin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,14 +98,14 @@ export const LoginPage = () => {
             <div className="flex-grow border-t border-border"></div>
           </div>
 
-          {/* Error message */}
+          {/* Server error banner */}
           {error && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 text-sm text-destructive font-medium animate-in fade-in slide-in-from-top-2 duration-300">
               {error}
             </div>
           )}
 
-          <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
             <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">{t("email")}</Label>
               <Input
@@ -112,11 +113,13 @@ export const LoginPage = () => {
                 type="email"
                 placeholder={t("emailPlaceholder")}
                 className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground"
-                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
+                aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                aria-invalid={!!fieldErrors.email}
               />
+              <FieldError id="email-error" message={fieldErrors.email} />
             </div>
             <div className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center justify-between">
@@ -131,19 +134,22 @@ export const LoginPage = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder={t("passwordPlaceholder")}
                   className="h-11 sm:h-10 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground"
-                  required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
+                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                  aria-invalid={!!fieldErrors.password}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
+                  aria-label={showPassword ? t("passwordPlaceholder") : t("passwordPlaceholder")}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <FieldError id="password-error" message={fieldErrors.password} />
             </div>
             <Button
               type="submit"

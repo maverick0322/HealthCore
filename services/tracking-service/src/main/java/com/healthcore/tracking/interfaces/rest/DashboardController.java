@@ -36,7 +36,7 @@ public class DashboardController {
             @RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
         LocalDate targetDate = (date != null) ? date : LocalDate.now();
-        log.info("REST request for today's dashboard summary. User: {}, Date: {}", userId, targetDate);
+        log.info("REST request for today's dashboard summary. userHash={} date={}", logHash(userId), targetDate);
 
         return ResponseEntity.ok(dashboardUseCase.getTodaySummary(userId, targetDate));
     }
@@ -48,7 +48,11 @@ public class DashboardController {
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-        log.info("REST request for historical macros. User: {}, Start: {}, End: {}", userId, startDate, endDate);
+        log.info("REST request for historical macros. userHash={} start={} end={}", logHash(userId), startDate, endDate);
         return ResponseEntity.ok(dashboardUseCase.getHistoricalMacros(userId, startDate, endDate));
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

@@ -36,6 +36,16 @@ app:
       appointment-confirmed: ${APP_MESSAGING_ROUTING_APPOINTMENT_CONFIRMED:agenda.appointment.confirmed}
       appointment-cancelled: ${APP_MESSAGING_ROUTING_APPOINTMENT_CANCELLED:agenda.appointment.cancelled}
       appointment-reminder: ${APP_MESSAGING_ROUTING_APPOINTMENT_REMINDER:agenda.appointment.reminder}
+    listener:
+      prefetch-count: ${APP_MESSAGING_LISTENER_PREFETCH_COUNT:5}
+      concurrent-consumers: ${APP_MESSAGING_LISTENER_CONCURRENT_CONSUMERS:2}
+      max-concurrent-consumers: ${APP_MESSAGING_LISTENER_MAX_CONCURRENT_CONSUMERS:4}
+  idempotency:
+    sent-ttl: ${APP_NOTIFICATION_IDEMPOTENCY_SENT_TTL:PT24H}
+    in-progress-ttl: ${APP_NOTIFICATION_IDEMPOTENCY_IN_PROGRESS_TTL:PT5M}
+    max-entries: ${APP_NOTIFICATION_IDEMPOTENCY_MAX_ENTRIES:10000}
+  user-directory:
+    cache-ttl: ${APP_USER_DIRECTORY_CACHE_TTL:PT10M}
   resend:
     api-key: ${RESEND_API_KEY}
     from-email: ${RESEND_FROM_EMAIL}

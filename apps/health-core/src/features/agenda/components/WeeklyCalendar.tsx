@@ -26,7 +26,7 @@ export interface WeeklyCalendarItem {
   disabled?: boolean;
 }
 
-interface WeeklyCalendarLabels {
+export interface WeeklyCalendarLabels {
   previous: string;
   next: string;
   today: string;
@@ -245,3 +245,4 @@ export const WeeklyCalendar = ({
     </section>
   );
 };
+export default WeeklyCalendar;

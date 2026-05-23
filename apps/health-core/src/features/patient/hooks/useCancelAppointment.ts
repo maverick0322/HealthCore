@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import { agendaService } from '../services/agendaService';
 
 /**
  * Hook to cancel an existing appointment.
  */
 export const useCancelAppointment = () => {
+  const { t } = useTranslation('patient');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -17,12 +20,18 @@ export const useCancelAppointment = () => {
       await agendaService.cancelAppointment(appointmentId);
       setIsSuccess(true);
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
-      const msg =
-        axiosError.response?.data?.message ??
-        axiosError.response?.data?.error ??
-        'Error cancelling appointment.';
-      setError(msg);
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 404) {
+          setError(t('appointments.errorCancelNotFound'));
+        } else if (status === 403) {
+          setError(t('appointments.errorCancelForbidden'));
+        } else {
+          setError(t('appointments.errorCancelUnexpected'));
+        }
+      } else {
+        setError(t('appointments.errorCancelUnexpected'));
+      }
       throw err;
     } finally {
       setIsLoading(false);

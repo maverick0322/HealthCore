@@ -1,8 +1,11 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import axios from 'axios';
 import { nutritionistAgendaService } from '../services/nutritionistAgendaService';
 import type { AppointmentResponse } from '../types/agenda.types';
 
 export const useNutritionistAppointments = () => {
+  const { t } = useTranslation('nutritionist');
   const [appointments, setAppointments] = useState<AppointmentResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -14,17 +17,16 @@ export const useNutritionistAppointments = () => {
       const data = await nutritionistAgendaService.getMyAppointments(from, to);
       setAppointments(data);
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string, error?: string } } };
-      const msg =
-        axiosError.response?.data?.message ??
-        axiosError.response?.data?.error ??
-        'Error fetching appointments.';
-      setError(msg);
+      if (axios.isAxiosError(err)) {
+        setError(t('availability.errorLoadAppointments'));
+      } else {
+        setError(t('availability.errorLoadAppointments'));
+      }
       setAppointments([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   return { appointments, isLoading, error, fetchAppointments };
 };

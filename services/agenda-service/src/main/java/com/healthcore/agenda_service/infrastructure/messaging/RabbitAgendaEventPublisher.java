@@ -19,7 +19,7 @@ public class RabbitAgendaEventPublisher implements AgendaEventPublisher {
 
     @Override
     public void publishAppointmentConfirmed(AppointmentConfirmedEvent event) {
-        log.debug("Publishing AppointmentConfirmedEvent for appointmentId={}", event.appointmentId());
+        log.debug("Publishing AppointmentConfirmedEvent appointmentHash={}", hash(event.appointmentId()));
         rabbitTemplate.convertAndSend(
                 messagingProperties.exchange(),
                 messagingProperties.routingKeys().appointmentConfirmed(),
@@ -29,7 +29,7 @@ public class RabbitAgendaEventPublisher implements AgendaEventPublisher {
 
     @Override
     public void publishAppointmentCancelled(AppointmentCancelledEvent event) {
-        log.debug("Publishing AppointmentCancelledEvent for appointmentId={}", event.appointmentId());
+        log.debug("Publishing AppointmentCancelledEvent appointmentHash={}", hash(event.appointmentId()));
         rabbitTemplate.convertAndSend(
                 messagingProperties.exchange(),
                 messagingProperties.routingKeys().appointmentCancelled(),
@@ -39,11 +39,15 @@ public class RabbitAgendaEventPublisher implements AgendaEventPublisher {
 
     @Override
     public void publishAppointmentReminder(AppointmentReminderEvent event) {
-        log.debug("Publishing AppointmentReminderEvent for appointmentId={}", event.appointmentId());
+        log.debug("Publishing AppointmentReminderEvent appointmentHash={}", hash(event.appointmentId()));
         rabbitTemplate.convertAndSend(
                 messagingProperties.exchange(),
                 messagingProperties.routingKeys().appointmentReminder(),
                 event
         );
+    }
+
+    private String hash(String value) {
+        return value == null ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

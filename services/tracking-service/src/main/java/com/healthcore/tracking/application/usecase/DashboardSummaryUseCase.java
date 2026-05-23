@@ -31,7 +31,7 @@ public class DashboardSummaryUseCase {
     public TodayDashboardSummary getTodaySummary(String userId, LocalDate date) {
         validateUserId(userId);
 
-        log.info("Fetching today's dashboard summary for user: {}", userId);
+        log.info("Fetching today's dashboard summary. userHash={}", logHash(userId));
 
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
@@ -59,7 +59,7 @@ public class DashboardSummaryUseCase {
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.atTime(LocalTime.MAX);
 
-        log.info("Fetching historical macros for user: {} between {} and {}", userId, start, end);
+        log.info("Fetching historical macros. userHash={} start={} end={}", logHash(userId), start, end);
 
         return mealLogPort.aggregateHistoricalMacros(userId, start, end);
     }
@@ -70,5 +70,9 @@ public class DashboardSummaryUseCase {
             log.warn("Dashboard data requested with null or empty userId.");
             throw new InvalidDomainDataException("User identification is required to retrieve dashboard data.");
         }
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

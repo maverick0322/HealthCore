@@ -36,7 +36,7 @@ public class JwtUtil {
     }
 
     public String generateAccessToken(String email, String role) {
-        log.debug("Generating access token for user: {}", email);
+        log.debug("Generating access token for emailHash={}", logHash(email));
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
@@ -47,7 +47,7 @@ public class JwtUtil {
     }
 
     public String generateRefreshToken(String email) {
-        log.debug("Generating refresh token for user: {}", email);
+        log.debug("Generating refresh token for emailHash={}", logHash(email));
         return Jwts.builder()
                 .subject(email)
                 .issuedAt(new Date())
@@ -74,7 +74,7 @@ public class JwtUtil {
                     .getPayload();
 
         } catch (ExpiredJwtException e) {
-            log.warn("JWT validation failed: Token is expired for subject: {}", e.getClaims().getSubject());
+            log.warn("JWT validation failed: Token is expired for subjectHash={}", logHash(e.getClaims().getSubject()));
             throw new UnauthorizedException("Token has expired");
 
         } catch (SignatureException | MalformedJwtException e) {
@@ -85,5 +85,9 @@ public class JwtUtil {
             log.error("Unexpected error during JWT validation", e);
             throw new UnauthorizedException("Authentication processing failed");
         }
+    }
+
+    private String logHash(String value) {
+        return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }
 }

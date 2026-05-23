@@ -68,6 +68,7 @@ describe('reportPdfService', () => {
     );
     expect(mockJsPdf).toHaveBeenCalledTimes(1);
     expect(mockAddImage).toHaveBeenCalled();
+    expect(mockAddPage).not.toHaveBeenCalled();
     expect(mockSave).toHaveBeenCalledWith('report.pdf');
   });
 });

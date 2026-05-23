@@ -1,35 +1,84 @@
-import { useTranslation } from "react-i18next";
-import { Download, FileText, Users, Activity, FileSpreadsheet, Search } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  AlertCircle,
+  CalendarCheck2,
+  FileDown,
+  Loader2,
+  Scale,
+  TrendingDown,
+  Users,
+} from 'lucide-react';
 
-import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
-import { SettingsBar } from "@/shared/components/SettingsBar";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/shared/ui/card";
-import { Button } from "@/shared/ui/button";
+import { NutritionistNav } from '@/features/nutritionist/components/NutritionistNav';
+import { useNutritionistReports } from '@/features/nutritionist/hooks/useNutritionistReports';
+import { exportNutritionistReportPdf } from '@/features/nutritionist/services/reportPdfService';
+import type { NutritionistReportRangeKey } from '@/features/nutritionist/types/report.types';
+import {
+  getLatestWeightReportDate,
+  getWeightChangeToneClassName,
+  NUTRITIONIST_REPORT_RANGE_OPTIONS,
+} from '@/features/nutritionist/utils/reporting';
+import { SettingsBar } from '@/shared/components/SettingsBar';
+import { Button } from '@/shared/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
 
-// ── Dummy Data ─────────────────────────────────────────────────────────────
+const formatWeight = (value: number | null) => (value == null ? '--' : `${value.toFixed(1)} kg`);
 
-const REPORTS_DATA = {
-  activePatients: 45,
-  consultations: 124,
-  reportsGenerated: 32,
+const formatWeightChange = (value: number | null) => {
+  if (value == null) {
+    return '--';
+  }
+
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(1)} kg`;
 };
 
-const PATIENTS_EXPORT_LIST = [
-  { id: "1", name: "Carlos Gómez", lastUpdate: "24-Abr-2026" },
-  { id: "2", name: "María López", lastUpdate: "22-Abr-2026" },
-  { id: "3", name: "Javier Ruiz", lastUpdate: "15-Abr-2026" },
-  { id: "4", name: "Ana Silva", lastUpdate: "10-Abr-2026" },
-  { id: "5", name: "Roberto Ramos", lastUpdate: "05-Abr-2026" },
-];
+const formatLongDate = (value: string | null, locale: string) => {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(`${value}T12:00:00`).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
 
 export const NutritionistReportsPage = () => {
-  const { t } = useTranslation("nutritionist");
-  const [searchTerm, setSearchTerm] = useState("");
+  const { t, i18n } = useTranslation('nutritionist');
+  const [rangeKey, setRangeKey] = useState<NutritionistReportRangeKey>('1m');
+  const [isExporting, setIsExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement | null>(null);
 
-  const filteredPatients = PATIENTS_EXPORT_LIST.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const { data, isLoading, isError, error, refetch } = useNutritionistReports(rangeKey);
+
+  const latestWeightReportDate = useMemo(
+    () => getLatestWeightReportDate(data?.weightReport.rows ?? []),
+    [data]
   );
+
+  const handleExport = async () => {
+    if (!reportRef.current || !data) {
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      await exportNutritionistReportPdf({
+        element: reportRef.current,
+        fileName: `nutritionist-report-${data.period.fromDateKey}-to-${data.period.toDateKey}.pdf`,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const chartSummaryKey = data && data.appointmentSummary.relevantCount > 0
+    ? 'reports.appointments.summary.withData'
+    : 'reports.appointments.summary.empty';
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
@@ -39,132 +88,254 @@ export const NutritionistReportsPage = () => {
         <SettingsBar />
       </div>
 
-      <div className="relative bg-primary/10 border-b border-border overflow-hidden md:pl-56">
+      <div className="relative overflow-hidden border-b border-border bg-primary/10 md:pl-56">
         <div
           aria-hidden
-          className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
+          className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
         />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            {t("reports.title")}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {t("reports.subtitle")}
-          </p>
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-20 pb-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+                {t('reports.title')}
+              </h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {t('reports.subtitle')}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t('reports.generatedOn', {
+                  date: new Date().toLocaleDateString(i18n.language, {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  }),
+                })}
+              </p>
+            </div>
+
+            <Button
+              type="button"
+              className="gap-2 self-start"
+              onClick={() => {
+                void handleExport();
+              }}
+              disabled={isLoading || isExporting || !data}
+            >
+              {isExporting ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+              {isExporting ? t('reports.exportingPdf') : t('reports.exportPdf')}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-        
-        {/* KPI Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="bg-primary/5 border-primary/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-primary">
-                {t("reports.activePatients")}
-              </CardTitle>
-              <Users size={16} className="text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{REPORTS_DATA.activePatients}</div>
-            </CardContent>
-          </Card>
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56">
+        <div ref={reportRef} className="space-y-6">
+          <div className="flex flex-wrap gap-2">
+            {NUTRITIONIST_REPORT_RANGE_OPTIONS.map((option) => (
+              <Button
+                key={option}
+                type="button"
+                size="sm"
+                variant={rangeKey === option ? 'default' : 'outline'}
+                onClick={() => setRangeKey(option)}
+              >
+                {t(`reports.ranges.${option}`)}
+              </Button>
+            ))}
+          </div>
 
-          <Card className="bg-emerald-500/5 border-emerald-500/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                {t("reports.consultations")}
-              </CardTitle>
-              <Activity size={16} className="text-emerald-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{REPORTS_DATA.consultations}</div>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {[0, 1, 2].map((index) => (
+                  <div key={index} className="h-28 rounded-2xl bg-muted animate-pulse" />
+                ))}
+              </div>
+              <div className="h-72 rounded-2xl bg-muted animate-pulse" />
+              <div className="h-96 rounded-2xl bg-muted animate-pulse" />
+            </div>
+          ) : isError ? (
+            <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm">
+              <div className="flex items-start gap-2 text-destructive">
+                <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  {(error as Error | null)?.message ?? t('reports.error')}
+                </span>
+              </div>
+              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+                {t('reports.retry')}
+              </Button>
+            </div>
+          ) : data ? (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-primary">
+                      {t('reports.kpis.activePatients')}
+                    </CardTitle>
+                    <Users size={16} className="text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">
+                      {data.weightReport.activePatients}
+                    </div>
+                  </CardContent>
+                </Card>
 
-          <Card className="bg-amber-500/5 border-amber-500/20">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                {t("reports.reportsGenerated")}
-              </CardTitle>
-              <FileText size={16} className="text-amber-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{REPORTS_DATA.reportsGenerated}</div>
-            </CardContent>
-          </Card>
+                <Card className="border-emerald-500/20 bg-emerald-500/5">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                      {t('reports.kpis.attendedAppointments')}
+                    </CardTitle>
+                    <CalendarCheck2 size={16} className="text-emerald-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+                      {data.appointmentSummary.attendedCount}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-amber-500/20 bg-amber-500/5">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                      {t('reports.kpis.patientsWithoutWeight')}
+                    </CardTitle>
+                    <Scale size={16} className="text-amber-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
+                      {data.weightReport.patientsWithoutWeightInRange}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="shadow-sm border-border/50">
+                <CardHeader className="bg-muted/20 pb-4 border-b border-border/50">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <CalendarCheck2 size={18} className="text-primary" />
+                    {t('reports.appointments.title')}
+                  </CardTitle>
+                  <CardDescription className="text-sm font-medium text-foreground">
+                    {t(chartSummaryKey, {
+                      attended: data.appointmentSummary.attendedCount,
+                      cancelled: data.appointmentSummary.cancelledCount,
+                    })}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4">
+                  {data.appointmentSummary.relevantCount > 0 ? (
+                    <>
+                      <div className="overflow-hidden rounded-full bg-muted">
+                        <div className="flex h-5 w-full">
+                          <div
+                            className="bg-emerald-500 transition-all"
+                            style={{ width: `${data.appointmentSummary.attendedPercent}%` }}
+                          />
+                          <div
+                            className="bg-rose-500 transition-all"
+                            style={{ width: `${data.appointmentSummary.cancelledPercent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                          <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                            {t('reports.appointments.attended')}
+                          </p>
+                          <p className="mt-1 text-xl font-semibold text-emerald-700 dark:text-emerald-400">
+                            {data.appointmentSummary.attendedCount}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t('reports.appointments.percent', {
+                              percent: data.appointmentSummary.attendedPercent,
+                            })}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-4">
+                          <p className="text-xs text-rose-700 dark:text-rose-400">
+                            {t('reports.appointments.cancelled')}
+                          </p>
+                          <p className="mt-1 text-xl font-semibold text-rose-700 dark:text-rose-400">
+                            {data.appointmentSummary.cancelledCount}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {t('reports.appointments.percent', {
+                              percent: data.appointmentSummary.cancelledPercent,
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
+                      <CalendarCheck2 size={28} className="mx-auto text-muted-foreground/40" />
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        {t('reports.appointments.empty')}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-sm border-border/50">
+                <CardHeader className="bg-muted/20 pb-4 border-b border-border/50">
+                  <CardTitle className="flex items-center gap-2 text-lg font-bold">
+                    <TrendingDown size={18} className="text-primary" />
+                    {t('reports.weightTable.title')}
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    {latestWeightReportDate
+                      ? t('reports.weightTable.latestDate', {
+                          date: formatLongDate(latestWeightReportDate, i18n.language),
+                        })
+                      : t('reports.weightTable.noLatestDate')}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {data.weightReport.rows.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('reports.weightTable.columns.patient')}</TableHead>
+                          <TableHead>{t('reports.weightTable.columns.latestRecord')}</TableHead>
+                          <TableHead>{t('reports.weightTable.columns.startWeight')}</TableHead>
+                          <TableHead>{t('reports.weightTable.columns.currentWeight')}</TableHead>
+                          <TableHead>{t('reports.weightTable.columns.netChange')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {data.weightReport.rows.map((row) => (
+                          <TableRow key={row.patientId}>
+                            <TableCell className="font-medium">{row.fullName}</TableCell>
+                            <TableCell>
+                              {row.latestRecordDateInRange
+                                ? formatLongDate(row.latestRecordDateInRange, i18n.language)
+                                : t('reports.weightTable.noRecords')}
+                            </TableCell>
+                            <TableCell>{formatWeight(row.startWeightKg)}</TableCell>
+                            <TableCell>{formatWeight(row.currentWeightKg)}</TableCell>
+                            <TableCell className={getWeightChangeToneClassName(row.netChangeKg)}>
+                              {formatWeightChange(row.netChangeKg)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="px-6 py-10 text-center text-sm text-muted-foreground">
+                      {t('reports.weightTable.empty')}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          ) : null}
         </div>
-
-        {/* Export Section */}
-        <Card className="shadow-sm border-border/50">
-          <CardHeader className="bg-muted/20 pb-4 border-b border-border/50">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <Download size={18} className="text-primary" />
-                  {t("reports.exportTitle")}
-                </CardTitle>
-                <CardDescription className="text-xs mt-1">
-                  {t("reports.exportDesc")}
-                </CardDescription>
-              </div>
-              <div className="relative w-full sm:w-64">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={14} className="text-muted-foreground" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Buscar paciente..."
-                  className="w-full pl-9 pr-4 py-1.5 bg-background border border-border rounded-lg text-sm outline-none focus:ring-2 ring-primary transition-all"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border/50">
-              {filteredPatients.map((patient) => (
-                <div 
-                  key={patient.id}
-                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-muted/10 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                      {patient.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm">
-                        {patient.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Última actualización: {patient.lastUpdate}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 w-full sm:w-auto">
-                      <FileText size={14} />
-                      {t("reports.downloadPdf")}
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 w-full sm:w-auto text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 border-border">
-                      <FileSpreadsheet size={14} />
-                      {t("reports.downloadCsv")}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-
-              {filteredPatients.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground">
-                  <p className="text-sm">No se encontraron pacientes para exportar.</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
       </main>
     </div>
   );

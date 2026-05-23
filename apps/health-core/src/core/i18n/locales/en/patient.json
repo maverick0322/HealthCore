@@ -98,6 +98,40 @@
     "startWeight": "Start weight",
     "targetWeight": "Target weight",
     "minWeight": "Minimum weight",
+    "weightErrorMessage": "We could not load your weight history.",
+    "noWeightData": "You do not have weight records yet.",
+    "weightCard": {
+      "last7Records": "Last 7 records",
+      "latestWeight": "Latest weight",
+      "changeVsPrevious": "Change compared with previous",
+      "lastRecord": "Latest weight record date",
+      "recordWeight": "Record weight",
+      "emptyHelp": "Add your first weight to start tracking your progress.",
+      "noDate": "No date"
+    },
+    "weightForm": {
+      "title": "Record weight",
+      "description": "Save a new weight entry without leaving your dashboard.",
+      "weightLabel": "Weight (kg)",
+      "weightPlaceholder": "Ex. 78.4",
+      "dateLabel": "Date",
+      "save": "Continue",
+      "cancel": "Cancel",
+      "back": "Back",
+      "confirmTitle": "Do you want to save this weight entry?",
+      "confirmDescription": "Are these details correct and do you want to save them? {{weight}} kg will be saved for {{date}}.",
+      "confirmAction": "Yes, save",
+      "saveError": "We could not save the weight entry.",
+      "validation": {
+        "weightRequired": "Enter a weight to continue.",
+        "weightInvalid": "Enter a valid weight.",
+        "weightPrecision": "Use a whole number or one decimal place.",
+        "weightRange": "Weight must be between 40.0 kg and 200.0 kg.",
+        "dateRequired": "Select a date.",
+        "dateInvalid": "Enter a valid date.",
+        "dateFuture": "The date cannot be in the future."
+      }
+    },
     "nextAppointment": "Next Appointment",
     "withNutritionist": "With",
     "noAppointment": "No upcoming appointments",
@@ -136,9 +170,14 @@
   "history": {
     "title": "Nutritional History",
     "subtitle": "Your evolution and detailed records",
+    "weightProgressTitle": "My weight progress",
     "weightEvolution": "Weight Evolution",
     "weightLost": "Lost",
     "weightRemaining": "To go",
+    "currentWeight": "Current weight",
+    "periodChange": "Period change",
+    "minWeight": "Minimum weight",
+    "latestRecord": "Latest record",
     "calorieTrend": "Caloric Trend",
     "calorieAvg": "Daily average",
     "calorieGoal": "Goal",
@@ -163,6 +202,71 @@
     "streakDays": "{{count}} days",
     "bestStreak": "Best streak",
     "totalDaysTracked": "Days tracked",
+    "filtersLabel": "Analyze your progress with the period you want to review.",
+    "periodLabel": "Period",
+    "groupByLabel": "Group by",
+    "weightErrorMessage": "We could not load the detailed weight history.",
+    "noWeightEntries": "No weight entries are available for this history.",
+    "noDate": "No date",
+    "today": "Today",
+    "previousDay": "Previous",
+    "nextDay": "Next",
+    "weightChartAriaLabel": "Detailed patient weight history chart",
+    "weightTableTitle": "Weight history table",
+    "previousRecordsTitle": "Previous records",
+    "singleRecordHelp": "Log your next weight to start seeing your progress here.",
+    "rangeDisabledHint": "This filter will be available when you have more recorded history.",
+    "ranges": {
+      "30d": "1 month",
+      "90d": "3 months",
+      "180d": "6 months",
+      "365d": "1 year",
+      "all": "From the start"
+    },
+    "groupings": {
+      "day": "Days",
+      "week": "Weeks",
+      "month": "Months",
+      "year": "Years"
+    },
+    "summary": {
+      "range": {
+        "down": "In the last {{days}} days, your weight went down {{change}} kg.",
+        "up": "In the last {{days}} days, your weight went up {{change}} kg.",
+        "stable": "In the last {{days}} days, your weight has stayed stable."
+      },
+      "fromStart": {
+        "down": "Since you started your plan, your weight has gone down a total of {{change}} kg.",
+        "up": "Since you started your plan, your weight has gone up a total of {{change}} kg.",
+        "stable": "Since you started your plan, your weight has stayed stable."
+      },
+      "singleRecord": "Your starting point is {{weight}} kg."
+    },
+    "table": {
+      "date": "Date",
+      "weight": "Weight",
+      "variation": "Variation",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "updateError": "We could not save the weight record changes.",
+      "deleteError": "We could not delete the weight record.",
+      "deleteDisabled": "At least one weight record must remain in the profile."
+    },
+    "editDialog": {
+      "title": "Edit weight record",
+      "save": "Save changes",
+      "confirmTitle": "Do you want to save the changes to this record?",
+      "confirmDescription": "Are these details correct and do you want to save them? The record will be updated to {{weight}} kg on {{date}}.",
+      "confirmAction": "Yes, save changes"
+    },
+    "deleteDialog": {
+      "title": "Do you want to delete this weight record?",
+      "description": "The {{weight}} kg record from {{date}} will be deleted.",
+      "confirmAction": "Yes, delete"
+    },
     "filterAll": "All",
     "filterBreakfast": "Breakfast",
     "filterLunch": "Lunch",
@@ -373,6 +477,7 @@
   },
   "common": {
     "back": "Back",
-    "or": "OR"
+    "or": "OR",
+    "retry": "Retry"
   }
 }

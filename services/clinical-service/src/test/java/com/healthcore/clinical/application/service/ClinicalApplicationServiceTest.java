@@ -6,6 +6,7 @@ import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.HealthGoal;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressReport;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.PostalCodeCatalogEntry;
 import com.healthcore.clinical.domain.model.WeightRecord;
@@ -68,13 +69,15 @@ class ClinicalApplicationServiceTest {
     @Test
     void shouldUpdateWeightAndRecalculateGoals() {
         PatientProfile profile = createPatientProfile("user-123");
+        LocalDate targetDate = LocalDate.now();
         when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
 
-        HealthGoal newGoal = service.updateWeight("user-123", 75.0);
+        HealthGoal newGoal = service.updateWeight("user-123", 75.0, targetDate);
 
         assertNotNull(newGoal);
         assertEquals(75.0, profile.getWeightKg());
         assertEquals(2, profile.getWeightHistory().size());
+        assertEquals(targetDate, profile.getWeightHistory().get(1).date());
         assertTrue(newGoal.targetWaterGlasses() > 0);
         verify(repositoryPort).save(profile);
     }
@@ -83,14 +86,14 @@ class ClinicalApplicationServiceTest {
     void shouldThrowProfileNotFoundExceptionWhenUpdatingUnknownUser() {
         when(repositoryPort.findByUserId("ghost-user")).thenReturn(Optional.empty());
 
-        assertThrows(ProfileNotFoundException.class, () -> service.updateWeight("ghost-user", 80.0));
+        assertThrows(ProfileNotFoundException.class, () -> service.updateWeight("ghost-user", 80.0, LocalDate.now()));
         verify(repositoryPort, never()).save(any());
     }
 
     @Test
     void shouldGetWeightHistory() {
         PatientProfile profile = createPatientProfile("user-123");
-        profile.updateWeight(68.0);
+        profile.registerWeight(68.0, LocalDate.now());
 
         when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
 
@@ -99,6 +102,111 @@ class ClinicalApplicationServiceTest {
         assertNotNull(history);
         assertEquals(2, history.size());
         assertEquals(68.0, history.get(1).weightKg());
+    }
+
+    @Test
+    void shouldKeepCurrentWeightWhenRegisteringHistoricalWeight() {
+        PatientProfile profile = createPatientProfile("user-123");
+        LocalDate initialDate = profile.getWeightHistory().get(0).date();
+        profile.registerWeight(74.0, LocalDate.now());
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        HealthGoal goal = service.updateWeight("user-123", 68.0, initialDate.minusDays(10));
+
+        assertNotNull(goal);
+        assertEquals(74.0, profile.getWeightKg());
+        assertEquals(3, profile.getWeightHistory().size());
+        verify(repositoryPort).save(profile);
+    }
+
+    @Test
+    void shouldEditWeightAndRecalculateCurrentProfileState() {
+        PatientProfile profile = createPatientProfile("user-123");
+        LocalDate initialDate = profile.getWeightHistory().get(0).date();
+        LocalDate latestDate = LocalDate.now();
+        profile.registerWeight(74.0, latestDate);
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        HealthGoal goal = service.editWeight("user-123", latestDate, 73.0, latestDate.minusDays(1));
+
+        assertNotNull(goal);
+        assertEquals(73.0, profile.getWeightKg());
+        assertEquals(2, profile.getWeightHistory().size());
+        assertEquals(initialDate, profile.getWeightHistory().get(0).date());
+        verify(repositoryPort).save(profile);
+    }
+
+    @Test
+    void shouldDeleteLatestWeightAndRestorePreviousCurrentWeight() {
+        PatientProfile profile = createPatientProfile("user-123");
+        LocalDate latestDate = LocalDate.now();
+        profile.registerWeight(74.0, latestDate);
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        HealthGoal goal = service.deleteWeight("user-123", latestDate);
+
+        assertNotNull(goal);
+        assertEquals(70.0, profile.getWeightKg());
+        assertEquals(1, profile.getWeightHistory().size());
+        verify(repositoryPort).save(profile);
+    }
+
+    @Test
+    void shouldBuildNutritionistWeightProgressReportForRange() {
+        String nutritionistId = "nutri-123";
+        LocalDate from = LocalDate.of(2026, 5, 1);
+        LocalDate to = LocalDate.of(2026, 5, 31);
+
+        PatientProfile patientOne = PatientProfile.rehydrate(
+                "patient-1",
+                "Ana",
+                "Lopez",
+                null,
+                71.0,
+                165.0,
+                LocalDate.of(1994, 3, 12),
+                Gender.FEMALE,
+                ActivityLevel.LIGHTLY_ACTIVE,
+                "health",
+                "omnivore",
+                List.of(),
+                List.of(),
+                List.of(
+                        new WeightRecord(74.0, LocalDate.of(2026, 4, 28)),
+                        new WeightRecord(72.0, LocalDate.of(2026, 5, 10)),
+                        new WeightRecord(71.0, LocalDate.of(2026, 5, 21))
+                ),
+                nutritionistId
+        );
+        PatientProfile patientTwo = PatientProfile.rehydrate(
+                "patient-2",
+                null,
+                null,
+                null,
+                80.0,
+                178.0,
+                LocalDate.of(1990, 8, 2),
+                Gender.MALE,
+                ActivityLevel.SEDENTARY,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of(),
+                List.of(new WeightRecord(80.0, LocalDate.of(2026, 4, 15))),
+                nutritionistId
+        );
+
+        when(repositoryPort.findAllByNutritionistId(nutritionistId)).thenReturn(List.of(patientOne, patientTwo));
+
+        NutritionistWeightProgressReport report = service.getNutritionistWeightProgressReport(nutritionistId, from, to);
+
+        assertEquals(2, report.activePatients());
+        assertEquals(1, report.patientsWithoutWeightInRange());
+        assertEquals("Ana Lopez", report.rows().get(0).fullName());
+        assertEquals(LocalDate.of(2026, 5, 21), report.rows().get(0).latestRecordDateInRange());
+        assertEquals(-1.0, report.rows().get(0).netChangeKg());
+        assertEquals("patient-2", report.rows().get(1).fullName());
+        assertFalse(report.rows().get(1).hasRecordsInRange());
     }
 
     @Test
@@ -250,7 +358,7 @@ class ClinicalApplicationServiceTest {
     }
 
     private PatientProfile createPatientProfile(String userId) {
-        return new PatientProfile(
+        return PatientProfile.rehydrate(
                 userId,
                 "Carlos",
                 "Gomez",
@@ -263,7 +371,9 @@ class ClinicalApplicationServiceTest {
                 "weight-loss",
                 "omnivore",
                 List.of(),
-                List.of()
+                List.of(),
+                List.of(new WeightRecord(70.0, LocalDate.now().minusDays(7))),
+                null
         );
     }
 

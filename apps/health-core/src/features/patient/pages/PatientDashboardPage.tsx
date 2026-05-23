@@ -5,7 +5,7 @@ import type { TFunction } from "i18next";
 import { AlertCircle, CalendarDays, Loader2, Plus, Stethoscope } from "lucide-react";
 
 import { PatientNav } from "@/features/patient/components/PatientNav";
-import { WeightChart } from "@/features/patient/components/WeightChart";
+import { DashboardWeightCard } from "@/features/patient/components/DashboardWeightCard";
 import { HealthGoalsCard } from "@/features/patient/components/HealthGoalsCard";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -170,7 +170,7 @@ export const PatientDashboardPage = () => {
           </div>
 
           <div className="space-y-5">
-            <WeightChart />
+            <DashboardWeightCard />
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <Card id="card-appointment" className="flex flex-col">

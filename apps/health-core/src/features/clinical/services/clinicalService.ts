@@ -12,6 +12,7 @@ import type {
   NutritionPlanViewResponse,
   NutritionPlanUpsertRequest,
   CatalogFoodResponse,
+  NutritionistWeightProgressReportResponse,
 } from '../types/clinical.types';
 
 import httpClient from '@/core/http/httpClient';
@@ -182,6 +183,20 @@ export const clinicalApi = {
     return normalizePatientProfile(response.data);
   },
 
+  getNutritionistWeightProgressReport: async (
+    from: string,
+    to: string
+  ): Promise<NutritionistWeightProgressReportResponse> => {
+    const response = await httpClient.get<NutritionistWeightProgressReportResponse>(
+      `${CLINICAL_API_URL}/nutritionist/reports/weight-progress`,
+      {
+        params: { from, to },
+        headers: getXUserIdHeader(),
+      }
+    );
+    return response.data;
+  },
+
   getMyGoals: async (userId?: string): Promise<HealthGoalResponse> => {
     const response = await httpClient.get<HealthGoalResponse>(
       `${CLINICAL_API_URL}/goals/me`,
@@ -190,10 +205,32 @@ export const clinicalApi = {
     return response.data;
   },
 
-  updateWeight: async (weightKg: number, userId?: string): Promise<HealthGoalResponse> => {
+  updateWeight: async (weightKg: number, date: string, userId?: string): Promise<HealthGoalResponse> => {
     const response = await httpClient.post<HealthGoalResponse>(
       `${CLINICAL_API_URL}/weight`,
-      { weightKg },
+      { weightKg, date },
+      { headers: getXUserIdHeader(userId) }
+    );
+    return response.data;
+  },
+
+  editWeight: async (
+    originalDate: string,
+    weightKg: number,
+    date: string,
+    userId?: string
+  ): Promise<HealthGoalResponse> => {
+    const response = await httpClient.put<HealthGoalResponse>(
+      `${CLINICAL_API_URL}/weight/${encodeURIComponent(originalDate)}`,
+      { weightKg, date },
+      { headers: getXUserIdHeader(userId) }
+    );
+    return response.data;
+  },
+
+  deleteWeight: async (date: string, userId?: string): Promise<HealthGoalResponse> => {
+    const response = await httpClient.delete<HealthGoalResponse>(
+      `${CLINICAL_API_URL}/weight/${encodeURIComponent(date)}`,
       { headers: getXUserIdHeader(userId) }
     );
     return response.data;

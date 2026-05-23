@@ -93,11 +93,46 @@
     "protein": "Proteína",
     "carbs": "Carbohidratos",
     "fat": "Grasas",
+    "weightProgressTitle": "Mi progreso de peso",
     "weightEvolution": "Evolución de Peso",
     "currentWeight": "Peso actual",
     "startWeight": "Peso inicial",
     "targetWeight": "Peso objetivo",
     "minWeight": "Peso mínimo",
+    "weightErrorMessage": "No pudimos cargar tu historial de peso.",
+    "noWeightData": "Aún no tienes registros de peso.",
+    "weightCard": {
+      "last7Records": "Últimos 7 registros",
+      "latestWeight": "Último peso",
+      "changeVsPrevious": "Cambio respecto al anterior",
+      "lastRecord": "Fecha de registro del último peso",
+      "recordWeight": "Registrar peso",
+      "emptyHelp": "Agrega tu primer peso para empezar a seguir tu progreso",
+      "noDate": "Sin fecha"
+    },
+    "weightForm": {
+      "title": "Registrar peso",
+      "description": "Registra tu peso con la fecha correspondiente para mantener actualizada tu evolución",
+      "weightLabel": "Peso (kg)",
+      "weightPlaceholder": "Ej. 78.4",
+      "dateLabel": "Fecha",
+      "save": "Continuar",
+      "cancel": "Cancelar",
+      "back": "Volver",
+      "confirmTitle": "¿Deseas guardar este registro de peso?",
+      "confirmDescription": "¿Los datos son correctos? Se guardarán {{weight}} kg con fecha {{date}}.",
+      "confirmAction": "Sí, guardar",
+      "saveError": "No pudimos guardar el registro de peso, Intenta más tarde",
+      "validation": {
+        "weightRequired": "Ingrese un peso para continuar",
+        "weightInvalid": "Ingresa un peso válido",
+        "weightPrecision": "Usa un número entero o un decimal",
+        "weightRange": "El peso debe estar entre 40.0 kg y 200.0 kg",
+        "dateRequired": "Selecciona una fecha",
+        "dateInvalid": "Ingresa una fecha válida.",
+        "dateFuture": "La fecha no puede ser posterior a hoy"
+      }
+    },
     "nextAppointment": "Próxima Cita",
     "withNutritionist": "Con",
     "noAppointment": "Sin citas próximas",
@@ -136,9 +171,14 @@
   "history": {
     "title": "Historial Nutricional",
     "subtitle": "Tu evolución y registros detallados",
+    "weightProgressTitle": "Mi progreso de peso",
     "weightEvolution": "Evolución de Peso",
     "weightLost": "Perdido",
     "weightRemaining": "Por bajar",
+    "currentWeight": "Peso actual",
+    "periodChange": "Cambio del período",
+    "minWeight": "Peso mínimo",
+    "latestRecord": "Último registro",
     "calorieTrend": "Tendencia Calórica",
     "calorieAvg": "Promedio diario",
     "calorieGoal": "Meta",
@@ -163,6 +203,71 @@
     "streakDays": "{{count}} días",
     "bestStreak": "Mejor racha",
     "totalDaysTracked": "Días con registro",
+    "filtersLabel": "Analiza tu progreso con el período que quieras revisar.",
+    "periodLabel": "Período",
+    "groupByLabel": "Agrupar por",
+    "weightErrorMessage": "No pudimos cargar el historial detallado de peso.",
+    "noWeightEntries": "No hay registros de peso disponibles para este historial.",
+    "noDate": "Sin fecha",
+    "today": "Hoy",
+    "previousDay": "Anterior",
+    "nextDay": "Siguiente",
+    "weightChartAriaLabel": "Gráfica detallada del historial de peso del paciente",
+    "weightTableTitle": "Historial de peso",
+    "previousRecordsTitle": "Registros anteriores",
+    "singleRecordHelp": "Registra tu próximo peso para comenzar a ver tu evolución aquí.",
+    "rangeDisabledHint": "Este filtro estará disponible cuando tengas más historial registrado.",
+    "ranges": {
+      "30d": "1 mes",
+      "90d": "3 meses",
+      "180d": "6 meses",
+      "365d": "1 año",
+      "all": "Desde el inicio"
+    },
+    "groupings": {
+      "day": "Días",
+      "week": "Semanas",
+      "month": "Meses",
+      "year": "Años"
+    },
+    "summary": {
+      "range": {
+        "down": "En los últimos {{days}} días, tu peso bajó {{change}} kg.",
+        "up": "En los últimos {{days}} días, tu peso subió {{change}} kg.",
+        "stable": "En los últimos {{days}} días, tu peso se ha mantenido estable."
+      },
+      "fromStart": {
+        "down": "Desde que iniciaste tu plan, has bajado un total de {{change}} kg.",
+        "up": "Desde que iniciaste tu plan, has subido un total de {{change}} kg.",
+        "stable": "Desde que iniciaste tu plan, tu peso se ha mantenido estable."
+      },
+      "singleRecord": "Tu punto de partida es de {{weight}} kg."
+    },
+    "table": {
+      "date": "Fecha",
+      "weight": "Peso",
+      "variation": "Variación",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "updateError": "No pudimos guardar los cambios del registro de peso.",
+      "deleteError": "No pudimos eliminar el registro de peso.",
+      "deleteDisabled": "Debe permanecer al menos un registro de peso en el perfil."
+    },
+    "editDialog": {
+      "title": "Editar registro de peso",
+      "save": "Guardar cambios",
+      "confirmTitle": "¿Deseas guardar los cambios de este registro?",
+      "confirmDescription": "¿Los datos son correctos y deseas guardarlos? Se actualizarán a {{weight}} kg con fecha {{date}}.",
+      "confirmAction": "Sí, guardar cambios"
+    },
+    "deleteDialog": {
+      "title": "¿Deseas eliminar este registro de peso?",
+      "description": "Se eliminará el registro de {{weight}} kg con fecha {{date}}.",
+      "confirmAction": "Sí, eliminar"
+    },
     "filterAll": "Todos",
     "filterBreakfast": "Desayuno",
     "filterLunch": "Comida",
@@ -332,9 +437,9 @@
     "unavailable": "El plan nutricional no está disponible en este momento.",
     "contextTitle": "Plan autogestionado previo",
     "contextDescription": "Contexto previo conservado para consulta del profesional.",
-    "observationsTitle": "Observaciones de tu nutri\u00f3logo",
+    "observationsTitle": "Observaciones de tu nutriólogo",
     "observationsSubtitle": "Recomendaciones y notas de seguimiento agregadas a tu plan.",
-    "noObservations": "A\u00fan no hay observaciones disponibles.",
+    "noObservations": "Aún no hay observaciones disponibles.",
     "validation": {
       "nameRequired": "Ingresa un nombre para el platillo.",
       "nameTooLong": "El nombre del platillo puede tener hasta {{max}} caracteres.",
@@ -373,6 +478,7 @@
   },
   "common": {
     "back": "Regresar",
-    "or": "O"
+    "or": "O",
+    "retry": "Reintentar"
   }
 }

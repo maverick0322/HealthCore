@@ -20,6 +20,7 @@ vi.mock('@/core/http/httpClient', () => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
+    delete: vi.fn(),
   },
 }));
 
@@ -260,13 +261,62 @@ describe('clinicalService', () => {
     expect(patient.userId).toBe('patient-one@example.com');
   });
 
+  it('should fetch the nutritionist weight progress report', async () => {
+    (httpClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: {
+        activePatients: 2,
+        patientsWithoutWeightInRange: 1,
+        rows: [
+          {
+            patientId: 'patient-one@example.com',
+            fullName: 'Carlos Gomez',
+            latestRecordDateInRange: '2026-05-20',
+            startWeightKg: 80,
+            currentWeightKg: 77.5,
+            netChangeKg: -2.5,
+            hasRecordsInRange: true,
+          },
+        ],
+      },
+    });
+
+    const result = await clinicalApi.getNutritionistWeightProgressReport('2026-05-01', '2026-05-22');
+
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/nutritionist/reports/weight-progress', {
+      params: { from: '2026-05-01', to: '2026-05-22' },
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+    expect(result.rows[0].netChangeKg).toBe(-2.5);
+  });
+
   it('should handle weight endpoints and linking helpers', async () => {
     (httpClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       data: { targetCalories: 2500, targetProtein: 150, targetCarbs: 250, targetFat: 70 },
     });
+    (httpClient.put as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: { targetCalories: 2400, targetProtein: 145, targetCarbs: 240, targetFat: 68 },
+    });
+    (httpClient.delete as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      data: { targetCalories: 2300, targetProtein: 140, targetCarbs: 230, targetFat: 65 },
+    });
 
-    const goalResult = await clinicalApi.updateWeight(75.5);
+    const goalResult = await clinicalApi.updateWeight(75.5, '2026-05-20');
     expect(goalResult.targetCalories).toBe(2500);
+    expect(httpClient.post).toHaveBeenCalledWith('/clinical/weight', { weightKg: 75.5, date: '2026-05-20' }, {
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+
+    const editedGoalResult = await clinicalApi.editWeight('2026-05-20', 74.8, '2026-05-18');
+    expect(editedGoalResult.targetCalories).toBe(2400);
+    expect(httpClient.put).toHaveBeenCalledWith('/clinical/weight/2026-05-20', { weightKg: 74.8, date: '2026-05-18' }, {
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
+
+    const deletedGoalResult = await clinicalApi.deleteWeight('2026-05-18');
+    expect(deletedGoalResult.targetCalories).toBe(2300);
+    expect(httpClient.delete).toHaveBeenCalledWith('/clinical/weight/2026-05-18', {
+      headers: { 'X-User-Id': MOCK_USER_ID },
+    });
 
     (httpClient.get as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({ data: [{ weightKg: 80, date: '2024-01-01' }] })

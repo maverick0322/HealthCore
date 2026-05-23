@@ -5,7 +5,7 @@ import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type { WeightRecord } from '@/features/clinical/types/clinical.types';
 import { AxiosError } from 'axios';
 
-const WEIGHT_HISTORY_QUERY_KEY = ['clinical', 'weight-history'];
+export const WEIGHT_HISTORY_QUERY_KEY = ['clinical', 'weight-history'] as const;
 const WEIGHT_HISTORY_CACHE_TIME = 5 * 60 * 1000;
 
 interface UseWeightHistoryReturn {
@@ -52,19 +52,4 @@ export const useWeightHistory = (): UseWeightHistoryReturn => {
     error: error as AxiosError<unknown> | null,
     refetch,
   };
-};
-
-export const transformWeightDataForChart = (data: WeightRecord[] | undefined) => {
-  if (!data || data.length === 0) {
-    return [];
-  }
-
-  return data.map((record) => ({
-    date: new Date(record.date).toLocaleDateString('es-ES', {
-      month: 'short',
-      day: 'numeric',
-    }),
-    weight: record.weightKg,
-    fullDate: record.date,
-  }));
 };

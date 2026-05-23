@@ -71,6 +71,19 @@ jobs:
             -e healthCore_local.postman_environment.json \
             --bail
 
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Seed Database for Concurrency Test
+        run: |
+          echo "Ejecutando script de Node para poblar datos..."
+          node k6/seed-k6.js
+
+      - name: Run k6 Race Condition Test
+        run: |
+          echo "Simulando a 5 pacientes agendando el mismo slot al mismo milisegundo..."
+          k6 run k6/race-condition.js
+
       - name: Print Docker Logs on Failure
         if: failure()
         run: |

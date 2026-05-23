@@ -5,6 +5,7 @@ import { render, screen, waitFor } from '@/test/test-utils';
 
 const {
   mockGetMyNutritionPlan,
+  mockGetMyProfile,
   mockGetMyObservations,
   mockUpsertMyNutritionPlan,
   mockSearchCatalogFoods,
@@ -12,6 +13,7 @@ const {
   mockLogClientInfo,
 } = vi.hoisted(() => ({
   mockGetMyNutritionPlan: vi.fn(),
+  mockGetMyProfile: vi.fn(),
   mockGetMyObservations: vi.fn(),
   mockUpsertMyNutritionPlan: vi.fn(),
   mockSearchCatalogFoods: vi.fn(),
@@ -22,6 +24,7 @@ const {
 vi.mock('@/features/clinical/services/clinicalService', () => ({
   clinicalApi: {
     getMyNutritionPlan: mockGetMyNutritionPlan,
+    getMyProfile: mockGetMyProfile,
     getMyObservations: mockGetMyObservations,
     upsertMyNutritionPlan: mockUpsertMyNutritionPlan,
     searchCatalogFoods: mockSearchCatalogFoods,
@@ -86,6 +89,9 @@ describe('PatientPlanPage', () => {
         createdAt: '2026-05-18T12:00:00Z',
       },
     ]);
+    mockGetMyProfile.mockResolvedValue({
+      nutritionistId: 'nutri-1',
+    });
     mockSearchCatalogFoods.mockResolvedValue([]);
     mockUpsertMyNutritionPlan.mockResolvedValue(mockView);
   });
@@ -103,6 +109,19 @@ describe('PatientPlanPage', () => {
       'PatientPlanPage.load.success',
       expect.objectContaining({ mode: 'SELF_MANAGED', canEdit: true, sections: 0 }),
     );
+  });
+
+  it('does not load observations when the patient has no linked nutritionist', async () => {
+    mockGetMyProfile.mockResolvedValue({ nutritionistId: null });
+    mockGetMyNutritionPlan.mockResolvedValue(mockView);
+
+    render(<PatientPlanPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('nutrition-plan-workspace')).toHaveTextContent('SELF_MANAGED:0');
+    });
+
+    expect(mockGetMyObservations).not.toHaveBeenCalled();
   });
 
   it('shows a retryable error state when the plan request fails', async () => {

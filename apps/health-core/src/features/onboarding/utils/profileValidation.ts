@@ -20,7 +20,7 @@ const getValidationMessage = (
       case 'birthDateInvalid':
         return 'La fecha de nacimiento es invalida.';
       case 'birthDateOutOfRange':
-        return 'La fecha de nacimiento debe representar una edad entre 1 y 120 anos.';
+        return 'La fecha de nacimiento debe representar una edad entre 1 y 120 años.';
     }
   }
 

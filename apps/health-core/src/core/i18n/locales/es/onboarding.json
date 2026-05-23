@@ -16,7 +16,7 @@
     "namePattern": "{{label}} solo puede contener letras, espacios, apostrofes o guiones.",
     "birthDateRequired": "La fecha de nacimiento es obligatoria.",
     "birthDateInvalid": "La fecha de nacimiento es invalida.",
-    "birthDateOutOfRange": "La fecha de nacimiento debe representar una edad entre 1 y 120 anos."
+    "birthDateOutOfRange": "La fecha de nacimiento debe representar una edad entre 1 y 120 años."
   },
   "options": {
     "gender": {
@@ -125,7 +125,7 @@
         "goal": "Meta principal",
         "preferences": "Preferencias"
       },
-      "physicalValue": "{{age}} anos, {{height}} cm, {{weight}} kg",
+      "physicalValue": "{{age}} años, {{height}} cm, {{weight}} kg",
       "physicalDescription": "{{birthDate}}, {{gender}}, {{activity}}",
       "allergiesDescription": "Alergias: {{allergies}}"
     }
@@ -160,7 +160,8 @@
       "subtitle": "Estos datos son opcionales, pero dejan listo el perfil para futuras integraciones.",
       "fields": {
         "phoneOptional": "Telefono celular (opcional)",
-        "postalCode": "Codigo postal",
+        "postalCode": "Código postal",
+        "postalCodeOptional": "Código postal (opcional)",
         "state": "Estado",
         "city": "Ciudad",
         "municipality": "Municipio o alcaldia",
@@ -181,7 +182,8 @@
       "title": "Tu perfil profesional",
       "subtitle": "Revisa la informacion antes de guardar.",
       "bioLabel": "Biografia profesional",
-      "noPhone": "Sin telefono capturado",
+      "noPhone": "Sin teléfono capturado",
+      "noAddress": "Sin dirección registrada",
       "customSpecialization": "Especialidad personalizada: {{value}}",
       "sections": {
         "identity": "Identidad",

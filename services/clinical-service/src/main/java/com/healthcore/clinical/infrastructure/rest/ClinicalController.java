@@ -68,7 +68,8 @@ public class ClinicalController {
 
     @GetMapping("/goals/me")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<HealthGoalResponse> getMyGoals(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<HealthGoalResponse> getMyGoals() {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Getting goals for userHash={}", logHash(userId));
         Optional<PatientProfile> profileOpt = manageProfileUseCase.getProfileByUserId(userId);
 
@@ -91,9 +92,9 @@ public class ClinicalController {
     @PostMapping("/weight")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<HealthGoalResponse> updateWeight(
-            @RequestHeader("X-User-Id") String userId,
             @Valid @RequestBody UpdateWeightRequest request
     ) {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Updating weight for userHash={} weightKg={} date={}",
                 logHash(userId), request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg(), request.date());
@@ -103,10 +104,10 @@ public class ClinicalController {
     @PutMapping("/weight/{originalDate}")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<HealthGoalResponse> editWeight(
-            @RequestHeader("X-User-Id") String userId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate originalDate,
             @Valid @RequestBody UpdateWeightRequest request
     ) {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Editing weight for userHash={} originalDate={} weightKg={} date={}",
                 logHash(userId), originalDate, request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.editWeight(userId, originalDate, request.weightKg(), request.date());
@@ -116,9 +117,9 @@ public class ClinicalController {
     @DeleteMapping("/weight/{date}")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<HealthGoalResponse> deleteWeight(
-            @RequestHeader("X-User-Id") String userId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Deleting weight for userHash={} date={}", logHash(userId), date);
         HealthGoal newGoal = manageProfileUseCase.deleteWeight(userId, date);
         return ResponseEntity.ok(toHealthGoalResponse(newGoal));
@@ -126,7 +127,8 @@ public class ClinicalController {
 
     @GetMapping("/weight/history")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<List<WeightRecord>> getWeightHistory(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<List<WeightRecord>> getWeightHistory() {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Getting weight history for userHash={}", logHash(userId));
         return ResponseEntity.ok(manageProfileUseCase.getWeightHistory(userId));
     }

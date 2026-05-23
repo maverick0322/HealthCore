@@ -299,7 +299,7 @@ export const NutritionistPatientFilePage = () => {
                     {t("patients.file.age")}
                   </p>
                   <p className="text-lg font-bold">
-                    {patientAge !== null ? `${patientAge} anos` : "--"}
+                    {patientAge !== null ? `${patientAge} años` : "--"}
                   </p>
                 </div>
                 <div className="bg-muted/30 p-3 rounded-xl border border-border/50 text-center">

@@ -350,8 +350,8 @@
     "editProfile": "Editar Perfil",
     "saveProfile": "Guardar Perfil",
     "pendingProfile": "Perfil profesional pendiente",
-    "noPhone": "Sin telefono registrado",
-    "noAddress": "Sin direccion registrada",
+    "noPhone": "Sin teléfono registrado",
+    "noAddress": "Sin dirección registrada",
     "noConsultationTypes": "Sin tipos de consulta registrados",
     "completeBioPrompt": "Agrega tu biografia profesional para completar tu perfil.",
     "logout": "Cerrar sesion"

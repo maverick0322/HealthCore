@@ -33,7 +33,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,7 +53,8 @@ public class NutritionPlanController {
 
     @GetMapping("/nutrition-plan/me")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<NutritionPlanViewResponse> getMyNutritionPlan(@RequestHeader("X-User-Id") String patientId) {
+    public ResponseEntity<NutritionPlanViewResponse> getMyNutritionPlan() {
+        String patientId = getCurrentUserId();
         logger.info("[NutritionPlanController] GET /nutrition-plan/me patientId={}", patientId);
         return ResponseEntity.ok(toViewResponse(manageNutritionPlanUseCase.getMyNutritionPlan(patientId)));
     }
@@ -62,9 +62,9 @@ public class NutritionPlanController {
     @PutMapping("/nutrition-plan/me")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<NutritionPlanViewResponse> upsertMyNutritionPlan(
-            @RequestHeader("X-User-Id") String patientId,
             @Valid @RequestBody NutritionPlanUpsertRequest request
     ) {
+        String patientId = getCurrentUserId();
         logger.info("[NutritionPlanController] PUT /nutrition-plan/me patientId={} sections={}",
                 patientId, request.sections().size());
         NutritionPlanDraft draft = toDraft(request);

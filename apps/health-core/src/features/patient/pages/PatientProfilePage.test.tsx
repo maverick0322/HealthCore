@@ -9,7 +9,7 @@ const translations: Record<string, string> = {
   'profile.weight': 'Peso actual',
   'profile.bmi': 'IMC',
   'profile.age': 'Edad',
-  'profile.years': 'anos',
+  'profile.years': 'años',
   'profile.accountSettings': 'Configuracion de Cuenta',
   'profile.name': 'Nombre completo',
   'profile.email': 'Correo electronico',

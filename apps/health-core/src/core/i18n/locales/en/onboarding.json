@@ -161,6 +161,7 @@
       "fields": {
         "phoneOptional": "Mobile phone (optional)",
         "postalCode": "Postal code",
+        "postalCodeOptional": "Postal code (optional)",
         "state": "State",
         "city": "City",
         "municipality": "Municipality or borough",
@@ -182,6 +183,7 @@
       "subtitle": "Review the information before saving.",
       "bioLabel": "Professional bio",
       "noPhone": "No phone captured",
+      "noAddress": "No address registered",
       "customSpecialization": "Custom specialization: {{value}}",
       "sections": {
         "identity": "Identity",

@@ -94,6 +94,7 @@ interface NutritionPlanWorkspaceProps {
   namespace: Namespace;
   view: NutritionPlanViewResponse | null;
   observations?: ObservationResponse[];
+  showObservations?: boolean;
   isLoading?: boolean;
   onSave?: (payload: NutritionPlanUpsertRequest) => Promise<NutritionPlanViewResponse>;
   onSearchFoods?: (query: string) => Promise<CatalogFoodResponse[]>;
@@ -130,6 +131,7 @@ export function NutritionPlanWorkspace({
   namespace,
   view,
   observations = [],
+  showObservations,
   isLoading = false,
   onSave,
   onSearchFoods,
@@ -190,7 +192,7 @@ export function NutritionPlanWorkspace({
   const goals = view?.dailyGoals;
   const canEdit = Boolean(view?.canEdit);
   const showRegisterAction = namespace === 'patient' && !canEdit;
-  const showObservations = namespace === 'patient';
+  const shouldShowObservations = showObservations ?? namespace === 'patient';
 
   const sectionCards = sections.map((section) => (
         <section key={section.mealSlot} className="space-y-3">
@@ -546,7 +548,7 @@ export function NutritionPlanWorkspace({
               </Button>
             ) : null}
 
-            {showObservations ? (
+            {shouldShowObservations ? (
               <div className="space-y-3 rounded-3xl border border-border/60 bg-muted/10 p-4">
                 <div className="space-y-1">
                   <h3 className="text-sm font-bold tracking-tight">{t('nutritionPlan.observationsTitle')}</h3>

@@ -18,6 +18,7 @@ export const PatientPlanPage = () => {
   const { t } = useTranslation('patient');
   const [view, setView] = useState<NutritionPlanViewResponse | null>(null);
   const [observations, setObservations] = useState<ObservationResponse[]>([]);
+  const [hasLinkedNutritionist, setHasLinkedNutritionist] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -28,14 +29,21 @@ export const PatientPlanPage = () => {
       try {
         logClientInfo('PatientPlanPage.load.start');
         setLoadError(null);
-        const response = await clinicalApi.getMyNutritionPlan();
+        const [response, profile] = await Promise.all([
+          clinicalApi.getMyNutritionPlan(),
+          clinicalApi.getMyProfile().catch(() => null),
+        ]);
+        const linkedNutritionist = Boolean(profile?.nutritionistId);
         let observationResponse: ObservationResponse[] = [];
-        try {
-          observationResponse = await clinicalApi.getMyObservations();
-        } catch (error) {
-          logClientError('PatientPlanPage.observations.load.error', error);
+        if (linkedNutritionist) {
+          try {
+            observationResponse = await clinicalApi.getMyObservations();
+          } catch (error) {
+            logClientError('PatientPlanPage.observations.load.error', error);
+          }
         }
         if (mounted) {
+          setHasLinkedNutritionist(linkedNutritionist);
           setView(response);
           setObservations(observationResponse);
         }
@@ -44,6 +52,7 @@ export const PatientPlanPage = () => {
           canEdit: response.canEdit,
           sections: response.sections.length,
           observations: observationResponse.length,
+          linkedNutritionist,
         });
       } catch (error) {
         logClientError('PatientPlanPage.load.error', error);
@@ -62,7 +71,7 @@ export const PatientPlanPage = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [t]);
 
   const handleSave = async (payload: Parameters<typeof clinicalApi.upsertMyNutritionPlan>[0]) => {
     try {
@@ -82,13 +91,20 @@ export const PatientPlanPage = () => {
     logClientInfo('PatientPlanPage.retry.start');
     setIsLoading(true);
     try {
-      const response = await clinicalApi.getMyNutritionPlan();
+      const [response, profile] = await Promise.all([
+        clinicalApi.getMyNutritionPlan(),
+        clinicalApi.getMyProfile().catch(() => null),
+      ]);
+      const linkedNutritionist = Boolean(profile?.nutritionistId);
       let observationResponse: ObservationResponse[] = [];
-      try {
-        observationResponse = await clinicalApi.getMyObservations();
-      } catch (error) {
-        logClientError('PatientPlanPage.observations.retry.error', error);
+      if (linkedNutritionist) {
+        try {
+          observationResponse = await clinicalApi.getMyObservations();
+        } catch (error) {
+          logClientError('PatientPlanPage.observations.retry.error', error);
+        }
       }
+      setHasLinkedNutritionist(linkedNutritionist);
       setView(response);
       setObservations(observationResponse);
       setLoadError(null);
@@ -96,6 +112,7 @@ export const PatientPlanPage = () => {
         mode: response.mode,
         canEdit: response.canEdit,
         observations: observationResponse.length,
+        linkedNutritionist,
       });
     } catch (error) {
       logClientError('PatientPlanPage.retry.error', error);
@@ -152,6 +169,7 @@ export const PatientPlanPage = () => {
           namespace="patient"
           view={view}
           observations={observations}
+          showObservations={hasLinkedNutritionist}
           isLoading={isLoading}
           onSave={handleSave}
           onSearchFoods={clinicalApi.searchCatalogFoods}

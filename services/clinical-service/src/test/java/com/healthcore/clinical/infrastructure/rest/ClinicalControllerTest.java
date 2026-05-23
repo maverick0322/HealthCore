@@ -120,7 +120,7 @@ class ClinicalControllerTest {
         when(mockProfile.generateHealthGoals()).thenReturn(mockGoal);
         when(manageProfileUseCase.getProfileByUserId("user-123")).thenReturn(Optional.of(mockProfile));
 
-        mockMvc.perform(get("/api/v1/clinical/goals/me").header("X-User-Id", "user-123"))
+        mockMvc.perform(get("/api/v1/clinical/goals/me"))
                 .andExpect(status().isOk());
     }
 
@@ -141,7 +141,7 @@ class ClinicalControllerTest {
         when(manageProfileUseCase.updateWeight(eq("user-123"), eq(80.5), eq(targetDate))).thenReturn(mockGoal);
 
         mockMvc.perform(post("/api/v1/clinical/weight")
-                        .header("X-User-Id", "user-123")
+                        .header("X-User-Id", "spoofed-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -170,7 +170,6 @@ class ClinicalControllerTest {
                 .thenReturn(mockGoal);
 
         mockMvc.perform(put("/api/v1/clinical/weight/{originalDate}", originalDate)
-                        .header("X-User-Id", "user-123")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -195,7 +194,7 @@ class ClinicalControllerTest {
         when(manageProfileUseCase.deleteWeight(eq("user-123"), eq(targetDate))).thenReturn(mockGoal);
 
         mockMvc.perform(delete("/api/v1/clinical/weight/{date}", targetDate)
-                        .header("X-User-Id", "user-123"))
+                        .header("X-User-Id", "spoofed-user"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.targetCalories").value(2350));
 
@@ -212,7 +211,7 @@ class ClinicalControllerTest {
 
         when(manageProfileUseCase.getWeightHistory("user-123")).thenReturn(history);
 
-        mockMvc.perform(get("/api/v1/clinical/weight/history").header("X-User-Id", "user-123"))
+        mockMvc.perform(get("/api/v1/clinical/weight/history"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].weightKg").value(70.0))

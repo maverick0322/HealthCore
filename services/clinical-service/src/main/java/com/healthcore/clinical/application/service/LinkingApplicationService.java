@@ -5,6 +5,7 @@ import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.LinkingCode;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
+import com.healthcore.clinical.domain.port.out.AgendaLifecyclePort;
 import com.healthcore.clinical.domain.port.in.LinkingUseCase;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.LinkingCodeRepositoryPort;
@@ -21,6 +22,7 @@ public class LinkingApplicationService implements LinkingUseCase {
     private final LinkingCodeRepositoryPort linkingCodeRepositoryPort;
     private final ClinicalRepositoryPort clinicalRepositoryPort;
     private final ManageNutritionPlanUseCase manageNutritionPlanUseCase;
+    private final AgendaLifecyclePort agendaLifecyclePort;
     
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int CODE_LENGTH = 6;
@@ -29,11 +31,13 @@ public class LinkingApplicationService implements LinkingUseCase {
     public LinkingApplicationService(
             LinkingCodeRepositoryPort linkingCodeRepositoryPort,
             ClinicalRepositoryPort clinicalRepositoryPort,
-            ManageNutritionPlanUseCase manageNutritionPlanUseCase
+            ManageNutritionPlanUseCase manageNutritionPlanUseCase,
+            AgendaLifecyclePort agendaLifecyclePort
     ) {
         this.linkingCodeRepositoryPort = linkingCodeRepositoryPort;
         this.clinicalRepositoryPort = clinicalRepositoryPort;
         this.manageNutritionPlanUseCase = manageNutritionPlanUseCase;
+        this.agendaLifecyclePort = agendaLifecyclePort;
     }
 
     @Override
@@ -91,6 +95,14 @@ public class LinkingApplicationService implements LinkingUseCase {
                 .orElseThrow(() -> new ProfileNotFoundException("Patient clinical profile not found."));
 
         String nutritionistId = profile.getNutritionistId();
+        if (nutritionistId != null && !nutritionistId.isBlank()) {
+            agendaLifecyclePort.cancelFutureAppointmentsForUnlink(
+                    patientId,
+                    nutritionistId,
+                    patientId,
+                    "PATIENT_UNLINKED"
+            );
+        }
         profile.removeNutritionist();
         clinicalRepositoryPort.save(profile);
         if (nutritionistId != null && !nutritionistId.isBlank()) {
@@ -107,6 +119,12 @@ public class LinkingApplicationService implements LinkingUseCase {
             throw new IllegalStateException("Action denied: Patient is not linked to this nutritionist.");
         }
 
+        agendaLifecyclePort.cancelFutureAppointmentsForUnlink(
+                patientId,
+                nutritionistId,
+                nutritionistId,
+                "NUTRITIONIST_UNLINKED"
+        );
         profile.removeNutritionist();
         clinicalRepositoryPort.save(profile);
         manageNutritionPlanUseCase.archivePlansAfterUnlink(patientId, nutritionistId);

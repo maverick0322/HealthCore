@@ -2,8 +2,23 @@ import { Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { useHealthGoals } from '../hooks/useHealthGoals';
-// INYECTAMOS NUESTRO HOOK DE TRACKING
 import { useTodaySummary } from '@/features/tracking/hooks/useTodaySummary';
+
+/**
+ * Utility functions to prevent IEEE 754 floating-point artifacts in the UI.
+ * Keeps business logic clean by ensuring visual rounding is handled only at the presentation layer.
+ */
+const formatMacro = (value: number | undefined | null): string => {
+  if (typeof value !== 'number' || isNaN(value)) return '0';
+  // If it's a whole number, don't show decimals. Otherwise, show 1 decimal place max.
+  return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+};
+
+const formatCalories = (value: number | undefined | null): number => {
+  if (typeof value !== 'number' || isNaN(value)) return 0;
+  // Calories should strictly be rounded to the nearest integer for UI clarity
+  return Math.round(value);
+};
 
 function CalorieRing({ consumed, goal }: { consumed: number; goal: number }) {
   const pct = goal > 0 ? Math.min(consumed / goal, 1) : 0;
@@ -46,7 +61,7 @@ function MacroBar({
       <div className="flex justify-between text-xs">
         <span className="font-medium">{label}</span>
         <span className="text-muted-foreground">
-          {value}g / {goal}g
+          {formatMacro(value)}g / {formatMacro(goal)}g
         </span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -103,12 +118,16 @@ export const HealthGoalsCard = () => {
     );
   }
 
-  const caloriesConsumed = summary?.totalCalories ?? 0;
-  const proteinConsumed = summary?.totalProteins ?? 0;
-  const carbsConsumed = summary?.totalCarbs ?? 0;
-  const fatConsumed = summary?.totalFats ?? 0;
+  // Raw values from state
+  const rawCaloriesConsumed = summary?.totalCalories ?? 0;
+  const rawProteinConsumed = summary?.totalProteins ?? 0;
+  const rawCarbsConsumed = summary?.totalCarbs ?? 0;
+  const rawFatConsumed = summary?.totalFats ?? 0;
+  const rawCaloriesGoal = data.targetCalories;
 
-  const caloriesGoal = data.targetCalories;
+  // Formatted values for logic and display
+  const caloriesConsumed = formatCalories(rawCaloriesConsumed);
+  const caloriesGoal = formatCalories(rawCaloriesGoal);
   const remaining = caloriesGoal - caloriesConsumed;
   const caloriePct = caloriesGoal > 0 ? Math.round((caloriesConsumed / caloriesGoal) * 100) : 0;
 
@@ -149,9 +168,9 @@ export const HealthGoalsCard = () => {
         </div>
 
         <div className="w-full space-y-4">
-          <MacroBar label={t('dashboard.protein')} value={proteinConsumed} goal={data.targetProtein} color="bg-primary" />
-          <MacroBar label={t('dashboard.carbs')} value={carbsConsumed} goal={data.targetCarbs} color="bg-amber-400" />
-          <MacroBar label={t('dashboard.fat')} value={fatConsumed} goal={data.targetFat} color="bg-sky-400" />
+          <MacroBar label={t('dashboard.protein')} value={rawProteinConsumed} goal={data.targetProtein} color="bg-primary" />
+          <MacroBar label={t('dashboard.carbs')} value={rawCarbsConsumed} goal={data.targetCarbs} color="bg-amber-400" />
+          <MacroBar label={t('dashboard.fat')} value={rawFatConsumed} goal={data.targetFat} color="bg-sky-400" />
         </div>
       </CardContent>
     </Card>

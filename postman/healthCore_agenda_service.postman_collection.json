@@ -976,6 +976,73 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get appointment history",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"History contains known appointment states\", function () {",
+                  "    const appointments = pm.response.json();",
+                  "    pm.expect(appointments).to.be.an(\"array\");",
+                  "    appointments.forEach((appointment) => {",
+                  "        pm.expect([\"PENDING\", \"CONFIRMED\", \"CANCELLED\", \"ATTENDED\"]).to.include(appointment.status);",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agenda/appointments/history?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z&statuses=PENDING,CONFIRMED,CANCELLED,ATTENDED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "agenda",
+                "appointments",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-06-01T00:00:00Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-06-30T23:59:59Z"
+                },
+                {
+                  "key": "statuses",
+                  "value": "PENDING,CONFIRMED,CANCELLED,ATTENDED"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -1227,6 +1294,440 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get nutritionist appointment report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Appointment report returns auditable appointment shape\", function () {",
+                  "    const appointments = pm.response.json();",
+                  "    pm.expect(appointments).to.be.an(\"array\");",
+                  "    appointments.forEach((appointment) => {",
+                  "        pm.expect(appointment).to.have.property(\"status\");",
+                  "        pm.expect(appointment).to.have.property(\"cancelledAt\");",
+                  "        pm.expect(appointment).to.have.property(\"attendedAt\");",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{nutritionistToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/reports/appointments?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z&statuses=PENDING,CONFIRMED,CANCELLED,ATTENDED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "agenda",
+                "nutritionist",
+                "reports",
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-06-01T00:00:00Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-06-30T23:59:59Z"
+                },
+                {
+                  "key": "statuses",
+                  "value": "PENDING,CONFIRMED,CANCELLED,ATTENDED"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get inactive slot report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Inactive slot report exposes deactivation metadata\", function () {",
+                  "    const slots = pm.response.json();",
+                  "    pm.expect(slots).to.be.an(\"array\");",
+                  "    slots.forEach((slot) => {",
+                  "        pm.expect(slot.active).to.eql(false);",
+                  "        pm.expect(slot).to.have.property(\"deactivatedAt\");",
+                  "        pm.expect(slot).to.have.property(\"deactivationReason\");",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{nutritionistToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/reports/slots?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z&state=inactive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "agenda",
+                "nutritionist",
+                "reports",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-06-01T00:00:00Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-06-30T23:59:59Z"
+                },
+                {
+                  "key": "state",
+                  "value": "inactive"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Unlink cleanup validation",
+      "item": [
+        {
+          "name": "Get free slot for unlink cleanup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const slots = pm.response.json();",
+                  "const freeSlot = slots.find((slot) => slot.active === true && slot.reserved === false);",
+                  "pm.test(\"A free slot exists for unlink cleanup\", function () {",
+                  "    pm.expect(freeSlot, \"free slot\").to.exist;",
+                  "});",
+                  "if (freeSlot) {",
+                  "    pm.environment.set(\"unlinkSlotId\", freeSlot.id);",
+                  "    pm.environment.set(\"unlinkSlotVersion\", freeSlot.version);",
+                  "    pm.collectionVariables.set(\"unlinkSlotId\", freeSlot.id);",
+                  "    pm.collectionVariables.set(\"unlinkSlotVersion\", freeSlot.version);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{nutritionistToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/slots?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "agenda",
+                "nutritionist",
+                "slots"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-06-01T00:00:00Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-06-30T23:59:59Z"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create future appointment for unlink cleanup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    pm.environment.set(\"unlinkAppointmentId\", pm.response.json().id);",
+                  "    pm.collectionVariables.set(\"unlinkAppointmentId\", pm.response.json().id);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"slotId\": \"{{unlinkSlotId}}\",\r\n  \"nutritionistId\": \"{{nutritionistId}}\",\r\n  \"slotVersion\": {{unlinkSlotVersion}},\r\n  \"locale\": \"es-MX\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agenda/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "agenda",
+                "appointments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Disconnect patient and cleanup future appointments",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 when agenda gRPC is available\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinical/linking/disconnect/patient",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinical",
+                "linking",
+                "disconnect",
+                "patient"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get history after unlink cleanup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Unlink appointment was cancelled with audit metadata\", function () {",
+                  "    const appointments = pm.response.json();",
+                  "    const cleaned = appointments.find((appointment) => appointment.id === pm.environment.get(\"unlinkAppointmentId\"));",
+                  "    pm.expect(cleaned, \"cancelled appointment\").to.exist;",
+                  "    pm.expect(cleaned.status).to.eql(\"CANCELLED\");",
+                  "    pm.expect(cleaned.cancellationReason).to.eql(\"PATIENT_UNLINKED\");",
+                  "    pm.expect(cleaned.cancelledAt).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agenda/appointments/history?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z&statuses=CANCELLED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "agenda",
+                "appointments",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-06-01T00:00:00Z"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-06-30T23:59:59Z"
+                },
+                {
+                  "key": "statuses",
+                  "value": "CANCELLED"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get patient profile after unlink",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Patient is no longer linked\", function () {",
+                  "    pm.expect(pm.response.json().nutritionistId).to.be.oneOf([null, \"\"]);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinical/profile/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinical",
+                "profile",
+                "me"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     }
@@ -1254,6 +1755,18 @@
     },
     {
       "key": "linkingCode",
+      "value": ""
+    },
+    {
+      "key": "unlinkSlotId",
+      "value": ""
+    },
+    {
+      "key": "unlinkSlotVersion",
+      "value": ""
+    },
+    {
+      "key": "unlinkAppointmentId",
       "value": ""
     }
   ]

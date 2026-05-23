@@ -13,10 +13,8 @@ interface UseTodayMealsReturn {
 /**
  * Custom hook to orchestrate fetching and state management for daily meal logs.
  * Design Decisions:
- * - Strict Typing: Replaces 'any' with 'MealLogDTO' to guarantee compile-time safety.
- * - Defensive Data Handling: Validates that the API payload is an actual array before updating the state, 
- * preventing ".map is not a function" crashes in the UI if the backend returns null.
- * - Performance: Maintains useCallback to prevent infinite render loops if 'refetch' is passed as a prop.
+ * - Robust Data Unwrapping: Handles both raw array responses and wrapped Axios responses.
+ * This prevents silent failures if the service layer's contract changes.
  */
 export const useTodayMeals = (): UseTodayMealsReturn => {
   const [meals, setMeals] = useState<MealLogDTO[]>([]);
@@ -30,15 +28,22 @@ export const useTodayMeals = (): UseTodayMealsReturn => {
     try {
       const response = await trackingService.getTodayLogs();
       
-      // Defensive check: Ensure we always work with an array, even if the API contract is violated
-      const payload = Array.isArray(response.data) ? response.data : [];
-      setMeals(payload);
+      // Defensive Design: Safely extract the array regardless of the HTTP client's unwrapping strategy
+      let payload: MealLogDTO[] = [];
       
+      if (Array.isArray(response)) {
+        // Case A: The service layer already extracted the 'data' property (Axios default behavior)
+        payload = response;
+      } else if (response && typeof response === 'object' && Array.isArray((response as any).data)) {
+        // Case B: The hook received the raw AxiosResponse wrapper
+        payload = (response as any).data;
+      }
+      
+      setMeals(payload);
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         setError(err.response?.data?.message || 'Error al cargar los alimentos de hoy.');
       } else {
-        // Fallback for non-HTTP errors (e.g., network drops, runtime JS errors)
         setError('Ocurrió un fallo inesperado al recuperar el historial diario.');
       }
     } finally {

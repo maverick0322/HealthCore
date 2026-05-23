@@ -1,12 +1,14 @@
 package com.healthcore.clinical.application.service;
 
 import com.healthcore.clinical.domain.exception.AlreadyLinkedToNutritionistException;
+import com.healthcore.clinical.domain.exception.AgendaServiceUnavailableException;
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.LinkingCode;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
+import com.healthcore.clinical.domain.port.out.AgendaLifecyclePort;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.LinkingCodeRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +39,9 @@ class LinkingApplicationServiceTest {
 
     @Mock
     private ManageNutritionPlanUseCase manageNutritionPlanUseCase;
+
+    @Mock
+    private AgendaLifecyclePort agendaLifecyclePort;
 
     @InjectMocks
     private LinkingApplicationService service;
@@ -182,6 +187,12 @@ class LinkingApplicationServiceTest {
 
         service.unlinkPatient("patient-123");
 
+        verify(agendaLifecyclePort).cancelFutureAppointmentsForUnlink(
+                "patient-123",
+                "nutri-777",
+                "patient-123",
+                "PATIENT_UNLINKED"
+        );
         verify(clinicalRepositoryPort).save(testProfile);
         verify(manageNutritionPlanUseCase).archivePlansAfterUnlink("patient-123", "nutri-777");
     }
@@ -193,8 +204,44 @@ class LinkingApplicationServiceTest {
 
         service.unlinkNutritionist("nutri-777", "patient-123");
 
+        verify(agendaLifecyclePort).cancelFutureAppointmentsForUnlink(
+                "patient-123",
+                "nutri-777",
+                "nutri-777",
+                "NUTRITIONIST_UNLINKED"
+        );
         verify(clinicalRepositoryPort).save(testProfile);
         verify(manageNutritionPlanUseCase).archivePlansAfterUnlink("patient-123", "nutri-777");
+    }
+
+    @Test
+    void unlinkPatient_DoesNotRemoveLink_WhenAgendaCleanupFails() {
+        testProfile.assignNutritionist("nutri-777");
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(testProfile));
+        doThrow(new AgendaServiceUnavailableException("agenda unavailable", new RuntimeException()))
+                .when(agendaLifecyclePort)
+                .cancelFutureAppointmentsForUnlink("patient-123", "nutri-777", "patient-123", "PATIENT_UNLINKED");
+
+        assertThrows(AgendaServiceUnavailableException.class, () -> service.unlinkPatient("patient-123"));
+
+        assertEquals("nutri-777", testProfile.getNutritionistId());
+        verify(clinicalRepositoryPort, never()).save(any());
+        verify(manageNutritionPlanUseCase, never()).archivePlansAfterUnlink(anyString(), anyString());
+    }
+
+    @Test
+    void unlinkNutritionist_DoesNotRemoveLink_WhenAgendaCleanupFails() {
+        testProfile.assignNutritionist("nutri-777");
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(testProfile));
+        doThrow(new AgendaServiceUnavailableException("agenda unavailable", new RuntimeException()))
+                .when(agendaLifecyclePort)
+                .cancelFutureAppointmentsForUnlink("patient-123", "nutri-777", "nutri-777", "NUTRITIONIST_UNLINKED");
+
+        assertThrows(AgendaServiceUnavailableException.class, () -> service.unlinkNutritionist("nutri-777", "patient-123"));
+
+        assertEquals("nutri-777", testProfile.getNutritionistId());
+        verify(clinicalRepositoryPort, never()).save(any());
+        verify(manageNutritionPlanUseCase, never()).archivePlansAfterUnlink(anyString(), anyString());
     }
 
     @Test

@@ -1,4 +1,4 @@
-import type { AppointmentResponse } from './agenda.types';
+import type { AppointmentResponse, AvailabilitySlotResponse } from './agenda.types';
 import type { NutritionistWeightProgressReportResponse } from '@/features/clinical/types/clinical.types';
 
 export type NutritionistReportRangeKey = '1m' | '3m' | '6m' | '12m';
@@ -22,6 +22,7 @@ export interface NutritionistAppointmentSummary {
 export interface NutritionistReportsData {
   period: NutritionistCalendarRange;
   appointments: AppointmentResponse[];
+  deactivatedSlots: AvailabilitySlotResponse[];
   appointmentSummary: NutritionistAppointmentSummary;
   weightReport: NutritionistWeightProgressReportResponse;
 }

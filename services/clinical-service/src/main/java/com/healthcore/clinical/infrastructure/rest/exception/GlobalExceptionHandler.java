@@ -1,6 +1,7 @@
 package com.healthcore.clinical.infrastructure.rest.exception;
 
 import com.healthcore.clinical.domain.exception.AlreadyLinkedToNutritionistException;
+import com.healthcore.clinical.domain.exception.AgendaServiceUnavailableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -159,5 +160,19 @@ public class GlobalExceptionHandler {
         response.put("message", ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
+    @ExceptionHandler(AgendaServiceUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ResponseEntity<Map<String, Object>> handleAgendaUnavailable(AgendaServiceUnavailableException ex) {
+        log.warn("Agenda service unavailable: {}", ex.getMessage());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
+        response.put("error", "Service Unavailable");
+        response.put("message", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
     }
 }

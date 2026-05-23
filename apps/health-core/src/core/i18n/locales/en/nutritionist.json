@@ -49,6 +49,9 @@
     "addPatient": "Add Patient",
     "viewFile": "View File",
     "lastVisit": "Last visit: {{date}}",
+    "nextAppointment": "Next appointment: {{date}}",
+    "futureAppointments": "{{count}} future appointment",
+    "futureAppointments_other": "{{count}} future appointments",
     "file": {
       "back": "Back to Patients",
       "tabOverview": "Overview",
@@ -200,6 +203,19 @@
     "exportingPdf": "Exporting PDF...",
     "retry": "Retry",
     "error": "We could not load the nutritionist reports.",
+    "loading": "Loading reports...",
+    "activePatients": "Active Patients",
+    "consultations": "Attended Consultations",
+    "cancelledAppointments": "Cancelled Appointments",
+    "deactivatedSlots": "Deactivated Slots",
+    "exportTitle": "Export Patient Data",
+    "exportDesc": "Patient summary based on pending, confirmed, cancelled, and attended appointments.",
+    "searchPlaceholder": "Search patient...",
+    "empty": "No patients were found for reporting.",
+    "lastActivity": "Last activity: {{date}}",
+    "appointmentsSummary": "{{attended}} attended · {{active}} active · {{cancelled}} cancelled",
+    "downloadPdf": "Download PDF",
+    "downloadCsv": "Export CSV",
     "ranges": {
       "1m": "1 month",
       "3m": "3 months",
@@ -209,7 +225,8 @@
     "kpis": {
       "activePatients": "Active patients",
       "attendedAppointments": "Attended appointments",
-      "patientsWithoutWeight": "Patients without weight records"
+      "patientsWithoutWeight": "Patients without weight records",
+      "deactivatedSlots": "Deactivated slots"
     },
     "appointments": {
       "title": "Appointment overview",

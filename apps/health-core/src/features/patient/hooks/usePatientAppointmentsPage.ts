@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,9 +20,10 @@ import { useAvailability } from './useAvailability';
 import { useCreateAppointment } from './useCreateAppointment';
 import { useCancelAppointment } from './useCancelAppointment';
 import { useRescheduleAppointment } from './useRescheduleAppointment';
+import { agendaService } from '../services/agendaService';
 import type { AppointmentResponse, AvailabilitySlotResponse } from '../types/agenda.types';
 
-type Tab = 'appointments' | 'schedule';
+type Tab = 'appointments' | 'schedule' | 'history';
 
 interface Toast {
   msg: string;
@@ -57,6 +58,9 @@ export const usePatientAppointmentsPage = () => {
   const [nutritionistProfile, setNutritionistProfile] = useState<NutritionistProfileResponse | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [historyAppointments, setHistoryAppointments] = useState<AppointmentResponse[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   // ── Sub-hooks ─────────────────────────────────────────────────────────────
   const { appointments, isLoading: loadingAppts, error: apptError, fetchAppointments } = usePatientAppointments();
@@ -76,6 +80,38 @@ export const usePatientAppointmentsPage = () => {
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
+
+  const fetchHistoryAppointments = useCallback(async () => {
+    const from = new Date();
+    from.setMonth(from.getMonth() - 6);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date();
+    to.setMonth(to.getMonth() + 3);
+    to.setHours(23, 59, 59, 999);
+
+    try {
+      setLoadingHistory(true);
+      setHistoryError(null);
+      const response = await agendaService.getMyAppointmentHistory(
+        from.toISOString(),
+        to.toISOString(),
+        ['PENDING', 'CONFIRMED', 'CANCELLED', 'ATTENDED'],
+      );
+      setHistoryAppointments(
+        response.sort((left, right) => new Date(right.startTime).getTime() - new Date(left.startTime).getTime()),
+      );
+    } catch {
+      setHistoryError(t('appointments.errorLoadHistory'));
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      void fetchHistoryAppointments();
+    }
+  }, [activeTab, fetchHistoryAppointments]);
 
   // ── Load linked nutritionist profile ─────────────────────────────────────
   useEffect(() => {
@@ -259,11 +295,14 @@ export const usePatientAppointmentsPage = () => {
     goToToday,
     // Data
     appointments,
+    historyAppointments,
     availabilityItems,
     slots,
     // Loading / error
     loadingAppts,
     apptError,
+    loadingHistory,
+    historyError,
     loadingSlots,
     slotError,
     loadingProfile,
@@ -282,6 +321,7 @@ export const usePatientAppointmentsPage = () => {
     toast,
     // Actions
     fetchAppointments,
+    fetchHistoryAppointments,
     handleBook,
     handleCancel,
     handleReschedule,

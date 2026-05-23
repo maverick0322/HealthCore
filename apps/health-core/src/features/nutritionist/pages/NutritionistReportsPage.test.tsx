@@ -7,11 +7,13 @@ import { getCalendarMonthRange } from '@/features/nutritionist/utils/reporting';
 
 const {
   mockGetNutritionistWeightProgressReport,
-  mockGetMyAppointments,
+  mockGetAppointmentReport,
+  mockGetSlotReport,
   mockExportNutritionistReportPdf,
 } = vi.hoisted(() => ({
   mockGetNutritionistWeightProgressReport: vi.fn(),
-  mockGetMyAppointments: vi.fn(),
+  mockGetAppointmentReport: vi.fn(),
+  mockGetSlotReport: vi.fn(),
   mockExportNutritionistReportPdf: vi.fn(),
 }));
 
@@ -28,7 +30,8 @@ vi.mock('@/features/clinical/services/clinicalService', () => ({
 
 vi.mock('@/features/nutritionist/services/nutritionistAgendaService', () => ({
   nutritionistAgendaService: {
-    getMyAppointments: mockGetMyAppointments,
+    getAppointmentReport: mockGetAppointmentReport,
+    getSlotReport: mockGetSlotReport,
   },
 }));
 
@@ -111,7 +114,8 @@ describe('NutritionistReportsPage', () => {
       };
     });
 
-    mockGetMyAppointments.mockImplementation(async (from: string) => {
+    mockGetSlotReport.mockResolvedValue([{ id: 'slot-1', active: false }]);
+    mockGetAppointmentReport.mockImplementation(async (from: string) => {
       if (from === threeMonthRange.fromIso) {
         return [
           {
@@ -193,7 +197,7 @@ describe('NutritionistReportsPage', () => {
   });
 
   it('shows the empty appointment state when there are no relevant appointments', async () => {
-    mockGetMyAppointments.mockResolvedValueOnce([
+    mockGetAppointmentReport.mockResolvedValueOnce([
       {
         id: 'appointment-1',
         slotId: 'slot-1',

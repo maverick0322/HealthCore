@@ -4,6 +4,7 @@ import {
   AlertCircle,
   CalendarCheck2,
   FileDown,
+  FileText,
   Loader2,
   Scale,
   TrendingDown,
@@ -146,8 +147,8 @@ export const NutritionistReportsPage = () => {
 
           {isLoading ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {[0, 1, 2].map((index) => (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+                {[0, 1, 2, 3].map((index) => (
                   <div key={index} className="h-28 rounded-2xl bg-muted animate-pulse" />
                 ))}
               </div>
@@ -168,7 +169,7 @@ export const NutritionistReportsPage = () => {
             </div>
           ) : data ? (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                 <Card className="border-primary/20 bg-primary/5">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium text-primary">
@@ -207,6 +208,20 @@ export const NutritionistReportsPage = () => {
                   <CardContent>
                     <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
                       {data.weightReport.patientsWithoutWeightInRange}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-rose-500/20 bg-rose-500/5">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-rose-700 dark:text-rose-400">
+                      {t('reports.kpis.deactivatedSlots')}
+                    </CardTitle>
+                    <FileText size={16} className="text-rose-500" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-rose-700 dark:text-rose-400">
+                      {data.deactivatedSlots.length}
                     </div>
                   </CardContent>
                 </Card>

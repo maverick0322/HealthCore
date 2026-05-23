@@ -10,15 +10,19 @@ import { Button } from "@/shared/ui/button";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { clinicalApi } from "@/features/clinical/services/clinicalService";
 import type { NutritionistPatientProfileResponse } from "@/features/clinical/types/clinical.types";
+import { nutritionistAgendaService } from "@/features/nutritionist/services/nutritionistAgendaService";
+import type { AppointmentResponse } from "@/features/nutritionist/types/agenda.types";
 
 type PatientFilterStatus = "all" | "active" | "pendingReview";
 
 interface NutritionistPatientCardViewModel {
   id: string;
   name: string;
-  status: "active";
+  status: "active" | "pendingReview";
   lastVisit: string;
   goal: string;
+  futureAppointments: number;
+  nextAppointmentAt: string | null;
 }
 
 const getDisplayIdentity = (userId: string): string => {
@@ -31,14 +35,17 @@ const getDisplayIdentity = (userId: string): string => {
 
 const toPatientCardViewModel = (
   patient: NutritionistPatientProfileResponse,
+  futureAppointments: AppointmentResponse[],
   goalPlaceholder: string,
   lastVisitPlaceholder: string
 ): NutritionistPatientCardViewModel => ({
   id: patient.userId,
   name: patient.fullName?.trim() || getDisplayIdentity(patient.userId),
-  status: "active",
-  lastVisit: lastVisitPlaceholder,
+  status: futureAppointments.length > 0 ? "pendingReview" : "active",
+  lastVisit: futureAppointments[0]?.startTime ?? lastVisitPlaceholder,
   goal: goalPlaceholder,
+  futureAppointments: futureAppointments.length,
+  nextAppointmentAt: futureAppointments[0]?.startTime ?? null,
 });
 
 export const NutritionistPatientsPage = () => {
@@ -47,6 +54,7 @@ export const NutritionistPatientsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<PatientFilterStatus>("all");
   const [patients, setPatients] = useState<NutritionistPatientProfileResponse[]>([]);
+  const [futureAppointments, setFutureAppointments] = useState<AppointmentResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -55,8 +63,23 @@ export const NutritionistPatientsPage = () => {
       try {
         setIsLoading(true);
         setLoadError(null);
-        const response = await clinicalApi.getNutritionistPatients();
-        setPatients(response);
+        const now = new Date();
+        const to = new Date(now);
+        to.setDate(to.getDate() + 90);
+        const [patientResponse, appointmentResponse] = await Promise.all([
+          clinicalApi.getNutritionistPatients(),
+          nutritionistAgendaService.getMyAppointments(now.toISOString(), to.toISOString()),
+        ]);
+        setPatients(patientResponse);
+        setFutureAppointments(
+          appointmentResponse
+            .filter((appointment) =>
+              appointment.status !== "CANCELLED" &&
+              appointment.status !== "ATTENDED" &&
+              new Date(appointment.startTime).getTime() > now.getTime()
+            )
+            .sort((left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime())
+        );
       } catch (error) {
         console.error("Error loading nutritionist patients:", error);
         setLoadError(t("patients.error"));
@@ -69,15 +92,24 @@ export const NutritionistPatientsPage = () => {
   }, [t]);
 
   const patientCards = useMemo(
-    () =>
-      patients.map((patient) =>
+    () => {
+      const appointmentsByPatient = new Map<string, AppointmentResponse[]>();
+      futureAppointments.forEach((appointment) => {
+        const current = appointmentsByPatient.get(appointment.patientId) ?? [];
+        current.push(appointment);
+        appointmentsByPatient.set(appointment.patientId, current);
+      });
+
+      return patients.map((patient) =>
         toPatientCardViewModel(
           patient,
+          appointmentsByPatient.get(patient.userId) ?? [],
           t("patients.objectivePlaceholder"),
           t("patients.lastVisitPlaceholder")
         )
-      ),
-    [patients, t]
+      );
+    },
+    [futureAppointments, patients, t]
   );
 
   const filteredPatients = useMemo(() => {
@@ -88,9 +120,15 @@ export const NutritionistPatientsPage = () => {
     });
   }, [filterStatus, patientCards, searchTerm]);
 
-  const getStatusBadge = () => (
-    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider">
-      {t("patients.filters.active")}
+  const getStatusBadge = (patient: NutritionistPatientCardViewModel) => (
+    <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${
+      patient.status === "pendingReview"
+        ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-300"
+        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+    }`}>
+      {patient.status === "pendingReview"
+        ? t("patients.filters.pendingReview")
+        : t("patients.filters.active")}
     </span>
   );
 
@@ -143,13 +181,22 @@ export const NutritionistPatientsPage = () => {
                   </p>
                 </div>
               </div>
-              {getStatusBadge()}
+              {getStatusBadge(patient)}
             </div>
 
             <div className="mt-5 flex items-center justify-between border-t border-border/50 pt-4">
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("patients.lastVisit", { date: patient.lastVisit })}
-              </span>
+              <div className="min-w-0">
+                <span className="block text-xs font-medium text-muted-foreground">
+                  {patient.nextAppointmentAt
+                    ? t("patients.nextAppointment", { date: new Date(patient.nextAppointmentAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) })
+                    : t("patients.lastVisit", { date: patient.lastVisit })}
+                </span>
+                {patient.futureAppointments > 0 && (
+                  <span className="mt-1 block text-[11px] font-medium text-amber-600 dark:text-amber-300">
+                    {t("patients.futureAppointments", { count: patient.futureAppointments })}
+                  </span>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="icon"

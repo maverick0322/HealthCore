@@ -11,6 +11,9 @@ export interface AvailabilitySlotResponse {
   version: number;
   reserved: boolean;
   active: boolean;
+  deactivatedAt?: string | null;
+  deactivatedBy?: string | null;
+  deactivationReason?: string | null;
 }
 
 export interface AppointmentResponse {
@@ -22,6 +25,10 @@ export interface AppointmentResponse {
   endTime: string;     // ISO 8601 date-time
   status: AppointmentStatus;
   version: number;
+  cancelledAt?: string | null;
+  cancelledBy?: string | null;
+  cancellationReason?: string | null;
+  attendedAt?: string | null;
 }
 
 export interface CreateAppointmentRequest {

@@ -202,6 +202,9 @@ class NutritionistAvailabilityServiceTest {
                 ArgumentCaptor<TimeSlot> captor = ArgumentCaptor.forClass(TimeSlot.class);
                 verify(timeSlotRepository).save(captor.capture());
                 assertThat(captor.getValue().isActive()).isFalse();
+                assertThat(captor.getValue().getDeactivatedBy()).isEqualTo("nutri-1");
+                assertThat(captor.getValue().getDeactivationReason()).isEqualTo("NUTRITIONIST_DEACTIVATED");
+                assertThat(captor.getValue().getDeactivatedAt()).isNotNull();
         }
 
         @Test
@@ -278,11 +281,15 @@ class NutritionistAvailabilityServiceTest {
                 ArgumentCaptor<Appointment> aptCaptor = ArgumentCaptor.forClass(Appointment.class);
                 verify(appointmentRepository).save(aptCaptor.capture());
                 assertThat(aptCaptor.getValue().getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+                assertThat(aptCaptor.getValue().getCancelledBy()).isEqualTo("nutri-1");
+                assertThat(aptCaptor.getValue().getCancellationReason()).isEqualTo("SLOT_DEACTIVATED");
+                assertThat(aptCaptor.getValue().getCancelledAt()).isNotNull();
 
                 ArgumentCaptor<TimeSlot> slotCaptor = ArgumentCaptor.forClass(TimeSlot.class);
                 verify(timeSlotRepository).save(slotCaptor.capture());
                 assertThat(slotCaptor.getValue().isActive()).isFalse();
                 assertThat(slotCaptor.getValue().isReserved()).isFalse();
+                assertThat(slotCaptor.getValue().getDeactivatedBy()).isEqualTo("nutri-1");
         }
 
         @Test
@@ -329,5 +336,35 @@ class NutritionistAvailabilityServiceTest {
                 List<Appointment> result = service.getNutritionistAppointments("nutri-1", from, to);
 
                 assertThat(result).hasSize(1).extracting(Appointment::getId).containsExactly("a1");
+        }
+
+        @Test
+        void getNutritionistAppointmentReport_shouldDelegateWithStatusesAndPatientFilter() {
+                Instant from = Instant.parse("2026-05-01T00:00:00Z");
+                Instant to = Instant.parse("2026-05-08T00:00:00Z");
+                List<AppointmentStatus> statuses = List.of(AppointmentStatus.CANCELLED, AppointmentStatus.ATTENDED);
+                Appointment apt = Appointment.builder().id("a1").nutritionistId("nutri-1").patientId("patient-1").build();
+                when(appointmentRepository.findByNutritionistIdAndPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+                                "nutri-1", "patient-1", from, to, statuses))
+                                .thenReturn(List.of(apt));
+
+                List<Appointment> result = service.getNutritionistAppointmentReport(
+                                "nutri-1", from, to, statuses, "patient-1");
+
+                assertThat(result).hasSize(1).extracting(Appointment::getId).containsExactly("a1");
+        }
+
+        @Test
+        void getNutritionistSlotReport_shouldReturnInactiveSlotsWhenRequested() {
+                Instant from = Instant.parse("2026-05-01T00:00:00Z");
+                Instant to = Instant.parse("2026-05-08T00:00:00Z");
+                TimeSlot slot = TimeSlot.builder().id("s1").nutritionistId("nutri-1").active(false).build();
+                when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenAndActiveFalseOrderByStartTime(
+                                "nutri-1", from, to))
+                                .thenReturn(List.of(slot));
+
+                List<TimeSlot> result = service.getNutritionistSlotReport("nutri-1", from, to, "inactive");
+
+                assertThat(result).hasSize(1).extracting(TimeSlot::getId).containsExactly("s1");
         }
 }

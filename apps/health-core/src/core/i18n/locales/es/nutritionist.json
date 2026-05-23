@@ -49,6 +49,9 @@
     "addPatient": "Agregar Paciente",
     "viewFile": "Ver Expediente",
     "lastVisit": "Ultima visita: {{date}}",
+    "nextAppointment": "Proxima cita: {{date}}",
+    "futureAppointments": "{{count}} cita futura",
+    "futureAppointments_other": "{{count}} citas futuras",
     "file": {
       "back": "Volver a Pacientes",
       "tabOverview": "Resumen General",
@@ -200,6 +203,19 @@
     "exportingPdf": "Exportando PDF...",
     "retry": "Reintentar",
     "error": "No pudimos cargar los reportes del nutriólogo.",
+    "loading": "Cargando reportes...",
+    "activePatients": "Pacientes Activos",
+    "consultations": "Consultas Atendidas",
+    "cancelledAppointments": "Citas Canceladas",
+    "deactivatedSlots": "Slots Desactivados",
+    "exportTitle": "Exportar Datos de Pacientes",
+    "exportDesc": "Resumen por paciente basado en citas pendientes, confirmadas, canceladas y atendidas.",
+    "searchPlaceholder": "Buscar paciente...",
+    "empty": "No se encontraron pacientes para reportar.",
+    "lastActivity": "Última actividad: {{date}}",
+    "appointmentsSummary": "{{attended}} atendidas · {{active}} activas · {{cancelled}} canceladas",
+    "downloadPdf": "Descargar PDF",
+    "downloadCsv": "Exportar CSV",
     "ranges": {
       "1m": "1 mes",
       "3m": "3 meses",
@@ -209,7 +225,8 @@
     "kpis": {
       "activePatients": "Pacientes activos",
       "attendedAppointments": "Consultas atendidas",
-      "patientsWithoutWeight": "Pacientes sin registro de peso"
+      "patientsWithoutWeight": "Pacientes sin registro de peso",
+      "deactivatedSlots": "Slots desactivados"
     },
     "appointments": {
       "title": "Resumen de citas",

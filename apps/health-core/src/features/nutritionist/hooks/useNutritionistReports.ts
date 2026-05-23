@@ -18,14 +18,20 @@ export const useNutritionistReports = (rangeKey: NutritionistReportRangeKey) => 
   return useQuery<NutritionistReportsData>({
     queryKey: [...NUTRITIONIST_REPORTS_QUERY_KEY, user?.email ?? null, rangeKey],
     queryFn: async () => {
-      const [weightReport, appointments] = await Promise.all([
+      const [weightReport, appointments, deactivatedSlots] = await Promise.all([
         clinicalApi.getNutritionistWeightProgressReport(period.fromDateKey, period.toDateKey),
-        nutritionistAgendaService.getMyAppointments(period.fromIso, period.toIso),
+        nutritionistAgendaService.getAppointmentReport(
+          period.fromIso,
+          period.toIso,
+          ['PENDING', 'CONFIRMED', 'CANCELLED', 'ATTENDED']
+        ),
+        nutritionistAgendaService.getSlotReport(period.fromIso, period.toIso, 'inactive'),
       ]);
 
       return {
         period,
         appointments,
+        deactivatedSlots,
         appointmentSummary: summarizeAppointments(appointments),
         weightReport,
       };

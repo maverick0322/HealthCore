@@ -133,6 +133,15 @@ public class ClinicalController {
         return ResponseEntity.ok(manageProfileUseCase.getWeightHistory(userId));
     }
 
+    @GetMapping("/nutritionist/patients/{patientId}/weight-history")
+    @PreAuthorize("hasRole('NUTRITIONIST')")
+    public ResponseEntity<List<WeightRecord>> getNutritionistPatientWeightHistory(@PathVariable String patientId) {
+        String nutritionistId = getCurrentUserId();
+        logger.info("[ClinicalController] Getting patient weight history for nutritionistHash={} patientHash={}",
+                logHash(nutritionistId), logHash(patientId));
+        return ResponseEntity.ok(manageProfileUseCase.getWeightHistoryForNutritionist(nutritionistId, patientId));
+    }
+
     @GetMapping("/profile/me")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<PatientProfileResponse> getMyProfile() {

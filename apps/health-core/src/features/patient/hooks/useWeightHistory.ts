@@ -16,7 +16,11 @@ interface UseWeightHistoryReturn {
   refetch: UseQueryResult<WeightRecord[], Error>['refetch'];
 }
 
-export const useWeightHistory = (): UseWeightHistoryReturn => {
+interface UseWeightHistoryOptions {
+  enabled?: boolean;
+}
+
+export const useWeightHistory = ({ enabled = true }: UseWeightHistoryOptions = {}): UseWeightHistoryReturn => {
   const user = useAuthStore.getState().user;
 
   const { data, isLoading, isError, error, refetch } = useQuery({
@@ -42,7 +46,7 @@ export const useWeightHistory = (): UseWeightHistoryReturn => {
       }
       return count < 2;
     },
-    enabled: !!user?.email,
+    enabled: enabled && !!user?.email,
   });
 
   return {

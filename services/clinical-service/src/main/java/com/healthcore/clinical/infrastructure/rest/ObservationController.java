@@ -4,6 +4,8 @@ import com.healthcore.clinical.domain.model.ClinicalObservation;
 import com.healthcore.clinical.domain.port.in.ManageObservationsUseCase;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateObservationRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.ObservationResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.UpdateObservationRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,7 +27,7 @@ public class ObservationController {
     @PostMapping
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<ObservationResponse> recordObservation(
-            @RequestBody CreateObservationRequest request) {
+            @Valid @RequestBody CreateObservationRequest request) {
         String nutritionistId = getCurrentUserId();
         ClinicalObservation observation = manageObservationsUseCase.recordObservation(
                 request.patientId(),
@@ -34,6 +36,29 @@ public class ObservationController {
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(observation));
+    }
+
+    @PutMapping("/{observationId}")
+    @PreAuthorize("hasRole('NUTRITIONIST')")
+    public ResponseEntity<ObservationResponse> updateObservation(
+            @PathVariable String observationId,
+            @Valid @RequestBody UpdateObservationRequest request) {
+        String nutritionistId = getCurrentUserId();
+        ClinicalObservation observation = manageObservationsUseCase.updateObservation(
+                observationId,
+                nutritionistId,
+                request.note()
+        );
+
+        return ResponseEntity.ok(toResponse(observation));
+    }
+
+    @DeleteMapping("/{observationId}")
+    @PreAuthorize("hasRole('NUTRITIONIST')")
+    public ResponseEntity<Void> deleteObservation(@PathVariable String observationId) {
+        String nutritionistId = getCurrentUserId();
+        manageObservationsUseCase.deleteObservation(observationId, nutritionistId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/patient/{patientId}")

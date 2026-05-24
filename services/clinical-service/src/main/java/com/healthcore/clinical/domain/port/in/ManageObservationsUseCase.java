@@ -12,6 +12,8 @@ public interface ManageObservationsUseCase {
      * Record a new medical observation for a patient
      */
     ClinicalObservation recordObservation(String patientId, String nutritionistId, String note);
+    ClinicalObservation updateObservation(String observationId, String nutritionistId, String note);
+    void deleteObservation(String observationId, String nutritionistId);
     
     /**
      * It obtains a patient's observation history

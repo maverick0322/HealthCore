@@ -9,6 +9,7 @@ import type {
   ObservationResponse,
   PostalCodeLookupResponse,
   CreateObservationRequest,
+  UpdateObservationRequest,
   NutritionPlanViewResponse,
   NutritionPlanUpsertRequest,
   CatalogFoodResponse,
@@ -168,6 +169,13 @@ export const clinicalApi = {
     return response.data;
   },
 
+  getNutritionistPatientWeightHistory: async (patientId: string): Promise<WeightRecord[]> => {
+    const response = await httpClient.get<WeightRecord[]>(
+      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/weight-history`
+    );
+    return response.data;
+  },
+
   generateLinkingCode: async (): Promise<{ code: string; expiresInSeconds: number }> => {
     const response = await httpClient.post(`${CLINICAL_API_URL}/linking/generate`, {});
     return response.data;
@@ -257,4 +265,19 @@ export const getPatientObservations = async (
 ): Promise<ObservationResponse[]> => {
   const response = await httpClient.get<ObservationResponse[]>(`/clinical/observations/patient/${encodeURIComponent(patientId)}`);
   return response.data;
+};
+
+export const updateObservation = async (
+  observationId: string,
+  data: UpdateObservationRequest
+): Promise<ObservationResponse> => {
+  const response = await httpClient.put<ObservationResponse>(
+    `${CLINICAL_API_URL}/observations/${encodeURIComponent(observationId)}`,
+    data
+  );
+  return response.data;
+};
+
+export const deleteObservation = async (observationId: string): Promise<void> => {
+  await httpClient.delete(`${CLINICAL_API_URL}/observations/${encodeURIComponent(observationId)}`);
 };

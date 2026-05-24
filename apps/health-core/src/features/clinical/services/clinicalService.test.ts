@@ -5,7 +5,9 @@ import httpClient from '@/core/http/httpClient';
 import {
   clinicalApi,
   createObservation,
+  deleteObservation,
   getPatientObservations,
+  updateObservation,
 } from './clinicalService';
 import type {
   CreateProfilePayload,
@@ -130,7 +132,8 @@ describe('clinicalService', () => {
           rows: [],
         },
       })
-      .mockResolvedValueOnce({ data: [{ weightKg: 80, date: '2024-01-01' }] });
+      .mockResolvedValueOnce({ data: [{ weightKg: 80, date: '2024-01-01' }] })
+      .mockResolvedValueOnce({ data: [{ weightKg: 79, date: '2024-01-02' }] });
     (httpClient.post as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       data: { targetCalories: 2500, targetProtein: 150, targetCarbs: 250, targetFat: 70 },
     });
@@ -146,6 +149,7 @@ describe('clinicalService', () => {
     const editedGoalResult = await clinicalApi.editWeight('2026-05-20', 74.8, '2026-05-18');
     const deletedGoalResult = await clinicalApi.deleteWeight('2026-05-18');
     const history = await clinicalApi.getWeightHistory();
+    const nutritionistHistory = await clinicalApi.getNutritionistPatientWeightHistory('patient-1');
 
     expect(httpClient.get).toHaveBeenCalledWith('/clinical/nutritionist/reports/weight-progress', {
       params: { from: '2026-05-01', to: '2026-05-22' },
@@ -153,11 +157,13 @@ describe('clinicalService', () => {
     expect(httpClient.post).toHaveBeenCalledWith('/clinical/weight', { weightKg: 75.5, date: '2026-05-20' });
     expect(httpClient.put).toHaveBeenCalledWith('/clinical/weight/2026-05-20', { weightKg: 74.8, date: '2026-05-18' });
     expect(httpClient.delete).toHaveBeenCalledWith('/clinical/weight/2026-05-18');
+    expect(httpClient.get).toHaveBeenCalledWith('/clinical/nutritionist/patients/patient-1/weight-history');
     expect(report.activePatients).toBe(2);
     expect(goalResult.targetCalories).toBe(2500);
     expect(editedGoalResult.targetCalories).toBe(2400);
     expect(deletedGoalResult.targetCalories).toBe(2300);
     expect(history).toHaveLength(1);
+    expect(nutritionistHistory).toHaveLength(1);
   });
 
   it('handles linking, plans, catalog search and observations without X-User-Id', async () => {
@@ -208,7 +214,17 @@ describe('clinicalService', () => {
     (httpClient.post as ReturnType<typeof vi.fn>).mockResolvedValue({ data: { id: 'obs-1' } });
     (httpClient.put as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce(mockPlanResponse)
-      .mockResolvedValueOnce(mockPlanResponse);
+      .mockResolvedValueOnce(mockPlanResponse)
+      .mockResolvedValueOnce({
+        data: {
+          id: 'obs-1',
+          patientId: 'patient-1',
+          nutritionistId: 'nutri-1',
+          note: 'Nota actualizada',
+          createdAt: '2026-05-18T12:00:00Z',
+        },
+      });
+    (httpClient.delete as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: undefined });
 
     const currentCode = await clinicalApi.getCurrentLinkingCode();
     const noCode = await clinicalApi.getCurrentLinkingCode();
@@ -224,6 +240,8 @@ describe('clinicalService', () => {
     await clinicalApi.unlinkNutritionist('patient-1');
     await createObservation({ patientId: 'patient-1', note: 'Nota clinica' });
     const patientObservations = await getPatientObservations('patient-1');
+    const updatedObservation = await updateObservation('obs-1', { note: 'Nota actualizada' });
+    await deleteObservation('obs-1');
 
     expect(currentCode?.code).toBe('XYZ123');
     expect(noCode).toBeNull();
@@ -234,6 +252,7 @@ describe('clinicalService', () => {
     expect(foods[0].barcode).toBe('food-1');
     expect(myObservations[0].note).toBe('Ajustar hidratacion');
     expect(patientObservations).toEqual([]);
+    expect(updatedObservation.note).toBe('Nota actualizada');
     expect(httpClient.post).toHaveBeenCalledWith('/clinical/linking/connect', { code: 'ABC123' });
     expect(httpClient.post).toHaveBeenCalledWith('/clinical/linking/disconnect/patient', {});
     expect(httpClient.post).toHaveBeenCalledWith('/clinical/linking/disconnect/nutritionist/patient-1', {});
@@ -242,5 +261,7 @@ describe('clinicalService', () => {
     });
     expect(httpClient.get).toHaveBeenCalledWith('/clinical/observations/me');
     expect(httpClient.get).toHaveBeenCalledWith('/clinical/observations/patient/patient-1');
+    expect(httpClient.put).toHaveBeenCalledWith('/clinical/observations/obs-1', { note: 'Nota actualizada' });
+    expect(httpClient.delete).toHaveBeenCalledWith('/clinical/observations/obs-1');
   });
 });

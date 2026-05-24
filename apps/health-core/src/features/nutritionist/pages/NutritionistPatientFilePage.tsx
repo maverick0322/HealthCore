@@ -14,6 +14,9 @@ import {
   Loader2,
   UserMinus,
   AlertCircle,
+  FileDown,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
@@ -21,14 +24,24 @@ import { SettingsBar } from "@/shared/components/SettingsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/dialog";
+import {
   clinicalApi,
   createObservation,
+  deleteObservation,
   getPatientObservations,
+  updateObservation,
 } from "../../clinical/services/clinicalService";
 import type {
   ObservationResponse,
   NutritionistPatientProfileResponse,
   NutritionPlanViewResponse,
+  WeightRecord,
 } from "../../clinical/types/clinical.types";
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
@@ -36,6 +49,11 @@ import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/Nut
 import { logClientError, logClientInfo } from "@/core/utils/logger";
 import { getNutritionistUnlinkErrorMessage } from "@/features/clinical/utils/linkingErrorMessages";
 import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
+import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
+import { exportNutritionistPatientFilePdf } from "@/features/nutritionist/services/patientFilePdfService";
+import { Textarea } from "@/shared/ui/textarea";
+
+const OBSERVATION_NOTE_MAX_LENGTH = 500;
 
 const getDisplayIdentity = (userId: string): string => {
   const normalized = userId.trim();
@@ -84,15 +102,25 @@ export const NutritionistPatientFilePage = () => {
   const [nutritionPlanView, setNutritionPlanView] = useState<NutritionPlanViewResponse | null>(null);
   const [isLoadingNutritionPlan, setIsLoadingNutritionPlan] = useState(false);
   const [nutritionPlanLoadError, setNutritionPlanLoadError] = useState<string | null>(null);
+  const [weightHistory, setWeightHistory] = useState<WeightRecord[]>([]);
+  const [hasLoadedWeightHistory, setHasLoadedWeightHistory] = useState(false);
+  const [isLoadingWeightHistory, setIsLoadingWeightHistory] = useState(false);
+  const [weightHistoryLoadError, setWeightHistoryLoadError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [editingObservation, setEditingObservation] = useState<ObservationResponse | null>(null);
+  const [editingObservationNote, setEditingObservationNote] = useState("");
+  const [isUpdatingObservation, setIsUpdatingObservation] = useState(false);
+  const [observationToDelete, setObservationToDelete] = useState<ObservationResponse | null>(null);
+  const [isDeletingObservation, setIsDeletingObservation] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const navigate = useNavigate();
-  const { t } = useTranslation(["nutritionist", "onboarding"]);
+  const { t, i18n } = useTranslation(["nutritionist", "onboarding", "patient"]);
 
-  const [activeTab, setActiveTab] = useState<"overview" | "plan" | "observations">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "plan" | "history" | "observations">("overview");
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
-  const [unlinkFeedback, setUnlinkFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [pageFeedback, setPageFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
     const loadPatient = async () => {
@@ -136,30 +164,67 @@ export const NutritionistPatientFilePage = () => {
       return;
     }
 
-    const loadNutritionPlan = async () => {
-      try {
-        setIsLoadingNutritionPlan(true);
-        setNutritionPlanLoadError(null);
-        logClientInfo("NutritionistPatientFilePage.plan.load.start", { patientId });
-        const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
-        setNutritionPlanView(response);
-        logClientInfo("NutritionistPatientFilePage.plan.load.success", {
-          patientId,
-          mode: response.mode,
-          canEdit: response.canEdit,
-          sections: response.sections.length,
-        });
-      } catch (error) {
-        logClientError("NutritionistPatientFilePage.plan.load.error", error, { patientId });
-        setNutritionPlanView(null);
-        setNutritionPlanLoadError(t("nutritionPlan.loadError"));
-      } finally {
-        setIsLoadingNutritionPlan(false);
-      }
-    };
-
     void loadNutritionPlan();
   }, [activeTab, patientId]);
+
+  useEffect(() => {
+    if (!patientId || activeTab !== "history") {
+      return;
+    }
+
+    void loadWeightHistory();
+  }, [activeTab, patientId]);
+
+  const loadNutritionPlan = async () => {
+    if (!patientId) {
+      return null;
+    }
+
+    try {
+      setIsLoadingNutritionPlan(true);
+      setNutritionPlanLoadError(null);
+      logClientInfo("NutritionistPatientFilePage.plan.load.start", { patientId });
+      const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
+      setNutritionPlanView(response);
+      logClientInfo("NutritionistPatientFilePage.plan.load.success", {
+        patientId,
+        mode: response.mode,
+        canEdit: response.canEdit,
+        sections: response.sections.length,
+      });
+      return response;
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.plan.load.error", error, { patientId });
+      setNutritionPlanView(null);
+      setNutritionPlanLoadError(t("nutritionPlan.loadError"));
+      return null;
+    } finally {
+      setIsLoadingNutritionPlan(false);
+    }
+  };
+
+  const loadWeightHistory = async () => {
+    if (!patientId) {
+      return [];
+    }
+
+    try {
+      setIsLoadingWeightHistory(true);
+      setWeightHistoryLoadError(null);
+      const response = await clinicalApi.getNutritionistPatientWeightHistory(patientId);
+      setWeightHistory(response);
+      setHasLoadedWeightHistory(true);
+      return response;
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.weightHistory.load.error", error, { patientId });
+      setWeightHistory([]);
+      setWeightHistoryLoadError(t("patients.file.historyError"));
+      setHasLoadedWeightHistory(true);
+      return [];
+    } finally {
+      setIsLoadingWeightHistory(false);
+    }
+  };
 
   const loadObservations = async () => {
     try {
@@ -176,13 +241,13 @@ export const NutritionistPatientFilePage = () => {
     }
 
     setIsUnlinking(true);
-    setUnlinkFeedback(null);
+    setPageFeedback(null);
     try {
       await clinicalApi.unlinkNutritionist(patientId);
       navigate("/patients/nutritionist");
     } catch (error) {
       logClientError("NutritionistPatientFilePage.unlink.error", error, { patientId });
-      setUnlinkFeedback({
+      setPageFeedback({
         type: "error",
         message: getNutritionistUnlinkErrorMessage(error, t),
       });
@@ -198,7 +263,7 @@ export const NutritionistPatientFilePage = () => {
 
     setIsSavingNote(true);
     try {
-      await createObservation({ patientId, note: newNote });
+      await createObservation({ patientId, note: newNote.trim() });
       setNewNote("");
       await loadObservations();
     } catch (error) {
@@ -208,8 +273,69 @@ export const NutritionistPatientFilePage = () => {
     }
   };
 
+  const handleStartEditObservation = (observation: ObservationResponse) => {
+    setEditingObservation(observation);
+    setEditingObservationNote(observation.note);
+  };
+
+  const handleUpdateObservation = async () => {
+    if (!editingObservation || !editingObservationNote.trim()) {
+      return;
+    }
+
+    setIsUpdatingObservation(true);
+    try {
+      await updateObservation(editingObservation.id, { note: editingObservationNote.trim() });
+      setEditingObservation(null);
+      setEditingObservationNote("");
+      await loadObservations();
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.observation.update.error", error, {
+        patientId,
+        observationId: editingObservation.id,
+      });
+      setPageFeedback({
+        type: "error",
+        message: t("patients.file.observationUpdateError"),
+      });
+    } finally {
+      setIsUpdatingObservation(false);
+    }
+  };
+
+  const handleDeleteObservation = async () => {
+    if (!observationToDelete) {
+      return;
+    }
+
+    setIsDeletingObservation(true);
+    try {
+      await deleteObservation(observationToDelete.id);
+      setObservationToDelete(null);
+      await loadObservations();
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.observation.delete.error", error, {
+        patientId,
+        observationId: observationToDelete.id,
+      });
+      setPageFeedback({
+        type: "error",
+        message: t("patients.file.observationDeleteError"),
+      });
+    } finally {
+      setIsDeletingObservation(false);
+    }
+  };
+
   const patientIdentity = patient ? patient.fullName?.trim() || getDisplayIdentity(patient.userId) : "";
   const patientAge = patient ? getAgeFromBirthDate(patient.birthDate) : null;
+  const patientGoalLabel = patient ? formatPatientGoalLabel(t, patient.goal) : "--";
+  const patientActivityLabel = patient
+    ? t(`onboarding:options.activityLevels.${patient.activityLevel}.label`)
+    : "--";
+  const patientDietLabel = patient
+    ? t(`onboarding:options.diets.${patient.dietType}.label`)
+    : "--";
 
   const handleSaveNutritionPlan = async (
     payload: Parameters<typeof clinicalApi.upsertNutritionistPatientNutritionPlan>[1]
@@ -242,24 +368,81 @@ export const NutritionistPatientFilePage = () => {
       return;
     }
 
-    setIsLoadingNutritionPlan(true);
-    setNutritionPlanLoadError(null);
     logClientInfo("NutritionistPatientFilePage.plan.retry.start", { patientId });
+    await loadNutritionPlan();
+  };
+
+  const handleExportPatientFilePdf = async () => {
+    if (!patient) {
+      return;
+    }
+
+    setIsExportingPdf(true);
+    setPageFeedback(null);
 
     try {
-      const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
-      setNutritionPlanView(response);
-      logClientInfo("NutritionistPatientFilePage.plan.retry.success", {
-        patientId,
-        mode: response.mode,
-        canEdit: response.canEdit,
+      const resolvedPlan = nutritionPlanView ?? (await loadNutritionPlan());
+      const resolvedWeightHistory = hasLoadedWeightHistory ? weightHistory : await loadWeightHistory();
+      const sanitizedPatientName = (patient.fullName ?? patient.userId).replace(/[^\w-]+/g, "-").toLowerCase();
+
+      await exportNutritionistPatientFilePdf({
+        patient,
+        nutritionPlan: resolvedPlan,
+        observations,
+        weightHistory: resolvedWeightHistory,
+        locale: i18n.resolvedLanguage?.startsWith("en") ? "en-US" : "es-MX",
+        goalLabel: patientGoalLabel,
+        activityLabel: patientActivityLabel,
+        dietLabel: patientDietLabel,
+        fileName: `expediente-${sanitizedPatientName}.pdf`,
+        labels: {
+          title: t("patients.file.pdf.title"),
+          generatedOn: t("patients.file.pdf.generatedOn"),
+          sections: {
+            overview: t("patients.file.tabOverview"),
+            weightHistory: t("patients.file.tabHistory"),
+            nutritionPlan: t("patients.file.tabPlan"),
+            observations: t("patients.file.tabObservations"),
+          },
+          fields: {
+            patient: t("patients.file.pdf.patient"),
+            age: t("patients.file.age"),
+            weight: t("patients.file.weight"),
+            height: t("patients.file.height"),
+            goal: t("patients.file.objective"),
+            activity: t("patients.file.pdf.activity"),
+            dietType: t("patients.file.pdf.dietType"),
+            allergies: t("patients.file.pdf.allergies"),
+            excludedFoods: t("patients.file.pdf.excludedFoods"),
+            latestRecord: t("patients.file.pdf.latestRecord"),
+            date: t("history.table.date", { ns: "patient" }),
+            change: t("history.table.variation", { ns: "patient" }),
+            mealSlot: t("patients.file.pdf.mealSlot"),
+            dishCount: t("patients.file.pdf.dishCount"),
+            dailyGoals: t("patients.file.pdf.dailyGoals"),
+          },
+          empty: {
+            weightHistory: t("patients.file.pdf.noWeightHistory"),
+            observations: t("patients.file.noObservations"),
+            nutritionPlan: t("patients.file.pdf.noNutritionPlan"),
+            none: t("patients.file.pdf.none"),
+          },
+          mealSlots: {
+            BREAKFAST: t("nutritionPlan.mealSlots.BREAKFAST"),
+            LUNCH: t("nutritionPlan.mealSlots.LUNCH"),
+            DINNER: t("nutritionPlan.mealSlots.DINNER"),
+            SNACK: t("nutritionPlan.mealSlots.SNACK"),
+          },
+        },
       });
     } catch (error) {
-      logClientError("NutritionistPatientFilePage.plan.retry.error", error, { patientId });
-      setNutritionPlanView(null);
-      setNutritionPlanLoadError(t("nutritionPlan.loadError"));
+      logClientError("NutritionistPatientFilePage.pdf.export.error", error, { patientId });
+      setPageFeedback({
+        type: "error",
+        message: t("patients.file.pdf.error"),
+      });
     } finally {
-      setIsLoadingNutritionPlan(false);
+      setIsExportingPdf(false);
     }
   };
 
@@ -383,6 +566,27 @@ export const NutritionistPatientFilePage = () => {
       );
     }
 
+    if (activeTab === "history") {
+      return (
+        <PatientHistoryOverviewSection
+          weightRecords={weightHistory}
+          isWeightLoading={isLoadingWeightHistory}
+          isWeightError={Boolean(weightHistoryLoadError)}
+          onRetryWeight={() => {
+            void loadWeightHistory();
+          }}
+          readOnlyWeightHistory
+          logs={[]}
+          isLogsLoading={false}
+          logsError={null}
+          selectedDateLabel={t("history.today", { ns: "patient" })}
+          showDateNavigation={false}
+          showLogRegistrationCard={false}
+          emptyLogsMessage={t("history.todayLogsEmpty", { ns: "patient" })}
+        />
+      );
+    }
+
     return (
       <Card>
         <CardHeader className="pb-3 border-b border-border/50">
@@ -393,12 +597,19 @@ export const NutritionistPatientFilePage = () => {
 
         <CardContent className="pt-5 space-y-8">
           <div className="bg-muted/10 p-4 rounded-xl border border-border/50 space-y-3">
-            <textarea
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm font-medium text-foreground">{t("patients.file.newNote")}</p>
+              <span className="text-xs text-muted-foreground">
+                {newNote.length}/{OBSERVATION_NOTE_MAX_LENGTH}
+              </span>
+            </div>
+            <Textarea
               value={newNote}
               onChange={(event) => setNewNote(event.target.value)}
               disabled={isSavingNote}
               placeholder={t("patients.file.newNotePlaceholder")}
-              className="w-full min-h-[80px] p-3 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y transition-colors"
+              maxLength={OBSERVATION_NOTE_MAX_LENGTH}
+              className="min-h-[80px] resize-y bg-background"
             />
             <div className="flex justify-end">
               <Button
@@ -433,8 +644,32 @@ export const NutritionistPatientFilePage = () => {
                     })}
                   </p>
 
-                  <div className="bg-muted/30 p-3 rounded-lg border border-border/50 text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                    {observation.note}
+                  <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <p className="flex-1 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
+                        {observation.note}
+                      </p>
+                      <div className="flex shrink-0 gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStartEditObservation(observation)}
+                        >
+                          <Pencil size={14} />
+                          {t("patients.file.editObservation")}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setObservationToDelete(observation)}
+                        >
+                          <Trash2 size={14} />
+                          {t("patients.file.deleteObservation")}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))
@@ -479,16 +714,30 @@ export const NutritionistPatientFilePage = () => {
               </h1>
             </div>
 
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowUnlinkModal(true)}
-              className="flex items-center gap-2 self-start sm:self-auto"
-              disabled={isLoadingPatient || !patient}
-            >
-              <UserMinus size={16} />
-              {t("patients.file.unlink")}
-            </Button>
+            <div className="ml-auto flex flex-wrap items-center gap-3 self-start sm:self-auto">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowUnlinkModal(true)}
+                className="flex items-center gap-2"
+                disabled={isLoadingPatient || !patient}
+              >
+                <UserMinus size={16} />
+                {t("patients.file.unlink")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  void handleExportPatientFilePdf();
+                }}
+                className="flex items-center gap-2"
+                disabled={isLoadingPatient || !patient || isExportingPdf}
+              >
+                {isExportingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+                {t("patients.file.downloadPdf")}
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center gap-6 mt-8 overflow-x-auto hide-scrollbar border-b border-border/50 pb-px">
@@ -513,6 +762,16 @@ export const NutritionistPatientFilePage = () => {
               {t("patients.file.tabPlan")}
             </button>
             <button
+              onClick={() => setActiveTab("history")}
+              className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
+                activeTab === "history"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("patients.file.tabHistory")}
+            </button>
+            <button
               onClick={() => setActiveTab("observations")}
               className={`pb-3 text-sm font-semibold transition-all border-b-2 whitespace-nowrap ${
                 activeTab === "observations"
@@ -527,20 +786,20 @@ export const NutritionistPatientFilePage = () => {
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-        {unlinkFeedback ? (
+        {pageFeedback ? (
           <div
             className={`flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
-              unlinkFeedback.type === "success"
+              pageFeedback.type === "success"
                 ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                 : "border-destructive/25 bg-destructive/10 text-destructive"
             }`}
           >
-            {unlinkFeedback.type === "success" ? (
+            {pageFeedback.type === "success" ? (
               <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
             ) : (
               <AlertCircle size={16} className="mt-0.5 shrink-0" />
             )}
-            <span>{unlinkFeedback.message}</span>
+            <span>{pageFeedback.message}</span>
           </div>
         ) : null}
         {renderMainContent()}
@@ -558,6 +817,79 @@ export const NutritionistPatientFilePage = () => {
         confirmText={t("patients.file.unlink")}
         cancelText={t("common.cancel")}
       />
+
+      <ConfirmModal
+        isOpen={Boolean(observationToDelete)}
+        onClose={() => setObservationToDelete(null)}
+        onConfirm={() => {
+          void handleDeleteObservation();
+        }}
+        title={t("patients.file.deleteObservationTitle")}
+        description={t("patients.file.deleteObservationDescription", {
+          note: observationToDelete?.note ?? "",
+        })}
+        icon={<Trash2 size={24} />}
+        isLoading={isDeletingObservation}
+        isDestructive
+        confirmText={t("patients.file.deleteObservation")}
+        cancelText={t("common.cancel")}
+      />
+
+      <Dialog
+        open={Boolean(editingObservation)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingObservation(null);
+            setEditingObservationNote("");
+          }
+        }}
+      >
+        <DialogContent aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>{t("patients.file.editObservationTitle")}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm font-medium text-foreground">{t("patients.file.editObservationTitle")}</p>
+              <span className="text-xs text-muted-foreground">
+                {editingObservationNote.length}/{OBSERVATION_NOTE_MAX_LENGTH}
+              </span>
+            </div>
+            <Textarea
+              value={editingObservationNote}
+              onChange={(event) => setEditingObservationNote(event.target.value)}
+              disabled={isUpdatingObservation}
+              maxLength={OBSERVATION_NOTE_MAX_LENGTH}
+              className="min-h-[140px] resize-y bg-background"
+            />
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setEditingObservation(null);
+                setEditingObservationNote("");
+              }}
+              disabled={isUpdatingObservation}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                void handleUpdateObservation();
+              }}
+              disabled={isUpdatingObservation || !editingObservationNote.trim()}
+            >
+              {isUpdatingObservation ? <Loader2 size={16} className="mr-2 animate-spin" /> : null}
+              {t("patients.file.saveObservationChanges")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

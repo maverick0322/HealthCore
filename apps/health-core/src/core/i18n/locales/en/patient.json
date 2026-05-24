@@ -209,6 +209,7 @@
     "noWeightEntries": "No weight entries are available for this history.",
     "noDate": "No date",
     "today": "Today",
+    "todayLogsEmpty": "There are no records available for today",
     "previousDay": "Previous",
     "nextDay": "Next",
     "weightChartAriaLabel": "Detailed patient weight history chart",

@@ -5,6 +5,7 @@ import { CalendarRange, Flag, Pencil, Scale, Trash2, TrendingDown } from 'lucide
 import { useDeleteWeightRecord } from '@/features/patient/hooks/useDeleteWeightRecord';
 import { useEditWeightRecord } from '@/features/patient/hooks/useEditWeightRecord';
 import { useWeightHistory } from '@/features/patient/hooks/useWeightHistory';
+import type { WeightRecord } from '@/features/clinical/types/clinical.types';
 import {
   aggregateWeightRecords,
   buildWeightTableRows,
@@ -175,9 +176,24 @@ const getSummaryTranslationParams = (
   return { days, change: absoluteChange };
 };
 
-export const WeightHistorySection = () => {
+interface WeightHistorySectionProps {
+  records?: WeightRecord[];
+  isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
+  readOnly?: boolean;
+}
+
+export const WeightHistorySection = ({
+  records,
+  isLoading: externalIsLoading,
+  isError: externalIsError,
+  onRetry,
+  readOnly = false,
+}: Readonly<WeightHistorySectionProps> = {}) => {
   const { t, i18n } = useTranslation('patient');
-  const { data, isLoading, isError, refetch } = useWeightHistory();
+  const usesExternalRecords = records !== undefined;
+  const { data, isLoading, isError, refetch } = useWeightHistory({ enabled: !usesExternalRecords });
   const editWeightRecord = useEditWeightRecord();
   const deleteWeightRecord = useDeleteWeightRecord();
 
@@ -194,9 +210,14 @@ export const WeightHistorySection = () => {
   const [fieldErrors, setFieldErrors] = useState<{ weightKg?: string; date?: string }>({});
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const allRecords = useMemo(() => sortWeightRecordsAscending(data), [data]);
+  const sourceRecords = usesExternalRecords ? records : data;
+  const allRecords = useMemo(() => sortWeightRecordsAscending(sourceRecords), [sourceRecords]);
   const referenceDate = allRecords.at(-1)?.date ?? todayDateKey();
   const rangeStates = useMemo(() => getWeightRangeStates(allRecords), [allRecords]);
+  const resolvedIsLoading = usesExternalRecords ? Boolean(externalIsLoading) : isLoading;
+  const resolvedIsError = usesExternalRecords ? Boolean(externalIsError) : isError;
+  const handleRetry = usesExternalRecords ? onRetry : () => refetch();
+  const canManageRecords = !readOnly && !usesExternalRecords;
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
@@ -338,16 +359,16 @@ export const WeightHistorySection = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          {isLoading ? (
+          {resolvedIsLoading ? (
             <div className="space-y-4">
               <div className="h-16 rounded-xl bg-muted animate-pulse" />
               <div className="h-80 rounded-2xl bg-muted animate-pulse" />
               <div className="h-48 rounded-2xl bg-muted animate-pulse" />
             </div>
-          ) : isError ? (
+          ) : resolvedIsError ? (
             <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm">
               <p className="text-destructive">{t('history.weightErrorMessage')}</p>
-              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => handleRetry?.()}>
                 {t('common.retry')}
               </Button>
             </div>
@@ -544,7 +565,7 @@ export const WeightHistorySection = () => {
                       <TableHead>{t('history.table.date')}</TableHead>
                       <TableHead>{t('history.table.weight')}</TableHead>
                       <TableHead>{t('history.table.variation')}</TableHead>
-                      <TableHead>{t('history.table.actions')}</TableHead>
+                      {canManageRecords ? <TableHead>{t('history.table.actions')}</TableHead> : null}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -553,29 +574,31 @@ export const WeightHistorySection = () => {
                         <TableCell>{row.label}</TableCell>
                         <TableCell>{formatWeight(row.weightKg)}</TableCell>
                         <TableCell>{formatVariation(row.variationKg)}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-2">
-                            <Button type="button" size="sm" variant="outline" onClick={() => openEditFlow(row)}>
-                              <Pencil size={14} />
-                              {t('history.actions.edit')}
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedRow(row);
-                                setActionError(null);
-                                setDeleteConfirmOpen(true);
-                              }}
-                              disabled={allRecords.length <= 1}
-                              title={allRecords.length <= 1 ? t('history.actions.deleteDisabled') : undefined}
-                            >
-                              <Trash2 size={14} />
-                              {t('history.actions.delete')}
-                            </Button>
-                          </div>
-                        </TableCell>
+                        {canManageRecords ? (
+                          <TableCell>
+                            <div className="flex flex-wrap gap-2">
+                              <Button type="button" size="sm" variant="outline" onClick={() => openEditFlow(row)}>
+                                <Pencil size={14} />
+                                {t('history.actions.edit')}
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedRow(row);
+                                  setActionError(null);
+                                  setDeleteConfirmOpen(true);
+                                }}
+                                disabled={allRecords.length <= 1}
+                                title={allRecords.length <= 1 ? t('history.actions.deleteDisabled') : undefined}
+                              >
+                                <Trash2 size={14} />
+                                {t('history.actions.delete')}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        ) : null}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -586,7 +609,8 @@ export const WeightHistorySection = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={editDialogOpen} onOpenChange={(open) => (open ? setEditDialogOpen(true) : resetEditFlow())}>
+      {canManageRecords ? (
+        <Dialog open={editDialogOpen} onOpenChange={(open) => (open ? setEditDialogOpen(true) : resetEditFlow())}>
         <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>{t('history.editDialog.title')}</DialogTitle>
@@ -640,9 +664,11 @@ export const WeightHistorySection = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+        </Dialog>
+      ) : null}
 
-      <ConfirmModal
+      {canManageRecords ? (
+        <ConfirmModal
         isOpen={confirmEditOpen}
         onClose={handleBackToEdit}
         onConfirm={() => {
@@ -657,9 +683,11 @@ export const WeightHistorySection = () => {
         cancelText={t('dashboard.weightForm.back')}
         icon={<Pencil size={20} />}
         isLoading={editWeightRecord.isPending}
-      />
+        />
+      ) : null}
 
-      <ConfirmModal
+      {canManageRecords ? (
+        <ConfirmModal
         isOpen={deleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
         onConfirm={() => {
@@ -675,7 +703,8 @@ export const WeightHistorySection = () => {
         icon={<Trash2 size={20} />}
         isLoading={deleteWeightRecord.isPending}
         isDestructive
-      />
+        />
+      ) : null}
     </>
   );
 };

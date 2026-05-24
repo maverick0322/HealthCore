@@ -158,6 +158,11 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
     }
 
     @Override
+    public List<WeightRecord> getWeightHistoryForNutritionist(String nutritionistId, String patientId) {
+        return getProfileForNutritionist(nutritionistId, patientId).getWeightHistory();
+    }
+
+    @Override
     public NutritionistProfile createNutritionistProfile(NutritionistProfile profile) {
         validateClinicAddress(profile.getClinicAddress());
         return nutritionistRepositoryPort.save(profile);

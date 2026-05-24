@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -87,6 +88,19 @@ class ClinicalObservationApplicationServiceTest {
         );
 
         assertEquals("Observation note cannot be empty.", exception.getMessage());
+        verify(clinicalRepositoryPort, never()).findByUserId(anyString());
+        verify(observationRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void recordObservation_ThrowsException_WhenNoteExceedsMaxLength() {
+        String longNote = "a".repeat(501);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                service.recordObservation("patient-123", "nutri-456", longNote)
+        );
+
+        assertEquals("Observation note must be at most 500 characters long.", exception.getMessage());
         verify(clinicalRepositoryPort, never()).findByUserId(anyString());
         verify(observationRepositoryPort, never()).save(any());
     }
@@ -183,5 +197,75 @@ class ClinicalObservationApplicationServiceTest {
 
         assertEquals(1, result.size());
         verify(observationRepositoryPort).findAllByPatientId(patientId);
+    }
+
+    @Test
+    void updateObservation_UpdatesOwnedObservation() {
+        ClinicalObservation observation = new ClinicalObservation(
+                "obs-1",
+                "patient-123",
+                "nutri-456",
+                "Nota original",
+                LocalDateTime.now()
+        );
+        PatientProfile profile = new PatientProfile(
+                "patient-123",
+                "Carlos",
+                "Gomez",
+                null,
+                70.0,
+                175.0,
+                LocalDate.of(1990, 1, 1),
+                Gender.MALE,
+                ActivityLevel.MODERATELY_ACTIVE,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of()
+        );
+        profile.assignNutritionist("nutri-456");
+
+        when(observationRepositoryPort.findById("obs-1")).thenReturn(Optional.of(observation));
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+        when(observationRepositoryPort.save(any(ClinicalObservation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ClinicalObservation updated = service.updateObservation("obs-1", "nutri-456", "Nota actualizada");
+
+        assertEquals("Nota actualizada", updated.getNote());
+        verify(observationRepositoryPort).save(observation);
+    }
+
+    @Test
+    void deleteObservation_RemovesOwnedObservation() {
+        ClinicalObservation observation = new ClinicalObservation(
+                "obs-1",
+                "patient-123",
+                "nutri-456",
+                "Nota original",
+                LocalDateTime.now()
+        );
+        PatientProfile profile = new PatientProfile(
+                "patient-123",
+                "Carlos",
+                "Gomez",
+                null,
+                70.0,
+                175.0,
+                LocalDate.of(1990, 1, 1),
+                Gender.MALE,
+                ActivityLevel.MODERATELY_ACTIVE,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of()
+        );
+        profile.assignNutritionist("nutri-456");
+
+        when(observationRepositoryPort.findById("obs-1")).thenReturn(Optional.of(observation));
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+
+        service.deleteObservation("obs-1", "nutri-456");
+
+        verify(observationRepositoryPort).deleteById("obs-1");
     }
 }

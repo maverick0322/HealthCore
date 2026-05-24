@@ -210,6 +210,7 @@
     "noWeightEntries": "No hay registros de peso disponibles para este historial.",
     "noDate": "Sin fecha",
     "today": "Hoy",
+    "todayLogsEmpty": "No hay registros disponibles para hoy",
     "previousDay": "Anterior",
     "nextDay": "Siguiente",
     "weightChartAriaLabel": "Gráfica detallada del historial de peso del paciente",

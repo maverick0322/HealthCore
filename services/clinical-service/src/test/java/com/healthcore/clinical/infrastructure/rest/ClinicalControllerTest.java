@@ -219,6 +219,23 @@ class ClinicalControllerTest {
     }
 
     @Test
+    void shouldReturnOkAndListWhenGettingNutritionistPatientWeightHistory() throws Exception {
+        setSecurityContext("nutri-123", "NUTRITIONIST");
+        List<WeightRecord> history = List.of(
+                new WeightRecord(72.0, LocalDate.of(2026, 5, 1)),
+                new WeightRecord(70.5, LocalDate.of(2026, 5, 15))
+        );
+
+        when(manageProfileUseCase.getWeightHistoryForNutritionist("nutri-123", "patient-123")).thenReturn(history);
+
+        mockMvc.perform(get("/api/v1/clinical/nutritionist/patients/patient-123/weight-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].weightKg").value(72.0))
+                .andExpect(jsonPath("$[1].weightKg").value(70.5));
+    }
+
+    @Test
     void shouldReturnMyProfileWithNutritionistId() throws Exception {
         String patientId = "patient-123";
         setSecurityContext(patientId, "PATIENT");

@@ -84,6 +84,7 @@ public class FoodTrackingUseCase {
 
     /**
      * Retrieves meal logs for a specific historical date.
+     * Enriches the response with secure pre-signed URLs for media files.
      */
     public List<MealLog> getDailyLogs(String userId, LocalDate date) {
         if (userId == null || userId.isBlank() || date == null) {
@@ -94,7 +95,29 @@ public class FoodTrackingUseCase {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
-        return logPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
+        List<MealLog> rawLogs = logPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
+
+        return rawLogs.stream().map(meal -> {
+            if (meal.getPhotoKey() != null && !meal.getPhotoKey().isBlank()) {
+                try {
+                    String presignedReadUrl = mediaGrpcClient.getPresignedReadUrl(meal.getPhotoKey());
+
+                    return meal.toBuilder()
+                            .photoKey(presignedReadUrl)
+                            .build();
+
+                } catch (StatusRuntimeException grpcEx) {
+                    log.error("gRPC failure while generating secure read URL for photoKey: {}. Status: {}",
+                            meal.getPhotoKey(), grpcEx.getStatus().getCode());
+                } catch (IllegalArgumentException iae) {
+                    log.warn("Invalid photo key format provided to media service: {}", meal.getPhotoKey());
+                } catch (Exception e) {
+                    log.error("Unexpected error generating URL for photoKey: {}. Error: {}",
+                            meal.getPhotoKey(), e.getMessage());
+                }
+            }
+            return meal;
+        }).collect(Collectors.toList());
     }
 
     /**

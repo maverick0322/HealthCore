@@ -6,6 +6,7 @@ import com.healthcore.tracking.domain.model.DailyMacroSummary;
 import com.healthcore.tracking.domain.model.MealLog;
 import com.healthcore.tracking.domain.port.MealLogPort;
 import com.healthcore.tracking.domain.port.WaterLogPort;
+import com.healthcore.tracking.infrastructure.grpc.client.MediaGrpcClientAdapter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class DashboardSummaryUseCase {
 
     private final MealLogPort mealLogPort;
     private final WaterLogPort waterLogPort;
+    private final MediaGrpcClientAdapter mediaGrpcClient;
 
     public TodayDashboardSummary getTodaySummary(String userId, LocalDate date) {
         validateUserId(userId);
@@ -37,6 +39,18 @@ public class DashboardSummaryUseCase {
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
         List<MealLog> todayMeals = mealLogPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
+
+        todayMeals.forEach(meal -> {
+            if (meal.getPhotoKey() != null && !meal.getPhotoKey().isBlank()) {
+                try {
+                    String presignedReadUrl = mediaGrpcClient.getPresignedReadUrl(meal.getPhotoKey());
+                    meal.setPhotoKey(presignedReadUrl);
+                } catch (Exception e) {
+                    log.error("Failed to generate secure read URL for photoKey: {}. Falling back to null.", meal.getPhotoKey());
+                    meal.setPhotoKey(null);
+                }
+            }
+        });
 
         double totalCalories = todayMeals.stream().mapToDouble(MealLog::getTotalCalories).sum();
         double totalProteins = todayMeals.stream().mapToDouble(MealLog::getTotalProteins).sum();

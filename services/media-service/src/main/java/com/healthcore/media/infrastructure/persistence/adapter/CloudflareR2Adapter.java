@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.time.Duration;
 
@@ -37,5 +39,22 @@ public class CloudflareR2Adapter implements MediaStoragePort {
                 .build();
 
         return s3Presigner.presignPutObject(presignRequest).url().toString();
+    }
+
+    @Override
+    public String generateDownloadUrl(String storageKey) {
+        log.info("Generating pre-signed READ URL for file: {}", storageKey);
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(storageKey)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(60)) // 1 hora de validez
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        return s3Presigner.presignGetObject(presignRequest).url().toString();
     }
 }

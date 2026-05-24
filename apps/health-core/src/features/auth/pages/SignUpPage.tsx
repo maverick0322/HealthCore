@@ -170,6 +170,7 @@ export const SignUpPage = () => {
                 className="h-11 sm:h-10 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                maxLength={254}
                 disabled={isLoading}
                 aria-describedby={fieldErrors.email ? "signup-email-error" : undefined}
                 aria-invalid={!!fieldErrors.email}
@@ -187,6 +188,7 @@ export const SignUpPage = () => {
                   className="h-11 sm:h-10 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  maxLength={72}
                   disabled={isLoading}
                   aria-describedby={fieldErrors.password ? "signup-password-error" : undefined}
                   aria-invalid={!!fieldErrors.password}
@@ -214,6 +216,7 @@ export const SignUpPage = () => {
                   className="h-11 sm:h-10 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  maxLength={72}
                   disabled={isLoading}
                   aria-describedby={fieldErrors.confirmPassword ? "signup-confirm-error" : undefined}
                   aria-invalid={!!fieldErrors.confirmPassword}

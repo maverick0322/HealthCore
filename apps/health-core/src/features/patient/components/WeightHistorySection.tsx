@@ -600,7 +600,13 @@ export const WeightHistorySection = () => {
                 inputMode="decimal"
                 placeholder={t('dashboard.weightForm.weightPlaceholder')}
                 value={weightInput}
-                onChange={(event) => setWeightInput(event.target.value)}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  if (val.length <= 5) {
+                    setWeightInput(val);
+                  }
+                }}
+                maxLength={5}
                 aria-invalid={Boolean(fieldErrors.weightKg)}
               />
               {fieldErrors.weightKg ? <p className="text-xs text-destructive">{fieldErrors.weightKg}</p> : null}

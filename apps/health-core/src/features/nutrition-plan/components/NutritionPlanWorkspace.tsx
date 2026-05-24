@@ -627,9 +627,13 @@ export function NutritionPlanWorkspace({
                     className="pl-9"
                     value={searchQuery}
                     onChange={(event) => {
-                      setSearchQuery(event.target.value);
-                      setSearchFeedbackState('idle');
+                      const val = event.target.value;
+                      if (val.length <= 100) {
+                        setSearchQuery(val);
+                        setSearchFeedbackState('idle');
+                      }
                     }}
+                    maxLength={100}
                     placeholder={t('nutritionPlan.searchFoodPlaceholder')}
                   />
                 </div>
@@ -709,14 +713,18 @@ export function NutritionPlanWorkspace({
                             type="number"
                             min={1}
                             step={1}
-                            value={ingredient.quantityAmount}
-                            onChange={(event) =>
-                              updateEditorIngredient(
-                                index,
-                                Number(event.target.value || ingredient.quantityAmount),
-                                ingredient.unit
-                              )
-                            }
+                            value={ingredient.quantityAmount || ""}
+                            onChange={(event) => {
+                              const val = event.target.value;
+                              if (val.length <= 5) {
+                                updateEditorIngredient(
+                                  index,
+                                  val === "" ? 0 : Number(val),
+                                  ingredient.unit
+                                );
+                              }
+                            }}
+                            maxLength={5}
                           />
                           <select
                             className="h-10 rounded-md border border-input bg-background px-3 text-sm"

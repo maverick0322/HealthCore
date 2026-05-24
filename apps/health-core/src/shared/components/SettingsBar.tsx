@@ -1,5 +1,6 @@
 import { Moon, Sun, Globe, Settings, LogOut, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/shared/ui/button";
 import { useSettingsStore } from "@/core/store/useSettingsStore";
 import { SUPPORTED_LANGUAGES } from "@/core/i18n";
@@ -15,6 +16,7 @@ import {
 export const SettingsBar = ({ className }: { className?: string }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation("auth");
   const { theme, setTheme, language, setLanguage } = useSettingsStore();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -51,7 +53,7 @@ export const SettingsBar = ({ className }: { className?: string }) => {
             className="relative rounded-full w-10 h-10 border-border bg-card hover:bg-muted text-foreground transition-all duration-300 shadow-sm outline-none ring-0"
           >
             <Globe className="w-5 h-5" />
-            <span className="sr-only">Seleccionar Idioma</span>
+            <span className="sr-only">{t("selectLanguage")}</span>
             <span className="absolute -bottom-1 -right-1 text-[10px] font-bold bg-primary text-primary-foreground px-1.5 rounded-full shadow-sm">
               {language.toUpperCase()}
             </span>
@@ -77,7 +79,7 @@ export const SettingsBar = ({ className }: { className?: string }) => {
         className="rounded-full w-10 h-10 border-border bg-card hover:bg-muted text-foreground transition-all duration-300 shadow-sm"
       >
         {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        <span className="sr-only">Alternar Tema</span>
+        <span className="sr-only">{t("toggleTheme")}</span>
       </Button>
 
       {showAccountMenu && (
@@ -89,20 +91,20 @@ export const SettingsBar = ({ className }: { className?: string }) => {
               className="rounded-full w-10 h-10 border-border bg-card hover:bg-muted text-foreground transition-all duration-300 shadow-sm outline-none ring-0"
             >
               <Settings className="w-5 h-5" />
-              <span className="sr-only">Configuración</span>
+              <span className="sr-only">{t("settings")}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 border-border bg-card shadow-lg">
             {user?.role !== "ADMIN" && (
               <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
                 <User className="mr-2 w-4 h-4" />
-                <span>Perfil</span>
+                <span>{t("profile")}</span>
               </DropdownMenuItem>
             )}
             {user?.role !== "ADMIN" && <DropdownMenuSeparator />}
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive">
               <LogOut className="mr-2 w-4 h-4" />
-              <span>Cerrar sesión</span>
+              <span>{t("logout")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

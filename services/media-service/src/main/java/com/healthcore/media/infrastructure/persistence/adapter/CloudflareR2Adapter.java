@@ -51,7 +51,7 @@ public class CloudflareR2Adapter implements MediaStoragePort {
                 .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(60)) // 1 hora de validez
+                .signatureDuration(Duration.ofMinutes(60))
                 .getObjectRequest(getObjectRequest)
                 .build();
 

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package com.healthcore.media.grpc;
+
+option java_multiple_files = true;
+// Fíjate en este package, aquí es donde Maven generará las clases en Java
+option java_package = "com.healthcore.media.infrastructure.grpc.stubs";
+option java_outer_classname = "MediaProto";
+
+service MediaServiceGrpc {
+  rpc GetPresignedReadUrl (PresignedReadUrlRequest) returns (PresignedReadUrlResponse);
+}
+
+message PresignedReadUrlRequest {
+  string storageKey = 1;
+}
+
+message PresignedReadUrlResponse {
+  string presignedUrl = 1;
+  string errorMessage = 2;
+}

@@ -40,38 +40,30 @@ public class DashboardSummaryUseCase {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
-        // 1. Fetch raw data from persistence
         List<MealLog> rawMeals = mealLogPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
 
-        // 2. Map and enrich the data with secure pre-signed URLs via gRPC
         List<MealLog> enrichedMeals = rawMeals.stream().map(meal -> {
             if (meal.getPhotoKey() != null && !meal.getPhotoKey().isBlank()) {
                 try {
                     String presignedReadUrl = mediaGrpcClient.getPresignedReadUrl(meal.getPhotoKey());
 
-                    // Leveraging Lombok's toBuilder to enforce immutability while updating the URL
                     return meal.toBuilder()
                             .photoKey(presignedReadUrl)
                             .build();
 
                 } catch (StatusRuntimeException grpcEx) {
-                    // Specific network or server-side gRPC errors (e.g., UNAVAILABLE, DEADLINE_EXCEEDED)
                     log.error("gRPC failure while generating secure read URL for photoKey: {}. Status: {}",
                             meal.getPhotoKey(), grpcEx.getStatus().getCode());
                 } catch (IllegalArgumentException iae) {
-                    // Validation errors inside the grpc client
                     log.warn("Invalid photo key format provided to media service: {}", meal.getPhotoKey());
                 } catch (Exception e) {
-                    // Unforeseen runtime crashes
                     log.error("Unexpected error generating URL for photoKey: {}. Error: {}",
                             meal.getPhotoKey(), e.getMessage());
                 }
             }
-            // Fallback: If no photo exists, or if any error occurred, return the unmodified immutable object
             return meal;
         }).collect(Collectors.toList());
 
-        // 3. Calculate aggregates based on the enriched list
         double totalCalories = enrichedMeals.stream().mapToDouble(MealLog::getTotalCalories).sum();
         double totalProteins = enrichedMeals.stream().mapToDouble(MealLog::getTotalProteins).sum();
         double totalCarbs = enrichedMeals.stream().mapToDouble(MealLog::getTotalCarbs).sum();

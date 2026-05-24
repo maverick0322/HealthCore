@@ -7,6 +7,7 @@ import com.healthcore.tracking.domain.model.MealLog;
 import com.healthcore.tracking.domain.port.MealLogPort;
 import com.healthcore.tracking.domain.port.WaterLogPort;
 import com.healthcore.tracking.infrastructure.grpc.client.MediaGrpcClientAdapter;
+import io.grpc.StatusRuntimeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,24 +40,42 @@ public class DashboardSummaryUseCase {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
-        List<MealLog> todayMeals = mealLogPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
+        // 1. Fetch raw data from persistence
+        List<MealLog> rawMeals = mealLogPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
 
-        todayMeals.forEach(meal -> {
+        // 2. Map and enrich the data with secure pre-signed URLs via gRPC
+        List<MealLog> enrichedMeals = rawMeals.stream().map(meal -> {
             if (meal.getPhotoKey() != null && !meal.getPhotoKey().isBlank()) {
                 try {
                     String presignedReadUrl = mediaGrpcClient.getPresignedReadUrl(meal.getPhotoKey());
-                    meal.setPhotoKey(presignedReadUrl);
+
+                    // Leveraging Lombok's toBuilder to enforce immutability while updating the URL
+                    return meal.toBuilder()
+                            .photoKey(presignedReadUrl)
+                            .build();
+
+                } catch (StatusRuntimeException grpcEx) {
+                    // Specific network or server-side gRPC errors (e.g., UNAVAILABLE, DEADLINE_EXCEEDED)
+                    log.error("gRPC failure while generating secure read URL for photoKey: {}. Status: {}",
+                            meal.getPhotoKey(), grpcEx.getStatus().getCode());
+                } catch (IllegalArgumentException iae) {
+                    // Validation errors inside the grpc client
+                    log.warn("Invalid photo key format provided to media service: {}", meal.getPhotoKey());
                 } catch (Exception e) {
-                    log.error("Failed to generate secure read URL for photoKey: {}. Falling back to null.", meal.getPhotoKey());
-                    meal.setPhotoKey(null);
+                    // Unforeseen runtime crashes
+                    log.error("Unexpected error generating URL for photoKey: {}. Error: {}",
+                            meal.getPhotoKey(), e.getMessage());
                 }
             }
-        });
+            // Fallback: If no photo exists, or if any error occurred, return the unmodified immutable object
+            return meal;
+        }).collect(Collectors.toList());
 
-        double totalCalories = todayMeals.stream().mapToDouble(MealLog::getTotalCalories).sum();
-        double totalProteins = todayMeals.stream().mapToDouble(MealLog::getTotalProteins).sum();
-        double totalCarbs = todayMeals.stream().mapToDouble(MealLog::getTotalCarbs).sum();
-        double totalFats = todayMeals.stream().mapToDouble(MealLog::getTotalFats).sum();
+        // 3. Calculate aggregates based on the enriched list
+        double totalCalories = enrichedMeals.stream().mapToDouble(MealLog::getTotalCalories).sum();
+        double totalProteins = enrichedMeals.stream().mapToDouble(MealLog::getTotalProteins).sum();
+        double totalCarbs = enrichedMeals.stream().mapToDouble(MealLog::getTotalCarbs).sum();
+        double totalFats = enrichedMeals.stream().mapToDouble(MealLog::getTotalFats).sum();
 
         int totalWater = waterLogPort.getConsumedWaterBetween(userId, startOfDay, endOfDay);
 
@@ -78,7 +97,6 @@ public class DashboardSummaryUseCase {
 
         return mealLogPort.aggregateHistoricalMacros(userId, start, end);
     }
-
 
     private void validateUserId(String userId) {
         if (userId == null || userId.isBlank()) {

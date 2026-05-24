@@ -26,7 +26,7 @@ const renderGuard = (
         <Route path={path} element={<div data-testid="guarded-content">Protected</div>} />
       </Route>
       <Route path="/login" element={<div data-testid="login-page">Login</div>} />
-      <Route path="/home" element={<div data-testid="home-page">Home</div>} />
+      <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
     </Routes>,
     { initialEntries },
   );

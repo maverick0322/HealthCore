@@ -58,7 +58,7 @@ export const OAuth2CallbackPage = () => {
 
       setTokens(tokens);
       fetchCurrentUser().then(() => {
-        navigate('/home', { replace: true });
+        navigate('/dashboard', { replace: true });
       });
     } else {
       // Redirect to login after a brief delay

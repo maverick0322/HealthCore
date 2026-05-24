@@ -66,3 +66,29 @@ export const validateNotPastToday = (
   }
   return null;
 };
+
+// ── Block fits duration ──────────────────────────────────────────────────────
+
+export const validateBlockFitsDuration = (
+  startTime: string,
+  endTime: string,
+  durationMinutes: number,
+): string | null => {
+  if (!startTime || !endTime) return 'agenda.validation.timeBlockRequired';
+  const [startH, startM] = startTime.split(':').map(Number);
+  const [endH, endM] = endTime.split(':').map(Number);
+  if (
+    Number.isNaN(startH) ||
+    Number.isNaN(startM) ||
+    Number.isNaN(endH) ||
+    Number.isNaN(endM)
+  ) {
+    return 'agenda.validation.timeBlockRequired';
+  }
+  const startTotal = startH * 60 + startM;
+  const endTotal = endH * 60 + endM;
+  if (startTotal + durationMinutes > endTotal) {
+    return 'agenda.validation.timeBlockTooShortForDuration';
+  }
+  return null;
+};

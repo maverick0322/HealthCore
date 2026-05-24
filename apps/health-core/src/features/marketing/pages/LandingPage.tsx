@@ -62,7 +62,7 @@ export const LandingPage = () => {
             <div className="flex items-center gap-2">
               {isAuthenticated && (
                 <Button asChild className="hidden sm:inline-flex">
-                  <Link to="/home">{t("nav.goToApp")}</Link>
+                  <Link to="/dashboard">{t("nav.goToApp")}</Link>
                 </Button>
               )}
               <Button variant="outline" asChild>
@@ -107,7 +107,7 @@ export const LandingPage = () => {
                 {isAuthenticated && (
                   <div className="pt-2">
                     <Button variant="ghost" asChild className="px-0">
-                      <Link to="/home" className="inline-flex items-center gap-1.5">
+                      <Link to="/dashboard" className="inline-flex items-center gap-1.5">
                         {t("nav.goToApp")}
                         <ArrowRight className="h-4 w-4" />
                       </Link>

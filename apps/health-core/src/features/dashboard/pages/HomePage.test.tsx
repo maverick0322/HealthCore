@@ -30,10 +30,10 @@ describe('HomePage', () => {
 
     render(
       <Routes>
-        <Route path="/home" element={<HomePage />} />
+        <Route path="/dashboard" element={<HomePage />} />
         <Route path="/dashboard/patient" element={<div>Patient dashboard</div>} />
       </Routes>,
-      { initialEntries: ['/home'] },
+      { initialEntries: ['/dashboard'] },
     );
 
     expect(screen.getByText('Patient dashboard')).toBeInTheDocument();
@@ -44,10 +44,10 @@ describe('HomePage', () => {
 
     render(
       <Routes>
-        <Route path="/home" element={<HomePage />} />
+        <Route path="/dashboard" element={<HomePage />} />
         <Route path="/dashboard/nutritionist" element={<div>Nutritionist dashboard</div>} />
       </Routes>,
-      { initialEntries: ['/home'] },
+      { initialEntries: ['/dashboard'] },
     );
 
     expect(screen.getByText('Nutritionist dashboard')).toBeInTheDocument();

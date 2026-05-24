@@ -86,12 +86,20 @@ describe('validatePassword (register mode)', () => {
     expect(validatePassword('Sh0rt!', 'register')).toBe('validation.passwordTooShort');
   });
 
-  it('returns passwordTooLong for > 15 chars', () => {
-    expect(validatePassword('LongPassword1!extra', 'register')).toBe('validation.passwordTooLong');
+  it('returns passwordTooLong for > 72 chars', () => {
+    expect(validatePassword('a'.repeat(70) + 'A1!', 'register')).toBe('validation.passwordTooLong');
+  });
+
+  it('accepts passwords up to 72 characters', () => {
+    expect(validatePassword('a'.repeat(69) + 'A1!', 'register')).toBeNull();
   });
 
   it('returns passwordWeak when no uppercase letter', () => {
     expect(validatePassword('nouppercase1!', 'register')).toBe('validation.passwordWeak');
+  });
+
+  it('returns passwordWeak when no lowercase letter', () => {
+    expect(validatePassword('NOUPPERCASE1!', 'register')).toBe('validation.passwordWeak');
   });
 
   it('returns passwordWeak when no digit', () => {

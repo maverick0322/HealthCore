@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarRange, Flag, Pencil, Scale, Trash2, TrendingDown } from 'lucide-react';
 
@@ -184,6 +184,7 @@ interface WeightHistorySectionProps {
   isError?: boolean;
   onRetry?: () => void;
   readOnly?: boolean;
+  headerAction?: ReactNode;
 }
 
 export const WeightHistorySection = ({
@@ -192,6 +193,7 @@ export const WeightHistorySection = ({
   isError: externalIsError,
   onRetry,
   readOnly = false,
+  headerAction,
 }: Readonly<WeightHistorySectionProps> = {}) => {
   const { t, i18n } = useTranslation('patient');
   const usesExternalRecords = records !== undefined;
@@ -358,11 +360,12 @@ export const WeightHistorySection = ({
   return (
     <>
       <Card id="card-history-weight">
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-col gap-3 pb-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2 text-base font-semibold">
             <TrendingDown size={16} className="text-primary" />
             {t('history.weightProgressTitle')}
           </CardTitle>
+          {headerAction ? <div className="flex shrink-0 items-center">{headerAction}</div> : null}
         </CardHeader>
         <CardContent className="space-y-5">
           {resolvedIsLoading ? (

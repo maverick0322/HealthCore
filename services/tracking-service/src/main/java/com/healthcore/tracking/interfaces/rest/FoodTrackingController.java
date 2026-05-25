@@ -3,6 +3,7 @@ package com.healthcore.tracking.interfaces.rest;
 import com.healthcore.tracking.application.usecase.FoodTrackingUseCase;
 import com.healthcore.tracking.domain.model.FoodNutrients;
 import com.healthcore.tracking.domain.model.MealLog;
+import com.healthcore.tracking.infrastructure.grpc.client.GrpcClinicalServiceClient;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -13,7 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -33,6 +36,7 @@ import java.util.stream.Collectors;
 public class FoodTrackingController {
 
     private final FoodTrackingUseCase trackingUseCase;
+    private final GrpcClinicalServiceClient clinicalServiceClient;
 
     @GetMapping("/catalog/{barcode}")
     @Operation(
@@ -120,6 +124,43 @@ public class FoodTrackingController {
         log.info("REST request to fetch meal logs. userHash={} date={}", logHash(userId), date);
         List<MealLog> dailyLogs = trackingUseCase.getDailyLogs(userId, date);
         return ResponseEntity.ok(dailyLogs);
+    }
+
+    @GetMapping("/nutritionist/patients/{patientId}/logs/daily")
+    @Operation(
+            summary = "Obtener consumos diarios de un paciente vinculado",
+            description = "Devuelve los registros de comidas de un paciente vinculado a un nutriólogo.",
+            security = @SecurityRequirement(name = "Bearer Authentication")
+    )
+    public ResponseEntity<List<MealLog>> getNutritionistPatientLogsByDate(
+            @Parameter(hidden = true) @AuthenticationPrincipal String nutritionistId,
+            Authentication authentication,
+            @PathVariable String patientId,
+            @Parameter(description = "Fecha a consultar (YYYY-MM-DD)", example = "2024-05-15")
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+        requireNutritionistRole(authentication);
+        validateNutritionistPatientLink(patientId, nutritionistId);
+        log.info("REST request to fetch linked patient meal logs. patientHash={} nutritionistHash={} date={}",
+                logHash(patientId), logHash(nutritionistId), date);
+
+        List<MealLog> dailyLogs = trackingUseCase.getDailyLogs(patientId, date);
+        return ResponseEntity.ok(dailyLogs);
+    }
+
+    private void requireNutritionistRole(Authentication authentication) {
+        boolean hasNutritionistRole = authentication != null
+                && authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_NUTRITIONIST".equals(authority.getAuthority()));
+        if (!hasNutritionistRole) {
+            throw new AccessDeniedException("Only nutritionists can access linked patient tracking data.");
+        }
+    }
+
+    private void validateNutritionistPatientLink(String patientId, String nutritionistId) {
+        if (!clinicalServiceClient.validateLink(patientId, nutritionistId)) {
+            throw new AccessDeniedException("Action denied: Patient is not linked to this nutritionist.");
+        }
     }
 
     private String logHash(String value) {

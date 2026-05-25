@@ -1,5 +1,6 @@
 package com.healthcore.tracking.interfaces.rest;
 
+import com.healthcore.tracking.domain.exception.ClinicalServiceUnavailableException;
 import com.healthcore.tracking.domain.exception.ExternalCatalogUnavailableException;
 import com.healthcore.tracking.domain.exception.InvalidDomainDataException;
 import com.healthcore.tracking.domain.exception.ResourceNotFoundException;
@@ -7,6 +8,7 @@ import com.healthcore.tracking.domain.exception.TrackingDomainException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -47,6 +49,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleServiceUnavailableException(ExternalCatalogUnavailableException ex) {
         log.error("Upstream service unavailable. exceptionClass={}", ex.getClass().getSimpleName());
         return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
+    @ExceptionHandler(ClinicalServiceUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleClinicalUnavailableException(ClinicalServiceUnavailableException ex) {
+        log.error("Clinical service unavailable. exceptionClass={}", ex.getClass().getSimpleName());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("Access denied. exceptionClass={}", ex.getClass().getSimpleName());
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
     /**

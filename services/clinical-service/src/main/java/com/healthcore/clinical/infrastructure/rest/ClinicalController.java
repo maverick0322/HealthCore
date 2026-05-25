@@ -1,5 +1,26 @@
 package com.healthcore.clinical.infrastructure.rest;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.Gender;
@@ -18,21 +39,11 @@ import com.healthcore.clinical.infrastructure.rest.dto.NutritionistProfileRespon
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressReportResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressRowResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.PatientProfileResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.UpdatePatientMetricsRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
-import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/clinical")
@@ -218,6 +229,29 @@ public class ClinicalController {
                 logHash(nutritionistId), logHash(patientId));
         PatientProfile profile = manageProfileUseCase.getProfileForNutritionist(nutritionistId, patientId);
         return ResponseEntity.ok(toPatientProfileResponse(profile));
+    }
+
+    @PutMapping("/nutritionist/patients/{patientId}/metrics")
+    @PreAuthorize("hasRole('NUTRITIONIST')")
+    public ResponseEntity<PatientProfileResponse> updateNutritionistPatientMetrics(
+            @PathVariable String patientId,
+            @Valid @RequestBody UpdatePatientMetricsRequest request
+    ) {
+        String nutritionistId = getCurrentUserId();
+        logger.info(
+                "[ClinicalController] Updating patient metrics for nutritionistHash={} patientHash={} weightKg={} heightCm={}",
+                logHash(nutritionistId),
+                logHash(patientId),
+                request.weightKg(),
+                request.heightCm()
+        );
+        PatientProfile updatedProfile = manageProfileUseCase.updatePatientMetricsForNutritionist(
+                nutritionistId,
+                patientId,
+                request.weightKg(),
+                request.heightCm()
+        );
+        return ResponseEntity.ok(toPatientProfileResponse(updatedProfile));
     }
 
     @GetMapping("/nutritionist/reports/weight-progress")

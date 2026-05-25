@@ -1,16 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useHealthGoals } from './useHealthGoals';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import { useHealthGoals } from './useHealthGoals';
 
 vi.mock('@/features/clinical/services/clinicalService');
 vi.mock('@/features/auth/store/useAuthStore', () => ({
-  useAuthStore: {
-    getState: vi.fn(),
-  },
+  useAuthStore: vi.fn(),
 }));
 
 const mockedUseAuthStore = vi.mocked(useAuthStore);
@@ -40,7 +39,9 @@ const createWrapper = () => {
 describe('useHealthGoals', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockedUseAuthStore.getState.mockReturnValue({ user: mockUser } as any);
+    mockedUseAuthStore.mockImplementation((selector) =>
+      selector({ user: mockUser } as never)
+    );
   });
 
   it('fetches health goals for the authenticated user', async () => {
@@ -62,7 +63,7 @@ describe('useHealthGoals', () => {
       expect(result.current.data).toEqual(mockGoals);
     });
 
-    expect(clinicalApi.getMyGoals).toHaveBeenCalledWith(mockUser.email);
+    expect(clinicalApi.getMyGoals).toHaveBeenCalledTimes(1);
   });
 
   it('starts in loading state while the request is pending', () => {

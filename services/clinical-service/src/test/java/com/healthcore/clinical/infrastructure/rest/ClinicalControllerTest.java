@@ -12,6 +12,7 @@ import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
 import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
+import com.healthcore.clinical.infrastructure.rest.dto.UpdatePatientMetricsRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -341,6 +342,26 @@ class ClinicalControllerTest {
                 .andExpect(jsonPath("$.userId").value(patientId))
                 .andExpect(jsonPath("$.fullName").value("Carlos Gomez"))
                 .andExpect(jsonPath("$.nutritionistId").value(nutritionistId));
+    }
+
+    @Test
+    void shouldUpdatePatientMetricsForNutritionist() throws Exception {
+        String nutritionistId = "nutri-123";
+        String patientId = "patient-one@example.com";
+        setSecurityContext(nutritionistId, "NUTRITIONIST");
+
+        PatientProfile patient = createPatientProfile(patientId);
+        patient.assignNutritionist(nutritionistId);
+        UpdatePatientMetricsRequest request = new UpdatePatientMetricsRequest(74.5, 180.0);
+
+        when(manageProfileUseCase.updatePatientMetricsForNutritionist(nutritionistId, patientId, 74.5, 180.0))
+                .thenReturn(patient);
+
+        mockMvc.perform(put("/api/v1/clinical/nutritionist/patients/{patientId}/metrics", patientId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(patientId));
     }
 
     @Test

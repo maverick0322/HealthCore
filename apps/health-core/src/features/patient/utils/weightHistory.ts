@@ -42,6 +42,11 @@ export interface WeightRangeState {
   disabled: boolean;
 }
 
+export interface WeightRangeWindow {
+  fromDate: string;
+  toDate: string;
+}
+
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const WEIGHT_INPUT_PATTERN = /^\d{1,3}(?:\.\d)?$/;
 const RANGE_DAY_MAP: Record<Exclude<WeightHistoryRange, 'all'>, number> = {
@@ -109,27 +114,29 @@ export const getWeightHistorySpanDays = (records: WeightRecord[] | undefined | n
 
 export const isWeightRangeAvailable = (
   records: WeightRecord[] | undefined | null,
-  range: WeightHistoryRange
+  range: WeightHistoryRange,
+  referenceDate: string = todayDateKey()
 ) => {
   const sortedRecords = sortWeightRecordsAscending(records);
   if (sortedRecords.length === 0) {
     return false;
   }
-  if (range === 'all' || range === '30d') {
+  if (range === 'all') {
     return true;
   }
 
-  return getWeightHistorySpanDays(sortedRecords) >= RANGE_DAY_MAP[range];
+  return filterWeightRecordsByRange(sortedRecords, range, referenceDate).length > 0;
 };
 
 export const getWeightRangeStates = (
-  records: WeightRecord[] | undefined | null
+  records: WeightRecord[] | undefined | null,
+  referenceDate: string = todayDateKey()
 ): WeightRangeState[] => ([
-  { range: '30d', disabled: !isWeightRangeAvailable(records, '30d') },
-  { range: '90d', disabled: !isWeightRangeAvailable(records, '90d') },
-  { range: '180d', disabled: !isWeightRangeAvailable(records, '180d') },
-  { range: '365d', disabled: !isWeightRangeAvailable(records, '365d') },
-  { range: 'all', disabled: !isWeightRangeAvailable(records, 'all') },
+  { range: '30d', disabled: !isWeightRangeAvailable(records, '30d', referenceDate) },
+  { range: '90d', disabled: !isWeightRangeAvailable(records, '90d', referenceDate) },
+  { range: '180d', disabled: !isWeightRangeAvailable(records, '180d', referenceDate) },
+  { range: '365d', disabled: !isWeightRangeAvailable(records, '365d', referenceDate) },
+  { range: 'all', disabled: !isWeightRangeAvailable(records, 'all', referenceDate) },
 ]);
 
 export const getDefaultGroupingForRange = (
@@ -142,9 +149,18 @@ export const getDefaultGroupingForRange = (
     case '30d':
       return 'day';
     case '90d':
+      if (spanDays <= 45) {
+        return 'day';
+      }
       return 'week';
     case '180d':
     case '365d':
+      if (spanDays <= 45) {
+        return 'day';
+      }
+      if (spanDays <= 120) {
+        return 'week';
+      }
       return 'month';
     case 'all':
     default:
@@ -171,6 +187,24 @@ export const filterWeightRecordsByRange = (
     return sortedRecords;
   }
 
+  const { fromDate: fromDateKey, toDate } = getWeightRangeWindow(range, sortedRecords, referenceDate);
+
+  return sortedRecords.filter((record) => record.date >= fromDateKey && record.date <= toDate);
+};
+
+export const getWeightRangeWindow = (
+  range: WeightHistoryRange,
+  records: WeightRecord[] | undefined | null,
+  referenceDate: string = todayDateKey()
+): WeightRangeWindow => {
+  const sortedRecords = sortWeightRecordsAscending(records);
+  if (range === 'all') {
+    return {
+      fromDate: sortedRecords[0]?.date ?? referenceDate,
+      toDate: referenceDate,
+    };
+  }
+
   const reference = parseDateKey(referenceDate);
   const fromDate = parseDateKey(referenceDate);
   fromDate.setDate(reference.getDate() - (RANGE_DAY_MAP[range] - 1));
@@ -181,7 +215,10 @@ export const filterWeightRecordsByRange = (
     String(fromDate.getDate()).padStart(2, '0'),
   ].join('-');
 
-  return sortedRecords.filter((record) => record.date >= fromDateKey && record.date <= referenceDate);
+  return {
+    fromDate: fromDateKey,
+    toDate: referenceDate,
+  };
 };
 
 const getBucketKey = (dateKey: string, grouping: WeightHistoryGrouping) => {

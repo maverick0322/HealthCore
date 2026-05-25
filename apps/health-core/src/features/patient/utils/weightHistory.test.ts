@@ -76,20 +76,36 @@ describe('weightHistory utils', () => {
   });
 
   it('returns the recommended grouping for each range', () => {
-    expect(getDefaultGroupingForRange('30d')).toBe('day');
-    expect(getDefaultGroupingForRange('90d')).toBe('week');
-    expect(getDefaultGroupingForRange('180d')).toBe('month');
-    expect(getDefaultGroupingForRange('365d')).toBe('month');
+    expect(getDefaultGroupingForRange('30d', SAMPLE_RECORDS)).toBe('day');
+    expect(getDefaultGroupingForRange('90d', SAMPLE_RECORDS)).toBe('week');
+    expect(getDefaultGroupingForRange('180d', SAMPLE_RECORDS)).toBe('month');
+    expect(getDefaultGroupingForRange('365d', SAMPLE_RECORDS)).toBe('month');
     expect(getDefaultGroupingForRange('all', SAMPLE_RECORDS)).toBe('month');
   });
 
-  it('returns adaptive range states based on available history', () => {
-    const states = getWeightRangeStates(SAMPLE_RECORDS);
+  it('returns adaptive range states based on records inside each range', () => {
+    const states = getWeightRangeStates(SAMPLE_RECORDS, '2026-05-24');
 
     expect(states.find((state) => state.range === '30d')?.disabled).toBe(false);
     expect(states.find((state) => state.range === '90d')?.disabled).toBe(false);
+    expect(states.find((state) => state.range === '180d')?.disabled).toBe(false);
+    expect(states.find((state) => state.range === '365d')?.disabled).toBe(false);
+    expect(states.find((state) => state.range === 'all')?.disabled).toBe(false);
+  });
+
+  it('disables a range when there are no records inside that window even if there is older history', () => {
+    const states = getWeightRangeStates(
+      [
+        { weightKg: 90.0, date: '2025-09-21' },
+        { weightKg: 89.0, date: '2025-09-28' },
+      ],
+      '2026-05-24'
+    );
+
+    expect(states.find((state) => state.range === '30d')?.disabled).toBe(true);
+    expect(states.find((state) => state.range === '90d')?.disabled).toBe(true);
     expect(states.find((state) => state.range === '180d')?.disabled).toBe(true);
-    expect(states.find((state) => state.range === '365d')?.disabled).toBe(true);
+    expect(states.find((state) => state.range === '365d')?.disabled).toBe(false);
     expect(states.find((state) => state.range === 'all')?.disabled).toBe(false);
   });
 

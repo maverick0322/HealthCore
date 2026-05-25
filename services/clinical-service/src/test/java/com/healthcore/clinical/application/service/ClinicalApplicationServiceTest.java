@@ -239,6 +239,24 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void shouldAllowNutritionistToUpdateLinkedPatientMetrics() {
+        String nutritionistId = "nutri-123";
+        String patientId = "patient-123";
+        PatientProfile profile = createPatientProfile(patientId);
+        profile.assignNutritionist(nutritionistId);
+
+        when(repositoryPort.findByUserId(patientId)).thenReturn(Optional.of(profile));
+        when(repositoryPort.save(profile)).thenReturn(profile);
+
+        PatientProfile result = service.updatePatientMetricsForNutritionist(nutritionistId, patientId, 74.5, 180.0);
+
+        assertEquals(74.5, result.getWeightKg());
+        assertEquals(180.0, result.getHeightCm());
+        assertEquals(2, result.getWeightHistory().size());
+        verify(repositoryPort).save(profile);
+    }
+
+    @Test
     void shouldCreateNutritionistProfile() {
         NutritionistProfile profile = createNutritionistProfile("nutri-123");
         when(postalCodeCatalogPort.findByPostalCode("03100")).thenReturn(Optional.of(createPostalCodeEntry("03100")));

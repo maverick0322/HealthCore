@@ -23,6 +23,8 @@ import {
 } from '@/shared/ui/dialog';
 import { ConfirmModal } from '@/shared/components/ConfirmModal';
 
+const WEIGHT_INPUT_MAX_LENGTH = 5;
+
 const formatWeight = (value: number | null) => (value == null ? '--' : `${value.toFixed(1)} kg`);
 
 const formatVariation = (value: number | null) => {
@@ -319,12 +321,16 @@ export const DashboardWeightCard = () => {
                 inputMode="decimal"
                 placeholder={t('dashboard.weightForm.weightPlaceholder')}
                 value={weightInput}
-                onChange={(event) => setWeightInput(event.target.value)}
+                maxLength={WEIGHT_INPUT_MAX_LENGTH}
+                onChange={(event) => setWeightInput(event.target.value.slice(0, WEIGHT_INPUT_MAX_LENGTH))}
                 aria-invalid={Boolean(fieldErrors.weightKg)}
               />
-              {fieldErrors.weightKg ? (
-                <p className="text-xs text-destructive">{fieldErrors.weightKg}</p>
-              ) : null}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-destructive">{fieldErrors.weightKg ?? ''}</p>
+                <p className="text-xs text-muted-foreground">
+                  {weightInput.length}/{WEIGHT_INPUT_MAX_LENGTH}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">

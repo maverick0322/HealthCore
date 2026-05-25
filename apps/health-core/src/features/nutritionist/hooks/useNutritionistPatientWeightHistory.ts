@@ -1,13 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
-import { clinicalApi } from '@/features/clinical/services/clinicalService';
-import type { WeightRecord } from '@/features/clinical/types/clinical.types';
 import { AxiosError } from 'axios';
 
-export const WEIGHT_HISTORY_QUERY_KEY = ['clinical', 'weight-history'] as const;
+import { clinicalApi } from '@/features/clinical/services/clinicalService';
+import type { WeightRecord } from '@/features/clinical/types/clinical.types';
 
-interface UseWeightHistoryReturn {
+export const NUTRITIONIST_PATIENT_WEIGHT_HISTORY_QUERY_KEY = [
+  'clinical',
+  'nutritionist-patient-weight-history',
+] as const;
+
+interface UseNutritionistPatientWeightHistoryOptions {
+  enabled?: boolean;
+}
+
+interface UseNutritionistPatientWeightHistoryReturn {
   data: WeightRecord[];
   isLoading: boolean;
   isError: boolean;
@@ -15,22 +22,19 @@ interface UseWeightHistoryReturn {
   refetch: UseQueryResult<WeightRecord[], Error>['refetch'];
 }
 
-interface UseWeightHistoryOptions {
-  enabled?: boolean;
-}
-
-export const useWeightHistory = ({ enabled = true }: UseWeightHistoryOptions = {}): UseWeightHistoryReturn => {
-  const user = useAuthStore((state) => state.user);
-
+export const useNutritionistPatientWeightHistory = (
+  patientId: string,
+  { enabled = true }: UseNutritionistPatientWeightHistoryOptions = {}
+): UseNutritionistPatientWeightHistoryReturn => {
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: [...WEIGHT_HISTORY_QUERY_KEY, user?.email ?? null],
+    queryKey: [...NUTRITIONIST_PATIENT_WEIGHT_HISTORY_QUERY_KEY, patientId || null],
     queryFn: async () => {
-      if (!user?.email) {
+      if (!patientId) {
         return [];
       }
 
       try {
-        return await clinicalApi.getWeightHistory();
+        return await clinicalApi.getNutritionistPatientWeightHistory(patientId);
       } catch (err: any) {
         if (err.response?.status === 404) {
           return [];
@@ -47,7 +51,7 @@ export const useWeightHistory = ({ enabled = true }: UseWeightHistoryOptions = {
       }
       return count < 2;
     },
-    enabled: enabled && !!user?.email,
+    enabled: enabled && Boolean(patientId),
   });
 
   return {

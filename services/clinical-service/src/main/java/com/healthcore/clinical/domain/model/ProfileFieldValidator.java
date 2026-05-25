@@ -92,7 +92,7 @@ final class ProfileFieldValidator {
         if (birthDate == null) {
             throw new IllegalArgumentException("Birth date is required.");
         }
-        LocalDate today = LocalDate.now();
+        LocalDate today = ClinicalTime.today();
         if (birthDate.isAfter(today)) {
             throw new IllegalArgumentException("Birth date cannot be in the future.");
         }
@@ -155,7 +155,7 @@ final class ProfileFieldValidator {
         if (date == null) {
             throw new IllegalArgumentException("Weight record date is required.");
         }
-        if (date.isAfter(LocalDate.now())) {
+        if (date.isAfter(ClinicalTime.today())) {
             throw new IllegalArgumentException("Weight record date cannot be in the future.");
         }
         return date;
@@ -399,7 +399,7 @@ final class ProfileFieldValidator {
             if (currentWeightKg == null) {
                 return new ArrayList<>();
             }
-            return new ArrayList<>(List.of(new WeightRecord(currentWeightKg, LocalDate.now())));
+            return new ArrayList<>(List.of(new WeightRecord(currentWeightKg, ClinicalTime.today())));
         }
         LinkedHashMap<LocalDate, WeightRecord> deduplicatedByDate = new LinkedHashMap<>();
         weightHistory.stream()

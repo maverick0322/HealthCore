@@ -1,8 +1,10 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { render, screen, waitFor } from '@/test/test-utils';
+import type { NutritionistPatientProfileResponse } from '@/features/clinical/types/clinical.types';
 
 const {
   mockGetNutritionistPatientProfile,
@@ -37,6 +39,7 @@ const {
 vi.mock('@/features/clinical/services/clinicalService', () => ({
   clinicalApi: {
     getNutritionistPatientProfile: mockGetNutritionistPatientProfile,
+    updateNutritionistPatientMetrics: vi.fn(),
     getNutritionistPatientNutritionPlan: mockGetNutritionistPatientNutritionPlan,
     getNutritionistPatientWeightHistory: mockGetNutritionistPatientWeightHistory,
     upsertNutritionistPatientNutritionPlan: mockUpsertNutritionistPatientNutritionPlan,
@@ -130,7 +133,28 @@ vi.mock('@/features/nutritionist/services/patientFilePdfService', () => ({
 
 import { NutritionistPatientFilePage } from './NutritionistPatientFilePage';
 
-const patientResponse = {
+const createQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+const renderPage = (initialEntries: string[] = ['/patients/nutritionist/patient-1']) => {
+  const queryClient = createQueryClient();
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Routes>
+        <Route path="/patients/nutritionist/:id" element={<NutritionistPatientFilePage />} />
+      </Routes>
+    </QueryClientProvider>,
+    { initialEntries }
+  );
+};
+
+const patientResponse: NutritionistPatientProfileResponse = {
   userId: 'patient-1',
   firstName: 'Ana',
   paternalLastName: 'Lopez',
@@ -147,6 +171,12 @@ const patientResponse = {
   excludedFoods: [],
   nutritionistId: 'nutri-1',
   profileCompleted: true,
+};
+
+const updatedPatientResponse: NutritionistPatientProfileResponse = {
+  ...patientResponse,
+  weightKg: 74.5,
+  heightCm: 180,
 };
 
 const nutritionPlanView = {
@@ -184,12 +214,7 @@ describe('NutritionistPatientFilePage', () => {
     const user = userEvent.setup();
     mockGetNutritionistPatientNutritionPlan.mockResolvedValue(nutritionPlanView);
 
-    render(
-      <Routes>
-        <Route path="/patients/nutritionist/:id" element={<NutritionistPatientFilePage />} />
-      </Routes>,
-      { initialEntries: ['/patients/nutritionist/patient-1'] },
-    );
+    renderPage();
 
     await screen.findByText('Ana Lopez Ruiz');
     await user.click(screen.getByRole('button', { name: 'Nutrition Plan' }));
@@ -200,8 +225,55 @@ describe('NutritionistPatientFilePage', () => {
 
     expect(mockLogClientInfo).toHaveBeenCalledWith(
       'NutritionistPatientFilePage.plan.load.success',
-      expect.objectContaining({ patientId: 'patient-1', mode: 'NUTRITIONIST', canEdit: true }),
+      expect.objectContaining({ patientId: 'patient-1', mode: 'NUTRITIONIST', canEdit: true })
     );
+  });
+
+  it('updates patient metrics from the overview tab', async () => {
+    const user = userEvent.setup();
+    const mockedClinicalApi = await import('@/features/clinical/services/clinicalService');
+    mockGetNutritionistPatientNutritionPlan.mockResolvedValue(nutritionPlanView);
+    vi.mocked(mockedClinicalApi.clinicalApi.updateNutritionistPatientMetrics).mockResolvedValue(
+      updatedPatientResponse
+    );
+
+    renderPage();
+
+    await screen.findByText('Ana Lopez Ruiz');
+    await user.click(screen.getByRole('button', { name: 'Modify' }));
+
+    const inputs = screen.getAllByRole('textbox');
+    await user.clear(inputs[0]);
+    await user.type(inputs[0], '74.5');
+    await user.clear(inputs[1]);
+    await user.type(inputs[1], '180');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getAllByRole('button', { name: 'Save' }).at(-1)!);
+
+    await waitFor(() => {
+      expect(mockedClinicalApi.clinicalApi.updateNutritionistPatientMetrics).toHaveBeenCalledWith(
+        'patient-1',
+        { weightKg: 74.5, heightCm: 180 }
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockGetNutritionistPatientWeightHistory).toHaveBeenCalledWith('patient-1');
+    });
+  });
+
+  it('refreshes the overview data when the window regains focus', async () => {
+    renderPage();
+
+    await screen.findByText('Ana Lopez Ruiz');
+
+    mockGetNutritionistPatientProfile.mockResolvedValue(updatedPatientResponse);
+
+    window.dispatchEvent(new Event('focus'));
+
+    await waitFor(() => {
+      expect(mockGetNutritionistPatientProfile).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('shows a retryable error state when loading the nutrition plan fails', async () => {
@@ -210,12 +282,7 @@ describe('NutritionistPatientFilePage', () => {
       .mockRejectedValueOnce(new Error('plan failed'))
       .mockResolvedValueOnce(nutritionPlanView);
 
-    render(
-      <Routes>
-        <Route path="/patients/nutritionist/:id" element={<NutritionistPatientFilePage />} />
-      </Routes>,
-      { initialEntries: ['/patients/nutritionist/patient-1'] },
-    );
+    renderPage();
 
     await screen.findByText('Ana Lopez Ruiz');
     await user.click(screen.getByRole('button', { name: 'Nutrition Plan' }));
@@ -224,7 +291,7 @@ describe('NutritionistPatientFilePage', () => {
     expect(mockLogClientError).toHaveBeenCalledWith(
       'NutritionistPatientFilePage.plan.load.error',
       expect.any(Error),
-      expect.objectContaining({ patientId: 'patient-1' }),
+      expect.objectContaining({ patientId: 'patient-1' })
     );
 
     await user.click(screen.getByRole('button', { name: 'Retry' }));
@@ -248,12 +315,7 @@ describe('NutritionistPatientFilePage', () => {
       },
     ]);
 
-    render(
-      <Routes>
-        <Route path="/patients/nutritionist/:id" element={<NutritionistPatientFilePage />} />
-      </Routes>,
-      { initialEntries: ['/patients/nutritionist/patient-1'] },
-    );
+    renderPage();
 
     await screen.findByText('Ana Lopez Ruiz');
 
@@ -262,18 +324,15 @@ describe('NutritionistPatientFilePage', () => {
 
     await user.click(observationsTab);
 
-    expect(await screen.findByText('Increase hydration and keep breakfast consistent.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Increase hydration and keep breakfast consistent.')
+    ).toBeInTheDocument();
   });
 
   it('renders the history tab with the patient weight history', async () => {
     const user = userEvent.setup();
 
-    render(
-      <Routes>
-        <Route path="/patients/nutritionist/:id" element={<NutritionistPatientFilePage />} />
-      </Routes>,
-      { initialEntries: ['/patients/nutritionist/patient-1'] },
-    );
+    renderPage();
 
     await screen.findByText('Ana Lopez Ruiz');
     await user.click(screen.getByRole('button', { name: 'History' }));
@@ -294,12 +353,7 @@ describe('NutritionistPatientFilePage', () => {
       },
     ]);
 
-    render(
-      <Routes>
-        <Route path="/patients/nutritionist/:id" element={<NutritionistPatientFilePage />} />
-      </Routes>,
-      { initialEntries: ['/patients/nutritionist/patient-1'] },
-    );
+    renderPage();
 
     await screen.findByText('Ana Lopez Ruiz');
     await user.click(screen.getByRole('button', { name: 'Observations' }));
@@ -333,12 +387,7 @@ describe('NutritionistPatientFilePage', () => {
       },
     ]);
 
-    render(
-      <Routes>
-        <Route path="/patients/nutritionist/:id" element={<NutritionistPatientFilePage />} />
-      </Routes>,
-      { initialEntries: ['/patients/nutritionist/patient-1'] },
-    );
+    renderPage();
 
     await screen.findByText('Ana Lopez Ruiz');
     await user.click(screen.getByRole('button', { name: 'Download Patient File PDF' }));

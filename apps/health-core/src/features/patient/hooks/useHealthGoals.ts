@@ -5,7 +5,6 @@ import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import type { HealthGoalResponse } from '@/features/clinical/types/clinical.types';
 
 export const HEALTH_GOALS_QUERY_KEY = ['clinical', 'health-goals'] as const;
-const HEALTH_GOALS_STALE_TIME = 5 * 60 * 1000;
 
 interface UseHealthGoalsReturn {
   data: HealthGoalResponse | undefined;
@@ -15,7 +14,7 @@ interface UseHealthGoalsReturn {
 }
 
 export const useHealthGoals = (): UseHealthGoalsReturn => {
-  const user = useAuthStore.getState().user;
+  const user = useAuthStore((state) => state.user);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [...HEALTH_GOALS_QUERY_KEY, user?.email ?? null],
@@ -27,7 +26,9 @@ export const useHealthGoals = (): UseHealthGoalsReturn => {
       return clinicalApi.getMyGoals();
     },
     enabled: !!user?.email,
-    staleTime: HEALTH_GOALS_STALE_TIME,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 

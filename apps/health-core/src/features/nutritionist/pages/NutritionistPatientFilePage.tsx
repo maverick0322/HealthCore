@@ -1,5 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useCallback } from "react";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
@@ -16,6 +18,7 @@ import {
   AlertCircle,
   FileDown,
   Pencil,
+  SquarePen,
   Trash2,
 } from "lucide-react";
 
@@ -41,7 +44,6 @@ import type {
   ObservationResponse,
   NutritionistPatientProfileResponse,
   NutritionPlanViewResponse,
-  WeightRecord,
 } from "../../clinical/types/clinical.types";
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
@@ -51,9 +53,13 @@ import { getNutritionistUnlinkErrorMessage } from "@/features/clinical/utils/lin
 import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
 import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
 import { exportNutritionistPatientFilePdf } from "@/features/nutritionist/services/patientFilePdfService";
+import { useNutritionistPatientWeightHistory } from "@/features/nutritionist/hooks/useNutritionistPatientWeightHistory";
+import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 
 const OBSERVATION_NOTE_MAX_LENGTH = 500;
+const WEIGHT_INPUT_MAX_LENGTH = 5;
+const HEIGHT_INPUT_MAX_LENGTH = 3;
 
 const getDisplayIdentity = (userId: string): string => {
   const normalized = userId.trim();
@@ -89,6 +95,21 @@ const calculateBmi = (weightKg: number, heightCm: number): string => {
   return (weightKg / Math.pow(heightCm / 100, 2)).toFixed(1);
 };
 
+const formatObservationDateTime = (value: string, locale: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString(locale, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export const NutritionistPatientFilePage = () => {
   const { id: patientIdParam } = useParams<{ id: string }>();
   const patientId = useMemo(
@@ -102,10 +123,6 @@ export const NutritionistPatientFilePage = () => {
   const [nutritionPlanView, setNutritionPlanView] = useState<NutritionPlanViewResponse | null>(null);
   const [isLoadingNutritionPlan, setIsLoadingNutritionPlan] = useState(false);
   const [nutritionPlanLoadError, setNutritionPlanLoadError] = useState<string | null>(null);
-  const [weightHistory, setWeightHistory] = useState<WeightRecord[]>([]);
-  const [hasLoadedWeightHistory, setHasLoadedWeightHistory] = useState(false);
-  const [isLoadingWeightHistory, setIsLoadingWeightHistory] = useState(false);
-  const [weightHistoryLoadError, setWeightHistoryLoadError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [editingObservation, setEditingObservation] = useState<ObservationResponse | null>(null);
@@ -114,6 +131,12 @@ export const NutritionistPatientFilePage = () => {
   const [observationToDelete, setObservationToDelete] = useState<ObservationResponse | null>(null);
   const [isDeletingObservation, setIsDeletingObservation] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [editMetricsOpen, setEditMetricsOpen] = useState(false);
+  const [confirmEditMetricsOpen, setConfirmEditMetricsOpen] = useState(false);
+  const [metricsWeightInput, setMetricsWeightInput] = useState("");
+  const [metricsHeightInput, setMetricsHeightInput] = useState("");
+  const [metricsErrors, setMetricsErrors] = useState<{ weightKg?: string; heightCm?: string }>({});
+  const [isUpdatingMetrics, setIsUpdatingMetrics] = useState(false);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation(["nutritionist", "onboarding", "patient"]);
 
@@ -121,17 +144,26 @@ export const NutritionistPatientFilePage = () => {
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [pageFeedback, setPageFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const hasHydratedOverviewRef = useRef(false);
+  const {
+    data: weightHistory,
+    isLoading: isLoadingWeightHistory,
+    isError: isWeightHistoryError,
+    refetch: refetchWeightHistory,
+  } = useNutritionistPatientWeightHistory(patientId, { enabled: activeTab === "history" });
 
-  useEffect(() => {
-    const loadPatient = async () => {
+  const loadPatient = useCallback(
+    async ({ showLoading = true }: { showLoading?: boolean } = {}) => {
       if (!patientId) {
         setPatientLoadError(t("patients.file.error"));
         setIsLoadingPatient(false);
-        return;
+        return null;
       }
 
       try {
-        setIsLoadingPatient(true);
+        if (showLoading) {
+          setIsLoadingPatient(true);
+        }
         setPatientLoadError(null);
         logClientInfo("NutritionistPatientFilePage.patient.load.start", { patientId });
         const response = await clinicalApi.getNutritionistPatientProfile(patientId);
@@ -140,16 +172,23 @@ export const NutritionistPatientFilePage = () => {
           patientId,
           patientUserId: response.userId,
         });
+        return response;
       } catch (error) {
         logClientError("NutritionistPatientFilePage.patient.load.error", error, { patientId });
         setPatientLoadError(t("patients.file.error"));
+        return null;
       } finally {
-        setIsLoadingPatient(false);
+        if (showLoading) {
+          setIsLoadingPatient(false);
+        }
       }
-    };
+    },
+    [patientId, t]
+  );
 
+  useEffect(() => {
     void loadPatient();
-  }, [patientId, t]);
+  }, [loadPatient]);
 
   useEffect(() => {
     if (!patientId) {
@@ -168,12 +207,47 @@ export const NutritionistPatientFilePage = () => {
   }, [activeTab, patientId]);
 
   useEffect(() => {
-    if (!patientId || activeTab !== "history") {
+    hasHydratedOverviewRef.current = false;
+  }, [patientId]);
+
+  useEffect(() => {
+    if (!patientId || activeTab !== "overview") {
       return;
     }
 
-    void loadWeightHistory();
-  }, [activeTab, patientId]);
+    if (!hasHydratedOverviewRef.current) {
+      hasHydratedOverviewRef.current = true;
+      return;
+    }
+
+    void loadPatient({ showLoading: false });
+  }, [activeTab, loadPatient, patientId]);
+
+  useEffect(() => {
+    const handleWindowRefresh = () => {
+      if (document.visibilityState !== "visible" || !patientId) {
+        return;
+      }
+
+      void loadPatient({ showLoading: false });
+
+      if (activeTab === "history") {
+        void refetchWeightHistory();
+      }
+
+      if (activeTab === "plan") {
+        void loadNutritionPlan();
+      }
+    };
+
+    window.addEventListener("focus", handleWindowRefresh);
+    document.addEventListener("visibilitychange", handleWindowRefresh);
+
+    return () => {
+      window.removeEventListener("focus", handleWindowRefresh);
+      document.removeEventListener("visibilitychange", handleWindowRefresh);
+    };
+  }, [activeTab, loadPatient, patientId, refetchWeightHistory]);
 
   const loadNutritionPlan = async () => {
     if (!patientId) {
@@ -200,29 +274,6 @@ export const NutritionistPatientFilePage = () => {
       return null;
     } finally {
       setIsLoadingNutritionPlan(false);
-    }
-  };
-
-  const loadWeightHistory = async () => {
-    if (!patientId) {
-      return [];
-    }
-
-    try {
-      setIsLoadingWeightHistory(true);
-      setWeightHistoryLoadError(null);
-      const response = await clinicalApi.getNutritionistPatientWeightHistory(patientId);
-      setWeightHistory(response);
-      setHasLoadedWeightHistory(true);
-      return response;
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.weightHistory.load.error", error, { patientId });
-      setWeightHistory([]);
-      setWeightHistoryLoadError(t("patients.file.historyError"));
-      setHasLoadedWeightHistory(true);
-      return [];
-    } finally {
-      setIsLoadingWeightHistory(false);
     }
   };
 
@@ -337,6 +388,94 @@ export const NutritionistPatientFilePage = () => {
     ? t(`onboarding:options.diets.${patient.dietType}.label`)
     : "--";
 
+  const resetMetricsDialog = () => {
+    setEditMetricsOpen(false);
+    setConfirmEditMetricsOpen(false);
+    setMetricsErrors({});
+    setMetricsWeightInput(patient?.weightKg?.toFixed(1) ?? "");
+    setMetricsHeightInput(patient?.heightCm?.toFixed(0) ?? "");
+  };
+
+  const openEditMetricsDialog = () => {
+    setMetricsWeightInput(patient?.weightKg?.toFixed(1) ?? "");
+    setMetricsHeightInput(patient?.heightCm?.toFixed(0) ?? "");
+    setMetricsErrors({});
+    setConfirmEditMetricsOpen(false);
+    setEditMetricsOpen(true);
+  };
+
+  const validateMetrics = () => {
+    const nextErrors: { weightKg?: string; heightCm?: string } = {};
+    const normalizedWeight = metricsWeightInput.trim();
+    const normalizedHeight = metricsHeightInput.trim();
+
+    if (!normalizedWeight) {
+      nextErrors.weightKg = t("patients.file.metrics.validation.weightRequired");
+    } else if (!/^\d{1,3}(?:\.\d)?$/.test(normalizedWeight)) {
+      nextErrors.weightKg = t("patients.file.metrics.validation.weightInvalid");
+    } else {
+      const parsedWeight = Number(normalizedWeight);
+      if (Number.isNaN(parsedWeight) || parsedWeight < 40 || parsedWeight > 200) {
+        nextErrors.weightKg = t("patients.file.metrics.validation.weightRange");
+      }
+    }
+
+    if (!normalizedHeight) {
+      nextErrors.heightCm = t("patients.file.metrics.validation.heightRequired");
+    } else if (!/^\d{3}$/.test(normalizedHeight)) {
+      nextErrors.heightCm = t("patients.file.metrics.validation.heightInvalid");
+    } else {
+      const parsedHeight = Number(normalizedHeight);
+      if (Number.isNaN(parsedHeight) || parsedHeight < 100 || parsedHeight > 250) {
+        nextErrors.heightCm = t("patients.file.metrics.validation.heightRange");
+      }
+    }
+
+    setMetricsErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleReviewMetricsUpdate = () => {
+    if (!validateMetrics()) {
+      return;
+    }
+
+    setEditMetricsOpen(false);
+    setConfirmEditMetricsOpen(true);
+  };
+
+  const handleConfirmMetricsUpdate = async () => {
+    if (!patientId) {
+      return;
+    }
+
+    setIsUpdatingMetrics(true);
+    setPageFeedback(null);
+    try {
+      const updatedPatient = await clinicalApi.updateNutritionistPatientMetrics(patientId, {
+        weightKg: Number(metricsWeightInput),
+        heightCm: Number(metricsHeightInput),
+      });
+      setPatient(updatedPatient);
+      await refetchWeightHistory();
+      if (nutritionPlanView) {
+        await loadNutritionPlan();
+      }
+      setConfirmEditMetricsOpen(false);
+      setEditMetricsOpen(false);
+    } catch (error) {
+      logClientError("NutritionistPatientFilePage.metrics.update.error", error, { patientId });
+      setPageFeedback({
+        type: "error",
+        message: t("patients.file.metrics.updateError"),
+      });
+      setConfirmEditMetricsOpen(false);
+      setEditMetricsOpen(true);
+    } finally {
+      setIsUpdatingMetrics(false);
+    }
+  };
+
   const handleSaveNutritionPlan = async (
     payload: Parameters<typeof clinicalApi.upsertNutritionistPatientNutritionPlan>[1]
   ) => {
@@ -382,7 +521,10 @@ export const NutritionistPatientFilePage = () => {
 
     try {
       const resolvedPlan = nutritionPlanView ?? (await loadNutritionPlan());
-      const resolvedWeightHistory = hasLoadedWeightHistory ? weightHistory : await loadWeightHistory();
+      const resolvedWeightHistory =
+        activeTab === "history"
+          ? (await refetchWeightHistory()).data ?? weightHistory
+          : await clinicalApi.getNutritionistPatientWeightHistory(patientId);
       const sanitizedPatientName = (patient.fullName ?? patient.userId).replace(/[^\w-]+/g, "-").toLowerCase();
 
       await exportNutritionistPatientFilePdf({
@@ -470,10 +612,14 @@ export const NutritionistPatientFilePage = () => {
       return (
         <div className="grid grid-cols-1 gap-4">
           <Card>
-            <CardHeader className="pb-3 border-b border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3 border-b border-border/50">
               <CardTitle className="text-base flex items-center gap-2">
                 <User size={18} className="text-primary" /> {t("patients.file.tabOverview")}
               </CardTitle>
+              <Button type="button" size="sm" variant="outline" className="gap-2" onClick={openEditMetricsDialog}>
+                <SquarePen size={14} />
+                {t("patients.file.metrics.button")}
+              </Button>
             </CardHeader>
             <CardContent className="pt-5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -571,9 +717,9 @@ export const NutritionistPatientFilePage = () => {
         <PatientHistoryOverviewSection
           weightRecords={weightHistory}
           isWeightLoading={isLoadingWeightHistory}
-          isWeightError={Boolean(weightHistoryLoadError)}
+          isWeightError={isWeightHistoryError}
           onRetryWeight={() => {
-            void loadWeightHistory();
+            void refetchWeightHistory();
           }}
           readOnlyWeightHistory
           logs={[]}
@@ -635,13 +781,7 @@ export const NutritionistPatientFilePage = () => {
                   <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-background border-2 border-primary" />
 
                   <p className="text-xs font-bold text-muted-foreground mb-1">
-                    {new Date(observation.createdAt).toLocaleDateString("es-ES", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatObservationDateTime(observation.createdAt, i18n.language)}
                   </p>
 
                   <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
@@ -833,6 +973,94 @@ export const NutritionistPatientFilePage = () => {
         isDestructive
         confirmText={t("patients.file.deleteObservation")}
         cancelText={t("common.cancel")}
+      />
+
+      <Dialog
+        open={editMetricsOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setEditMetricsOpen(true);
+            return;
+          }
+          resetMetricsDialog();
+        }}
+      >
+        <DialogContent aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>{t("patients.file.metrics.title")}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="metrics-weight" className="text-sm font-medium">
+                {t("patients.file.metrics.weightLabel")}
+              </label>
+              <Input
+                id="metrics-weight"
+                inputMode="decimal"
+                value={metricsWeightInput}
+                maxLength={WEIGHT_INPUT_MAX_LENGTH}
+                onChange={(event) => setMetricsWeightInput(event.target.value.slice(0, WEIGHT_INPUT_MAX_LENGTH))}
+                aria-invalid={Boolean(metricsErrors.weightKg)}
+              />
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-destructive">{metricsErrors.weightKg ?? ""}</p>
+                <p className="text-xs text-muted-foreground">
+                  {metricsWeightInput.length}/{WEIGHT_INPUT_MAX_LENGTH}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="metrics-height" className="text-sm font-medium">
+                {t("patients.file.metrics.heightLabel")}
+              </label>
+              <Input
+                id="metrics-height"
+                inputMode="numeric"
+                value={metricsHeightInput}
+                maxLength={HEIGHT_INPUT_MAX_LENGTH}
+                onChange={(event) => setMetricsHeightInput(event.target.value.slice(0, HEIGHT_INPUT_MAX_LENGTH))}
+                aria-invalid={Boolean(metricsErrors.heightCm)}
+              />
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-destructive">{metricsErrors.heightCm ?? ""}</p>
+                <p className="text-xs text-muted-foreground">
+                  {metricsHeightInput.length}/{HEIGHT_INPUT_MAX_LENGTH}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={resetMetricsDialog} disabled={isUpdatingMetrics}>
+              {t("patients.file.metrics.cancel")}
+            </Button>
+            <Button type="button" onClick={handleReviewMetricsUpdate} disabled={isUpdatingMetrics}>
+              {t("patients.file.metrics.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmModal
+        isOpen={confirmEditMetricsOpen}
+        onClose={() => {
+          setConfirmEditMetricsOpen(false);
+          setEditMetricsOpen(true);
+        }}
+        onConfirm={() => {
+          void handleConfirmMetricsUpdate();
+        }}
+        title={t("patients.file.metrics.confirmTitle")}
+        description={t("patients.file.metrics.confirmDescription", {
+          weight: metricsWeightInput || "--",
+          height: metricsHeightInput || "--",
+        })}
+        icon={<SquarePen size={24} />}
+        isLoading={isUpdatingMetrics}
+        confirmText={t("patients.file.metrics.save")}
+        cancelText={t("patients.file.metrics.back")}
       />
 
       <Dialog

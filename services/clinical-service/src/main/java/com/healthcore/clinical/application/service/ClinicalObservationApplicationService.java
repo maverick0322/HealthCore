@@ -1,6 +1,7 @@
 package com.healthcore.clinical.application.service;
 
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
+import com.healthcore.clinical.domain.model.ClinicalTime;
 import com.healthcore.clinical.domain.model.ClinicalObservation;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.port.in.ManageObservationsUseCase;
@@ -9,7 +10,6 @@ import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -37,7 +37,7 @@ public class ClinicalObservationApplicationService implements ManageObservations
                 profile.getUserId(),
                 nutritionistId,
                 note,
-                LocalDateTime.now()
+                ClinicalTime.now()
         );
 
         return observationRepositoryPort.save(observation);

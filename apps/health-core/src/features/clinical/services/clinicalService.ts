@@ -127,6 +127,17 @@ export const clinicalApi = {
     return normalizePatientProfile(response.data);
   },
 
+  updateNutritionistPatientMetrics: async (
+    patientId: string,
+    payload: Pick<CreateProfilePayload, 'weightKg' | 'heightCm'>
+  ): Promise<NutritionistPatientProfileResponse> => {
+    const response = await httpClient.put<NutritionistPatientProfileResponse>(
+      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/metrics`,
+      payload
+    );
+    return normalizePatientProfile(response.data);
+  },
+
   getNutritionistWeightProgressReport: async (
     from: string,
     to: string

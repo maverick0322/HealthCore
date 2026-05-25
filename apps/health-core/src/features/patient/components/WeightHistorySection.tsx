@@ -12,6 +12,7 @@ import {
   filterWeightRecordsByRange,
   getDefaultGroupingForRange,
   getPeriodWeightStats,
+  getWeightRangeWindow,
   getVisibleTickIndexes,
   getWeightRangeStates,
   getWeightValidationErrors,
@@ -36,6 +37,7 @@ import { Label } from '@/shared/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table';
 
 const RANGE_OPTIONS: WeightHistoryRange[] = ['30d', '90d', '180d', '365d', 'all'];
+const WEIGHT_INPUT_MAX_LENGTH = 5;
 
 interface ChartCoordinate extends WeightChartPoint {
   x: number;
@@ -212,8 +214,8 @@ export const WeightHistorySection = ({
 
   const sourceRecords = usesExternalRecords ? records : data;
   const allRecords = useMemo(() => sortWeightRecordsAscending(sourceRecords), [sourceRecords]);
-  const referenceDate = allRecords.at(-1)?.date ?? todayDateKey();
-  const rangeStates = useMemo(() => getWeightRangeStates(allRecords), [allRecords]);
+  const referenceDate = todayDateKey();
+  const rangeStates = useMemo(() => getWeightRangeStates(allRecords, referenceDate), [allRecords, referenceDate]);
   const resolvedIsLoading = usesExternalRecords ? Boolean(externalIsLoading) : isLoading;
   const resolvedIsError = usesExternalRecords ? Boolean(externalIsError) : isError;
   const handleRetry = usesExternalRecords ? onRetry : () => refetch();
@@ -243,6 +245,10 @@ export const WeightHistorySection = ({
 
   const filteredRecords = useMemo(
     () => filterWeightRecordsByRange(allRecords, range, referenceDate),
+    [allRecords, range, referenceDate]
+  );
+  const rangeWindow = useMemo(
+    () => getWeightRangeWindow(range, allRecords, referenceDate),
     [allRecords, range, referenceDate]
   );
   const grouping = useMemo(() => getDefaultGroupingForRange(range, filteredRecords), [filteredRecords, range]);
@@ -387,6 +393,12 @@ export const WeightHistorySection = ({
                     </div>
                     <p className="max-w-3xl text-sm font-medium text-foreground">
                       {t(summaryTranslationKey, summaryParams)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('history.rangeWindow', {
+                        from: formatLongDate(rangeWindow.fromDate, i18n.language),
+                        to: formatLongDate(rangeWindow.toDate, i18n.language),
+                      })}
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {RANGE_OPTIONS.map((option) => {
@@ -624,10 +636,16 @@ export const WeightHistorySection = ({
                 inputMode="decimal"
                 placeholder={t('dashboard.weightForm.weightPlaceholder')}
                 value={weightInput}
-                onChange={(event) => setWeightInput(event.target.value)}
+                maxLength={WEIGHT_INPUT_MAX_LENGTH}
+                onChange={(event) => setWeightInput(event.target.value.slice(0, WEIGHT_INPUT_MAX_LENGTH))}
                 aria-invalid={Boolean(fieldErrors.weightKg)}
               />
-              {fieldErrors.weightKg ? <p className="text-xs text-destructive">{fieldErrors.weightKg}</p> : null}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-destructive">{fieldErrors.weightKg ?? ''}</p>
+                <p className="text-xs text-muted-foreground">
+                  {weightInput.length}/{WEIGHT_INPUT_MAX_LENGTH}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2">

@@ -1,8 +1,10 @@
+// --- DTOs for Food Logging (Write-Side) ---
+
 export interface SelectedFoodItem {
   barcode: string;
   name: string;
   baseCalories: number;
-  grams: number; // Starting on 100 g or 150 g, user adjusts it
+  grams: number; // Defaults to a standard portion (e.g., 100g), adjustable by the user
 }
 
 export interface LogFoodItemCommand {
@@ -12,15 +14,49 @@ export interface LogFoodItemCommand {
 
 export interface LogFoodRequest {
   mealType: string;
-  consumedAt: string; // ISO-8601 format (e.g., 2026-05-05T08:30:00Z)
-  photoKey?: string;  
+  consumedAt: string; // ISO-8601 format strictly required (e.g., 2026-05-05T08:30:00Z)
+  photoKey?: string;  // Cloudflare R2 secure storage key
   foods: LogFoodItemCommand[];
 }
 
-export interface LogFoodResponse {
+/**
+ * Generic API response wrapper.
+ * Design Decision: Replaced 'any' with a generic type 'T' (defaulting to unknown) 
+ * to enforce strict typing on API responses and prevent silent runtime errors.
+ */
+export interface LogFoodResponse<T = unknown> {
   status: string;
   message: string;
-  data: any;
+  data: T;
+}
+
+// --- DTOs for Daily Meal Logs (CQRS Read-Side) ---
+
+export interface MealLogItemDTO {
+  barcode: string;
+  foodName: string;      // <-- Coincide con el JSON
+  consumedGrams: number; // <-- Coincide con el JSON
+  calories: number;
+  proteins: number;
+  carbohydrates: number;
+  fats: number;
+  fiberGrams: number;
+  sodiumMg: number;
+  sugarGrams: number;
+  potassiumMg: number;
+}
+
+export interface MealLogDTO {
+  id: string;
+  userId: string;
+  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
+  consumedAt: string;
+  photoKey: string | null;
+  items: MealLogItemDTO[]; // <-- Coincide con el JSON
+  totalCalories: number;
+  totalProteins: number;
+  totalCarbs: number;
+  totalFats: number;
 }
 
 // --- DTOs for Dashboard and Historical Analysis (CQRS Read-Side) ---

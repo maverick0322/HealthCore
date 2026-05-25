@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,7 +48,7 @@ public class MealLog {
                 .id(UUID.randomUUID().toString()) // Generated at the domain level
                 .userId(userId)
                 .mealType(mealType)
-                .consumedAt(consumedAt != null ? consumedAt : LocalDateTime.now())
+                .consumedAt(consumedAt != null ? consumedAt : LocalDateTime.now(ZoneId.of("America/Mexico_City")))
                 .photoKey(photoKey)
                 .items(List.copyOf(items)) // Defensive copy to guarantee absolute immutability
                 .totalCalories(totalCalories)

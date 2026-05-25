@@ -181,6 +181,8 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
+      media-service:
+        condition: service_started
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_tracking
       - GRPC_CATALOG_TARGET=catalog-service:50051
@@ -190,6 +192,8 @@ services:
       - LOGGING_LEVEL_TRACKING=${LOGGING_LEVEL_TRACKING:-DEBUG}
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
       - TRACING_SAMPLING_PROBABILITY=${TRACING_SAMPLING_PROBABILITY:-1.0}
+      - GRPC_CLIENT_MEDIA-SERVICE_ADDRESS=static://media-service:9091
+      - GRPC_CLIENT_MEDIA-SERVICE_NEGOTIATION_TYPE=plaintext
 
   
   agenda-mongodb:

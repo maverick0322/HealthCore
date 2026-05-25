@@ -15,3 +15,7 @@ cloudflare:
 
 jwt:
   secret: ${JWT_SECRET}
+
+grpc:
+  server:
+    port: 9091

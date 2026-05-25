@@ -40,7 +40,7 @@ class DashboardControllerTest {
     void getTodaySummary_WithDateParam_Returns200AndSummary() throws Exception {
         // Arrange
         LocalDate targetDate = LocalDate.of(2026, 5, 17);
-        TodayDashboardSummary mockSummary = new TodayDashboardSummary(1800.0, 120.0, 150.0, 50.0, 1500);
+        TodayDashboardSummary mockSummary = new TodayDashboardSummary(1800.0, 120.0, 150.0, 50.0, 1500, 2, 5);
 
         when(dashboardUseCase.getTodaySummary(any(), eq(targetDate))).thenReturn(mockSummary);
 
@@ -58,7 +58,7 @@ class DashboardControllerTest {
     @Test
     void getTodaySummary_WithoutDateParam_DefaultsToTodayAndReturns200() throws Exception {
         // Arrange
-        TodayDashboardSummary mockSummary = new TodayDashboardSummary(0.0, 0.0, 0.0, 0.0, 0);
+        TodayDashboardSummary mockSummary = new TodayDashboardSummary(0.0, 0.0, 0.0, 0.0, 0, 0, 0);
 
         when(dashboardUseCase.getTodaySummary(any(), any(LocalDate.class))).thenReturn(mockSummary);
 

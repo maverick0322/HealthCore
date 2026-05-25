@@ -12,4 +12,5 @@ public interface MediaStoragePort {
      * @return A string containing the temporary write URL.
      */
     String generateUploadUrl(String fileName);
+    String generateDownloadUrl(String storageKey);
 }

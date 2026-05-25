@@ -1,61 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { Search, ScanLine, Plus, Loader2, X } from 'lucide-react';
-import { trackingService } from '../services/trackingService';
+import React, { useState } from 'react';
+import { Search, ScanLine, Plus, Loader2, X, Check, Utensils } from 'lucide-react';
+import { useFoodSearch, type SearchResultItem } from '../hooks/useFoodSearch';
 import type { SelectedFoodItem } from '../types/tracking.types';
-
-// Extendemos temporalmente el tipo local para incluir la imagen que solo vive en la búsqueda
-interface SearchResultItem extends SelectedFoodItem {
-  img: string;
-}
 
 interface FoodSearchModalProps {
   onClose: () => void;
   onSelectFood: (food: SelectedFoodItem) => void;
 }
 
+const FoodThumbnail: React.FC<{ src: string | null; alt: string }> = ({ src, alt }) => {
+  const [hasError, setHasError] = useState<boolean>(false);
+
+  if (!src || hasError) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
+        <Utensils className="w-6 h-6 opacity-50" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setHasError(true)}
+      className="h-full w-full object-cover transition-opacity duration-300"
+      loading="lazy"
+    />
+  );
+};
+
+/**
+ * Presentation Component. 
+ * Strictly handles rendering the UI and capturing user interactions.
+ */
 export const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ onClose, onSelectFood }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState<SearchResultItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchTerm.trim().length > 2) {
-        setIsLoading(true);
-        try {
-          const response = await trackingService.searchFood(searchTerm);
-
-          // Alineado exactamente con el record FoodNutrients de Java
-          const mappedResults: SearchResultItem[] = response.map((item: any) => ({
-            barcode: item.barcode,
-            name: item.name,
-            baseCalories: item.calories, // Actualizado de caloriesPer100g a calories
-            grams: 100, // Gramaje por defecto al agregar al "carrito"
-            img: item.imageUrl || 'https://via.placeholder.com/150?text=Sin+Foto'
-          }));
-
-          setResults(mappedResults);
-        } catch (error) {
-          console.error("Error buscando alimentos:", error);
-          setResults([]);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        setResults([]);
-      }
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
+  // Business logic is fully delegated to the hook
+  const { searchTerm, setSearchTerm, results, isLoading, error } = useFoodSearch();
+  
+  // Local UI state for visual feedback
+  const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
 
   const handleSelect = (item: SearchResultItem) => {
-    // Extraemos solo lo que le importa al formulario (quitamos la img)
     onSelectFood({
       barcode: item.barcode,
       name: item.name,
       baseCalories: item.baseCalories,
-      grams: item.grams
+      grams: item.grams,
+    });
+
+    setAddedItems((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(item.barcode);
+      return newSet;
     });
   };
 
@@ -63,7 +60,6 @@ export const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ onClose, onSel
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="flex h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
         
-        {/* Encabezado del Modal */}
         <div className="flex items-center justify-between border-b border-slate-200 p-6 dark:border-slate-800">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Buscar Alimento</h2>
           <button 
@@ -74,9 +70,7 @@ export const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ onClose, onSel
           </button>
         </div>
 
-        {/* Cuerpo Scrollable */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Barra de Búsqueda */}
           <div className="mb-6 relative flex w-full items-center">
             <div className="absolute left-4 flex items-center pointer-events-none text-slate-400">
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
@@ -94,45 +88,70 @@ export const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ onClose, onSel
             </button>
           </div>
 
-          {/* Estado de carga */}
-          {isLoading && results.length === 0 && (
+          {error && (
+            <div className="p-4 mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-center text-sm font-medium">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {isLoading && results.length === 0 && !error && (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
               <Loader2 className="h-8 w-8 animate-spin mb-4" />
-              <p>Buscando en el catálogo de FatSecret...</p>
+              <p>Buscando en el catálogo...</p>
             </div>
           )}
 
-          {/* Lista de Resultados */}
-          {results.length > 0 && (
-            <div className="flex flex-col gap-3">
-              {results.map((item) => (
-                <div
-                  key={item.barcode}
-                  onClick={() => handleSelect(item)}
-                  className="group flex items-center justify-between gap-4 rounded-xl bg-white dark:bg-slate-800/50 p-3 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 hover:ring-2 hover:ring-primary/50 cursor-pointer transition-all"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-700 shrink-0">
-                      <img src={item.img} alt={item.name} className="h-full w-full object-cover" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-base font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors line-clamp-1">{item.name}</span>
-                      <span className="text-sm text-slate-500 dark:text-slate-400">{item.baseCalories} kcal / 100g</span>
-                    </div>
-                  </div>
-                  <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Estado vacío (cuando ya buscó pero no encontró) */}
-          {!isLoading && searchTerm.length > 2 && results.length === 0 && (
+          {!isLoading && searchTerm.trim().length >= 3 && results.length === 0 && !error && (
             <div className="flex flex-col items-center justify-center py-12 text-slate-500">
               <Search className="h-12 w-12 text-slate-300 mb-4" />
               <p>No se encontraron alimentos para "{searchTerm}".</p>
+            </div>
+          )}
+
+          {results.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {results.map((item) => {
+                const isAdded = addedItems.has(item.barcode);
+
+                return (
+                  <div
+                    key={item.barcode}
+                    onClick={() => !isAdded && handleSelect(item)}
+                    className={`group flex items-center justify-between gap-4 rounded-xl p-3 shadow-sm ring-1 transition-all ${
+                      isAdded 
+                        ? 'bg-emerald-50 dark:bg-emerald-900/10 ring-emerald-200 dark:ring-emerald-800 cursor-default' 
+                        : 'bg-white dark:bg-slate-800/50 ring-slate-200 dark:ring-slate-700 hover:ring-2 hover:ring-primary/50 cursor-pointer'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="h-14 w-14 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-700 shrink-0">
+                        <FoodThumbnail src={item.imgUrl} alt={item.name} />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className={`text-base font-bold transition-colors line-clamp-1 ${
+                          isAdded ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-900 dark:text-white group-hover:text-primary'
+                        }`}>
+                          {item.name}
+                        </span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">
+                          {item.baseCalories} kcal / 100g
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all ${
+                        isAdded 
+                          ? 'bg-emerald-500 text-white' 
+                          : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white'
+                      }`}
+                      disabled={isAdded}
+                    >
+                      {isAdded ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

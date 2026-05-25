@@ -11,6 +11,8 @@ import com.healthcore.tracking.domain.port.MealLogPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import com.healthcore.tracking.infrastructure.grpc.client.MediaGrpcClientAdapter;
+import io.grpc.StatusRuntimeException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,6 +31,7 @@ public class FoodTrackingUseCase {
 
     private final FoodCatalogPort catalogPort;
     private final MealLogPort logPort;
+    private final MediaGrpcClientAdapter mediaGrpcClient;
 
     private static final int MIN_SEARCH_QUERY_LENGTH = 3;
 
@@ -58,7 +61,6 @@ public class FoodTrackingUseCase {
         }
         log.info("Processing meal consumption log. userHash={} mealType={} itemCount={}", logHash(userId), mealType, requestedItems.size());
 
-        // 1. Fetch nutrients and build MealItems (Children Entities)
         List<MealItem> mealItems = requestedItems.stream()
                 .map(item -> {
                     FoodNutrients baseNutrients = getFoodFromCatalog(item.barcode());
@@ -66,10 +68,8 @@ public class FoodTrackingUseCase {
                 })
                 .collect(Collectors.toList());
 
-        // 2. Build the Aggregate Root
         MealLog newMealLog = MealLog.create(userId, mealType, consumedAt, photoKey, mealItems);
 
-        // 3. Persist the Aggregate
         return logPort.save(newMealLog);
     }
 
@@ -84,6 +84,7 @@ public class FoodTrackingUseCase {
 
     /**
      * Retrieves meal logs for a specific historical date.
+     * Enriches the response with secure pre-signed URLs for media files.
      */
     public List<MealLog> getDailyLogs(String userId, LocalDate date) {
         if (userId == null || userId.isBlank() || date == null) {
@@ -94,7 +95,29 @@ public class FoodTrackingUseCase {
         LocalDateTime startOfDay = date.atStartOfDay();
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
 
-        return logPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
+        List<MealLog> rawLogs = logPort.findByUserIdAndDateRange(userId, startOfDay, endOfDay);
+
+        return rawLogs.stream().map(meal -> {
+            if (meal.getPhotoKey() != null && !meal.getPhotoKey().isBlank()) {
+                try {
+                    String presignedReadUrl = mediaGrpcClient.getPresignedReadUrl(meal.getPhotoKey());
+
+                    return meal.toBuilder()
+                            .photoKey(presignedReadUrl)
+                            .build();
+
+                } catch (StatusRuntimeException grpcEx) {
+                    log.error("gRPC failure while generating secure read URL for photoKey: {}. Status: {}",
+                            meal.getPhotoKey(), grpcEx.getStatus().getCode());
+                } catch (IllegalArgumentException iae) {
+                    log.warn("Invalid photo key format provided to media service: {}", meal.getPhotoKey());
+                } catch (Exception e) {
+                    log.error("Unexpected error generating URL for photoKey: {}. Error: {}",
+                            meal.getPhotoKey(), e.getMessage());
+                }
+            }
+            return meal;
+        }).collect(Collectors.toList());
     }
 
     /**

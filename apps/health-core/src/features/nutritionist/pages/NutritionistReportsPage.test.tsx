@@ -46,6 +46,13 @@ vi.mock('@/shared/components/SettingsBar', () => ({
 
 import { NutritionistReportsPage } from './NutritionistReportsPage';
 
+const formatLongDate = (value: string) =>
+  new Date(`${value}T12:00:00`).toLocaleDateString('en', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
 const buildQueryClient = () =>
   new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -164,10 +171,27 @@ describe('NutritionistReportsPage', () => {
 
   it('renders the live report, changes filters and exports the current view', async () => {
     const user = userEvent.setup();
+    const oneMonthRange = getCalendarMonthRange('1m');
     const threeMonthRange = getCalendarMonthRange('3m');
     renderPage();
 
     expect(await screen.findByText('Reports and Operational Management')).toBeInTheDocument();
+    expect(
+      await screen.findByText('In this period you attended 1 appointment and 1 was cancelled')
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText('50% of attended or cancelled appointments in this period').length
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        'The first weight and the change are calculated by comparing the first and last record within the selected period'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `Showing data from ${formatLongDate(oneMonthRange.fromDateKey)} to ${formatLongDate(oneMonthRange.toDateKey)}`
+      )
+    ).toBeInTheDocument();
     expect(await screen.findByText('Ana Lopez')).toBeInTheDocument();
     expect(screen.getByText('Luis Herrera')).toBeInTheDocument();
     expect(screen.getByText('No records in this period')).toBeInTheDocument();
@@ -181,12 +205,28 @@ describe('NutritionistReportsPage', () => {
       );
     });
 
+    expect(
+      screen.getByText(
+        `Showing data from ${formatLongDate(threeMonthRange.fromDateKey)} to ${formatLongDate(threeMonthRange.toDateKey)}`
+      )
+    ).toBeInTheDocument();
+
     await user.click(screen.getByRole('button', { name: 'Export report PDF' }));
 
     await waitFor(() => {
       expect(mockExportNutritionistReportPdf).toHaveBeenCalledWith(
         expect.objectContaining({
           fileName: `nutritionist-report-${threeMonthRange.fromDateKey}-to-${threeMonthRange.toDateKey}.pdf`,
+          activeRangeLabel: '3 months',
+          activeRangeWindowText:
+            `Showing data from ${formatLongDate(threeMonthRange.fromDateKey)} to ${formatLongDate(threeMonthRange.toDateKey)}`,
+          appointmentSummary: expect.objectContaining({
+            attendedCount: 2,
+            cancelledCount: 0,
+          }),
+          labels: expect.objectContaining({
+            rangeWindow: 'Range window',
+          }),
         })
       );
     });

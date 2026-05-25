@@ -94,6 +94,26 @@
       "observationDeleteError": "No pudimos eliminar la observación en este momento",
       "downloadPdf": "Descargar Expediente PDF",
       "historyError": "No pudimos cargar el historial de peso del paciente",
+      "metrics": {
+        "button": "Modificar",
+        "title": "Modificar peso y altura",
+        "weightLabel": "Peso (kg)",
+        "heightLabel": "Altura (cm)",
+        "save": "Guardar",
+        "cancel": "Cancelar",
+        "back": "Volver",
+        "confirmTitle": "¿Deseas guardar estos cambios?",
+        "confirmDescription": "¿Estás seguro de que deseas guardar un peso de {{weight}} kg y una altura de {{height}} cm?",
+        "updateError": "No pudimos actualizar el peso y la altura del paciente en este momento",
+        "validation": {
+          "weightRequired": "Ingresa un peso para continuar",
+          "weightInvalid": "Ingresa un peso válido",
+          "weightRange": "El peso debe estar entre 40.0 kg y 200.0 kg",
+          "heightRequired": "Ingresa una altura para continuar",
+          "heightInvalid": "Ingresa una altura válida",
+          "heightRange": "La altura debe estar entre 100 cm y 250 cm"
+        }
+      },
       "pdf": {
         "title": "Expediente clínico del paciente",
         "generatedOn": "Generado el",
@@ -264,6 +284,7 @@
       "6m": "6 meses",
       "12m": "12 meses"
     },
+    "rangeWindow": "Mostrando datos acumulados del {{from}} al {{to}}",
     "kpis": {
       "activePatients": "Pacientes activos",
       "attendedAppointments": "Consultas atendidas",
@@ -275,25 +296,40 @@
       "title": "Resumen de citas",
       "attended": "Atendidas",
       "cancelled": "Canceladas",
-      "percent": "{{percent}}% de las citas relevantes",
+      "percent": "{{percent}}% del total de citas atendidas o canceladas en este período",
+      "helper": "Los porcentajes se calculan solo con las citas atendidas y canceladas dentro del período seleccionado",
       "empty": "No hubo citas atendidas ni canceladas en este período",
       "summary": {
-        "withData": "En este período atendiste {{attended}} consultas y se cancelaron {{cancelled}}",
+        "prefix": "En este período",
+        "connector": "y",
+        "attended_one": "atendiste {{count}} consulta",
+        "attended_other": "atendiste {{count}} consultas",
+        "cancelled_one": "se canceló {{count}}",
+        "cancelled_other": "se cancelaron {{count}}",
         "empty": "Todavía no hay actividad de citas atendidas o canceladas en este período"
       }
     },
     "weightTable": {
       "title": "Control de peso de pacientes",
-      "latestDate": "Último registro de peso en este período: {{date}}",
+      "latestDate": "Último registro de peso dentro del período seleccionado: {{date}}",
       "noLatestDate": "Todavía no hay registros de peso en el período seleccionado",
       "empty": "No hay pacientes vinculados para mostrar en este reporte",
       "noRecords": "Sin registros en este período",
+      "summary": "El primer peso y el cambio se calculan comparando el primer y el último registro dentro del período seleccionado",
       "columns": {
         "patient": "Paciente",
-        "latestRecord": "Último registro",
-        "startWeight": "Peso inicial",
-        "currentWeight": "Peso actual",
-        "netChange": "Cambio neto"
+        "latestRecord": "Fecha del último registro",
+        "startWeight": "Primer peso del período",
+        "currentWeight": "Último peso del período",
+        "netChange": "Cambio en el período"
+      }
+    },
+    "pdf": {
+      "generatedOn": "Generado el",
+      "activeRange": "Período activo",
+      "rangeWindow": "Ventana del período",
+      "sections": {
+        "overview": "Resumen ejecutivo"
       }
     }
   },

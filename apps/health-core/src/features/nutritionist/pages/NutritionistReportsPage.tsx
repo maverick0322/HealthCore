@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertCircle,
@@ -46,11 +46,36 @@ const formatLongDate = (value: string | null, locale: string) => {
   });
 };
 
+const formatRangeWindowText = (fromDate: string, toDate: string, locale: string, t: ReturnType<typeof useTranslation<'nutritionist'>>['t']) =>
+  t('reports.rangeWindow', {
+    from: formatLongDate(fromDate, locale),
+    to: formatLongDate(toDate, locale),
+  });
+
+const buildAppointmentSummaryText = (
+  t: ReturnType<typeof useTranslation<'nutritionist'>>['t'],
+  attendedCount: number,
+  cancelledCount: number
+) => {
+  const attendedKey = attendedCount === 1
+    ? 'reports.appointments.summary.attended_one'
+    : 'reports.appointments.summary.attended_other';
+  const cancelledKey = cancelledCount === 1
+    ? 'reports.appointments.summary.cancelled_one'
+    : 'reports.appointments.summary.cancelled_other';
+
+  return [
+    t('reports.appointments.summary.prefix'),
+    t(attendedKey, { count: attendedCount }),
+    t('reports.appointments.summary.connector'),
+    t(cancelledKey, { count: cancelledCount }),
+  ].join(' ');
+};
+
 export const NutritionistReportsPage = () => {
   const { t, i18n } = useTranslation('nutritionist');
   const [rangeKey, setRangeKey] = useState<NutritionistReportRangeKey>('1m');
   const [isExporting, setIsExporting] = useState(false);
-  const reportRef = useRef<HTMLDivElement | null>(null);
 
   const { data, isLoading, isError, refetch } = useNutritionistReports(rangeKey);
 
@@ -60,24 +85,79 @@ export const NutritionistReportsPage = () => {
   );
 
   const handleExport = async () => {
-    if (!reportRef.current || !data) {
+    if (!data) {
       return;
     }
 
     setIsExporting(true);
     try {
+      const appointmentSummaryText = data.appointmentSummary.relevantCount > 0
+        ? buildAppointmentSummaryText(
+            t,
+            data.appointmentSummary.attendedCount,
+            data.appointmentSummary.cancelledCount
+          )
+        : t('reports.appointments.summary.empty');
+
       await exportNutritionistReportPdf({
-        element: reportRef.current,
         fileName: `nutritionist-report-${data.period.fromDateKey}-to-${data.period.toDateKey}.pdf`,
+        locale: i18n.language,
+        activeRangeLabel: t(`reports.ranges.${rangeKey}`),
+        activeRangeWindowText: formatRangeWindowText(
+          data.period.fromDateKey,
+          data.period.toDateKey,
+          i18n.language,
+          t
+        ),
+        appointmentSummaryText,
+        appointmentSummary: data.appointmentSummary,
+        weightReport: data.weightReport,
+        labels: {
+          title: t('reports.title'),
+          generatedOn: t('reports.pdf.generatedOn'),
+          activeRange: t('reports.pdf.activeRange'),
+          rangeWindow: t('reports.pdf.rangeWindow'),
+          sections: {
+            overview: t('reports.pdf.sections.overview'),
+            appointments: t('reports.appointments.title'),
+            weightTable: t('reports.weightTable.title'),
+          },
+          kpis: {
+            totalPatients: t('reports.kpis.totalPatients'),
+            attendedAppointments: t('reports.kpis.attendedAppointments'),
+          },
+          appointments: {
+            attended: t('reports.appointments.attended'),
+            cancelled: t('reports.appointments.cancelled'),
+            empty: t('reports.appointments.empty'),
+            helper: t('reports.appointments.helper'),
+          },
+          weightTable: {
+            noRecords: t('reports.weightTable.noRecords'),
+            empty: t('reports.weightTable.empty'),
+            summary: t('reports.weightTable.summary'),
+            columns: {
+              patient: t('reports.weightTable.columns.patient'),
+              latestRecord: t('reports.weightTable.columns.latestRecord'),
+              startWeight: t('reports.weightTable.columns.startWeight'),
+              currentWeight: t('reports.weightTable.columns.currentWeight'),
+              netChange: t('reports.weightTable.columns.netChange'),
+            },
+          },
+        },
       });
     } finally {
       setIsExporting(false);
     }
   };
 
-  const chartSummaryKey = data && data.appointmentSummary.relevantCount > 0
-    ? 'reports.appointments.summary.withData'
-    : 'reports.appointments.summary.empty';
+  const chartSummaryText = data && data.appointmentSummary.relevantCount > 0
+    ? buildAppointmentSummaryText(
+        t,
+        data.appointmentSummary.attendedCount,
+        data.appointmentSummary.cancelledCount
+      )
+    : t('reports.appointments.summary.empty');
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
@@ -128,7 +208,7 @@ export const NutritionistReportsPage = () => {
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56">
-        <div ref={reportRef} className="space-y-6">
+        <div className="space-y-6">
           <div className="flex flex-wrap gap-2">
             {NUTRITIONIST_REPORT_RANGE_OPTIONS.map((option) => (
               <Button
@@ -142,6 +222,12 @@ export const NutritionistReportsPage = () => {
               </Button>
             ))}
           </div>
+
+          {data ? (
+            <p className="text-sm text-muted-foreground">
+              {formatRangeWindowText(data.period.fromDateKey, data.period.toDateKey, i18n.language, t)}
+            </p>
+          ) : null}
 
           {isLoading ? (
             <div className="space-y-4">
@@ -202,10 +288,7 @@ export const NutritionistReportsPage = () => {
                     {t('reports.appointments.title')}
                   </CardTitle>
                   <CardDescription className="text-sm font-medium text-foreground">
-                    {t(chartSummaryKey, {
-                      attended: data.appointmentSummary.attendedCount,
-                      cancelled: data.appointmentSummary.cancelledCount,
-                    })}
+                    {chartSummaryText}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 p-4">
@@ -253,6 +336,10 @@ export const NutritionistReportsPage = () => {
                           </p>
                         </div>
                       </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        {t('reports.appointments.helper')}
+                      </p>
                     </>
                   ) : (
                     <div className="rounded-2xl border border-dashed border-border px-6 py-10 text-center">
@@ -280,6 +367,9 @@ export const NutritionistReportsPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
+                  <div className="border-b border-border/50 px-6 py-3 text-xs text-muted-foreground">
+                    {t('reports.weightTable.summary')}
+                  </div>
                   {data.weightReport.rows.length > 0 ? (
                     <Table>
                       <TableHeader>

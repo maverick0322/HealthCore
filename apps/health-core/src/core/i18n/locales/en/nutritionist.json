@@ -94,6 +94,26 @@
       "observationDeleteError": "We could not delete the observation right now",
       "downloadPdf": "Download Patient File PDF",
       "historyError": "We could not load the patient's weight history",
+      "metrics": {
+        "button": "Modify",
+        "title": "Update weight and height",
+        "weightLabel": "Weight (kg)",
+        "heightLabel": "Height (cm)",
+        "save": "Save",
+        "cancel": "Cancel",
+        "back": "Back",
+        "confirmTitle": "Do you want to save these changes?",
+        "confirmDescription": "Are you sure you want to save a weight of {{weight}} kg and a height of {{height}} cm?",
+        "updateError": "We could not update the patient's weight and height right now",
+        "validation": {
+          "weightRequired": "Enter a weight to continue",
+          "weightInvalid": "Enter a valid weight",
+          "weightRange": "Weight must be between 40.0 kg and 200.0 kg",
+          "heightRequired": "Enter a height to continue",
+          "heightInvalid": "Enter a valid height",
+          "heightRange": "Height must be between 100 cm and 250 cm"
+        }
+      },
       "pdf": {
         "title": "Patient clinical file",
         "generatedOn": "Generated on",
@@ -264,6 +284,7 @@
       "6m": "6 months",
       "12m": "12 months"
     },
+    "rangeWindow": "Showing accumulated data from {{from}} to {{to}}",
     "kpis": {
       "activePatients": "Active patients",
       "totalPatients": "Total Patients",
@@ -275,25 +296,40 @@
       "title": "Appointment overview",
       "attended": "Attended",
       "cancelled": "Cancelled",
-      "percent": "{{percent}}% of the relevant appointments",
+      "percent": "{{percent}}% of attended or cancelled appointments in this period",
+      "helper": "Percentages are calculated only from attended and cancelled appointments in the selected period",
       "empty": "There were no attended or cancelled appointments in this period",
       "summary": {
-        "withData": "In this period you attended {{attended}} appointments and {{cancelled}} were cancelled.",
+        "prefix": "In this period",
+        "connector": "and",
+        "attended_one": "you attended {{count}} appointment",
+        "attended_other": "you attended {{count}} appointments",
+        "cancelled_one": "{{count}} was cancelled",
+        "cancelled_other": "{{count}} were cancelled",
         "empty": "There is no attended or cancelled appointment activity in this period yet."
       }
     },
     "weightTable": {
       "title": "Patient weight control",
-      "latestDate": "Latest weight record in this period: {{date}}",
+      "latestDate": "Latest weight record within the selected period: {{date}}",
       "noLatestDate": "There are no weight records in the selected period yet.",
       "empty": "There are no linked patients to display in this report.",
       "noRecords": "No records in this period",
+      "summary": "The first weight and the change are calculated by comparing the first and last record within the selected period",
       "columns": {
         "patient": "Patient",
-        "latestRecord": "Latest record",
-        "startWeight": "Start weight",
-        "currentWeight": "Current weight",
-        "netChange": "Net change"
+        "latestRecord": "Date of latest record",
+        "startWeight": "First weight in period",
+        "currentWeight": "Latest weight in period",
+        "netChange": "Change in period"
+      }
+    },
+    "pdf": {
+      "generatedOn": "Generated on",
+      "activeRange": "Active range",
+      "rangeWindow": "Range window",
+      "sections": {
+        "overview": "Executive summary"
       }
     }
   },

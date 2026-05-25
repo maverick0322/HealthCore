@@ -9,6 +9,7 @@ const {
   mockGetMyObservations,
   mockUpsertMyNutritionPlan,
   mockSearchCatalogFoods,
+  mockExportPatientNutritionPlanPdf,
   mockLogClientError,
   mockLogClientInfo,
 } = vi.hoisted(() => ({
@@ -17,6 +18,7 @@ const {
   mockGetMyObservations: vi.fn(),
   mockUpsertMyNutritionPlan: vi.fn(),
   mockSearchCatalogFoods: vi.fn(),
+  mockExportPatientNutritionPlanPdf: vi.fn(),
   mockLogClientError: vi.fn(),
   mockLogClientInfo: vi.fn(),
 }));
@@ -34,6 +36,10 @@ vi.mock('@/features/clinical/services/clinicalService', () => ({
 vi.mock('@/core/utils/logger', () => ({
   logClientError: mockLogClientError,
   logClientInfo: mockLogClientInfo,
+}));
+
+vi.mock('@/features/patient/services/patientNutritionPlanPdfService', () => ({
+  exportPatientNutritionPlanPdf: mockExportPatientNutritionPlanPdf,
 }));
 
 vi.mock('@/features/patient/components/PatientNav', () => ({
@@ -94,6 +100,7 @@ describe('PatientPlanPage', () => {
     });
     mockSearchCatalogFoods.mockResolvedValue([]);
     mockUpsertMyNutritionPlan.mockResolvedValue(mockView);
+    mockExportPatientNutritionPlanPdf.mockResolvedValue(undefined);
   });
 
   it('loads and renders the patient nutrition plan', async () => {
@@ -148,5 +155,47 @@ describe('PatientPlanPage', () => {
     expect(mockGetMyNutritionPlan).toHaveBeenCalledTimes(2);
     expect(mockGetMyObservations).toHaveBeenCalledTimes(1);
     expect(mockLogClientInfo).toHaveBeenCalledWith('PatientPlanPage.retry.start');
+  });
+
+  it('refreshes the plan when the window regains focus', async () => {
+    mockGetMyNutritionPlan.mockResolvedValue(mockView);
+
+    render(<PatientPlanPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('nutrition-plan-workspace')).toHaveTextContent('SELF_MANAGED:1');
+    });
+
+    window.dispatchEvent(new Event('focus'));
+
+    await waitFor(() => {
+      expect(mockGetMyNutritionPlan).toHaveBeenCalledTimes(2);
+    });
+
+    expect(mockLogClientInfo).toHaveBeenCalledWith('PatientPlanPage.focus.start');
+  });
+
+  it('exports the patient nutrition plan as a structured pdf', async () => {
+    const user = userEvent.setup();
+    mockGetMyNutritionPlan.mockResolvedValue(mockView);
+
+    render(<PatientPlanPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('nutrition-plan-workspace')).toHaveTextContent('SELF_MANAGED:1');
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Download PDF' }));
+
+    await waitFor(() => {
+      expect(mockExportPatientNutritionPlanPdf).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientName: null,
+          view: mockView,
+          observations: expect.any(Array),
+          fileName: expect.stringMatching(/^plan-nutricional-/),
+        })
+      );
+    });
   });
 });

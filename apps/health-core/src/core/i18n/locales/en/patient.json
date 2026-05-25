@@ -217,6 +217,7 @@
     "previousRecordsTitle": "Previous records",
     "singleRecordHelp": "Log your next weight to start seeing your progress here.",
     "rangeDisabledHint": "This filter will be available when you have more recorded history.",
+    "rangeWindow": "Showing records from {{from}} to {{to}}",
     "ranges": {
       "30d": "1 month",
       "90d": "3 months",
@@ -385,6 +386,7 @@
     "title": "Nutrition Plan",
     "subtitle": "Organize meal options by meal time and review your daily goals.",
     "downloadPdf": "Download PDF",
+    "exportingPdf": "Generating PDF...",
     "dailyGoals": "Daily goals",
     "calories": "Calories",
     "protein": "Protein",
@@ -464,7 +466,26 @@
     "emptyReadOnlyPatient": "Your nutritionist has not assigned dishes for this section yet",
     "deleteDishTitle": "Are you sure you want to remove this dish?",
     "deleteDishDescription": "If you remove \"{{name}}\" from the plan, you will need to save the changes to confirm the update",
-    "deleteDishConfirm": "Yes, remove dish"
+    "deleteDishConfirm": "Yes, remove dish",
+    "pdf": {
+      "title": "Nutrition plan",
+      "generatedOn": "Generated on",
+      "patient": "Patient",
+      "hydration": "Hydration",
+      "mealSlot": "Meal slot",
+      "dish": "Dish",
+      "updatedAt": "Last updated",
+      "sections": {
+        "dailyGoals": "Daily goals",
+        "currentPlan": "Current plan"
+      },
+      "empty": {
+        "plan": "There is no nutrition plan available right now",
+        "previousPlan": "There is no previous self-managed plan available",
+        "none": "No records"
+      },
+      "error": "We could not generate the nutrition plan PDF. Please try again later."
+    }
   },
   "linking": {
     "title": "Link Nutritionist",

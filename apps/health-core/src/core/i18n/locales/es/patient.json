@@ -218,6 +218,7 @@
     "previousRecordsTitle": "Registros anteriores",
     "singleRecordHelp": "Registra tu próximo peso para comenzar a ver tu evolución aquí.",
     "rangeDisabledHint": "Este filtro estará disponible cuando tengas más historial registrado.",
+    "rangeWindow": "Mostrando registros del {{from}} al {{to}}",
     "ranges": {
       "30d": "1 mes",
       "90d": "3 meses",
@@ -386,6 +387,7 @@
     "title": "Plan Nutricional",
     "subtitle": "Organiza tus opciones de comida por tiempo y consulta tus metas diarias.",
     "downloadPdf": "Descargar PDF",
+    "exportingPdf": "Generando PDF...",
     "dailyGoals": "Metas diarias",
     "calories": "Calorías",
     "protein": "Proteína",
@@ -465,7 +467,26 @@
     "emptyReadOnlyPatient": "Tu nutriólogo aún no te asigna platillos para esta sección",
     "deleteDishTitle": "¿Estás seguro de que quieres eliminar este platillo?",
     "deleteDishDescription": "Si eliminas \"{{name}}\" de tu plan, deberás guardar los cambios para confirmar la actualización",
-    "deleteDishConfirm": "Sí, eliminar platillo"
+    "deleteDishConfirm": "Sí, eliminar platillo",
+    "pdf": {
+      "title": "Plan nutricional",
+      "generatedOn": "Generado el",
+      "patient": "Paciente",
+      "hydration": "Hidratación",
+      "mealSlot": "Tiempo de comida",
+      "dish": "Platillo",
+      "updatedAt": "Última actualización",
+      "sections": {
+        "dailyGoals": "Metas diarias",
+        "currentPlan": "Plan actual"
+      },
+      "empty": {
+        "plan": "No hay un plan nutricional disponible en este momento",
+        "previousPlan": "No hay un plan autogestionado previo disponible",
+        "none": "Sin registros"
+      },
+      "error": "No pudimos generar el PDF del plan nutricional. Intenta más tarde"
+    }
   },
   "linking": {
     "title": "Vincular Nutriólogo",

@@ -143,7 +143,7 @@ export function NutritionPlanWorkspace({
   onSave,
   onSearchFoods,
 }: Readonly<NutritionPlanWorkspaceProps>) {
-  const { t } = useTranslation(namespace);
+  const { t, i18n } = useTranslation(namespace);
   const [sections, setSections] = useState<EditableSection[]>(EMPTY_SECTIONS);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -605,7 +605,7 @@ export function NutritionPlanWorkspace({
                           {observation.note}
                         </p>
                         <p className="mt-2 text-xs text-muted-foreground">
-                          {formatObservationDate(observation.createdAt)}
+                          {formatObservationDate(observation.createdAt, i18n.language)}
                         </p>
                       </div>
                     ))}
@@ -997,16 +997,18 @@ function formatAmount(value: number | null): string {
   return Number.isInteger(value) ? `${value}` : value.toFixed(1);
 }
 
-function formatObservationDate(value: string): string {
+function formatObservationDate(value: string, locale: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(date);
 }
 

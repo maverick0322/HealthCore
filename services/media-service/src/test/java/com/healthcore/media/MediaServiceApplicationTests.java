@@ -11,7 +11,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 				"cloudflare.r2.access-key-id=mock-access-key",
 				"cloudflare.r2.secret-access-key=mock-secret-key",
 				"cloudflare.r2.bucket-name=mock-bucket",
-				"jwt.secret=esta-es-una-llave-falsa-super-larga-solo-para-que-pase-el-test-de-spring-boot"
+				"jwt.secret=esta-es-una-llave-falsa-super-larga-solo-para-que-pase-el-test-de-spring-boot",
+				"grpc.server.port=-1"
 		}
 )
 class MediaServiceApplicationTests {

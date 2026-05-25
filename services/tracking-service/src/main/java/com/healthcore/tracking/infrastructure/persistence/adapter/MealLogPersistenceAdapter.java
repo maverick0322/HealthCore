@@ -111,7 +111,7 @@ public class MealLogPersistenceAdapter implements MealLogPort {
         try {
             log.debug("Executing native distinct date extraction. userHash={}", logHash(userId));
             Query query = new Query(Criteria.where("userId").is(userId));
-            
+
             List<LocalDateTime> dates = mongoTemplate.findDistinct(
                     query,
                     "consumedAt",

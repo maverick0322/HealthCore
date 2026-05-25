@@ -109,23 +109,28 @@ public class MealLogPersistenceAdapter implements MealLogPort {
         }
 
         try {
-            log.debug("Executing optimized date extraction projection. userHash={}", logHash(userId));
+            log.debug("Executing native distinct date extraction. userHash={}", logHash(userId));
             Query query = new Query(Criteria.where("userId").is(userId));
+            
+            List<LocalDateTime> dates = mongoTemplate.findDistinct(
+                    query,
+                    "consumedAt",
+                    MealLogDocument.class,
+                    LocalDateTime.class
+            );
 
-            query.fields().include("consumedAt");
-
-            return mongoTemplate.find(query, MealLogDocument.class)
-                    .stream()
-                    .filter(entity -> entity.getConsumedAt() != null)
-                    .map(entity -> entity.getConsumedAt().toLocalDate())
+            return dates.stream()
+                    .filter(date -> date != null)
+                    .map(LocalDateTime::toLocalDate)
                     .collect(Collectors.toSet());
+
         } catch (DataAccessException ex) {
             log.error("Database error while extracting distinct dates. userHash={} errorClass={}",
                     logHash(userId), ex.getClass().getSimpleName());
             throw new MealLogPersistenceException("Failed to extract distinct dates due to DB error", ex);
         } catch (Exception ex) {
-            log.error("Unexpected infrastructure error extracting distinct dates. userHash={} errorClass={}",
-                    logHash(userId), ex.getClass().getSimpleName());
+            log.error("Unexpected infrastructure error extracting distinct dates. userHash={} errorClass={} message={}",
+                    logHash(userId), ex.getClass().getSimpleName(), ex.getMessage(), ex);
             throw new MealLogPersistenceException("Unexpected error during distinct date extraction", ex);
         }
     }

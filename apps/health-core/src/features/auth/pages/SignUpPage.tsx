@@ -13,6 +13,7 @@ import { usePasswordStrength } from "../hooks/usePasswordStrength";
 import { PasswordStrengthIndicator } from "../components/PasswordStrengthIndicator";
 import { useRegister } from "../hooks/useRegister";
 import type { UserRole } from "../types/auth.types";
+import logoIcon from "@/assets/icon-192.png";
 
 interface LocationState {
   email?: string;
@@ -28,6 +29,7 @@ export const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<"paciente" | "nutriologo">("paciente");
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const { t, i18n } = useTranslation("auth");
   const strength = usePasswordStrength(password);
   const { handleRegister, isLoading, error, fieldErrors } = useRegister();
@@ -44,6 +46,7 @@ export const SignUpPage = () => {
       password,
       confirmPassword,
       role: roleMap[role],
+      acceptTerms,
     });
   };
 
@@ -59,18 +62,7 @@ export const SignUpPage = () => {
         <div className="flex flex-col items-center space-y-3 sm:space-y-4">
           <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 rounded-xl flex items-center justify-center shadow-inner transition-transform hover:scale-105 duration-300">
             {/* Logo */}
-            <svg
-              className="w-7 h-7 sm:w-8 sm:h-8 text-primary"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-              <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-            </svg>
+            <img src={logoIcon} alt="HealthCore" className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg" />
           </div>
           <div className="text-center space-y-1">
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight transition-colors">
@@ -162,7 +154,12 @@ export const SignUpPage = () => {
 
           <form className="space-y-4 sm:space-y-5" onSubmit={handleSignUp} noValidate>
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">{t("email")}</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="email" className="text-sm font-medium">{t("email")}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {email.length}/254
+                </span>
+              </div>
               <Input
                 id="email"
                 type="email"
@@ -179,7 +176,12 @@ export const SignUpPage = () => {
             </div>
             
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">{t("password")}</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="password" className="text-sm font-medium">{t("password")}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {password.length}/72
+                </span>
+              </div>
               <div className="relative">
                 <Input
                   id="password"
@@ -206,7 +208,12 @@ export const SignUpPage = () => {
             </div>
             
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="confirm-password" className="text-sm font-medium">{t("confirmPassword")}</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="confirm-password" className="text-sm font-medium">{t("confirmPassword")}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {confirmPassword.length}/72
+                </span>
+              </div>
               <div className="relative">
                 <Input
                   id="confirm-password"
@@ -232,13 +239,28 @@ export const SignUpPage = () => {
               <FieldError id="signup-confirm-error" message={fieldErrors.confirmPassword} />
             </div>
 
-            <div className="flex items-start gap-3 py-2">
-              <div className="flex mt-0.5">
-                <Checkbox id="terms" required className="border-muted-foreground border-2" />
+            <div className="flex flex-col gap-1.5 py-2">
+              <div className="flex items-start gap-3">
+                <div className="flex mt-0.5">
+                  <Checkbox
+                    id="terms"
+                    checked={acceptTerms}
+                    onCheckedChange={(checked) => setAcceptTerms(checked === true)}
+                    className="border-muted-foreground border-2"
+                  />
+                </div>
+                <label htmlFor="terms" className="text-sm text-muted-foreground font-normal leading-snug cursor-pointer block">
+                  {t("acceptTermsPrefix")}{" "}
+                  <Link to="/terms" className="text-primary hover:underline font-medium transition-colors">
+                    {t("termsLink")}
+                  </Link>{" "}
+                  {t("and")}{" "}
+                  <Link to="/privacy" className="text-primary hover:underline font-medium transition-colors">
+                    {t("privacyLink")}
+                  </Link>.
+                </label>
               </div>
-              <label htmlFor="terms" className="text-sm text-muted-foreground font-normal leading-snug cursor-pointer block">
-                {t("acceptTermsPrefix")} <a href="#" className="text-primary hover:underline font-medium transition-colors">{t("termsLink")}</a> {t("and")} <a href="#" className="text-primary hover:underline font-medium transition-colors">{t("privacyLink")}</a>.
-              </label>
+              <FieldError id="signup-terms-error" message={fieldErrors.acceptTerms} />
             </div>
 
             <Button

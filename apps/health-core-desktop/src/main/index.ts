@@ -33,7 +33,7 @@ function createWindow(): void {
     mainWindow.webContents.openDevTools()
   } else {
     // In production: load the renderer built by electron-vite
-    mainWindow.loadFile(join(__dirname, '../../renderer/index.html'))
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 

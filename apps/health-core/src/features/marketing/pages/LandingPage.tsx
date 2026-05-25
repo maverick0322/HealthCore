@@ -31,6 +31,7 @@ import {
 } from "@/shared/ui/accordion";
 import { MarketingSettingsBar } from "@/features/marketing/components/MarketingSettingsBar";
 import { CalorieCalculator } from "@/features/marketing/components/CalorieCalculator";
+import logoIcon from "@/assets/icon-192.png";
 
 export const LandingPage = () => {
   const { t } = useTranslation("marketing");
@@ -51,7 +52,7 @@ export const LandingPage = () => {
           <div className="flex items-center justify-between gap-3 pb-6">
             <div className="flex items-center gap-2">
               <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center ring-1 ring-primary/15">
-                <img src="/icon-192.png" alt="HealthCore" className="rounded-xl" />
+                <img src={logoIcon} alt="HealthCore" className="rounded-xl" />
               </div>
               <span className="text-sm font-semibold tracking-tight">{t("brand")}</span>
               <Badge variant="secondary" className="hidden sm:inline-flex">

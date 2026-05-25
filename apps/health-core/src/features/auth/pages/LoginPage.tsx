@@ -9,6 +9,7 @@ import { SettingsBar } from "@/shared/components/SettingsBar";
 import { FieldError } from "@/shared/components/FieldError";
 import { ENV } from "@/core/config/env";
 import { useLogin } from "../hooks/useLogin";
+import logoIcon from "@/assets/icon-192.png";
 
 export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,18 +35,7 @@ export const LoginPage = () => {
         <div className="flex flex-col items-center space-y-3 sm:space-y-4">
           <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary/10 rounded-xl flex items-center justify-center shadow-inner transition-transform hover:scale-105 duration-300">
             {/* Logo */}
-            <svg
-              className="w-7 h-7 sm:w-8 sm:h-8 text-primary"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-              <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-            </svg>
+            <img src={logoIcon} alt="HealthCore" className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg" />
           </div>
           <div className="text-center space-y-1">
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight transition-colors">
@@ -107,7 +97,12 @@ export const LoginPage = () => {
 
           <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">{t("email")}</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="email" className="text-sm font-medium">{t("email")}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {email.length}/254
+                </span>
+              </div>
               <Input
                 id="email"
                 type="email"
@@ -123,11 +118,16 @@ export const LoginPage = () => {
               <FieldError id="email-error" message={fieldErrors.email} />
             </div>
             <div className="space-y-1.5 sm:space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-medium">{t("password")}</Label>
-                <Link to="/forgot-password" className="text-xs font-semibold text-primary hover:underline hover:text-primary/80 transition-colors">
-                  {t("forgot")}
-                </Link>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="password" className="text-sm font-medium">{t("password")}</Label>
+                  <Link to="/forgot-password" className="text-xs font-semibold text-primary hover:underline hover:text-primary/80 transition-colors">
+                    {t("forgot")}
+                  </Link>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {password.length}/72
+                </span>
               </div>
               <div className="relative">
                 <Input

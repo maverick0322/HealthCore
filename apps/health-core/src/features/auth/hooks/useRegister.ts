@@ -15,6 +15,7 @@ interface RegisterFieldErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  acceptTerms?: string;
 }
 
 /**
@@ -32,7 +33,7 @@ export const useRegister = () => {
   const [fieldErrors, setFieldErrors] = useState<RegisterFieldErrors>({});
 
   const handleRegister = async (
-    data: RegisterRequest & { confirmPassword?: string },
+    data: RegisterRequest & { confirmPassword?: string; acceptTerms?: boolean },
   ) => {
     setError(null);
 
@@ -46,6 +47,7 @@ export const useRegister = () => {
     if (emailError) errors.email = t(emailError);
     if (passwordError) errors.password = t(passwordError);
     if (confirmError) errors.confirmPassword = t(confirmError);
+    if (!data.acceptTerms) errors.acceptTerms = t('validation.termsRequired');
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);

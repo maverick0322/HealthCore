@@ -9,4 +9,6 @@ import java.util.List;
 public interface SpringDataMongoClinicalObservationRepository extends MongoRepository<ClinicalObservationDocument, String> {
     
     List<ClinicalObservationDocument> findByPatientIdOrderByCreatedAtDesc(String patientId);
+
+    void deleteAllByPatientId(String patientId);
 }

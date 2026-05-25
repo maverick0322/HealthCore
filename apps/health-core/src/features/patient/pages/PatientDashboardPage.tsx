@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { AlertCircle, CalendarDays, Loader2, Plus, Stethoscope } from "lucide-react";
 
 import { PatientNav } from "@/features/patient/components/PatientNav";
-import { WeightChart } from "@/features/patient/components/WeightChart";
+import { DashboardWeightCard } from "@/features/patient/components/DashboardWeightCard";
 import { HealthGoalsCard } from "@/features/patient/components/HealthGoalsCard";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -72,50 +72,59 @@ export const PatientDashboardPage = () => {
     void fetchAppointments();
   }, [fetchAppointments]);
 
-  useEffect(() => {
-    let ignore = false;
-
-    const loadProfile = async () => {
-      setProfileLoading(true);
+  const loadProfile = useCallback(
+    async ({ showLoading = true }: { showLoading?: boolean } = {}) => {
+      if (showLoading) {
+        setProfileLoading(true);
+      }
       setProfileError(null);
 
       try {
         const patientProfile = await clinicalApi.getMyProfile();
-        if (ignore) return;
-
         setProfile(patientProfile);
+
         if (patientProfile.nutritionistId?.trim()) {
           try {
             const linkedProfile = await clinicalApi.getMyLinkedNutritionistProfile();
-            if (!ignore) {
-              setNutritionistProfile(linkedProfile);
-            }
+            setNutritionistProfile(linkedProfile);
           } catch {
-            if (!ignore) {
-              setNutritionistProfile(null);
-            }
+            setNutritionistProfile(null);
           }
         } else {
           setNutritionistProfile(null);
         }
       } catch {
-        if (!ignore) {
-          setProfile(null);
-          setNutritionistProfile(null);
-          setProfileError(t("dashboard.profileLoadError"));
-        }
+        setProfile(null);
+        setNutritionistProfile(null);
+        setProfileError(t("dashboard.profileLoadError"));
       } finally {
-        if (!ignore) {
+        if (showLoading) {
           setProfileLoading(false);
         }
       }
+    },
+    [t]
+  );
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  useEffect(() => {
+    const handleWindowRefresh = () => {
+      if (document.visibilityState === "visible") {
+        void loadProfile({ showLoading: false });
+      }
     };
 
-    void loadProfile();
+    window.addEventListener("focus", handleWindowRefresh);
+    document.addEventListener("visibilitychange", handleWindowRefresh);
+
     return () => {
-      ignore = true;
+      window.removeEventListener("focus", handleWindowRefresh);
+      document.removeEventListener("visibilitychange", handleWindowRefresh);
     };
-  }, [t]);
+  }, [loadProfile]);
 
   const nextAppointment = useMemo(() => {
     const now = Date.now();
@@ -170,7 +179,7 @@ export const PatientDashboardPage = () => {
           </div>
 
           <div className="space-y-5">
-            <WeightChart />
+            <DashboardWeightCard />
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <Card id="card-appointment" className="flex flex-col">

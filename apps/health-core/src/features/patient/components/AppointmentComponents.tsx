@@ -62,11 +62,17 @@ interface AppointmentListItemProps {
   appointment: AppointmentResponse;
   onCancel: (appt: AppointmentResponse) => void;
   onReschedule: (appt: AppointmentResponse) => void;
+  showActions?: boolean;
 }
 
-export const AppointmentListItem = ({ appointment, onCancel, onReschedule }: AppointmentListItemProps) => {
+export const AppointmentListItem = ({
+  appointment,
+  onCancel,
+  onReschedule,
+  showActions = true,
+}: AppointmentListItemProps) => {
   const { t } = useTranslation('patient');
-  const canAct = appointment.status === 'PENDING' || appointment.status === 'CONFIRMED';
+  const canAct = showActions && (appointment.status === 'PENDING' || appointment.status === 'CONFIRMED');
 
   return (
     <div className="p-4 hover:bg-muted/30 transition-colors">

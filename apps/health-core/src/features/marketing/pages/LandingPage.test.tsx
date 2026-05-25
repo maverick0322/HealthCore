@@ -25,6 +25,6 @@ describe("LandingPage", () => {
 
     render(<LandingPage />);
     const links = screen.getAllByRole("link", { name: /go to app/i });
-    expect(links.some((l) => l.getAttribute("href") === "/home")).toBe(true);
+    expect(links.some((l) => l.getAttribute("href") === "/dashboard")).toBe(true);
   });
 });

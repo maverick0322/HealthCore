@@ -80,6 +80,7 @@ export const ResetPasswordPage = () => {
                       className="h-12 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground transition-all"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      maxLength={72}
                       disabled={isLoading}
                       aria-describedby={fieldErrors.password ? "reset-password-error" : undefined}
                       aria-invalid={!!fieldErrors.password}
@@ -115,6 +116,7 @@ export const ResetPasswordPage = () => {
                       className="h-12 text-base sm:text-sm pr-10 bg-background border-border placeholder:text-muted-foreground transition-all"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
+                      maxLength={72}
                       disabled={isLoading}
                       aria-describedby={fieldErrors.confirmPassword ? "reset-confirm-error" : undefined}
                       aria-invalid={!!fieldErrors.confirmPassword}

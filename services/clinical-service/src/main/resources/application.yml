@@ -13,6 +13,8 @@ spring:
     host: ${SPRING_RABBITMQ_HOST:localhost}
 
 grpc:
+  agenda:
+    target: ${GRPC_CLIENT_AGENDA_TARGET:agenda-service:50052}
   clinical:
     port: ${GRPC_CLINICAL_PORT:50051}
   catalog:

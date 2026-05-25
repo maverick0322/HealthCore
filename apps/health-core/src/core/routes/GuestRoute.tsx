@@ -4,13 +4,13 @@ import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
 /**
  * Wrapper route that redirects already-authenticated users away from
- * guest-only pages (login, signup, etc.) back to the home dashboard (/home).
+ * guest-only pages (login, signup, etc.) back to the home dashboard (/dashboard).
  */
 export const GuestRoute = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   if (isAuthenticated) {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;

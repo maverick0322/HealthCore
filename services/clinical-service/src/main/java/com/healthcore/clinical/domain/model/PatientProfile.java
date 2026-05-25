@@ -2,6 +2,7 @@ package com.healthcore.clinical.domain.model;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.Comparator;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -79,7 +80,7 @@ public class PatientProfile {
                 null,
                 70.0,
                 170.0,
-                LocalDate.now().minusYears(25),
+                ClinicalTime.today().minusYears(25),
                 Gender.MALE,
                 ActivityLevel.SEDENTARY,
                 "health",
@@ -100,13 +101,59 @@ public class PatientProfile {
         profile.allergies = ProfileFieldValidator.validateAllergies(allergies);
         profile.excludedFoods = ProfileFieldValidator.validateExcludedFoods(excludedFoods);
         profile.weightHistory = ProfileFieldValidator.normalizeWeightHistory(weightHistory, profile.weightKg);
+        if (!profile.weightHistory.isEmpty()) {
+            profile.weightKg = profile.weightHistory.get(profile.weightHistory.size() - 1).weightKg();
+        }
         profile.nutritionistId = ProfileFieldValidator.normalizeText(nutritionistId);
         return profile;
     }
 
-    public HealthGoal updateWeight(Double newWeight) {
-        this.weightKg = ProfileFieldValidator.validateWeightKg(newWeight);
-        this.weightHistory.add(new WeightRecord(this.weightKg, LocalDate.now()));
+    public HealthGoal registerWeight(Double newWeight, LocalDate date) {
+        Double validatedWeight = ProfileFieldValidator.validateWeightKg(newWeight);
+        LocalDate validatedDate = ProfileFieldValidator.validateWeightRecordDate(date);
+
+        this.weightHistory.removeIf(record -> record.date().equals(validatedDate));
+        this.weightHistory.add(new WeightRecord(validatedWeight, validatedDate));
+        this.weightHistory.sort(Comparator.comparing(WeightRecord::date));
+        syncCurrentWeightFromHistory();
+        return generateHealthGoals();
+    }
+
+    public HealthGoal editWeightRecord(LocalDate originalDate, Double newWeight, LocalDate newDate) {
+        LocalDate validatedOriginalDate = ProfileFieldValidator.validateWeightRecordDate(originalDate);
+        Double validatedWeight = ProfileFieldValidator.validateWeightKg(newWeight);
+        LocalDate validatedNewDate = ProfileFieldValidator.validateWeightRecordDate(newDate);
+
+        boolean originalRecordExists = this.weightHistory.stream()
+                .anyMatch(record -> record.date().equals(validatedOriginalDate));
+        if (!originalRecordExists) {
+            throw new IllegalArgumentException("Weight record not found for the provided date.");
+        }
+
+        this.weightHistory.removeIf(record ->
+                record.date().equals(validatedOriginalDate)
+                        || (!validatedOriginalDate.equals(validatedNewDate) && record.date().equals(validatedNewDate))
+        );
+        this.weightHistory.add(new WeightRecord(validatedWeight, validatedNewDate));
+        this.weightHistory.sort(Comparator.comparing(WeightRecord::date));
+        syncCurrentWeightFromHistory();
+        return generateHealthGoals();
+    }
+
+    public HealthGoal deleteWeightRecord(LocalDate date) {
+        LocalDate validatedDate = ProfileFieldValidator.validateWeightRecordDate(date);
+
+        if (this.weightHistory.size() <= 1) {
+            throw new IllegalStateException("At least one weight record must remain in the profile.");
+        }
+
+        boolean removed = this.weightHistory.removeIf(record -> record.date().equals(validatedDate));
+        if (!removed) {
+            throw new IllegalArgumentException("Weight record not found for the provided date.");
+        }
+
+        this.weightHistory.sort(Comparator.comparing(WeightRecord::date));
+        syncCurrentWeightFromHistory();
         return generateHealthGoals();
     }
 
@@ -140,7 +187,7 @@ public class PatientProfile {
                 excludedFoods
         );
         if (previousWeight == null || Double.compare(previousWeight, this.weightKg) != 0) {
-            this.weightHistory.add(new WeightRecord(this.weightKg, LocalDate.now()));
+            registerWeight(this.weightKg, ClinicalTime.today());
         }
     }
 
@@ -172,7 +219,7 @@ public class PatientProfile {
     }
 
     private double calculateTMB() {
-        int age = Period.between(this.birthDate, LocalDate.now()).getYears();
+        int age = Period.between(this.birthDate, ClinicalTime.today()).getYears();
         double baseMifflin = (10 * this.weightKg) + (6.25 * this.heightCm) - (5 * age);
 
         return this.gender == Gender.MALE
@@ -212,6 +259,13 @@ public class PatientProfile {
         this.dietType = ProfileFieldValidator.validateDietType(dietType, true);
         this.allergies = ProfileFieldValidator.validateAllergies(allergies);
         this.excludedFoods = ProfileFieldValidator.validateExcludedFoods(excludedFoods);
+    }
+
+    private void syncCurrentWeightFromHistory() {
+        if (this.weightHistory == null || this.weightHistory.isEmpty()) {
+            throw new IllegalStateException("Weight history cannot be empty.");
+        }
+        this.weightKg = this.weightHistory.get(this.weightHistory.size() - 1).weightKg();
     }
 
     public boolean isProfileCompleted() {

@@ -80,6 +80,7 @@ export const AdminDashboardPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  maxLength={254}
                   required
                   placeholder="doctor@healthcore.com"
                 />
@@ -92,6 +93,7 @@ export const AdminDashboardPage = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  maxLength={72}
                   required
                   placeholder="StrongPass123!"
                 />

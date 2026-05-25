@@ -23,7 +23,7 @@ export const MarketingSettingsBar = ({ className }: { className?: string }) => {
   };
 
   const containerClass =
-    className ?? "absolute top-4 right-4 flex items-center gap-2 z-50";
+    className ?? "relative flex justify-end gap-2 p-4 sm:absolute sm:top-4 sm:right-4 sm:p-0 sm:z-50";
 
   return (
     <div className={containerClass}>

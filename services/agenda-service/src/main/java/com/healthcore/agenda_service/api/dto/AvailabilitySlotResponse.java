@@ -12,7 +12,10 @@ public record AvailabilitySlotResponse(
     TimeSlotOrigin origin,
     Long version,
     boolean reserved,
-    boolean active
+    boolean active,
+    Instant deactivatedAt,
+    String deactivatedBy,
+    String deactivationReason
 ) {
 }
 

@@ -45,8 +45,9 @@ export const validatePassword = (
 
   // Register / reset
   if (value.length < 8) return 'validation.passwordTooShort';
-  if (value.length > 15) return 'validation.passwordTooLong';
+  if (value.length > 72) return 'validation.passwordTooLong';
   if (!/[A-Z]/.test(value)) return 'validation.passwordWeak';
+  if (!/[a-z]/.test(value)) return 'validation.passwordWeak';
   if (!/[0-9]/.test(value)) return 'validation.passwordWeak';
   if (!/[^A-Za-z0-9]/.test(value)) return 'validation.passwordWeak';
   return null;

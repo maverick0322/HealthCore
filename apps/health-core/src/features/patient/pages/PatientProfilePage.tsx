@@ -60,6 +60,7 @@ export const PatientProfilePage = () => {
     showUnlinkDialog,
     setShowUnlinkDialog,
     isUnlinking,
+    unlinkFeedback,
     handleConfirmUnlink,
     handleLogout,
     handleChangePassword,
@@ -95,7 +96,7 @@ export const PatientProfilePage = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-8">
           <button
             id="btn-back-dashboard"
-            onClick={() => navigate("/home")}
+            onClick={() => navigate("/dashboard")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 md:hidden"
           >
             <ChevronLeft size={16} />
@@ -236,6 +237,22 @@ export const PatientProfilePage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 pb-2">
+            {unlinkFeedback ? (
+              <div
+                className={`mb-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+                  unlinkFeedback.type === 'success'
+                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                    : 'border-destructive/25 bg-destructive/10 text-destructive'
+                }`}
+              >
+                {unlinkFeedback.type === 'success' ? (
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                ) : (
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                )}
+                <span>{unlinkFeedback.message}</span>
+              </div>
+            ) : null}
             {(!user?.provider || user.provider === 'LOCAL') && (
               <ActionRow
                 id="btn-change-password"

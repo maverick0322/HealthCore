@@ -93,11 +93,46 @@
     "protein": "Proteína",
     "carbs": "Carbohidratos",
     "fat": "Grasas",
+    "weightProgressTitle": "Mi progreso de peso",
     "weightEvolution": "Evolución de Peso",
     "currentWeight": "Peso actual",
     "startWeight": "Peso inicial",
     "targetWeight": "Peso objetivo",
     "minWeight": "Peso mínimo",
+    "weightErrorMessage": "No pudimos cargar tu historial de peso.",
+    "noWeightData": "Aún no tienes registros de peso.",
+    "weightCard": {
+      "last7Records": "Últimos 7 registros",
+      "latestWeight": "Último peso",
+      "changeVsPrevious": "Cambio respecto al anterior",
+      "lastRecord": "Fecha de registro del último peso",
+      "recordWeight": "Registrar peso",
+      "emptyHelp": "Agrega tu primer peso para empezar a seguir tu progreso",
+      "noDate": "Sin fecha"
+    },
+    "weightForm": {
+      "title": "Registrar peso",
+      "description": "Registra tu peso con la fecha correspondiente para mantener actualizada tu evolución",
+      "weightLabel": "Peso (kg)",
+      "weightPlaceholder": "Ej. 78.4",
+      "dateLabel": "Fecha",
+      "save": "Continuar",
+      "cancel": "Cancelar",
+      "back": "Volver",
+      "confirmTitle": "¿Deseas guardar este registro de peso?",
+      "confirmDescription": "¿Los datos son correctos? Se guardarán {{weight}} kg con fecha {{date}}.",
+      "confirmAction": "Sí, guardar",
+      "saveError": "No pudimos guardar el registro de peso, Intenta más tarde",
+      "validation": {
+        "weightRequired": "Ingrese un peso para continuar",
+        "weightInvalid": "Ingresa un peso válido",
+        "weightPrecision": "Usa un número entero o un decimal",
+        "weightRange": "El peso debe estar entre 40.0 kg y 200.0 kg",
+        "dateRequired": "Selecciona una fecha",
+        "dateInvalid": "Ingresa una fecha válida.",
+        "dateFuture": "La fecha no puede ser posterior a hoy"
+      }
+    },
     "nextAppointment": "Próxima Cita",
     "withNutritionist": "Con",
     "noAppointment": "Sin citas próximas",
@@ -136,9 +171,14 @@
   "history": {
     "title": "Historial Nutricional",
     "subtitle": "Tu evolución y registros detallados",
+    "weightProgressTitle": "Mi progreso de peso",
     "weightEvolution": "Evolución de Peso",
     "weightLost": "Perdido",
     "weightRemaining": "Por bajar",
+    "currentWeight": "Peso actual",
+    "periodChange": "Cambio del período",
+    "minWeight": "Peso mínimo",
+    "latestRecord": "Último registro",
     "calorieTrend": "Tendencia Calórica",
     "calorieAvg": "Promedio diario",
     "calorieGoal": "Meta",
@@ -163,6 +203,73 @@
     "streakDays": "{{count}} días",
     "bestStreak": "Mejor racha",
     "totalDaysTracked": "Días con registro",
+    "filtersLabel": "Analiza tu progreso con el período que quieras revisar.",
+    "periodLabel": "Período",
+    "groupByLabel": "Agrupar por",
+    "weightErrorMessage": "No pudimos cargar el historial detallado de peso.",
+    "noWeightEntries": "No hay registros de peso disponibles para este historial.",
+    "noDate": "Sin fecha",
+    "today": "Hoy",
+    "todayLogsEmpty": "No hay registros disponibles para hoy",
+    "previousDay": "Anterior",
+    "nextDay": "Siguiente",
+    "weightChartAriaLabel": "Gráfica detallada del historial de peso del paciente",
+    "weightTableTitle": "Historial de peso",
+    "previousRecordsTitle": "Registros anteriores",
+    "singleRecordHelp": "Registra tu próximo peso para comenzar a ver tu evolución aquí.",
+    "rangeDisabledHint": "Este filtro estará disponible cuando tengas más historial registrado.",
+    "rangeWindow": "Mostrando registros del {{from}} al {{to}}",
+    "ranges": {
+      "30d": "1 mes",
+      "90d": "3 meses",
+      "180d": "6 meses",
+      "365d": "1 año",
+      "all": "Desde el inicio"
+    },
+    "groupings": {
+      "day": "Días",
+      "week": "Semanas",
+      "month": "Meses",
+      "year": "Años"
+    },
+    "summary": {
+      "range": {
+        "down": "En los últimos {{days}} días, tu peso bajó {{change}} kg.",
+        "up": "En los últimos {{days}} días, tu peso subió {{change}} kg.",
+        "stable": "En los últimos {{days}} días, tu peso se ha mantenido estable."
+      },
+      "fromStart": {
+        "down": "Desde que iniciaste tu plan, has bajado un total de {{change}} kg.",
+        "up": "Desde que iniciaste tu plan, has subido un total de {{change}} kg.",
+        "stable": "Desde que iniciaste tu plan, tu peso se ha mantenido estable."
+      },
+      "singleRecord": "Tu punto de partida es de {{weight}} kg."
+    },
+    "table": {
+      "date": "Fecha",
+      "weight": "Peso",
+      "variation": "Variación",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "updateError": "No pudimos guardar los cambios del registro de peso.",
+      "deleteError": "No pudimos eliminar el registro de peso.",
+      "deleteDisabled": "Debe permanecer al menos un registro de peso en el perfil."
+    },
+    "editDialog": {
+      "title": "Editar registro de peso",
+      "save": "Guardar cambios",
+      "confirmTitle": "¿Deseas guardar los cambios de este registro?",
+      "confirmDescription": "¿Los datos son correctos y deseas guardarlos? Se actualizarán a {{weight}} kg con fecha {{date}}.",
+      "confirmAction": "Sí, guardar cambios"
+    },
+    "deleteDialog": {
+      "title": "¿Deseas eliminar este registro de peso?",
+      "description": "Se eliminará el registro de {{weight}} kg con fecha {{date}}.",
+      "confirmAction": "Sí, eliminar"
+    },
     "filterAll": "Todos",
     "filterBreakfast": "Desayuno",
     "filterLunch": "Comida",
@@ -198,24 +305,30 @@
     "loading": "Cargando...",
     "loadingSlots": "Buscando horarios disponibles...",
     "loadingAppointments": "Cargando tus citas...",
+    "loadingHistory": "Cargando historial de citas...",
     "loadingProfile": "Verificando tu nutriólogo asignado...",
     "profileLoadError": "No pudimos cargar tu perfil clínico.",
     "errorGeneric": "Ocurrió un error. Intenta de nuevo.",
     "errorBookSlotTaken": "Alguien más acaba de reservar este horario. Por favor, elige otro distinto.",
     "errorBookSlotNotFound": "El horario seleccionado ya no está disponible. Por favor, actualiza y vuelve a intentar.",
     "errorBookConflict": "Ya tienes una cita agendada a esa misma hora. Por favor, selecciona otro horario.",
+    "errorBookForbidden": "No pudimos confirmar que puedas reservar con este nutriólogo. Revisa tu vinculación e intenta de nuevo.",
     "errorBookInvalid": "Hubo un problema con la reservación. Por favor, intenta de nuevo.",
     "errorBookUnexpected": "No pudimos completar tu reservación en este momento. Inténtalo de nuevo más tarde.",
+    "errorServiceUnavailable": "No pudimos revisar tu cita en este momento. Inténtalo de nuevo en unos minutos.",
     "errorCancelNotFound": "No pudimos encontrar la cita. Es posible que ya haya sido cancelada.",
     "errorCancelForbidden": "No tienes permiso para cancelar esta cita. Contacta a soporte si crees que es un error.",
     "errorCancelUnexpected": "No pudimos cancelar tu cita en este momento. Por favor, intenta de nuevo.",
     "errorRescheduleSlotTaken": "El nuevo horario acaba de ser reservado por alguien más. Por favor, elige otro.",
     "errorRescheduleNotFound": "No pudimos encontrar la cita que intentas reprogramar.",
     "errorRescheduleConflict": "Ya tienes una cita en el nuevo horario. Por favor, selecciona uno distinto.",
+    "errorRescheduleForbidden": "No pudimos confirmar que puedas reprogramar esta cita. Revisa tu vinculación e intenta de nuevo.",
     "errorRescheduleInvalid": "Hubo un problema con el nuevo horario. Por favor, intenta de nuevo.",
     "errorRescheduleUnexpected": "No pudimos reprogramar tu cita en este momento. Por favor, intenta de nuevo.",
     "errorLoadAvailability": "No pudimos cargar los horarios disponibles. Intenta de nuevo.",
     "errorLoadAppointments": "No pudimos cargar tus citas. Por favor, intenta de nuevo.",
+    "errorLoadHistory": "No pudimos cargar tu historial de citas. Por favor, intenta de nuevo.",
+    "noHistory": "Aún no hay citas en tu historial.",
     "cancelTitle": "Cancelar cita",
     "cancelConfirm": "¿Estás seguro de que deseas cancelar esta cita?",
     "cancelBtn": "Cancelar cita",
@@ -274,6 +387,7 @@
     "title": "Plan Nutricional",
     "subtitle": "Organiza tus opciones de comida por tiempo y consulta tus metas diarias.",
     "downloadPdf": "Descargar PDF",
+    "exportingPdf": "Generando PDF...",
     "dailyGoals": "Metas diarias",
     "calories": "Calorías",
     "protein": "Proteína",
@@ -327,14 +441,14 @@
     "cancel": "Cancelar",
     "confirmDish": "Guardar platillo",
     "loadError": "No pudimos cargar tu plan nutricional.",
-    "loadErrorHelp": "Revisa la consola del navegador para ver los logs de HealthCore y vuelve a intentarlo.",
+    "loadErrorHelp": "No pudimos cargar tu plan nutricional en este momento. Intenta de nuevo más tarde",
     "retry": "Reintentar",
     "unavailable": "El plan nutricional no está disponible en este momento.",
     "contextTitle": "Plan autogestionado previo",
     "contextDescription": "Contexto previo conservado para consulta del profesional.",
-    "observationsTitle": "Observaciones de tu nutri\u00f3logo",
+    "observationsTitle": "Observaciones de tu nutriólogo",
     "observationsSubtitle": "Recomendaciones y notas de seguimiento agregadas a tu plan.",
-    "noObservations": "A\u00fan no hay observaciones disponibles.",
+    "noObservations": "Aún no hay observaciones disponibles.",
     "validation": {
       "nameRequired": "Ingresa un nombre para el platillo.",
       "nameTooLong": "El nombre del platillo puede tener hasta {{max}} caracteres.",
@@ -346,6 +460,32 @@
     "units": {
       "GRAMS": "Gramos",
       "MILLILITERS": "Mililitros"
+    },
+    "sectionSubtitleSelfManaged": "Opciones que puedes organizar para este tiempo de comida",
+    "sectionSubtitleReadOnly": "Platillos asignados para este tiempo de comida",
+    "emptyEditablePatient": "Aún no has agregado platillos en esta sección",
+    "emptyReadOnlyPatient": "Tu nutriólogo aún no te asigna platillos para esta sección",
+    "deleteDishTitle": "¿Estás seguro de que quieres eliminar este platillo?",
+    "deleteDishDescription": "Si eliminas \"{{name}}\" de tu plan, deberás guardar los cambios para confirmar la actualización",
+    "deleteDishConfirm": "Sí, eliminar platillo",
+    "pdf": {
+      "title": "Plan nutricional",
+      "generatedOn": "Generado el",
+      "patient": "Paciente",
+      "hydration": "Hidratación",
+      "mealSlot": "Tiempo de comida",
+      "dish": "Platillo",
+      "updatedAt": "Última actualización",
+      "sections": {
+        "dailyGoals": "Metas diarias",
+        "currentPlan": "Plan actual"
+      },
+      "empty": {
+        "plan": "No hay un plan nutricional disponible en este momento",
+        "previousPlan": "No hay un plan autogestionado previo disponible",
+        "none": "Sin registros"
+      },
+      "error": "No pudimos generar el PDF del plan nutricional. Intenta más tarde"
     }
   },
   "linking": {
@@ -358,6 +498,8 @@
     "invalidCodeFormat": "El código debe tener exactamente 6 caracteres.",
     "success": "¡Vinculación exitosa con tu nutriólogo!",
     "error": "Código inválido o expirado.",
+    "linkError": "No pudimos completar la vinculación en este momento. Inténtalo de nuevo en unos minutos.",
+    "linkUnavailable": "No pudimos revisar la vinculación en este momento. Inténtalo de nuevo en unos minutos.",
     "cameraError": "No se pudo acceder a la cámara. Por favor, verifica los permisos de tu navegador.",
     "linkNutritionist": "Vincular con Nutriólogo",
     "linkDesc": "Escanear QR o ingresar código",
@@ -365,6 +507,9 @@
     "unlinkDesc": "Romper la relación actual",
     "unlink": "Desvincularse",
     "unlinkSuccess": "Te has desvinculado correctamente de tu nutriólogo.",
+    "unlinkError": "No pudimos desvincularte en este momento. Inténtalo de nuevo en unos minutos.",
+    "unlinkUnavailable": "Por ahora no podemos completar la desvinculación porque primero necesitamos revisar tus citas futuras. Nada cambió en tu cuenta; inténtalo de nuevo en unos minutos.",
+    "unlinkAlreadyDone": "Parece que ya no tienes un nutriólogo vinculado.",
     "confirmUnlink": "¿Desvincularse del nutriólogo?",
     "confirmUnlinkDesc": "Esta acción romperá la relación con tu nutriólogo actual. Podrás vincularte a otro cuando lo desees.",
     "alreadyLinked": "Ya estás vinculado a un nutriólogo.",
@@ -373,6 +518,7 @@
   },
   "common": {
     "back": "Regresar",
-    "or": "O"
+    "or": "O",
+    "retry": "Reintentar"
   }
 }

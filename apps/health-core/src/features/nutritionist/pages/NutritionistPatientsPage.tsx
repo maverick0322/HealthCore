@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Search, Filter, ChevronRight, User, QrCode, AlertCircle } from "lucide-react";
+import { Search, ChevronRight, User, QrCode, AlertCircle } from "lucide-react";
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
 import { SettingsBar } from "@/shared/components/SettingsBar";
@@ -10,15 +10,17 @@ import { Button } from "@/shared/ui/button";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { clinicalApi } from "@/features/clinical/services/clinicalService";
 import type { NutritionistPatientProfileResponse } from "@/features/clinical/types/clinical.types";
-
-type PatientFilterStatus = "all" | "active" | "pendingReview";
+import { nutritionistAgendaService } from "@/features/nutritionist/services/nutritionistAgendaService";
+import type { AppointmentResponse } from "@/features/nutritionist/types/agenda.types";
+import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
 
 interface NutritionistPatientCardViewModel {
   id: string;
   name: string;
-  status: "active";
   lastVisit: string;
   goal: string;
+  futureAppointments: number;
+  nextAppointmentAt: string | null;
 }
 
 const getDisplayIdentity = (userId: string): string => {
@@ -31,22 +33,24 @@ const getDisplayIdentity = (userId: string): string => {
 
 const toPatientCardViewModel = (
   patient: NutritionistPatientProfileResponse,
-  goalPlaceholder: string,
+  futureAppointments: AppointmentResponse[],
+  goalLabel: string,
   lastVisitPlaceholder: string
 ): NutritionistPatientCardViewModel => ({
   id: patient.userId,
   name: patient.fullName?.trim() || getDisplayIdentity(patient.userId),
-  status: "active",
-  lastVisit: lastVisitPlaceholder,
-  goal: goalPlaceholder,
+  lastVisit: futureAppointments[0]?.startTime ?? lastVisitPlaceholder,
+  goal: goalLabel,
+  futureAppointments: futureAppointments.length,
+  nextAppointmentAt: futureAppointments[0]?.startTime ?? null,
 });
 
 export const NutritionistPatientsPage = () => {
-  const { t } = useTranslation("nutritionist");
+  const { t } = useTranslation(["nutritionist", "onboarding"]);
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<PatientFilterStatus>("all");
   const [patients, setPatients] = useState<NutritionistPatientProfileResponse[]>([]);
+  const [futureAppointments, setFutureAppointments] = useState<AppointmentResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -55,8 +59,23 @@ export const NutritionistPatientsPage = () => {
       try {
         setIsLoading(true);
         setLoadError(null);
-        const response = await clinicalApi.getNutritionistPatients();
-        setPatients(response);
+        const now = new Date();
+        const to = new Date(now);
+        to.setDate(to.getDate() + 90);
+        const [patientResponse, appointmentResponse] = await Promise.all([
+          clinicalApi.getNutritionistPatients(),
+          nutritionistAgendaService.getMyAppointments(now.toISOString(), to.toISOString()),
+        ]);
+        setPatients(patientResponse);
+        setFutureAppointments(
+          appointmentResponse
+            .filter((appointment) =>
+              appointment.status !== "CANCELLED" &&
+              appointment.status !== "ATTENDED" &&
+              new Date(appointment.startTime).getTime() > now.getTime()
+            )
+            .sort((left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime())
+        );
       } catch (error) {
         console.error("Error loading nutritionist patients:", error);
         setLoadError(t("patients.error"));
@@ -69,30 +88,31 @@ export const NutritionistPatientsPage = () => {
   }, [t]);
 
   const patientCards = useMemo(
-    () =>
-      patients.map((patient) =>
+    () => {
+      const appointmentsByPatient = new Map<string, AppointmentResponse[]>();
+      futureAppointments.forEach((appointment) => {
+        const current = appointmentsByPatient.get(appointment.patientId) ?? [];
+        current.push(appointment);
+        appointmentsByPatient.set(appointment.patientId, current);
+      });
+
+      return patients.map((patient) =>
         toPatientCardViewModel(
           patient,
-          t("patients.objectivePlaceholder"),
+          appointmentsByPatient.get(patient.userId) ?? [],
+          formatPatientGoalLabel(t, patient.goal),
           t("patients.lastVisitPlaceholder")
         )
-      ),
-    [patients, t]
+      );
+    },
+    [futureAppointments, patients, t]
   );
 
   const filteredPatients = useMemo(() => {
     return patientCards.filter((patient) => {
-      const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter = filterStatus === "all" || patient.status === filterStatus;
-      return matchesSearch && matchesFilter;
+      return patient.name.toLowerCase().includes(searchTerm.toLowerCase());
     });
-  }, [filterStatus, patientCards, searchTerm]);
-
-  const getStatusBadge = () => (
-    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-bold uppercase tracking-wider">
-      {t("patients.filters.active")}
-    </span>
-  );
+  }, [patientCards, searchTerm]);
 
   const renderBody = () => {
     if (isLoading) {
@@ -143,13 +163,21 @@ export const NutritionistPatientsPage = () => {
                   </p>
                 </div>
               </div>
-              {getStatusBadge()}
             </div>
 
             <div className="mt-5 flex items-center justify-between border-t border-border/50 pt-4">
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("patients.lastVisit", { date: patient.lastVisit })}
-              </span>
+              <div className="min-w-0">
+                <span className="block text-xs font-medium text-muted-foreground">
+                  {patient.nextAppointmentAt
+                    ? t("patients.nextAppointment", { date: new Date(patient.nextAppointmentAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) })
+                    : t("patients.lastVisit", { date: patient.lastVisit })}
+                </span>
+                {patient.futureAppointments > 0 && (
+                  <span className="mt-1 block text-[11px] font-medium text-amber-600 dark:text-amber-300">
+                    {t("patients.futureAppointments", { count: patient.futureAppointments })}
+                  </span>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
@@ -198,45 +226,23 @@ export const NutritionistPatientsPage = () => {
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full sm:max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-muted-foreground" />
+          <div className="w-full sm:max-w-md space-y-2">
+            <label htmlFor="nutritionist-patient-search" className="block text-sm font-medium text-foreground">
+              {t("patients.searchLabel")}
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-muted-foreground" />
+              </div>
+              <input
+                id="nutritionist-patient-search"
+                type="text"
+                placeholder={t("patients.searchPlaceholder")}
+                className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl text-sm outline-none focus:ring-2 ring-primary transition-all shadow-sm"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
             </div>
-            <input
-              type="text"
-              placeholder={t("patients.searchPlaceholder")}
-              className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl text-sm outline-none focus:ring-2 ring-primary transition-all shadow-sm"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
-            <Filter size={16} className="text-muted-foreground mr-1 hidden sm:block" />
-            <Button
-              variant={filterStatus === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterStatus("all")}
-              className="rounded-full"
-            >
-              {t("patients.filters.all")}
-            </Button>
-            <Button
-              variant={filterStatus === "active" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterStatus("active")}
-              className="rounded-full"
-            >
-              {t("patients.filters.active")}
-            </Button>
-            <Button
-              variant={filterStatus === "pendingReview" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilterStatus("pendingReview")}
-              className="rounded-full whitespace-nowrap"
-            >
-              {t("patients.filters.pendingReview")}
-            </Button>
           </div>
         </div>
 

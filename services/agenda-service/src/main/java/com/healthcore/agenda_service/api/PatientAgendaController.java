@@ -6,6 +6,7 @@ import com.healthcore.agenda_service.api.dto.CreateAppointmentRequest;
 import com.healthcore.agenda_service.application.CreateAppointmentCommand;
 import com.healthcore.agenda_service.application.PatientAppointmentService;
 import com.healthcore.agenda_service.domain.Appointment;
+import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.TimeSlot;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -118,6 +119,27 @@ public class PatientAgendaController {
             .toList();
     }
 
+    @Operation(summary = "Listar historial de citas", description = "Devuelve citas del paciente autenticado por rango y estados, incluyendo PENDING, CONFIRMED, CANCELLED y ATTENDED.")
+    @ApiResponse(responseCode = "200", description = "Historial obtenido exitosamente")
+    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
+    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @GetMapping("/appointments/history")
+    public List<AppointmentResponse> getMyAppointmentHistory(
+        Authentication authentication,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+        @RequestParam(required = false) List<AppointmentStatus> statuses
+    ) {
+        if (from == null || to == null || !from.isBefore(to)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rango de fechas invalido");
+        }
+        String patientId = currentPatientId(authentication);
+        return patientAppointmentService.listAppointmentHistory(patientId, from, to, statuses)
+            .stream()
+            .map(this::toAppointmentResponse)
+            .toList();
+    }
+
     private String currentPatientId(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated() || authentication.getName() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalido o ausente");
@@ -134,7 +156,11 @@ public class PatientAgendaController {
             appointment.getStartTime(),
             appointment.getEndTime(),
             appointment.getStatus(),
-            appointment.getVersion()
+            appointment.getVersion(),
+            appointment.getCancelledAt(),
+            appointment.getCancelledBy(),
+            appointment.getCancellationReason(),
+            appointment.getAttendedAt()
         );
     }
 
@@ -147,7 +173,10 @@ public class PatientAgendaController {
             slot.getOrigin(),
             slot.getVersion(),
             slot.isReserved(),
-            slot.isActive()
+            slot.isActive(),
+            slot.getDeactivatedAt(),
+            slot.getDeactivatedBy(),
+            slot.getDeactivationReason()
         );
     }
 }

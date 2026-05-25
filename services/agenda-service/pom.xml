@@ -226,7 +226,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.11</version>
+				<version>0.8.13</version>
 				<executions>
 					<execution>
 						<id>prepare-agent</id>
@@ -270,6 +270,7 @@
 							<!-- Exclude generated protobuf stubs, app bootstrap, and pure DTOs -->
 							<excludes>
 								<exclude>com/healthcore/clinical/grpc/**</exclude>
+								<exclude>com/healthcore/agenda/grpc/**</exclude>
 								<exclude>com/healthcore/agenda_service/AgendaServiceApplication.class</exclude>
 								<exclude>com/healthcore/agenda_service/api/dto/**</exclude>
 								<exclude>com/healthcore/agenda_service/domain/AppointmentStatus.class</exclude>

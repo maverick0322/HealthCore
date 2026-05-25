@@ -22,6 +22,10 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class PatientAppointmentService {
+    private static final List<AppointmentStatus> ACTIVE_STATUSES = List.of(
+        AppointmentStatus.PENDING,
+        AppointmentStatus.CONFIRMED
+    );
 
     private final TimeSlotRepository timeSlotRepository;
     private final AppointmentRepository appointmentRepository;
@@ -96,8 +100,7 @@ public class PatientAppointmentService {
             throw new ConflictException("No fue posible liberar el horario, intenta nuevamente");
         }
 
-        appointment.setStatus(AppointmentStatus.CANCELLED);
-        appointment.setUpdatedAt(Instant.now());
+        markCancelled(appointment, patientId, "PATIENT_CANCELLED", Instant.now());
         Appointment saved = appointmentRepository.save(appointment);
 
         agendaEventPublisher.publishAppointmentCancelled(new AppointmentCancelledEvent(
@@ -109,12 +112,60 @@ public class PatientAppointmentService {
         ));
     }
 
+    public List<Appointment> listAppointmentHistory(String patientId, Instant from, Instant to, List<AppointmentStatus> statuses) {
+        return appointmentRepository.findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            patientId,
+            from,
+            to,
+            normalizeStatuses(statuses)
+        );
+    }
+
     public List<Appointment> listMyUpcomingAppointments(String patientId) {
         return appointmentRepository.findByPatientIdAndStartTimeAfterAndStatusInOrderByStartTime(
             patientId,
             Instant.now(),
-            List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED)
+            ACTIVE_STATUSES
         );
+    }
+
+    public CancelFutureAppointmentsResult cancelFutureAppointmentsForUnlink(
+        String patientId,
+        String nutritionistId,
+        String actor,
+        String reason
+    ) {
+        Instant now = Instant.now();
+        List<Appointment> appointments = appointmentRepository
+            .findByPatientIdAndNutritionistIdAndStartTimeAfterAndStatusInOrderByStartTime(
+                patientId,
+                nutritionistId,
+                now,
+                ACTIVE_STATUSES
+            );
+
+        int releasedSlots = 0;
+        for (Appointment appointment : appointments) {
+            TimeSlot slot = timeSlotRepository.findById(appointment.getSlotId()).orElse(null);
+            if (slot != null && slot.isReserved()) {
+                slot.setReserved(false);
+                slot.setReservedByPatientId(null);
+                timeSlotRepository.save(slot);
+                releasedSlots++;
+            }
+
+            markCancelled(appointment, actor, reason, now);
+            Appointment saved = appointmentRepository.save(appointment);
+            agendaEventPublisher.publishAppointmentCancelled(new AppointmentCancelledEvent(
+                saved.getId(),
+                saved.getPatientId(),
+                saved.getNutritionistId(),
+                saved.getStartTime().toString(),
+                saved.getLocale()
+            ));
+        }
+
+        return new CancelFutureAppointmentsResult(appointments.size(), releasedSlots);
     }
 
     public Appointment rescheduleAppointment(String patientId, String appointmentId, CreateAppointmentCommand command) {
@@ -169,5 +220,19 @@ public class PatientAppointmentService {
         appointmentConfirmationService.confirmAppointmentAsync(updated.getId());
         
         return updated;
+    }
+
+    private void markCancelled(Appointment appointment, String actor, String reason, Instant timestamp) {
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        appointment.setCancelledAt(timestamp);
+        appointment.setCancelledBy(actor);
+        appointment.setCancellationReason(reason);
+        appointment.setUpdatedAt(timestamp);
+    }
+
+    private List<AppointmentStatus> normalizeStatuses(List<AppointmentStatus> statuses) {
+        return statuses == null || statuses.isEmpty()
+            ? List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.CANCELLED, AppointmentStatus.ATTENDED)
+            : statuses;
     }
 }

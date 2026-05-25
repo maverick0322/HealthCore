@@ -40,6 +40,8 @@ describe('nutritionistAgendaService', () => {
 
     await nutritionistAgendaService.getMySlots('from', 'to');
     await nutritionistAgendaService.getMyAppointments('from', 'to');
+    await nutritionistAgendaService.getAppointmentReport('from', 'to', ['PENDING', 'ATTENDED'], 'patient-1');
+    await nutritionistAgendaService.getSlotReport('from', 'to', 'inactive');
     await nutritionistAgendaService.deactivateSlot('slot-1');
 
     expect(httpClient.get).toHaveBeenCalledWith('/agenda/nutritionist/slots', {
@@ -47,6 +49,12 @@ describe('nutritionistAgendaService', () => {
     });
     expect(httpClient.get).toHaveBeenCalledWith('/agenda/nutritionist/appointments', {
       params: { from: 'from', to: 'to' },
+    });
+    expect(httpClient.get).toHaveBeenCalledWith('/agenda/nutritionist/reports/appointments', {
+      params: { from: 'from', to: 'to', statuses: 'PENDING,ATTENDED', patientId: 'patient-1' },
+    });
+    expect(httpClient.get).toHaveBeenCalledWith('/agenda/nutritionist/reports/slots', {
+      params: { from: 'from', to: 'to', state: 'inactive' },
     });
     expect(httpClient.patch).toHaveBeenCalledWith('/agenda/nutritionist/slots/slot-1/deactivate');
   });

@@ -9,7 +9,8 @@
   "dashboard": {
     "greeting": "Hello, Lic. {{name}}",
     "greetingSubtitle": "Here is a summary of your activity today.",
-    "activePatients": "Active Patients",
+    "activePatients": "Active patients",
+    "totalPatients": "Total Patients",
     "appointmentsToday": "Appointments Today",
     "pendingReviews": "Pending Reviews",
     "pendingAppointments": "Pending Appointments",
@@ -35,7 +36,7 @@
   "patients": {
     "title": "My Patients",
     "subtitle": "Manage and track your patients.",
-    "searchPlaceholder": "Search patient by name...",
+    "searchPlaceholder": "Search your patients by name",
     "loading": "Loading linked patients...",
     "error": "Unable to load linked patients.",
     "empty": "No linked patients were found.",
@@ -49,11 +50,14 @@
     "addPatient": "Add Patient",
     "viewFile": "View File",
     "lastVisit": "Last visit: {{date}}",
+    "nextAppointment": "Next appointment: {{date}}",
+    "futureAppointments": "{{count}} future appointment",
+    "futureAppointments_other": "{{count}} future appointments",
     "file": {
       "back": "Back to Patients",
       "tabOverview": "Overview",
       "tabPlan": "Nutrition Plan",
-      "tabHistory": "Observations",
+      "tabHistory": "History",
       "tabObservations": "Observations",
       "age": "Age",
       "weight": "Current Weight",
@@ -75,7 +79,58 @@
       "statusActive": "Active",
       "confirmUnlink": "Are you sure you want to unlink this patient? You will lose access to their file",
       "unlink": "Unlink",
-      "unlinkTitle": "Unlink Patient"
+      "unlinkTitle": "Unlink Patient",
+      "unlinkError": "We could not unlink this patient right now. Please try again in a few minutes.",
+      "unlinkUnavailable": "We cannot unlink this patient yet because we first need to review their future appointments. Nothing changed; please try again in a few minutes.",
+      "unlinkForbidden": "We could not unlink this patient. Please check that they are still linked to your account.",
+      "unlinkNotFound": "We could not find this patient profile. They may no longer be linked.",
+      "editObservation": "Edit",
+      "deleteObservation": "Delete",
+      "editObservationTitle": "Edit observation",
+      "saveObservationChanges": "Save changes",
+      "deleteObservationTitle": "Do you want to delete this observation?",
+      "deleteObservationDescription": "This observation will be removed from the patient's file",
+      "observationUpdateError": "We could not update the observation right now",
+      "observationDeleteError": "We could not delete the observation right now",
+      "downloadPdf": "Download Patient File PDF",
+      "historyError": "We could not load the patient's weight history",
+      "metrics": {
+        "button": "Modify",
+        "title": "Update weight and height",
+        "weightLabel": "Weight (kg)",
+        "heightLabel": "Height (cm)",
+        "save": "Save",
+        "cancel": "Cancel",
+        "back": "Back",
+        "confirmTitle": "Do you want to save these changes?",
+        "confirmDescription": "Are you sure you want to save a weight of {{weight}} kg and a height of {{height}} cm?",
+        "updateError": "We could not update the patient's weight and height right now",
+        "validation": {
+          "weightRequired": "Enter a weight to continue",
+          "weightInvalid": "Enter a valid weight",
+          "weightRange": "Weight must be between 40.0 kg and 200.0 kg",
+          "heightRequired": "Enter a height to continue",
+          "heightInvalid": "Enter a valid height",
+          "heightRange": "Height must be between 100 cm and 250 cm"
+        }
+      },
+      "pdf": {
+        "title": "Patient clinical file",
+        "generatedOn": "Generated on",
+        "patient": "Patient",
+        "activity": "Activity level",
+        "dietType": "Diet type",
+        "allergies": "Allergies",
+        "excludedFoods": "Foods to avoid",
+        "latestRecord": "Latest record",
+        "mealSlot": "Meal slot",
+        "dishCount": "Dishes",
+        "dailyGoals": "Daily goals",
+        "noWeightHistory": "There are no weight records available",
+        "noNutritionPlan": "There is no nutrition plan available",
+        "none": "No information",
+        "error": "We could not generate the patient file PDF right now"
+      }
     }
   },
   "nutritionPlan": {
@@ -102,10 +157,16 @@
       "DINNER": "19:00 - 21:00",
       "SNACK": "11:00 - 12:00 / 16:00 - 18:00"
     },
-    "sectionSubtitle": "Options the patient will see for this meal time.",
+    "sectionSubtitle": "Options available for this meal time",
+    "sectionSubtitleNutritionist": "Options the patient will see for this meal time",
+    "sectionSubtitleSelfManaged": "Options you can organize for this meal time",
+    "sectionSubtitleReadOnly": "Dishes assigned for this meal time",
     "addDish": "Add dish",
-    "emptyEditable": "There are no dishes in this section yet.",
-    "emptyReadOnly": "No dishes are available in this section.",
+    "emptyEditable": "There are no dishes in this section yet",
+    "emptyEditableNutritionist": "There are no dishes assigned in this section yet",
+    "emptyEditablePatient": "You have not added dishes in this section yet",
+    "emptyReadOnly": "No dishes are available in this section",
+    "emptyReadOnlyPatient": "Your nutritionist has not assigned dishes for this section yet",
     "proteinShort": "Pro",
     "carbsShort": "Carb",
     "fatShort": "Fat",
@@ -134,8 +195,11 @@
     "notesPlaceholder": "Ex. If there is no apple, use pear.",
     "cancel": "Cancel",
     "confirmDish": "Save dish",
+    "deleteDishTitle": "Are you sure you want to remove this dish?",
+    "deleteDishDescription": "If you remove \"{{name}}\" from the plan, you will need to save the changes to confirm the update",
+    "deleteDishConfirm": "Yes, remove dish",
     "loadError": "We could not load the nutrition plan.",
-    "loadErrorHelp": "Check the browser console for HealthCore logs and try again.",
+    "loadErrorHelp": "We could not load the nutrition plan right now. Please try again later.",
     "retry": "Retry",
     "unavailable": "The nutrition plan is not available right now.",
     "contextTitle": "Previous self-managed plan",
@@ -156,6 +220,17 @@
   "agenda": {
     "title": "Schedule",
     "subtitle": "Manage your appointments and availability",
+    "validation": {
+      "durationNotInteger": "Appointment duration must be an integer number of minutes.",
+      "durationTooShort": "Appointment duration must be at least 15 minutes.",
+      "durationTooLong": "Appointment duration cannot exceed 120 minutes.",
+      "timeBlockRequired": "Each time block must include a start and end time.",
+      "timeBlockOrder": "Start time must be before end time.",
+      "timeBlockOutsideHours": "Slots must be between 06:00 and 21:00.",
+      "timeBlockOverlap": "Time blocks for the same day cannot overlap.",
+      "timeBlockPast": "You cannot generate slots in past hours.",
+      "timeBlockTooShortForDuration": "The time block is too short for the selected appointment duration."
+    },
     "newAppointment": "New Appointment",
     "blockTime": "Block Time",
     "availability": "Configure Availability",
@@ -193,15 +268,81 @@
     }
   },
   "reports": {
-    "title": "Reports and Exports",
-    "subtitle": "Generate and download progress reports for your patients.",
-    "activePatients": "Active Patients",
-    "consultations": "Monthly Consultations",
-    "reportsGenerated": "Reports Generated",
+    "title": "Reports and Operational Management",
+    "subtitle": "Review your patients' weight progress and your appointment activity without leaving this screen.",
+    "generatedOn": "Generated on {{date}}",
+    "exportPdf": "Export report PDF",
+    "exportingPdf": "Exporting PDF...",
+    "retry": "Retry",
+    "error": "We could not load the nutritionist reports.",
+    "loading": "Loading reports...",
+    "activePatients": "Active patients",
+    "totalPatients": "Total Patients",
+    "consultations": "Attended Consultations",
+    "cancelledAppointments": "Cancelled Appointments",
+    "deactivatedSlots": "Deactivated Slots",
     "exportTitle": "Export Patient Data",
-    "exportDesc": "Select a patient to download their clinical history and progress.",
+    "exportDesc": "Patient summary based on pending, confirmed, cancelled, and attended appointments.",
+    "searchPlaceholder": "Search patient...",
+    "empty": "No patients were found for reporting.",
+    "lastActivity": "Last activity: {{date}}",
+    "appointmentsSummary": "{{attended}} attended · {{active}} active · {{cancelled}} cancelled",
     "downloadPdf": "Download PDF",
-    "downloadCsv": "Export CSV"
+    "downloadCsv": "Export CSV",
+    "ranges": {
+      "1m": "1 month",
+      "3m": "3 months",
+      "6m": "6 months",
+      "12m": "12 months"
+    },
+    "rangeWindow": "Showing accumulated data from {{from}} to {{to}}",
+    "kpis": {
+      "activePatients": "Active patients",
+      "totalPatients": "Total Patients",
+      "attendedAppointments": "Attended appointments",
+      "patientsWithoutWeight": "Patients without weight records",
+      "deactivatedSlots": "Deactivated slots"
+    },
+    "appointments": {
+      "title": "Appointment overview",
+      "attended": "Attended",
+      "cancelled": "Cancelled",
+      "percent": "{{percent}}% of attended or cancelled appointments in this period",
+      "helper": "Percentages are calculated only from attended and cancelled appointments in the selected period",
+      "empty": "There were no attended or cancelled appointments in this period",
+      "summary": {
+        "prefix": "In this period",
+        "connector": "and",
+        "attended_one": "you attended {{count}} appointment",
+        "attended_other": "you attended {{count}} appointments",
+        "cancelled_one": "{{count}} was cancelled",
+        "cancelled_other": "{{count}} were cancelled",
+        "empty": "There is no attended or cancelled appointment activity in this period yet."
+      }
+    },
+    "weightTable": {
+      "title": "Patient weight control",
+      "latestDate": "Latest weight record within the selected period: {{date}}",
+      "noLatestDate": "There are no weight records in the selected period yet.",
+      "empty": "There are no linked patients to display in this report.",
+      "noRecords": "No records in this period",
+      "summary": "The first weight and the change are calculated by comparing the first and last record within the selected period",
+      "columns": {
+        "patient": "Patient",
+        "latestRecord": "Date of latest record",
+        "startWeight": "First weight in period",
+        "currentWeight": "Latest weight in period",
+        "netChange": "Change in period"
+      }
+    },
+    "pdf": {
+      "generatedOn": "Generated on",
+      "activeRange": "Active range",
+      "rangeWindow": "Range window",
+      "sections": {
+        "overview": "Executive summary"
+      }
+    }
   },
   "availability": {
     "title": "Availability",
@@ -285,7 +426,7 @@
   },
   "profile": {
     "title": "My Profile",
-    "subtitle": "Manage your public and professional information.",
+    "subtitle": "Manage your public and professional information",
     "contactInfo": "Contact information",
     "credentials": "Credentials",
     "specialty": "Specialty",
@@ -307,7 +448,7 @@
   },
   "linking": {
     "title": "Link Patient",
-    "description": "Ask your patient to scan this QR or enter the alphanumeric code in their app.",
+    "description": "Ask your patient to scan this QR or enter the alphanumeric code in their app",
     "expiredTitle": "QR time has run out",
     "expiredDesc": "For security reasons, the previous code has been invalidated.",
     "generateNewBtn": "Generate new code",

@@ -7,6 +7,7 @@ import {
   BarChart3,
   User
 } from "lucide-react";
+import logoIcon from "@/assets/icon-192.png";
 
 const NAV_ITEMS = [
   { id: "nav-dashboard", labelKey: "nav.dashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard/nutritionist" },
@@ -27,7 +28,7 @@ export const NutritionistNav = () => {
       <aside className="hidden md:flex flex-col w-56 fixed inset-y-0 left-0 bg-card border-r border-border z-40">
         <div className="p-6">
           <div className="flex items-center gap-2 text-primary font-bold text-xl tracking-tight">
-            <img src="/icon-192.png" alt="HealthCore" className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground" />
+            <img src={logoIcon} alt="HealthCore" className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground" />
             <span className="font-bold tracking-tight text-black dark:text-white">HealthCore</span>
           </div>
         </div>

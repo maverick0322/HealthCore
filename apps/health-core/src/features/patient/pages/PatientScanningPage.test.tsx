@@ -125,4 +125,23 @@ describe('PatientScanningPage', () => {
     await new Promise((r) => setTimeout(r, 2100));
     expect(mockNavigate).toHaveBeenCalledWith('/profile');
   });
+
+  it('should show a friendly message when unlink cleanup is temporarily unavailable', async () => {
+    (clinicalApi.isPatientLinked as any).mockResolvedValue(true);
+    (clinicalApi.unlinkPatient as any).mockRejectedValue({
+      response: { status: 503, data: { message: 'No fue posible cancelar las citas futuras antes de desvincular' } },
+    });
+
+    render(<PatientScanningPage />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getAllByText('linking.unlink')[0]);
+    });
+
+    await waitFor(() => {
+      fireEvent.click(screen.getAllByText('linking.unlink')[1]);
+    });
+
+    expect(await screen.findByText('linking.unlinkUnavailable')).toBeInTheDocument();
+  });
 });

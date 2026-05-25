@@ -19,11 +19,18 @@ export const Step4Preferences = ({ onNext, onBack }: Step4PreferencesProps) => {
   const addExcludedFood = usePatientOnboardingStore((state) => state.addExcludedFood);
   const removeExcludedFood = usePatientOnboardingStore((state) => state.removeExcludedFood);
   const [foodInput, setFoodInput] = useState('');
+  const [foodError, setFoodError] = useState<string | null>(null);
 
   const handleAddFood = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && foodInput.trim()) {
+      if (/\d/.test(foodInput)) {
+        setFoodError(t('patient.preferences.avoidFoodsValidation'));
+        return;
+      }
+
       addExcludedFood(foodInput.trim());
       setFoodInput('');
+      setFoodError(null);
     }
   };
 
@@ -96,15 +103,25 @@ export const Step4Preferences = ({ onNext, onBack }: Step4PreferencesProps) => {
         <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           {t('patient.preferences.avoidFoods')}
         </h3>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-muted-foreground">{t('patient.preferences.avoidFoodsHelper')}</span>
+          <span className="text-xs text-muted-foreground">{foodInput.length}/40</span>
+        </div>
         <Input
           type="text"
           className="w-full px-4 py-6 bg-background border-2 border-border rounded-xl h-12"
           placeholder={t('patient.preferences.avoidPlaceholder')}
           value={foodInput}
           maxLength={40}
-          onChange={(event) => setFoodInput(event.target.value)}
+          aria-invalid={Boolean(foodError)}
+          onChange={(event) => {
+            const nextValue = event.target.value.replace(/\d/g, '');
+            setFoodInput(nextValue);
+            setFoodError(event.target.value !== nextValue ? t('patient.preferences.avoidFoodsValidation') : null);
+          }}
           onKeyDown={handleAddFood}
         />
+        {foodError ? <p className="text-xs text-destructive">{foodError}</p> : null}
         <div className="flex flex-wrap gap-2 mt-2">
           {preferences.excludedFoods.map((food) => (
             <div

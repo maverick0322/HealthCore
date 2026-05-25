@@ -5,8 +5,7 @@ import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type { WeightRecord } from '@/features/clinical/types/clinical.types';
 import { AxiosError } from 'axios';
 
-const WEIGHT_HISTORY_QUERY_KEY = ['clinical', 'weight-history'];
-const WEIGHT_HISTORY_CACHE_TIME = 5 * 60 * 1000;
+export const WEIGHT_HISTORY_QUERY_KEY = ['clinical', 'weight-history'] as const;
 
 interface UseWeightHistoryReturn {
   data: WeightRecord[];
@@ -16,8 +15,12 @@ interface UseWeightHistoryReturn {
   refetch: UseQueryResult<WeightRecord[], Error>['refetch'];
 }
 
-export const useWeightHistory = (): UseWeightHistoryReturn => {
-  const user = useAuthStore.getState().user;
+interface UseWeightHistoryOptions {
+  enabled?: boolean;
+}
+
+export const useWeightHistory = ({ enabled = true }: UseWeightHistoryOptions = {}): UseWeightHistoryReturn => {
+  const user = useAuthStore((state) => state.user);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: [...WEIGHT_HISTORY_QUERY_KEY, user?.email ?? null],
@@ -27,7 +30,7 @@ export const useWeightHistory = (): UseWeightHistoryReturn => {
       }
 
       try {
-        return await clinicalApi.getWeightHistory(user.email);
+        return await clinicalApi.getWeightHistory();
       } catch (err: any) {
         if (err.response?.status === 404) {
           return [];
@@ -35,14 +38,16 @@ export const useWeightHistory = (): UseWeightHistoryReturn => {
         throw err;
       }
     },
-    staleTime: WEIGHT_HISTORY_CACHE_TIME,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     retry: (count, err: any) => {
       if (err?.response?.status === 404) {
         return false;
       }
       return count < 2;
     },
-    enabled: !!user?.email,
+    enabled: enabled && !!user?.email,
   });
 
   return {
@@ -52,19 +57,4 @@ export const useWeightHistory = (): UseWeightHistoryReturn => {
     error: error as AxiosError<unknown> | null,
     refetch,
   };
-};
-
-export const transformWeightDataForChart = (data: WeightRecord[] | undefined) => {
-  if (!data || data.length === 0) {
-    return [];
-  }
-
-  return data.map((record) => ({
-    date: new Date(record.date).toLocaleDateString('es-ES', {
-      month: 'short',
-      day: 'numeric',
-    }),
-    weight: record.weightKg,
-    fullDate: record.date,
-  }));
 };

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Calendar, CalendarCheck, Loader2, RefreshCw } from 'lucide-react';
+import { Calendar, CalendarCheck, History, Loader2, RefreshCw } from 'lucide-react';
 
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
@@ -32,10 +32,13 @@ export const PatientAppointmentsPage = () => {
     goToToday,
     // Data
     appointments,
+    historyAppointments,
     availabilityItems,
     // Loading / error
     loadingAppts,
     apptError,
+    loadingHistory,
+    historyError,
     loadingSlots,
     slotError,
     loadingProfile,
@@ -54,6 +57,7 @@ export const PatientAppointmentsPage = () => {
     toast,
     // Actions
     fetchAppointments,
+    fetchHistoryAppointments,
     handleBook,
     handleCancel,
     handleReschedule,
@@ -132,6 +136,19 @@ export const PatientAppointmentsPage = () => {
           >
             {t('appointments.tabSchedule')}
           </button>
+          <button
+            key="history"
+            id="tab-history"
+            type="button"
+            onClick={() => setActiveTab('history')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === 'history'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t('appointments.history')}
+          </button>
         </div>
       </div>
 
@@ -182,6 +199,64 @@ export const PatientAppointmentsPage = () => {
                       appointment={appt}
                       onCancel={setCancelTarget}
                       onReschedule={openRescheduleFor}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'history' && (
+          <Card>
+            <CardHeader className="pb-3 border-b border-border/50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <History size={18} className="text-primary" />
+                  {t('appointments.history')}
+                </CardTitle>
+                <Button
+                  id="btn-refresh-history"
+                  variant="ghost"
+                  size="icon"
+                  onClick={fetchHistoryAppointments}
+                  disabled={loadingHistory}
+                >
+                  <RefreshCw size={16} className={loadingHistory ? 'animate-spin' : ''} />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingHistory && (
+                <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+                  <Loader2 size={18} className="animate-spin" />
+                  <span className="text-sm">{t('appointments.loadingHistory')}</span>
+                </div>
+              )}
+
+              {historyError && !loadingHistory && (
+                <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
+                  <p className="text-sm">{historyError}</p>
+                  <Button size="sm" variant="outline" onClick={fetchHistoryAppointments}>{t('appointments.retry')}</Button>
+                </div>
+              )}
+
+              {!loadingHistory && !historyError && historyAppointments.length === 0 && (
+                <div className="flex flex-col items-center gap-2 py-12 text-muted-foreground">
+                  <Calendar size={32} className="opacity-40" />
+                  <p className="text-sm">{t('appointments.noHistory')}</p>
+                </div>
+              )}
+
+              {!loadingHistory && !historyError && historyAppointments.length > 0 && (
+                <div className="divide-y divide-border/50">
+                  {historyAppointments.map((appt) => (
+                    <AppointmentListItem
+                      key={appt.id}
+                      appointment={appt}
+                      onCancel={setCancelTarget}
+                      onReschedule={openRescheduleFor}
+                      showActions={false}
                     />
                   ))}
                 </div>

@@ -82,8 +82,14 @@ export const CalorieCalculator = () => {
               inputMode="numeric"
               min={10}
               max={120}
-              value={age}
-              onChange={(e) => setAge(Number(e.target.value))}
+              value={age || ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val.length <= 3) {
+                  setAge(val === "" ? 0 : Number(val));
+                }
+              }}
+              maxLength={3}
             />
           </div>
 
@@ -96,8 +102,14 @@ export const CalorieCalculator = () => {
               min={30}
               max={300}
               step={0.1}
-              value={weightKg}
-              onChange={(e) => setWeightKg(Number(e.target.value))}
+              value={weightKg || ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val.length <= 5) {
+                  setWeightKg(val === "" ? 0 : Number(val));
+                }
+              }}
+              maxLength={5}
             />
           </div>
 
@@ -110,8 +122,14 @@ export const CalorieCalculator = () => {
               min={120}
               max={230}
               step={0.1}
-              value={heightCm}
-              onChange={(e) => setHeightCm(Number(e.target.value))}
+              value={heightCm || ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val.length <= 5) {
+                  setHeightCm(val === "" ? 0 : Number(val));
+                }
+              }}
+              maxLength={5}
             />
           </div>
         </div>

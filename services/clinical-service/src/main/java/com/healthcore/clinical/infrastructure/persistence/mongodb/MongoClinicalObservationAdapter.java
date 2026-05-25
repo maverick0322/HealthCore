@@ -5,6 +5,7 @@ import com.healthcore.clinical.domain.port.out.ClinicalObservationRepositoryPort
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -29,6 +30,21 @@ public class MongoClinicalObservationAdapter implements ClinicalObservationRepos
                 .stream()
                 .map(this::toDomain)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<ClinicalObservation> findById(String observationId) {
+        return repository.findById(observationId).map(this::toDomain);
+    }
+
+    @Override
+    public void deleteById(String observationId) {
+        repository.deleteById(observationId);
+    }
+
+    @Override
+    public void deleteAllByPatientId(String patientId) {
+        repository.deleteAllByPatientId(patientId);
     }
 
     private ClinicalObservationDocument toDocument(ClinicalObservation domain) {

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, createHashRouter } from "react-router-dom";
 import { ProtectedRoute } from "@/core/routes/ProtectedRoute";
 import { GuestRoute } from "@/core/routes/GuestRoute";
 import { OnboardingGuard } from "@/core/routes/OnboardingGuard";
@@ -38,7 +38,13 @@ import { NutritionistOnboardingPage } from "@/features/onboarding/pages/Nutritio
 import {NutritionistGenerateQrPage} from "@/features/nutritionist/pages/NutritionistGenerateQrPage";
 import { OnboardingEntryRedirect } from "@/core/routes/OnboardingEntryRedirect";
 
-export const appRouter = createBrowserRouter([
+const isElectron =
+  window.navigator.userAgent.toLowerCase().includes("electron") ||
+  window.location.protocol === "file:";
+
+const routerFactory = isElectron ? createHashRouter : createBrowserRouter;
+
+export const appRouter = routerFactory([
   // ── Public marketing routes ──
   {
     path: "/",
@@ -75,7 +81,7 @@ export const appRouter = createBrowserRouter([
     element: <ResetPasswordPage />,
     errorElement: <ErrorBoundaryPage />,
   },
-  // ── Guest-only routes (redirect to /home if already authenticated) ──
+  // ── Guest-only routes (redirect to /dashboard if already authenticated) ──
   {
     errorElement: <ErrorBoundaryPage />,
     element: <GuestRoute />,
@@ -89,7 +95,7 @@ export const appRouter = createBrowserRouter([
     errorElement: <ErrorBoundaryPage />,
     element: <ProtectedRoute />,
     children: [
-      { path: '/home', element: <HomePage /> },
+      { path: '/dashboard', element: <HomePage /> },
       { path: '/onboarding', element: <OnboardingEntryRedirect /> },
     ],
   },

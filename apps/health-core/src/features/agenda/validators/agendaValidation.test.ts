@@ -4,6 +4,7 @@ import {
   validateTimeBlock,
   validateNoOverlap,
   validateNotPastToday,
+  validateBlockFitsDuration,
 } from './agendaValidation';
 
 // ── validateDuration ──────────────────────────────────────────────────────────
@@ -148,3 +149,25 @@ describe('validateNotPastToday', () => {
     expect(validateNotPastToday('2026-05-20', blocks, TODAY)).toBeNull();
   });
 });
+
+// ── validateBlockFitsDuration ────────────────────────────────────────────────
+
+describe('validateBlockFitsDuration', () => {
+  it('returns null if slot duration fits in the block', () => {
+    expect(validateBlockFitsDuration('09:00', '10:00', 45)).toBeNull();
+  });
+
+  it('returns null if slot duration exactly equals the block duration', () => {
+    expect(validateBlockFitsDuration('09:00', '09:45', 45)).toBeNull();
+  });
+
+  it('returns timeBlockTooShortForDuration if slot duration exceeds the block duration', () => {
+    expect(validateBlockFitsDuration('09:00', '09:30', 45)).toBe('agenda.validation.timeBlockTooShortForDuration');
+  });
+
+  it('returns timeBlockRequired if start or end is empty', () => {
+    expect(validateBlockFitsDuration('', '10:00', 45)).toBe('agenda.validation.timeBlockRequired');
+    expect(validateBlockFitsDuration('09:00', '', 45)).toBe('agenda.validation.timeBlockRequired');
+  });
+});
+

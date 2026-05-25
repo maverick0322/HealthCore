@@ -4,12 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.Gender;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressReport;
+import com.healthcore.clinical.domain.model.NutritionistWeightProgressRow;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
 import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
+import com.healthcore.clinical.infrastructure.rest.dto.UpdatePatientMetricsRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
 import org.junit.jupiter.api.AfterEach;
@@ -39,6 +42,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -117,14 +121,15 @@ class ClinicalControllerTest {
         when(mockProfile.generateHealthGoals()).thenReturn(mockGoal);
         when(manageProfileUseCase.getProfileByUserId("user-123")).thenReturn(Optional.of(mockProfile));
 
-        mockMvc.perform(get("/api/v1/clinical/goals/me").header("X-User-Id", "user-123"))
+        mockMvc.perform(get("/api/v1/clinical/goals/me"))
                 .andExpect(status().isOk());
     }
 
     @Test
     void shouldReturnOkWhenUpdatingWeight() throws Exception {
         setSecurityContext("user-123", "PATIENT");
-        UpdateWeightRequest request = new UpdateWeightRequest(80.5);
+        LocalDate targetDate = LocalDate.now();
+        UpdateWeightRequest request = new UpdateWeightRequest(80.5, targetDate);
 
         com.healthcore.clinical.domain.model.HealthGoal mockGoal =
                 Mockito.mock(com.healthcore.clinical.domain.model.HealthGoal.class);
@@ -134,17 +139,67 @@ class ClinicalControllerTest {
         when(mockGoal.targetFat()).thenReturn(75);
         when(mockGoal.targetWaterGlasses()).thenReturn(11);
 
-        when(manageProfileUseCase.updateWeight(eq("user-123"), eq(80.5))).thenReturn(mockGoal);
+        when(manageProfileUseCase.updateWeight(eq("user-123"), eq(80.5), eq(targetDate))).thenReturn(mockGoal);
 
         mockMvc.perform(post("/api/v1/clinical/weight")
-                        .header("X-User-Id", "user-123")
+                        .header("X-User-Id", "spoofed-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.targetCalories").value(2600))
                 .andExpect(jsonPath("$.targetWaterGlasses").value(11));
 
-        verify(manageProfileUseCase).updateWeight("user-123", 80.5);
+        verify(manageProfileUseCase).updateWeight("user-123", 80.5, targetDate);
+    }
+
+    @Test
+    void shouldReturnOkWhenEditingWeight() throws Exception {
+        setSecurityContext("user-123", "PATIENT");
+        LocalDate originalDate = LocalDate.of(2026, 5, 20);
+        LocalDate updatedDate = LocalDate.of(2026, 5, 18);
+        UpdateWeightRequest request = new UpdateWeightRequest(79.8, updatedDate);
+
+        com.healthcore.clinical.domain.model.HealthGoal mockGoal =
+                Mockito.mock(com.healthcore.clinical.domain.model.HealthGoal.class);
+        when(mockGoal.targetCalories()).thenReturn(2450);
+        when(mockGoal.targetProtein()).thenReturn(150);
+        when(mockGoal.targetCarbs()).thenReturn(245);
+        when(mockGoal.targetFat()).thenReturn(70);
+        when(mockGoal.targetWaterGlasses()).thenReturn(10);
+
+        when(manageProfileUseCase.editWeight(eq("user-123"), eq(originalDate), eq(79.8), eq(updatedDate)))
+                .thenReturn(mockGoal);
+
+        mockMvc.perform(put("/api/v1/clinical/weight/{originalDate}", originalDate)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targetCalories").value(2450));
+
+        verify(manageProfileUseCase).editWeight("user-123", originalDate, 79.8, updatedDate);
+    }
+
+    @Test
+    void shouldReturnOkWhenDeletingWeight() throws Exception {
+        setSecurityContext("user-123", "PATIENT");
+        LocalDate targetDate = LocalDate.of(2026, 5, 18);
+
+        com.healthcore.clinical.domain.model.HealthGoal mockGoal =
+                Mockito.mock(com.healthcore.clinical.domain.model.HealthGoal.class);
+        when(mockGoal.targetCalories()).thenReturn(2350);
+        when(mockGoal.targetProtein()).thenReturn(140);
+        when(mockGoal.targetCarbs()).thenReturn(230);
+        when(mockGoal.targetFat()).thenReturn(66);
+        when(mockGoal.targetWaterGlasses()).thenReturn(10);
+
+        when(manageProfileUseCase.deleteWeight(eq("user-123"), eq(targetDate))).thenReturn(mockGoal);
+
+        mockMvc.perform(delete("/api/v1/clinical/weight/{date}", targetDate)
+                        .header("X-User-Id", "spoofed-user"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targetCalories").value(2350));
+
+        verify(manageProfileUseCase).deleteWeight("user-123", targetDate);
     }
 
     @Test
@@ -157,11 +212,28 @@ class ClinicalControllerTest {
 
         when(manageProfileUseCase.getWeightHistory("user-123")).thenReturn(history);
 
-        mockMvc.perform(get("/api/v1/clinical/weight/history").header("X-User-Id", "user-123"))
+        mockMvc.perform(get("/api/v1/clinical/weight/history"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].weightKg").value(70.0))
                 .andExpect(jsonPath("$[1].weightKg").value(68.5));
+    }
+
+    @Test
+    void shouldReturnOkAndListWhenGettingNutritionistPatientWeightHistory() throws Exception {
+        setSecurityContext("nutri-123", "NUTRITIONIST");
+        List<WeightRecord> history = List.of(
+                new WeightRecord(72.0, LocalDate.of(2026, 5, 1)),
+                new WeightRecord(70.5, LocalDate.of(2026, 5, 15))
+        );
+
+        when(manageProfileUseCase.getWeightHistoryForNutritionist("nutri-123", "patient-123")).thenReturn(history);
+
+        mockMvc.perform(get("/api/v1/clinical/nutritionist/patients/patient-123/weight-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].weightKg").value(72.0))
+                .andExpect(jsonPath("$[1].weightKg").value(70.5));
     }
 
     @Test
@@ -270,6 +342,74 @@ class ClinicalControllerTest {
                 .andExpect(jsonPath("$.userId").value(patientId))
                 .andExpect(jsonPath("$.fullName").value("Carlos Gomez"))
                 .andExpect(jsonPath("$.nutritionistId").value(nutritionistId));
+    }
+
+    @Test
+    void shouldUpdatePatientMetricsForNutritionist() throws Exception {
+        String nutritionistId = "nutri-123";
+        String patientId = "patient-one@example.com";
+        setSecurityContext(nutritionistId, "NUTRITIONIST");
+
+        PatientProfile patient = createPatientProfile(patientId);
+        patient.assignNutritionist(nutritionistId);
+        UpdatePatientMetricsRequest request = new UpdatePatientMetricsRequest(74.5, 180.0);
+
+        when(manageProfileUseCase.updatePatientMetricsForNutritionist(nutritionistId, patientId, 74.5, 180.0))
+                .thenReturn(patient);
+
+        mockMvc.perform(put("/api/v1/clinical/nutritionist/patients/{patientId}/metrics", patientId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(patientId));
+    }
+
+    @Test
+    void shouldReturnNutritionistWeightProgressReport() throws Exception {
+        String nutritionistId = "nutri-123";
+        LocalDate from = LocalDate.of(2026, 5, 1);
+        LocalDate to = LocalDate.of(2026, 5, 22);
+        setSecurityContext(nutritionistId, "NUTRITIONIST");
+
+        NutritionistWeightProgressReport report = new NutritionistWeightProgressReport(
+                2,
+                1,
+                List.of(
+                        new NutritionistWeightProgressRow(
+                                "patient-1",
+                                "Ana Lopez",
+                                LocalDate.of(2026, 5, 21),
+                                72.0,
+                                70.5,
+                                -1.5,
+                                true
+                        ),
+                        new NutritionistWeightProgressRow(
+                                "patient-2",
+                                "patient-2",
+                                null,
+                                null,
+                                null,
+                                null,
+                                false
+                        )
+                )
+        );
+
+        when(manageProfileUseCase.getNutritionistWeightProgressReport(nutritionistId, from, to))
+                .thenReturn(report);
+
+        mockMvc.perform(
+                        get("/api/v1/clinical/nutritionist/reports/weight-progress")
+                                .param("from", from.toString())
+                                .param("to", to.toString())
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.activePatients").value(2))
+                .andExpect(jsonPath("$.patientsWithoutWeightInRange").value(1))
+                .andExpect(jsonPath("$.rows[0].fullName").value("Ana Lopez"))
+                .andExpect(jsonPath("$.rows[0].netChangeKg").value(-1.5))
+                .andExpect(jsonPath("$.rows[1].hasRecordsInRange").value(false));
     }
 
     private CreateProfileRequest createPatientRequest() {

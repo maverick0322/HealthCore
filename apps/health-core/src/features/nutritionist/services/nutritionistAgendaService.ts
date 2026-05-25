@@ -50,4 +50,29 @@ export const nutritionistAgendaService = {
     );
     return data;
   },
+
+  getAppointmentReport: async (
+    from: string,
+    to: string,
+    statuses?: string[],
+    patientId?: string,
+  ): Promise<AppointmentResponse[]> => {
+    const { data } = await httpClient.get<AppointmentResponse[]>(
+      '/agenda/nutritionist/reports/appointments',
+      { params: { from, to, statuses: statuses?.join(','), patientId } },
+    );
+    return data;
+  },
+
+  getSlotReport: async (
+    from: string,
+    to: string,
+    state = 'all',
+  ): Promise<AvailabilitySlotResponse[]> => {
+    const { data } = await httpClient.get<AvailabilitySlotResponse[]>(
+      '/agenda/nutritionist/reports/slots',
+      { params: { from, to, state } },
+    );
+    return data;
+  },
 };

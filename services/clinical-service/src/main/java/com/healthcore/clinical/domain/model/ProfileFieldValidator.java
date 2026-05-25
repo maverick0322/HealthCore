@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -90,7 +92,7 @@ final class ProfileFieldValidator {
         if (birthDate == null) {
             throw new IllegalArgumentException("Birth date is required.");
         }
-        LocalDate today = LocalDate.now();
+        LocalDate today = ClinicalTime.today();
         if (birthDate.isAfter(today)) {
             throw new IllegalArgumentException("Birth date cannot be in the future.");
         }
@@ -147,6 +149,16 @@ final class ProfileFieldValidator {
             return null;
         }
         return validateWeightKg(weightKg);
+    }
+
+    static LocalDate validateWeightRecordDate(LocalDate date) {
+        if (date == null) {
+            throw new IllegalArgumentException("Weight record date is required.");
+        }
+        if (date.isAfter(ClinicalTime.today())) {
+            throw new IllegalArgumentException("Weight record date cannot be in the future.");
+        }
+        return date;
     }
 
     static String validatePatientGoal(String goal, boolean required) {
@@ -387,8 +399,19 @@ final class ProfileFieldValidator {
             if (currentWeightKg == null) {
                 return new ArrayList<>();
             }
-            return new ArrayList<>(List.of(new WeightRecord(currentWeightKg, LocalDate.now())));
+            return new ArrayList<>(List.of(new WeightRecord(currentWeightKg, ClinicalTime.today())));
         }
-        return new ArrayList<>(weightHistory.stream().filter(Objects::nonNull).toList());
+        LinkedHashMap<LocalDate, WeightRecord> deduplicatedByDate = new LinkedHashMap<>();
+        weightHistory.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(WeightRecord::date))
+                .forEach(record -> {
+                    LocalDate validatedDate = validateWeightRecordDate(record.date());
+                    deduplicatedByDate.put(
+                            validatedDate,
+                            new WeightRecord(validateWeightKg(record.weightKg()), validatedDate)
+                    );
+                });
+        return new ArrayList<>(deduplicatedByDate.values());
     }
 }

@@ -102,15 +102,23 @@ public class NutritionistAvailabilityService {
 
             if (appointment != null) {
                 log.info("Cancelling appointmentHash={} due to slot deactivation", logHash(appointment.getId()));
+                Instant timestamp = Instant.now();
                 appointment.setStatus(AppointmentStatus.CANCELLED);
-                appointment.setUpdatedAt(Instant.now());
+                appointment.setCancelledAt(timestamp);
+                appointment.setCancelledBy(nutritionistId);
+                appointment.setCancellationReason("SLOT_DEACTIVATED");
+                appointment.setUpdatedAt(timestamp);
                 appointmentRepository.save(appointment);
             }
             slot.setReserved(false);
             slot.setReservedByPatientId(null);
         }
 
+        Instant timestamp = Instant.now();
         slot.setActive(false);
+        slot.setDeactivatedAt(timestamp);
+        slot.setDeactivatedBy(nutritionistId);
+        slot.setDeactivationReason("NUTRITIONIST_DEACTIVATED");
         try {
             timeSlotRepository.save(slot);
             log.info("Slot successfully deactivated. slotHash={}", logHash(slotId));
@@ -128,6 +136,110 @@ public class NutritionistAvailabilityService {
     public List<Appointment> getNutritionistAppointments(String nutritionistId, Instant from, Instant to) {
         log.debug("Fetching appointments for nutritionistHash={} between {} and {}", logHash(nutritionistId), from, to);
         return appointmentRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(nutritionistId, from, to);
+    }
+
+    public List<Appointment> getNutritionistAppointmentReport(
+        String nutritionistId,
+        Instant from,
+        Instant to,
+        List<AppointmentStatus> statuses,
+        String patientId
+    ) {
+        List<AppointmentStatus> normalizedStatuses = statuses == null || statuses.isEmpty()
+            ? List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.CANCELLED, AppointmentStatus.ATTENDED)
+            : statuses;
+
+        if (patientId != null && !patientId.isBlank()) {
+            return appointmentRepository.findByNutritionistIdAndPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+                nutritionistId,
+                patientId.trim(),
+                from,
+                to,
+                normalizedStatuses
+            );
+        }
+
+        return appointmentRepository.findByNutritionistIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            nutritionistId,
+            from,
+            to,
+            normalizedStatuses
+        );
+    }
+
+    public List<TimeSlot> getNutritionistSlotReport(String nutritionistId, Instant from, Instant to, String state) {
+        if ("inactive".equalsIgnoreCase(state)) {
+            return timeSlotRepository.findByNutritionistIdAndStartTimeBetweenAndActiveFalseOrderByStartTime(
+                nutritionistId,
+                from,
+                to
+            );
+        }
+        return getNutritionistSlots(nutritionistId, from, to);
+    }
+
+    public int applyReportingSeedAdjustments(
+        String nutritionistId,
+        List<ReportingSeedAppointmentAdjustment> adjustments
+    ) {
+        if (adjustments == null || adjustments.isEmpty()) {
+            throw new BadRequestException("Debes enviar al menos una cita para ajustar");
+        }
+
+        Instant now = Instant.now();
+        int updatedCount = 0;
+
+        for (ReportingSeedAppointmentAdjustment adjustment : adjustments) {
+            validateReportingSeedAdjustment(adjustment);
+
+            Appointment appointment = appointmentRepository.findById(adjustment.appointmentId())
+                .orElseThrow(() -> new NotFoundException("Cita no encontrada"));
+
+            if (!nutritionistId.equals(appointment.getNutritionistId())) {
+                throw new ConflictException("No tienes permisos para ajustar esta cita");
+            }
+
+            TimeSlot slot = timeSlotRepository.findById(appointment.getSlotId())
+                .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
+
+            if (!nutritionistId.equals(slot.getNutritionistId())) {
+                throw new ConflictException("No tienes permisos para ajustar este slot");
+            }
+
+            appointment.setStartTime(adjustment.startTime());
+            appointment.setEndTime(adjustment.endTime());
+            appointment.setStatus(adjustment.status());
+            appointment.setUpdatedAt(now);
+
+            slot.setStartTime(adjustment.startTime());
+            slot.setEndTime(adjustment.endTime());
+            slot.setActive(true);
+            slot.setDeactivatedAt(null);
+            slot.setDeactivatedBy(null);
+            slot.setDeactivationReason(null);
+
+            if (adjustment.status() == AppointmentStatus.CANCELLED) {
+                appointment.setAttendedAt(null);
+                appointment.setCancelledAt(now);
+                appointment.setCancelledBy(nutritionistId);
+                appointment.setCancellationReason("DEV_REPORT_SEED");
+                slot.setReserved(false);
+                slot.setReservedByPatientId(null);
+            } else {
+                appointment.setCancelledAt(null);
+                appointment.setCancelledBy(null);
+                appointment.setCancellationReason(null);
+                appointment.setAttendedAt(adjustment.status() == AppointmentStatus.ATTENDED ? now : null);
+                slot.setReserved(true);
+                slot.setReservedByPatientId(appointment.getPatientId());
+            }
+
+            timeSlotRepository.save(slot);
+            appointmentRepository.save(appointment);
+            updatedCount += 1;
+        }
+
+        return updatedCount;
     }
 
     private void validateGenerateCommand(GenerateSlotsCommand command) {
@@ -213,7 +325,27 @@ public class NutritionistAvailabilityService {
         }
     }
 
+    private void validateReportingSeedAdjustment(ReportingSeedAppointmentAdjustment adjustment) {
+        if (adjustment == null || adjustment.appointmentId() == null || adjustment.appointmentId().isBlank()) {
+            throw new BadRequestException("Cada ajuste debe incluir una cita");
+        }
+        if (adjustment.startTime() == null || adjustment.endTime() == null || adjustment.status() == null) {
+            throw new BadRequestException("Cada ajuste debe incluir inicio, fin y estado");
+        }
+        if (!adjustment.startTime().isBefore(adjustment.endTime())) {
+            throw new BadRequestException("La fecha inicial de la cita debe ser anterior a la final");
+        }
+    }
+
     private String logHash(String value) {
         return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
+    }
+
+    public record ReportingSeedAppointmentAdjustment(
+        String appointmentId,
+        Instant startTime,
+        Instant endTime,
+        AppointmentStatus status
+    ) {
     }
 }

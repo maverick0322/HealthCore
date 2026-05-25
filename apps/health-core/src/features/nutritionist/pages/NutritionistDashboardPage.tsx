@@ -18,6 +18,7 @@ import { Button } from "@/shared/ui/button";
 import { clinicalApi } from "@/features/clinical/services/clinicalService";
 import type { NutritionistPatientProfileResponse } from "@/features/clinical/types/clinical.types";
 import { useNutritionistAppointments } from "@/features/nutritionist/hooks/useNutritionistAppointments";
+import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
 import {
   addDays,
   formatLocalDate,
@@ -43,7 +44,7 @@ const statusClass = (status: string) => {
 };
 
 export const NutritionistDashboardPage = () => {
-  const { t } = useTranslation("nutritionist");
+  const { t } = useTranslation(["nutritionist", "onboarding"]);
   const navigate = useNavigate();
 
   const [displayName, setDisplayName] = useState("Profesional");
@@ -323,13 +324,13 @@ export const NutritionistDashboardPage = () => {
                           <div className="h-10 w-10 rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                             {name.charAt(0).toUpperCase()}
                           </div>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold">{name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {t("patients.objectivePlaceholder")}
-                            </p>
-                          </div>
-                        </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{name}</p>
+                  <p className="text-xs text-muted-foreground">
+                              {formatPatientGoalLabel(t, patient.goal)}
+                  </p>
+                </div>
+              </div>
                       </button>
                     );
                   })}

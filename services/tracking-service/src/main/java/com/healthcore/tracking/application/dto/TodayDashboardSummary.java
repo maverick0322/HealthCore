@@ -10,5 +10,7 @@ public record TodayDashboardSummary(
         double totalProteins,
         double totalCarbs,
         double totalFats,
-        int totalWaterMl
+        int totalWaterMl,
+        int currentStreak,
+        int bestStreak
 ) {}

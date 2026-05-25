@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -110,6 +111,8 @@ public class DashboardSummaryUseCase {
         if (loggedDates.isEmpty()) return 0;
 
         int streak = 0;
+
+        ZoneId localZone = ZoneId.of("America/Mexico_City");
         LocalDate today = LocalDate.now();
         LocalDate checkDate = today;
 

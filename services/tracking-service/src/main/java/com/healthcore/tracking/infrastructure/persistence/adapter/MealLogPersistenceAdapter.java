@@ -116,6 +116,7 @@ public class MealLogPersistenceAdapter implements MealLogPort {
 
             return mongoTemplate.find(query, MealLogDocument.class)
                     .stream()
+                    .filter(entity -> entity.getConsumedAt() != null)
                     .map(entity -> entity.getConsumedAt().toLocalDate())
                     .collect(Collectors.toSet());
         } catch (DataAccessException ex) {

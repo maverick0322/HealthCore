@@ -82,15 +82,19 @@ public class JwtValidationFilter extends OncePerRequestFilter {
         } catch (ExpiredJwtException e) {
             log.warn("Authentication rejected: JWT token has expired.");
             sendUnauthorizedError(response, "Token has expired. Please authenticate again.");
+            SecurityContextHolder.clearContext();
         } catch (SignatureException | MalformedJwtException e) {
             log.error("Authentication alert: Invalid signature or malformed token detected.");
             sendUnauthorizedError(response, "Invalid security token.");
+            SecurityContextHolder.clearContext();
         } catch (UnsupportedJwtException | IllegalArgumentException e) {
             log.error("Authentication alert: Unsupported token format provided.");
             sendUnauthorizedError(response, "Unsupported security token.");
+            SecurityContextHolder.clearContext();
         } catch (Exception e) {
             log.error("Authentication error: Unexpected failure during JWT processing.", e);
             sendUnauthorizedError(response, "Internal authentication error.");
+            SecurityContextHolder.clearContext();
         }
     }
 

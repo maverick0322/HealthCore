@@ -10,7 +10,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-@SpringBootTest(classes = AgendaServiceApplication.class, properties = "jwt.secret=test-secret-key-at-least-32-characters-long")
+@SpringBootTest(classes = AgendaServiceApplication.class, properties = {
+    "jwt.secret=test-secret-key-at-least-32-characters-long",
+    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration,org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration"
+})
 class AgendaServiceApplicationTests {
 
     @Autowired

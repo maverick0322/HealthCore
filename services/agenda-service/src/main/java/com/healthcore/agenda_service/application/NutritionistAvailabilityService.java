@@ -40,31 +40,63 @@ public class NutritionistAvailabilityService {
                 command.days().size());
         List<TimeSlot> createdSlots = new ArrayList<>();
 
-        for (GenerateSlotsCommand.DaySchedule day : command.days()) {
-            for (GenerateSlotsCommand.TimeBlock block : day.blocks()) {
-                LocalTime currentTime = block.startTime();
-                while (!currentTime.plusMinutes(command.durationMinutes()).isAfter(block.endTime())) {
+        LocalDate minDate = command.days().stream()
+                .map(GenerateSlotsCommand.DaySchedule::date)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+        LocalDate maxDate = command.days().stream()
+                .map(GenerateSlotsCommand.DaySchedule::date)
+                .max(LocalDate::compareTo)
+                .orElse(null);
 
-                    Instant startInstant = day.date().atTime(currentTime).atZone(command.timeZone()).toInstant();
-                    Instant endInstant = day.date()
-                            .atTime(currentTime.plusMinutes(command.durationMinutes()))
-                            .atZone(command.timeZone())
-                            .toInstant();
+        if (minDate != null && maxDate != null) {
+            Instant queryStart = minDate.atStartOfDay(command.timeZone()).toInstant();
+            Instant queryEnd = maxDate.plusDays(1).atStartOfDay(command.timeZone()).toInstant();
+            List<TimeSlot> existingSlots = timeSlotRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(
+                    nutritionistId, queryStart, queryEnd);
 
-                    TimeSlot slot = TimeSlot.builder()
-                            .nutritionistId(nutritionistId)
-                            .startTime(startInstant)
-                            .endTime(endInstant)
-                            .active(true)
-                            .reserved(false)
-                            .origin(TimeSlotOrigin.PREDEFINED)
-                            .build();
+            for (GenerateSlotsCommand.DaySchedule day : command.days()) {
+                for (GenerateSlotsCommand.TimeBlock block : day.blocks()) {
+                    LocalTime currentTime = block.startTime();
+                    while (!currentTime.plusMinutes(command.durationMinutes()).isAfter(block.endTime())) {
 
-                    createdSlots.add(slot);
-                    currentTime = currentTime.plusMinutes(command.durationMinutes());
+                        Instant startInstant = day.date().atTime(currentTime).atZone(command.timeZone()).toInstant();
+                        Instant endInstant = day.date()
+                                .atTime(currentTime.plusMinutes(command.durationMinutes()))
+                                .atZone(command.timeZone())
+                                .toInstant();
+
+                        TimeSlot slot = TimeSlot.builder()
+                                .nutritionistId(nutritionistId)
+                                .startTime(startInstant)
+                                .endTime(endInstant)
+                                .active(true)
+                                .reserved(false)
+                                .origin(TimeSlotOrigin.PREDEFINED)
+                                .build();
+
+                        // Validate against existing slots
+                        boolean hasExactDuplicate = existingSlots.stream()
+                                .anyMatch(existing -> existing.getStartTime().equals(startInstant));
+                        if (hasExactDuplicate) {
+                            throw new ConflictException("Algunos de los horarios generados ya existen.");
+                        }
+
+                        boolean overlapsActive = existingSlots.stream()
+                                .filter(TimeSlot::isActive)
+                                .anyMatch(existing -> startInstant.isBefore(existing.getEndTime())
+                                        && existing.getStartTime().isBefore(endInstant));
+                        if (overlapsActive) {
+                            throw new ConflictException("Algunos de los horarios generados se solapan con horarios existentes.");
+                        }
+
+                        createdSlots.add(slot);
+                        currentTime = currentTime.plusMinutes(command.durationMinutes());
+                    }
                 }
             }
         }
+
 
         try {
             return timeSlotRepository.saveAll(createdSlots);

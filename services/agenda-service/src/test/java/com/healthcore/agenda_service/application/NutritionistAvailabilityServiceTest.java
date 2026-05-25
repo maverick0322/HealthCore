@@ -66,6 +66,8 @@ class NutritionistAvailabilityServiceTest {
                                                 FUTURE_DATE,
                                                 List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
                                                                 LocalTime.of(10, 0))))));
+                when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(eq("nutri-1"), any(), any()))
+                                .thenReturn(List.of());
                 when(timeSlotRepository.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
 
                 // Act
@@ -87,7 +89,57 @@ class NutritionistAvailabilityServiceTest {
                                                 FUTURE_DATE,
                                                 List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
                                                                 LocalTime.of(9, 30))))));
+                when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(eq("nutri-1"), any(), any()))
+                                .thenReturn(List.of());
                 when(timeSlotRepository.saveAll(anyList())).thenThrow(new DuplicateKeyException("dup"));
+
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(ConflictException.class)
+                                .hasMessageContaining("ya existen");
+        }
+
+        @Test
+        void generateSlots_shouldThrowConflict_whenBlocksOverlapExistingActive() {
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC,
+                                30,
+                                List.of(new GenerateSlotsCommand.DaySchedule(
+                                                FUTURE_DATE,
+                                                List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
+                                                                LocalTime.of(9, 30))))));
+                Instant existingStart = FUTURE_DATE.atTime(8, 45).atZone(UTC).toInstant();
+                Instant existingEnd = FUTURE_DATE.atTime(9, 15).atZone(UTC).toInstant();
+                TimeSlot existingSlot = TimeSlot.builder()
+                                .startTime(existingStart)
+                                .endTime(existingEnd)
+                                .active(true)
+                                .build();
+                when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(eq("nutri-1"), any(), any()))
+                                .thenReturn(List.of(existingSlot));
+
+                assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
+                                .isInstanceOf(ConflictException.class)
+                                .hasMessageContaining("se solapan");
+        }
+
+        @Test
+        void generateSlots_shouldThrowConflict_whenExactDuplicateStartTime() {
+                GenerateSlotsCommand command = new GenerateSlotsCommand(
+                                UTC,
+                                30,
+                                List.of(new GenerateSlotsCommand.DaySchedule(
+                                                FUTURE_DATE,
+                                                List.of(new GenerateSlotsCommand.TimeBlock(LocalTime.of(9, 0),
+                                                                LocalTime.of(9, 30))))));
+                Instant existingStart = FUTURE_DATE.atTime(9, 0).atZone(UTC).toInstant();
+                Instant existingEnd = FUTURE_DATE.atTime(9, 30).atZone(UTC).toInstant();
+                TimeSlot existingSlot = TimeSlot.builder()
+                                .startTime(existingStart)
+                                .endTime(existingEnd)
+                                .active(false) // inactive duplicate
+                                .build();
+                when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(eq("nutri-1"), any(), any()))
+                                .thenReturn(List.of(existingSlot));
 
                 assertThatThrownBy(() -> service.generateTimeSlots("nutri-1", command))
                                 .isInstanceOf(ConflictException.class)

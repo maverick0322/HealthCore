@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   TrendingDown,
@@ -19,6 +19,7 @@ import { Button } from "@/shared/ui/button";
 import { useDailyLogs } from "@/features/tracking/hooks/useDailyLogs";
 import { useHistoricalMacros } from "@/features/tracking/hooks/useHistoricalMacros";
 import { DetailedMealTimeline } from "@/features/tracking/components/DetailedMealTimeline";
+import { trackingService } from "@/features/tracking/services/trackingService";
 
 const HISTORY_DUMMY = {
   weightStart: 83.0,
@@ -35,8 +36,6 @@ const HISTORY_DUMMY = {
   ],
   caloriesGoal: 2000, 
   adherenceRate: 85,
-  streakCurrent: 7,
-  streakBest: 21,
   totalDays: 45,
 };
 
@@ -69,55 +68,22 @@ export const PatientHistoryPage = () => {
   const todayStr = todayObj.toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(todayStr);
   
-  const { startDate, endDate, last7Days } = useMemo(() => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - 6);
-    
-    const daysArray = Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(start);
-      d.setDate(d.getDate() + i);
-      return d.toISOString().split('T')[0];
-    });
+  const [dashboardSummary, setDashboardSummary] = useState<any>(null);
 
-    return {
-      startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0],
-      last7Days: daysArray
-    };
-  }, []);
+  const { 
+    caloriesHistory, 
+    caloriesAvg, 
+    macrosAvg, 
+    isLoading: isHistoryLoading 
+  } = useHistoricalMacros();
 
   const { logs, isLoading: isTimelineLoading, error: timelineError } = useDailyLogs(selectedDate);
-  const { data: historyData, isLoading: isHistoryLoading } = useHistoricalMacros(startDate, endDate);
 
-  const { caloriesHistory, caloriesAvg, macrosAvg } = useMemo(() => {
-    if (!historyData || historyData.length === 0) {
-      return { caloriesHistory: Array(7).fill(0), caloriesAvg: 0, macrosAvg: { protein: 0, carbs: 0, fat: 0 } };
-    }
-
-    const cals = last7Days.map(dateStr => {
-      const dayLog = historyData.find((d: any) => d.date === dateStr); 
-      return dayLog ? dayLog.totalCalories : 0;
-    });
-
-    const calsAvg = Math.round(cals.reduce((acc, curr) => acc + curr, 0) / 7);
-
-    let totalP = 0, totalC = 0, totalF = 0;
-    historyData.forEach((d: any) => {
-      totalP += d.totalProteins || 0;
-      totalC += d.totalCarbs || 0;
-      totalF += d.totalFats || 0;
-    });
-
-    const totalMacros = totalP + totalC + totalF;
-    const mAvg = totalMacros > 0 ? {
-      protein: Math.round((totalP / totalMacros) * 100),
-      carbs: Math.round((totalC / totalMacros) * 100),
-      fat: Math.round((totalF / totalMacros) * 100),
-    } : { protein: 0, carbs: 0, fat: 0 };
-
-    return { caloriesHistory: cals, caloriesAvg: calsAvg, macrosAvg: mAvg };
-  }, [historyData, last7Days]);
+  useEffect(() => {
+    trackingService.getTodaySummary()
+      .then(setDashboardSummary)
+      .catch(console.error);
+  }, []);
 
   const changeDate = (offsetDays: number) => {
     const d = new Date(selectedDate + "T12:00:00");
@@ -154,6 +120,7 @@ export const PatientHistoryPage = () => {
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
         <div className="grid grid-cols-2 gap-3">
+          {/* Adherencia - Equipo Clinical */}
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-4 flex flex-col gap-1">
               <div className="flex items-center gap-2 text-primary">
@@ -164,6 +131,7 @@ export const PatientHistoryPage = () => {
               <p className="text-xs text-muted-foreground">{t("history.totalDaysTracked")}: {HISTORY_DUMMY.totalDays}</p>
             </CardContent>
           </Card>
+          
           <Card className="bg-amber-500/5 border-amber-500/20">
             <CardContent className="p-4 flex flex-col gap-1">
               <div className="flex items-center gap-2 text-amber-500">
@@ -171,9 +139,11 @@ export const PatientHistoryPage = () => {
                 <span className="text-xs font-semibold uppercase tracking-wider">{t("history.streak")}</span>
               </div>
               <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                {t("history.streakDays", { count: HISTORY_DUMMY.streakCurrent })}
+                {dashboardSummary ? t("history.streakDays", { count: dashboardSummary.currentStreak }) : <Loader2 className="animate-spin w-5 h-5" />}
               </p>
-              <p className="text-xs text-muted-foreground">{t("history.bestStreak")}: {HISTORY_DUMMY.streakBest}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("history.bestStreak")}: {dashboardSummary?.bestStreak || 0}
+              </p>
             </CardContent>
           </Card>
         </div>

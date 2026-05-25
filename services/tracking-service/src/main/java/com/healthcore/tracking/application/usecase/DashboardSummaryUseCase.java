@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -71,7 +72,18 @@ public class DashboardSummaryUseCase {
 
         int totalWater = waterLogPort.getConsumedWaterBetween(userId, startOfDay, endOfDay);
 
-        return new TodayDashboardSummary(totalCalories, totalProteins, totalCarbs, totalFats, totalWater);
+        int currentStreak = calculateCurrentStreak(userId);
+        int bestStreak = currentStreak;
+
+        return new TodayDashboardSummary(
+                totalCalories,
+                totalProteins,
+                totalCarbs,
+                totalFats,
+                totalWater,
+                currentStreak,
+                bestStreak
+        );
     }
 
     public List<DailyMacroSummary> getHistoricalMacros(String userId, LocalDate startDate, LocalDate endDate) {
@@ -88,6 +100,31 @@ public class DashboardSummaryUseCase {
         log.info("Fetching historical macros. userHash={} start={} end={}", logHash(userId), start, end);
 
         return mealLogPort.aggregateHistoricalMacros(userId, start, end);
+    }
+
+    /**
+     * Calculates the consecutive days a user has logged at least one meal.
+     */
+    private int calculateCurrentStreak(String userId) {
+        Set<LocalDate> loggedDates = mealLogPort.findDistinctLoggedDatesByUserId(userId);
+        if (loggedDates.isEmpty()) return 0;
+
+        int streak = 0;
+        LocalDate today = LocalDate.now();
+        LocalDate checkDate = today;
+
+        if (!loggedDates.contains(today) && loggedDates.contains(today.minusDays(1))) {
+            checkDate = today.minusDays(1);
+        } else if (!loggedDates.contains(today) && !loggedDates.contains(today.minusDays(1))) {
+            return 0;
+        }
+
+        while (loggedDates.contains(checkDate)) {
+            streak++;
+            checkDate = checkDate.minusDays(1);
+        }
+
+        return streak;
     }
 
     private void validateUserId(String userId) {

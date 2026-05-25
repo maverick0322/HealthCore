@@ -367,4 +367,69 @@ class NutritionistAvailabilityServiceTest {
 
                 assertThat(result).hasSize(1).extracting(TimeSlot::getId).containsExactly("s1");
         }
+
+        @Test
+        void applyReportingSeedAdjustments_shouldRewriteAppointmentAndSlotForAttendedStatus() {
+                Instant startTime = Instant.parse("2026-05-10T16:00:00Z");
+                Instant endTime = Instant.parse("2026-05-10T16:30:00Z");
+
+                Appointment appointment = Appointment.builder()
+                                .id("app-1")
+                                .slotId("slot-1")
+                                .nutritionistId("nutri-1")
+                                .patientId("patient-1")
+                                .status(AppointmentStatus.PENDING)
+                                .build();
+                TimeSlot slot = TimeSlot.builder()
+                                .id("slot-1")
+                                .nutritionistId("nutri-1")
+                                .reserved(false)
+                                .active(true)
+                                .build();
+
+                when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+                when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+                when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+                when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+                int updatedCount = service.applyReportingSeedAdjustments(
+                                "nutri-1",
+                                List.of(new NutritionistAvailabilityService.ReportingSeedAppointmentAdjustment(
+                                                "app-1",
+                                                startTime,
+                                                endTime,
+                                                AppointmentStatus.ATTENDED)));
+
+                assertThat(updatedCount).isEqualTo(1);
+                assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.ATTENDED);
+                assertThat(appointment.getAttendedAt()).isNotNull();
+                assertThat(appointment.getCancelledAt()).isNull();
+                assertThat(slot.isReserved()).isTrue();
+                assertThat(slot.getReservedByPatientId()).isEqualTo("patient-1");
+                assertThat(slot.getStartTime()).isEqualTo(startTime);
+                assertThat(slot.getEndTime()).isEqualTo(endTime);
+        }
+
+        @Test
+        void applyReportingSeedAdjustments_shouldThrowConflictForForeignAppointment() {
+                Appointment appointment = Appointment.builder()
+                                .id("app-1")
+                                .slotId("slot-1")
+                                .nutritionistId("nutri-2")
+                                .patientId("patient-1")
+                                .status(AppointmentStatus.PENDING)
+                                .build();
+
+                when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+
+                assertThatThrownBy(() -> service.applyReportingSeedAdjustments(
+                                "nutri-1",
+                                List.of(new NutritionistAvailabilityService.ReportingSeedAppointmentAdjustment(
+                                                "app-1",
+                                                Instant.parse("2026-05-10T16:00:00Z"),
+                                                Instant.parse("2026-05-10T16:30:00Z"),
+                                                AppointmentStatus.ATTENDED))))
+                                .isInstanceOf(ConflictException.class)
+                                .hasMessageContaining("permisos");
+        }
 }

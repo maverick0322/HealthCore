@@ -89,6 +89,33 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
     }
 
     @Override
+    public PatientProfile updatePatientMetricsForNutritionist(
+            String nutritionistId,
+            String patientId,
+            Double weightKg,
+            Double heightCm
+    ) {
+        PatientProfile profile = getProfileForNutritionist(nutritionistId, patientId);
+
+        profile.updateProfile(
+                profile.getFirstName(),
+                profile.getPaternalLastName(),
+                profile.getMaternalLastName(),
+                weightKg,
+                heightCm,
+                profile.getBirthDate(),
+                profile.getGender(),
+                profile.getActivityLevel(),
+                profile.getGoal(),
+                profile.getDietType(),
+                profile.getAllergies(),
+                profile.getExcludedFoods()
+        );
+
+        return patientRepositoryPort.save(profile);
+    }
+
+    @Override
     public NutritionistWeightProgressReport getNutritionistWeightProgressReport(
             String nutritionistId,
             LocalDate from,
@@ -155,6 +182,11 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
         return patientRepositoryPort.findByUserId(userId)
                 .map(PatientProfile::getWeightHistory)
                 .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
+    }
+
+    @Override
+    public List<WeightRecord> getWeightHistoryForNutritionist(String nutritionistId, String patientId) {
+        return getProfileForNutritionist(nutritionistId, patientId).getWeightHistory();
     }
 
     @Override

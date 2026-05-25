@@ -1,5 +1,27 @@
 package com.healthcore.clinical.application.service;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
+
 import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.AuthorType;
 import com.healthcore.clinical.domain.model.CatalogFoodItem;
@@ -17,28 +39,6 @@ import com.healthcore.clinical.domain.model.PlanIngredientUnit;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.NutritionCatalogPort;
 import com.healthcore.clinical.domain.port.out.NutritionPlanRepositoryPort;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class NutritionPlanApplicationServiceTest {
@@ -162,7 +162,7 @@ class NutritionPlanApplicationServiceTest {
     }
 
     @Test
-    void shouldExposePreviousSelfManagedPlanAsContextForNutritionist() {
+    void shouldIgnoreArchivedSelfManagedPlanWhenNoActivePlanExists() {
         PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
         NutritionPlan archivedSelfManagedPlan = NutritionPlan.createActive(
                 "patient-1",
@@ -177,15 +177,39 @@ class NutritionPlanApplicationServiceTest {
         when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
                 "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
         )).thenReturn(Optional.empty());
-        when(nutritionPlanRepositoryPort.findLatestByPatientIdAndAuthorType(
-                "patient-1", AuthorType.SELF_MANAGED
-        )).thenReturn(Optional.of(archivedSelfManagedPlan));
+        NutritionPlanView view = service.getNutritionistPatientNutritionPlan("nutri-1", "patient-1");
+
+        assertEquals("NUTRITIONIST", view.mode());
+        assertEquals(4, view.sections().size());
+        assertTrue(view.sections().stream().allMatch(section -> section.options().isEmpty()));
+        assertNull(view.contextSelfManagedPlan());
+    }
+
+    @Test
+    void shouldAllowNutritionistToEditActiveSelfManagedPlanAsBasePlan() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        NutritionPlan activeSelfManagedPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.SELF_MANAGED,
+                "patient-1",
+                new DailyGoalsSnapshot(1800, 90, 180, 55, 9),
+                emptySections()
+        );
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
+        )).thenReturn(Optional.empty());
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.SELF_MANAGED, "patient-1"
+        )).thenReturn(Optional.of(activeSelfManagedPlan));
 
         NutritionPlanView view = service.getNutritionistPatientNutritionPlan("nutri-1", "patient-1");
 
         assertEquals("NUTRITIONIST", view.mode());
-        assertNotNull(view.contextSelfManagedPlan());
-        assertEquals(AuthorType.SELF_MANAGED, view.contextSelfManagedPlan().getAuthorType());
+        assertEquals(AuthorType.SELF_MANAGED, view.authorType());
+        assertEquals(activeSelfManagedPlan.getSections(), view.sections());
+        assertNull(view.contextSelfManagedPlan());
     }
 
     private PatientProfile createPatientProfile(String userId, String nutritionistId) {

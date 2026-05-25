@@ -80,7 +80,7 @@ public class PatientProfile {
                 null,
                 70.0,
                 170.0,
-                LocalDate.now().minusYears(25),
+                ClinicalTime.today().minusYears(25),
                 Gender.MALE,
                 ActivityLevel.SEDENTARY,
                 "health",
@@ -187,7 +187,7 @@ public class PatientProfile {
                 excludedFoods
         );
         if (previousWeight == null || Double.compare(previousWeight, this.weightKg) != 0) {
-            registerWeight(this.weightKg, LocalDate.now());
+            registerWeight(this.weightKg, ClinicalTime.today());
         }
     }
 
@@ -219,7 +219,7 @@ public class PatientProfile {
     }
 
     private double calculateTMB() {
-        int age = Period.between(this.birthDate, LocalDate.now()).getYears();
+        int age = Period.between(this.birthDate, ClinicalTime.today()).getYears();
         double baseMifflin = (10 * this.weightKg) + (6.25 * this.heightCm) - (5 * age);
 
         return this.gender == Gender.MALE

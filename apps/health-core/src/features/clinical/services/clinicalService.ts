@@ -9,6 +9,7 @@ import type {
   ObservationResponse,
   PostalCodeLookupResponse,
   CreateObservationRequest,
+  UpdateObservationRequest,
   NutritionPlanViewResponse,
   NutritionPlanUpsertRequest,
   CatalogFoodResponse,
@@ -16,8 +17,6 @@ import type {
 } from '../types/clinical.types';
 
 import httpClient from '@/core/http/httpClient';
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
-import { extractUserIdFromToken } from '@/core/utils/jwt';
 
 const CLINICAL_API_URL = '/clinical';
 const DEFAULT_GENDER = 'MALE';
@@ -75,110 +74,66 @@ const normalizeNutritionistProfile = (
   profileCompleted: profile.profileCompleted ?? false,
 });
 
-const getXUserIdHeader = (userId?: string): Record<string, string> => {
-  if (userId) {
-    return { 'X-User-Id': userId };
-  }
-
-  const { accessToken } = useAuthStore.getState();
-
-  if (!accessToken) {
-    throw new Error('User is not authenticated. No access token found.');
-  }
-
-  let resolvedUserId: string;
-  try {
-    resolvedUserId = extractUserIdFromToken(accessToken);
-  } catch {
-    throw new Error('Invalid or malformed access token. Cannot extract user ID.');
-  }
-
-  if (!resolvedUserId) {
-    throw new Error('User ID not found in token.');
-  }
-
-  return { 'X-User-Id': resolvedUserId };
-};
-
 export const clinicalApi = {
-  createProfile: async (payload: CreateProfilePayload, userId?: string): Promise<void> => {
-    await httpClient.post(`${CLINICAL_API_URL}/profile`, payload, {
-      headers: getXUserIdHeader(userId),
-    });
+  createProfile: async (payload: CreateProfilePayload): Promise<void> => {
+    await httpClient.post(`${CLINICAL_API_URL}/profile`, payload);
   },
 
   updateMyProfile: async (payload: CreateProfilePayload): Promise<PatientProfileResponse> => {
-    const response = await httpClient.put<PatientProfileResponse>(
-      `${CLINICAL_API_URL}/profile/me`,
-      payload,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.put<PatientProfileResponse>(`${CLINICAL_API_URL}/profile/me`, payload);
     return normalizePatientProfile(response.data);
   },
 
-  getMyProfile: async (userId?: string): Promise<PatientProfileResponse> => {
-    const response = await httpClient.get<PatientProfileResponse>(
-      `${CLINICAL_API_URL}/profile/me`,
-      { headers: getXUserIdHeader(userId) }
-    );
+  getMyProfile: async (): Promise<PatientProfileResponse> => {
+    const response = await httpClient.get<PatientProfileResponse>(`${CLINICAL_API_URL}/profile/me`);
     return normalizePatientProfile(response.data);
   },
 
   getMyLinkedNutritionistProfile: async (): Promise<NutritionistProfileResponse> => {
-    const response = await httpClient.get<NutritionistProfileResponse>(
-      `${CLINICAL_API_URL}/profile/me/nutritionist`,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.get<NutritionistProfileResponse>(`${CLINICAL_API_URL}/profile/me/nutritionist`);
     return normalizeNutritionistProfile(response.data);
   },
 
   createNutritionistProfile: async (payload: NutritionistProfilePayload): Promise<void> => {
-    await httpClient.post(`${CLINICAL_API_URL}/nutritionist/profile`, payload, {
-      headers: getXUserIdHeader(),
-    });
+    await httpClient.post(`${CLINICAL_API_URL}/nutritionist/profile`, payload);
   },
 
   updateMyNutritionistProfile: async (
     payload: NutritionistProfilePayload
   ): Promise<NutritionistProfileResponse> => {
-    const response = await httpClient.put<NutritionistProfileResponse>(
-      `${CLINICAL_API_URL}/nutritionist/profile/me`,
-      payload,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.put<NutritionistProfileResponse>(`${CLINICAL_API_URL}/nutritionist/profile/me`, payload);
     return normalizeNutritionistProfile(response.data);
   },
 
   getMyNutritionistProfile: async (): Promise<NutritionistProfileResponse> => {
-    const response = await httpClient.get<NutritionistProfileResponse>(
-      `${CLINICAL_API_URL}/nutritionist/profile/me`,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.get<NutritionistProfileResponse>(`${CLINICAL_API_URL}/nutritionist/profile/me`);
     return normalizeNutritionistProfile(response.data);
   },
 
   lookupPostalCode: async (postalCode: string): Promise<PostalCodeLookupResponse> => {
-    const response = await httpClient.get<PostalCodeLookupResponse>(
-      `${CLINICAL_API_URL}/reference/postal-codes/${encodeURIComponent(postalCode)}`,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.get<PostalCodeLookupResponse>(`${CLINICAL_API_URL}/reference/postal-codes/${encodeURIComponent(postalCode)}`);
     return response.data;
   },
 
   getNutritionistPatients: async (): Promise<NutritionistPatientProfileResponse[]> => {
-    const response = await httpClient.get<NutritionistPatientProfileResponse[]>(
-      `${CLINICAL_API_URL}/nutritionist/patients`,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.get<NutritionistPatientProfileResponse[]>(`${CLINICAL_API_URL}/nutritionist/patients`);
     return response.data.map(normalizePatientProfile);
   },
 
   getNutritionistPatientProfile: async (
     patientId: string
   ): Promise<NutritionistPatientProfileResponse> => {
-    const response = await httpClient.get<NutritionistPatientProfileResponse>(
-      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}`,
-      { headers: getXUserIdHeader() }
+    const response = await httpClient.get<NutritionistPatientProfileResponse>(`${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}`);
+    return normalizePatientProfile(response.data);
+  },
+
+  updateNutritionistPatientMetrics: async (
+    patientId: string,
+    payload: Pick<CreateProfilePayload, 'weightKg' | 'heightCm'>
+  ): Promise<NutritionistPatientProfileResponse> => {
+    const response = await httpClient.put<NutritionistPatientProfileResponse>(
+      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/metrics`,
+      payload
     );
     return normalizePatientProfile(response.data);
   },
@@ -191,72 +146,54 @@ export const clinicalApi = {
       `${CLINICAL_API_URL}/nutritionist/reports/weight-progress`,
       {
         params: { from, to },
-        headers: getXUserIdHeader(),
       }
     );
     return response.data;
   },
 
-  getMyGoals: async (userId?: string): Promise<HealthGoalResponse> => {
-    const response = await httpClient.get<HealthGoalResponse>(
-      `${CLINICAL_API_URL}/goals/me`,
-      { headers: getXUserIdHeader(userId) }
-    );
+  getMyGoals: async (): Promise<HealthGoalResponse> => {
+    const response = await httpClient.get<HealthGoalResponse>(`${CLINICAL_API_URL}/goals/me`);
     return response.data;
   },
 
-  updateWeight: async (weightKg: number, date: string, userId?: string): Promise<HealthGoalResponse> => {
-    const response = await httpClient.post<HealthGoalResponse>(
-      `${CLINICAL_API_URL}/weight`,
-      { weightKg, date },
-      { headers: getXUserIdHeader(userId) }
-    );
+  updateWeight: async (weightKg: number, date: string): Promise<HealthGoalResponse> => {
+    const response = await httpClient.post<HealthGoalResponse>(`${CLINICAL_API_URL}/weight`, { weightKg, date });
     return response.data;
   },
 
   editWeight: async (
     originalDate: string,
     weightKg: number,
-    date: string,
-    userId?: string
+    date: string
   ): Promise<HealthGoalResponse> => {
-    const response = await httpClient.put<HealthGoalResponse>(
-      `${CLINICAL_API_URL}/weight/${encodeURIComponent(originalDate)}`,
-      { weightKg, date },
-      { headers: getXUserIdHeader(userId) }
-    );
+    const response = await httpClient.put<HealthGoalResponse>(`${CLINICAL_API_URL}/weight/${encodeURIComponent(originalDate)}`, { weightKg, date });
     return response.data;
   },
 
-  deleteWeight: async (date: string, userId?: string): Promise<HealthGoalResponse> => {
-    const response = await httpClient.delete<HealthGoalResponse>(
-      `${CLINICAL_API_URL}/weight/${encodeURIComponent(date)}`,
-      { headers: getXUserIdHeader(userId) }
-    );
+  deleteWeight: async (date: string): Promise<HealthGoalResponse> => {
+    const response = await httpClient.delete<HealthGoalResponse>(`${CLINICAL_API_URL}/weight/${encodeURIComponent(date)}`);
     return response.data;
   },
 
-  getWeightHistory: async (userId?: string): Promise<WeightRecord[]> => {
+  getWeightHistory: async (): Promise<WeightRecord[]> => {
+    const response = await httpClient.get<WeightRecord[]>(`${CLINICAL_API_URL}/weight/history`);
+    return response.data;
+  },
+
+  getNutritionistPatientWeightHistory: async (patientId: string): Promise<WeightRecord[]> => {
     const response = await httpClient.get<WeightRecord[]>(
-      `${CLINICAL_API_URL}/weight/history`,
-      { headers: getXUserIdHeader(userId) }
+      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/weight-history`
     );
     return response.data;
   },
 
   generateLinkingCode: async (): Promise<{ code: string; expiresInSeconds: number }> => {
-    const response = await httpClient.post(
-      `${CLINICAL_API_URL}/linking/generate`,
-      {},
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.post(`${CLINICAL_API_URL}/linking/generate`, {});
     return response.data;
   },
 
   getCurrentLinkingCode: async (): Promise<{ code: string; expiresInSeconds: number } | null> => {
-    const response = await httpClient.get(`${CLINICAL_API_URL}/linking/current`, {
-      headers: getXUserIdHeader(),
-    });
+    const response = await httpClient.get(`${CLINICAL_API_URL}/linking/current`);
     if (response.status === 204) {
       return null;
     }
@@ -264,23 +201,15 @@ export const clinicalApi = {
   },
 
   linkPatient: async (payload: { code: string }): Promise<void> => {
-    await httpClient.post(`${CLINICAL_API_URL}/linking/connect`, payload, {
-      headers: getXUserIdHeader(),
-    });
+    await httpClient.post(`${CLINICAL_API_URL}/linking/connect`, payload);
   },
 
   unlinkPatient: async (): Promise<void> => {
-    await httpClient.post(`${CLINICAL_API_URL}/linking/disconnect/patient`, {}, {
-      headers: getXUserIdHeader(),
-    });
+    await httpClient.post(`${CLINICAL_API_URL}/linking/disconnect/patient`, {});
   },
 
   unlinkNutritionist: async (patientId: string): Promise<void> => {
-    await httpClient.post(
-      `${CLINICAL_API_URL}/linking/disconnect/nutritionist/${patientId}`,
-      {},
-      { headers: getXUserIdHeader() }
-    );
+    await httpClient.post(`${CLINICAL_API_URL}/linking/disconnect/nutritionist/${patientId}`, {});
   },
 
   isPatientLinked: async (): Promise<boolean> => {
@@ -293,31 +222,21 @@ export const clinicalApi = {
   },
 
   getMyNutritionPlan: async (): Promise<NutritionPlanViewResponse> => {
-    const response = await httpClient.get<NutritionPlanViewResponse>(
-      `${CLINICAL_API_URL}/nutrition-plan/me`,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.get<NutritionPlanViewResponse>(`${CLINICAL_API_URL}/nutrition-plan/me`);
     return response.data;
   },
 
   upsertMyNutritionPlan: async (
     payload: NutritionPlanUpsertRequest
   ): Promise<NutritionPlanViewResponse> => {
-    const response = await httpClient.put<NutritionPlanViewResponse>(
-      `${CLINICAL_API_URL}/nutrition-plan/me`,
-      payload,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.put<NutritionPlanViewResponse>(`${CLINICAL_API_URL}/nutrition-plan/me`, payload);
     return response.data;
   },
 
   getNutritionistPatientNutritionPlan: async (
     patientId: string
   ): Promise<NutritionPlanViewResponse> => {
-    const response = await httpClient.get<NutritionPlanViewResponse>(
-      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/nutrition-plan`,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.get<NutritionPlanViewResponse>(`${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/nutrition-plan`);
     return response.data;
   },
 
@@ -325,11 +244,7 @@ export const clinicalApi = {
     patientId: string,
     payload: NutritionPlanUpsertRequest
   ): Promise<NutritionPlanViewResponse> => {
-    const response = await httpClient.put<NutritionPlanViewResponse>(
-      `${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/nutrition-plan`,
-      payload,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.put<NutritionPlanViewResponse>(`${CLINICAL_API_URL}/nutritionist/patients/${encodeURIComponent(patientId)}/nutrition-plan`, payload);
     return response.data;
   },
 
@@ -338,17 +253,13 @@ export const clinicalApi = {
       `${CLINICAL_API_URL}/catalog/foods/search`,
       {
         params: { query },
-        headers: getXUserIdHeader(),
       }
     );
     return response.data;
   },
 
   getMyObservations: async (): Promise<ObservationResponse[]> => {
-    const response = await httpClient.get<ObservationResponse[]>(
-      `${CLINICAL_API_URL}/observations/me`,
-      { headers: getXUserIdHeader() }
-    );
+    const response = await httpClient.get<ObservationResponse[]>(`${CLINICAL_API_URL}/observations/me`);
     return response.data;
   },
 };
@@ -356,20 +267,28 @@ export const clinicalApi = {
 export const createObservation = async (
   data: CreateObservationRequest
 ): Promise<ObservationResponse> => {
-  const response = await httpClient.post<ObservationResponse>(
-    `${CLINICAL_API_URL}/observations`,
-    data,
-    { headers: getXUserIdHeader() }
-  );
+  const response = await httpClient.post<ObservationResponse>(`${CLINICAL_API_URL}/observations`, data);
   return response.data;
 };
 
 export const getPatientObservations = async (
   patientId: string
 ): Promise<ObservationResponse[]> => {
-  const response = await httpClient.get<ObservationResponse[]>(
-    `/clinical/observations/patient/${encodeURIComponent(patientId)}`,
-    { headers: getXUserIdHeader() }
+  const response = await httpClient.get<ObservationResponse[]>(`/clinical/observations/patient/${encodeURIComponent(patientId)}`);
+  return response.data;
+};
+
+export const updateObservation = async (
+  observationId: string,
+  data: UpdateObservationRequest
+): Promise<ObservationResponse> => {
+  const response = await httpClient.put<ObservationResponse>(
+    `${CLINICAL_API_URL}/observations/${encodeURIComponent(observationId)}`,
+    data
   );
   return response.data;
+};
+
+export const deleteObservation = async (observationId: string): Promise<void> => {
+  await httpClient.delete(`${CLINICAL_API_URL}/observations/${encodeURIComponent(observationId)}`);
 };

@@ -150,6 +150,10 @@ export interface CreateObservationRequest {
   note: string;
 }
 
+export interface UpdateObservationRequest {
+  note: string;
+}
+
 export interface PatientProfileResponse extends CreateProfilePayload {
   userId: string;
   fullName: string | null;

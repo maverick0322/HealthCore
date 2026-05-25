@@ -7,6 +7,7 @@ import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
 import com.healthcore.clinical.domain.port.out.AgendaLifecyclePort;
 import com.healthcore.clinical.domain.port.in.LinkingUseCase;
+import com.healthcore.clinical.domain.port.out.ClinicalObservationRepositoryPort;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.LinkingCodeRepositoryPort;
 import org.springframework.dao.DuplicateKeyException;
@@ -21,6 +22,7 @@ public class LinkingApplicationService implements LinkingUseCase {
 
     private final LinkingCodeRepositoryPort linkingCodeRepositoryPort;
     private final ClinicalRepositoryPort clinicalRepositoryPort;
+    private final ClinicalObservationRepositoryPort clinicalObservationRepositoryPort;
     private final ManageNutritionPlanUseCase manageNutritionPlanUseCase;
     private final AgendaLifecyclePort agendaLifecyclePort;
     
@@ -31,11 +33,13 @@ public class LinkingApplicationService implements LinkingUseCase {
     public LinkingApplicationService(
             LinkingCodeRepositoryPort linkingCodeRepositoryPort,
             ClinicalRepositoryPort clinicalRepositoryPort,
+            ClinicalObservationRepositoryPort clinicalObservationRepositoryPort,
             ManageNutritionPlanUseCase manageNutritionPlanUseCase,
             AgendaLifecyclePort agendaLifecyclePort
     ) {
         this.linkingCodeRepositoryPort = linkingCodeRepositoryPort;
         this.clinicalRepositoryPort = clinicalRepositoryPort;
+        this.clinicalObservationRepositoryPort = clinicalObservationRepositoryPort;
         this.manageNutritionPlanUseCase = manageNutritionPlanUseCase;
         this.agendaLifecyclePort = agendaLifecyclePort;
     }
@@ -107,6 +111,7 @@ public class LinkingApplicationService implements LinkingUseCase {
         clinicalRepositoryPort.save(profile);
         if (nutritionistId != null && !nutritionistId.isBlank()) {
             manageNutritionPlanUseCase.archivePlansAfterUnlink(patientId, nutritionistId);
+            clinicalObservationRepositoryPort.deleteAllByPatientId(patientId);
         }
     }
 
@@ -128,6 +133,7 @@ public class LinkingApplicationService implements LinkingUseCase {
         profile.removeNutritionist();
         clinicalRepositoryPort.save(profile);
         manageNutritionPlanUseCase.archivePlansAfterUnlink(patientId, nutritionistId);
+        clinicalObservationRepositoryPort.deleteAllByPatientId(patientId);
     }
 
     private String generateRandomCode() {

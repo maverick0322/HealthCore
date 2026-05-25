@@ -1,6 +1,7 @@
 package com.healthcore.clinical.application.service;
 
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
+import com.healthcore.clinical.domain.model.ClinicalTime;
 import com.healthcore.clinical.domain.model.ClinicalObservation;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.port.in.ManageObservationsUseCase;
@@ -9,11 +10,11 @@ import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class ClinicalObservationApplicationService implements ManageObservationsUseCase {
+    private static final int MAX_NOTE_LENGTH = 500;
 
     private final ClinicalObservationRepositoryPort observationRepositoryPort;
     private final ClinicalRepositoryPort clinicalRepositoryPort;
@@ -27,9 +28,7 @@ public class ClinicalObservationApplicationService implements ManageObservations
 
     @Override
     public ClinicalObservation recordObservation(String patientId, String nutritionistId, String note) {
-        if (note == null || note.trim().isEmpty()) {
-            throw new IllegalArgumentException("Observation note cannot be empty.");
-        }
+        validateNote(note);
 
         PatientProfile profile = getLinkedPatientProfile(patientId, nutritionistId);
 
@@ -38,10 +37,25 @@ public class ClinicalObservationApplicationService implements ManageObservations
                 profile.getUserId(),
                 nutritionistId,
                 note,
-                LocalDateTime.now()
+                ClinicalTime.now()
         );
 
         return observationRepositoryPort.save(observation);
+    }
+
+    @Override
+    public ClinicalObservation updateObservation(String observationId, String nutritionistId, String note) {
+        validateNote(note);
+
+        ClinicalObservation observation = getOwnedObservation(observationId, nutritionistId);
+        observation.setNote(note.trim());
+        return observationRepositoryPort.save(observation);
+    }
+
+    @Override
+    public void deleteObservation(String observationId, String nutritionistId) {
+        getOwnedObservation(observationId, nutritionistId);
+        observationRepositoryPort.deleteById(observationId);
     }
 
     @Override
@@ -64,5 +78,26 @@ public class ClinicalObservationApplicationService implements ManageObservations
         }
 
         return profile;
+    }
+
+    private ClinicalObservation getOwnedObservation(String observationId, String nutritionistId) {
+        ClinicalObservation observation = observationRepositoryPort.findById(observationId)
+                .orElseThrow(() -> new ProfileNotFoundException("Observation not found."));
+
+        if (!nutritionistId.equals(observation.getNutritionistId())) {
+            throw new AccessDeniedException("Action denied: Observation does not belong to this nutritionist.");
+        }
+
+        getLinkedPatientProfile(observation.getPatientId(), nutritionistId);
+        return observation;
+    }
+
+    private void validateNote(String note) {
+        if (note == null || note.trim().isEmpty()) {
+            throw new IllegalArgumentException("Observation note cannot be empty.");
+        }
+        if (note.trim().length() > MAX_NOTE_LENGTH) {
+            throw new IllegalArgumentException("Observation note must be at most 500 characters long.");
+        }
     }
 }

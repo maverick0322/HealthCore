@@ -30,7 +30,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string, options?: Record<string, string | number>) => {
       const resolvedKey = key.includes(':') ? key : namespace ? `${namespace}:${key}` : key;
       if (resolvedKey === 'onboarding:patient.summary.physicalValue') {
-        return `${options?.age} anos, ${options?.height} cm, ${options?.weight} kg`;
+        return `${options?.age} años, ${options?.height} cm, ${options?.weight} kg`;
       }
       if (resolvedKey === 'onboarding:patient.summary.physicalDescription') {
         return `${options?.birthDate}, ${options?.gender}, ${options?.activity}`;

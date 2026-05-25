@@ -24,12 +24,19 @@ vi.mock('@tanstack/react-query', () => ({
 }));
 
 vi.mock('@/features/auth/store/useAuthStore', () => ({
-  useAuthStore: {
-    getState: vi.fn(() => ({
-      user: { email: 'patient@example.com' }
-    })),
-    setState: vi.fn(),
-  }
+  useAuthStore: Object.assign(
+    vi.fn((selector: (state: { user: { email: string } | null }) => unknown) =>
+      selector({
+        user: { email: 'patient@example.com' },
+      })
+    ),
+    {
+      getState: vi.fn(() => ({
+        user: { email: 'patient@example.com' }
+      })),
+      setState: vi.fn(),
+    }
+  ),
 }));
 
 describe('useWeightHistory', () => {

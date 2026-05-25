@@ -410,7 +410,7 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
           />
           <CounterField
             id="nutri-postal-code"
-            label={t('nutritionist.contact.fields.postalCode')}
+            label={t('nutritionist.contact.fields.postalCodeOptional')}
             value={contact.clinicAddress.postalCode}
             maxLength={5}
             error={errors.postalCode}
@@ -575,7 +575,7 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
               icon={FileText}
               label={t('nutritionist.summary.sections.contact')}
               value={contact.phone || t('nutritionist.summary.noPhone')}
-              description={formatManualAddress(contact.clinicAddress)}
+              description={formatManualAddress(contact.clinicAddress) ?? t('nutritionist.summary.noAddress')}
             />
           </div>
 

@@ -136,27 +136,45 @@ public class NutritionPlanApplicationService implements ManageNutritionPlanUseCa
 
         Optional<NutritionPlan> activeNutritionistPlan = nutritionPlanRepositoryPort
                 .findActiveByPatientIdAndAuthorTypeAndAuthorId(patientId, AuthorType.NUTRITIONIST, nutritionistId);
-        NutritionPlan contextSelfManagedPlan = nutritionPlanRepositoryPort
-                .findLatestByPatientIdAndAuthorType(patientId, AuthorType.SELF_MANAGED)
-                .orElse(null);
+        Optional<NutritionPlan> activeSelfManagedPlan = nutritionPlanRepositoryPort
+                .findActiveByPatientIdAndAuthorTypeAndAuthorId(patientId, AuthorType.SELF_MANAGED, patientId);
+        NutritionPlan contextSelfManagedPlan = activeNutritionistPlan.isPresent()
+                ? nutritionPlanRepositoryPort.findLatestByPatientIdAndAuthorType(patientId, AuthorType.SELF_MANAGED)
+                .orElse(null)
+                : null;
 
-        return activeNutritionistPlan
-                .map(plan -> new NutritionPlanView(
-                        MODE_NUTRITIONIST,
-                        plan.getAuthorType(),
-                        true,
-                        dailyGoals,
-                        plan.getSections(),
-                        contextSelfManagedPlan
-                ))
-                .orElseGet(() -> new NutritionPlanView(
-                        MODE_NUTRITIONIST,
-                        null,
-                        true,
-                        dailyGoals,
-                        emptySections(),
-                        contextSelfManagedPlan
-                ));
+        if (activeNutritionistPlan.isPresent()) {
+            NutritionPlan plan = activeNutritionistPlan.get();
+            return new NutritionPlanView(
+                    MODE_NUTRITIONIST,
+                    plan.getAuthorType(),
+                    true,
+                    dailyGoals,
+                    plan.getSections(),
+                    contextSelfManagedPlan
+            );
+        }
+
+        if (activeSelfManagedPlan.isPresent()) {
+            NutritionPlan selfManagedPlan = activeSelfManagedPlan.get();
+            return new NutritionPlanView(
+                    MODE_NUTRITIONIST,
+                    selfManagedPlan.getAuthorType(),
+                    true,
+                    dailyGoals,
+                    selfManagedPlan.getSections(),
+                    null
+            );
+        }
+
+        return new NutritionPlanView(
+                MODE_NUTRITIONIST,
+                null,
+                true,
+                dailyGoals,
+                emptySections(),
+                null
+        );
     }
 
     @Override

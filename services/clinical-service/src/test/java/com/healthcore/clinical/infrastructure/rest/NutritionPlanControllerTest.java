@@ -58,9 +58,10 @@ class NutritionPlanControllerTest {
 
     @Test
     void shouldReturnPatientNutritionPlan() throws Exception {
+        setSecurityContext("patient-123", "PATIENT");
         when(manageNutritionPlanUseCase.getMyNutritionPlan("patient-123")).thenReturn(createView(false, null));
 
-        mockMvc.perform(get("/api/v1/clinical/nutrition-plan/me").header("X-User-Id", "patient-123"))
+        mockMvc.perform(get("/api/v1/clinical/nutrition-plan/me").header("X-User-Id", "spoofed-user"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mode").value("SELF_MANAGED"))
                 .andExpect(jsonPath("$.dailyGoals.targetWaterGlasses").value(10))
@@ -69,10 +70,11 @@ class NutritionPlanControllerTest {
 
     @Test
     void shouldUpsertPatientNutritionPlan() throws Exception {
+        setSecurityContext("patient-123", "PATIENT");
         when(manageNutritionPlanUseCase.upsertMyNutritionPlan(eq("patient-123"), any())).thenReturn(createView(false, null));
 
         mockMvc.perform(put("/api/v1/clinical/nutrition-plan/me")
-                        .header("X-User-Id", "patient-123")
+                        .header("X-User-Id", "spoofed-user")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequestBody())))
                 .andExpect(status().isOk())

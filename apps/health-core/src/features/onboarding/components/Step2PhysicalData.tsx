@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, Minus, Plus, Ruler, Weight } from 'lucide-react';
 
@@ -222,8 +222,45 @@ const SliderWithButtons = ({
   onChange,
 }: SliderWithButtonsProps) => {
   const precision = step < 1 ? 1 : 0;
-  const handleDecrease = () => onChange(Math.max(min, Number((value - step).toFixed(precision))));
-  const handleIncrease = () => onChange(Math.min(max, Number((value + step).toFixed(precision))));
+  const valueRef = useRef(value);
+  const holdTimeoutRef = useRef<number | null>(null);
+  const holdIntervalRef = useRef<number | null>(null);
+  const skipClickRef = useRef(false);
+
+  valueRef.current = value;
+
+  const handleDecrease = () => onChange(Math.max(min, Number((valueRef.current - step).toFixed(precision))));
+  const handleIncrease = () => onChange(Math.min(max, Number((valueRef.current + step).toFixed(precision))));
+
+  const clearHold = () => {
+    if (holdTimeoutRef.current !== null) {
+      window.clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+    if (holdIntervalRef.current !== null) {
+      window.clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => clearHold, []);
+
+  const startHold = (action: () => void) => {
+    skipClickRef.current = true;
+    action();
+    clearHold();
+    holdTimeoutRef.current = window.setTimeout(() => {
+      holdIntervalRef.current = window.setInterval(action, 90);
+    }, 350);
+  };
+
+  const handleClick = (action: () => void) => {
+    if (skipClickRef.current) {
+      skipClickRef.current = false;
+      return;
+    }
+    action();
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -238,7 +275,12 @@ const SliderWithButtons = ({
         <div className="flex items-center justify-between gap-3 mb-4">
           <button
             type="button"
-            onClick={handleDecrease}
+            aria-label={`${label} -`}
+            onPointerDown={() => startHold(handleDecrease)}
+            onPointerUp={clearHold}
+            onPointerLeave={clearHold}
+            onPointerCancel={clearHold}
+            onClick={() => handleClick(handleDecrease)}
             className="w-11 h-11 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >
             <Minus size={18} />
@@ -256,7 +298,12 @@ const SliderWithButtons = ({
           </div>
           <button
             type="button"
-            onClick={handleIncrease}
+            aria-label={`${label} +`}
+            onPointerDown={() => startHold(handleIncrease)}
+            onPointerUp={clearHold}
+            onPointerLeave={clearHold}
+            onPointerCancel={clearHold}
+            onClick={() => handleClick(handleIncrease)}
             className="w-11 h-11 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
           >
             <Plus size={18} />

@@ -1,5 +1,26 @@
 package com.healthcore.clinical.infrastructure.rest;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.Gender;
@@ -18,21 +39,11 @@ import com.healthcore.clinical.infrastructure.rest.dto.NutritionistProfileRespon
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressReportResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressRowResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.PatientProfileResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.UpdatePatientMetricsRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
-import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/clinical")
@@ -68,7 +79,8 @@ public class ClinicalController {
 
     @GetMapping("/goals/me")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<HealthGoalResponse> getMyGoals(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<HealthGoalResponse> getMyGoals() {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Getting goals for userHash={}", logHash(userId));
         Optional<PatientProfile> profileOpt = manageProfileUseCase.getProfileByUserId(userId);
 
@@ -91,9 +103,9 @@ public class ClinicalController {
     @PostMapping("/weight")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<HealthGoalResponse> updateWeight(
-            @RequestHeader("X-User-Id") String userId,
             @Valid @RequestBody UpdateWeightRequest request
     ) {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Updating weight for userHash={} weightKg={} date={}",
                 logHash(userId), request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg(), request.date());
@@ -103,10 +115,10 @@ public class ClinicalController {
     @PutMapping("/weight/{originalDate}")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<HealthGoalResponse> editWeight(
-            @RequestHeader("X-User-Id") String userId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate originalDate,
             @Valid @RequestBody UpdateWeightRequest request
     ) {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Editing weight for userHash={} originalDate={} weightKg={} date={}",
                 logHash(userId), originalDate, request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.editWeight(userId, originalDate, request.weightKg(), request.date());
@@ -116,9 +128,9 @@ public class ClinicalController {
     @DeleteMapping("/weight/{date}")
     @PreAuthorize("hasRole('PATIENT')")
     public ResponseEntity<HealthGoalResponse> deleteWeight(
-            @RequestHeader("X-User-Id") String userId,
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Deleting weight for userHash={} date={}", logHash(userId), date);
         HealthGoal newGoal = manageProfileUseCase.deleteWeight(userId, date);
         return ResponseEntity.ok(toHealthGoalResponse(newGoal));
@@ -126,9 +138,19 @@ public class ClinicalController {
 
     @GetMapping("/weight/history")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<List<WeightRecord>> getWeightHistory(@RequestHeader("X-User-Id") String userId) {
+    public ResponseEntity<List<WeightRecord>> getWeightHistory() {
+        String userId = getCurrentUserId();
         logger.info("[ClinicalController] Getting weight history for userHash={}", logHash(userId));
         return ResponseEntity.ok(manageProfileUseCase.getWeightHistory(userId));
+    }
+
+    @GetMapping("/nutritionist/patients/{patientId}/weight-history")
+    @PreAuthorize("hasRole('NUTRITIONIST')")
+    public ResponseEntity<List<WeightRecord>> getNutritionistPatientWeightHistory(@PathVariable String patientId) {
+        String nutritionistId = getCurrentUserId();
+        logger.info("[ClinicalController] Getting patient weight history for nutritionistHash={} patientHash={}",
+                logHash(nutritionistId), logHash(patientId));
+        return ResponseEntity.ok(manageProfileUseCase.getWeightHistoryForNutritionist(nutritionistId, patientId));
     }
 
     @GetMapping("/profile/me")
@@ -207,6 +229,29 @@ public class ClinicalController {
                 logHash(nutritionistId), logHash(patientId));
         PatientProfile profile = manageProfileUseCase.getProfileForNutritionist(nutritionistId, patientId);
         return ResponseEntity.ok(toPatientProfileResponse(profile));
+    }
+
+    @PutMapping("/nutritionist/patients/{patientId}/metrics")
+    @PreAuthorize("hasRole('NUTRITIONIST')")
+    public ResponseEntity<PatientProfileResponse> updateNutritionistPatientMetrics(
+            @PathVariable String patientId,
+            @Valid @RequestBody UpdatePatientMetricsRequest request
+    ) {
+        String nutritionistId = getCurrentUserId();
+        logger.info(
+                "[ClinicalController] Updating patient metrics for nutritionistHash={} patientHash={} weightKg={} heightCm={}",
+                logHash(nutritionistId),
+                logHash(patientId),
+                request.weightKg(),
+                request.heightCm()
+        );
+        PatientProfile updatedProfile = manageProfileUseCase.updatePatientMetricsForNutritionist(
+                nutritionistId,
+                patientId,
+                request.weightKg(),
+                request.heightCm()
+        );
+        return ResponseEntity.ok(toPatientProfileResponse(updatedProfile));
     }
 
     @GetMapping("/nutritionist/reports/weight-progress")

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   TrendingDown,
@@ -8,19 +8,18 @@ import {
   Award,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Loader2
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { PatientNav } from "@/features/patient/components/PatientNav";
 import { Button } from "@/shared/ui/button";
-
-// --- NUESTRAS IMPORTACIONES DE TRACKING ---
 import { useDailyLogs } from "@/features/tracking/hooks/useDailyLogs";
+import { useHistoricalMacros } from "@/features/tracking/hooks/useHistoricalMacros";
 import { DetailedMealTimeline } from "@/features/tracking/components/DetailedMealTimeline";
 
-// ── Dummy data ORIGINAL INTACTA ─────────────────────────────────────────────
 const HISTORY_DUMMY = {
   weightStart: 83.0,
   weightCurrent: 78.5,
@@ -34,14 +33,11 @@ const HISTORY_DUMMY = {
     { date: "Mar", w: 79.2 },
     { date: "Abr", w: 78.5 },
   ],
-  caloriesAvg: 1650,
-  caloriesGoal: 2000,
-  caloriesHistory: [1800, 1950, 1600, 1500, 1650, 1700, 1420],
+  caloriesGoal: 2000, 
   adherenceRate: 85,
   streakCurrent: 7,
   streakBest: 21,
   totalDays: 45,
-  macrosAvg: { protein: 30, carbs: 45, fat: 25 },
 };
 
 function MacroDonut({ p, c, f }: { p: number; c: number; f: number }) {
@@ -69,13 +65,60 @@ function MacroDonut({ p, c, f }: { p: number; c: number; f: number }) {
 export const PatientHistoryPage = () => {
   const { t } = useTranslation("patient");
 
-  // --- CONTROL DE FECHA PARA EL TIMELINE ---
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayObj = new Date();
+  const todayStr = todayObj.toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(todayStr);
   
-  const { logs, isLoading, error } = useDailyLogs(selectedDate);
+  const { startDate, endDate, last7Days } = useMemo(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 6);
+    
+    const daysArray = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      return d.toISOString().split('T')[0];
+    });
 
-  // Función segura para sumar o restar días sin problemas de Timezone
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0],
+      last7Days: daysArray
+    };
+  }, []);
+
+  const { logs, isLoading: isTimelineLoading, error: timelineError } = useDailyLogs(selectedDate);
+  const { data: historyData, isLoading: isHistoryLoading } = useHistoricalMacros(startDate, endDate);
+
+  const { caloriesHistory, caloriesAvg, macrosAvg } = useMemo(() => {
+    if (!historyData || historyData.length === 0) {
+      return { caloriesHistory: Array(7).fill(0), caloriesAvg: 0, macrosAvg: { protein: 0, carbs: 0, fat: 0 } };
+    }
+
+    const cals = last7Days.map(dateStr => {
+      const dayLog = historyData.find((d: any) => d.date === dateStr); 
+      return dayLog ? dayLog.totalCalories : 0;
+    });
+
+    const calsAvg = Math.round(cals.reduce((acc, curr) => acc + curr, 0) / 7);
+
+    let totalP = 0, totalC = 0, totalF = 0;
+    historyData.forEach((d: any) => {
+      totalP += d.totalProteins || 0;
+      totalC += d.totalCarbs || 0;
+      totalF += d.totalFats || 0;
+    });
+
+    const totalMacros = totalP + totalC + totalF;
+    const mAvg = totalMacros > 0 ? {
+      protein: Math.round((totalP / totalMacros) * 100),
+      carbs: Math.round((totalC / totalMacros) * 100),
+      fat: Math.round((totalF / totalMacros) * 100),
+    } : { protein: 0, carbs: 0, fat: 0 };
+
+    return { caloriesHistory: cals, caloriesAvg: calsAvg, macrosAvg: mAvg };
+  }, [historyData, last7Days]);
+
   const changeDate = (offsetDays: number) => {
     const d = new Date(selectedDate + "T12:00:00");
     d.setDate(d.getDate() + offsetDays);
@@ -110,7 +153,6 @@ export const PatientHistoryPage = () => {
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-        {/* Adherence & Streak Row */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-4 flex flex-col gap-1">
@@ -136,7 +178,6 @@ export const PatientHistoryPage = () => {
           </Card>
         </div>
 
-        {/* Weight Evolution */}
         <Card id="card-history-weight">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -179,36 +220,41 @@ export const PatientHistoryPage = () => {
           </CardContent>
         </Card>
 
-        {/* Nutrition: Calories & Macros */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card id="card-history-calories">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Flame size={16} className="text-primary" />
-                Tendencia Calórica
+                Tendencia Calórica (7 días)
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-between items-baseline mb-4">
-                <div>
-                  <p className="text-2xl font-bold">{HISTORY_DUMMY.caloriesAvg}</p>
-                  <p className="text-xs text-muted-foreground">Promedio diario</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">{HISTORY_DUMMY.caloriesGoal}</p>
-                  <p className="text-xs text-muted-foreground">Meta</p>
-                </div>
-              </div>
-              <div className="flex items-end gap-1 h-12">
-                {HISTORY_DUMMY.caloriesHistory.map((c, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-amber-500/40 rounded-t-sm transition-colors hover:bg-amber-500"
-                    style={{ height: `${(c / 2500) * 100}%` }}
-                    title={`${c} kcal`}
-                  />
-                ))}
-              </div>
+              {isHistoryLoading ? (
+                <div className="h-24 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-baseline mb-4">
+                    <div>
+                      <p className="text-2xl font-bold">{caloriesAvg}</p>
+                      <p className="text-xs text-muted-foreground">Promedio diario</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">{HISTORY_DUMMY.caloriesGoal}</p>
+                      <p className="text-xs text-muted-foreground">Meta</p>
+                    </div>
+                  </div>
+                  <div className="flex items-end gap-1 h-12">
+                    {caloriesHistory.map((c, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 bg-amber-500/40 rounded-t-sm transition-colors hover:bg-amber-500"
+                        style={{ height: `${Math.min((c / HISTORY_DUMMY.caloriesGoal) * 100, 100)}%` }}
+                        title={`${Math.round(c)} kcal`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -216,34 +262,39 @@ export const PatientHistoryPage = () => {
             <CardHeader className="pb-0">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <PieChart size={16} className="text-primary" />
-                Distribución de Macros (promedio)
+                Distribución de Macros (7 días)
               </CardTitle>
             </CardHeader>
             <CardContent className="flex items-center gap-4 pt-4">
-              <MacroDonut
-                p={HISTORY_DUMMY.macrosAvg.protein}
-                c={HISTORY_DUMMY.macrosAvg.carbs}
-                f={HISTORY_DUMMY.macrosAvg.fat}
-              />
-              <div className="flex-1 space-y-3">
-                <div className="flex justify-between text-xs items-center">
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-primary" />{t("history.protein")}</div>
-                  <span className="font-semibold">{HISTORY_DUMMY.macrosAvg.protein}%</span>
-                </div>
-                <div className="flex justify-between text-xs items-center">
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" />{t("history.carbs")}</div>
-                  <span className="font-semibold">{HISTORY_DUMMY.macrosAvg.carbs}%</span>
-                </div>
-                <div className="flex justify-between text-xs items-center">
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-sky-400" />{t("history.fat")}</div>
-                  <span className="font-semibold">{HISTORY_DUMMY.macrosAvg.fat}%</span>
-                </div>
-              </div>
+              {isHistoryLoading ? (
+                <div className="h-32 w-full flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>
+              ) : (
+                <>
+                  <MacroDonut
+                    p={macrosAvg.protein}
+                    c={macrosAvg.carbs}
+                    f={macrosAvg.fat}
+                  />
+                  <div className="flex-1 space-y-3">
+                    <div className="flex justify-between text-xs items-center">
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-primary" />{t("history.protein")}</div>
+                      <span className="font-semibold">{macrosAvg.protein}%</span>
+                    </div>
+                    <div className="flex justify-between text-xs items-center">
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400" />{t("history.carbs")}</div>
+                      <span className="font-semibold">{macrosAvg.carbs}%</span>
+                    </div>
+                    <div className="flex justify-between text-xs items-center">
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-sky-400" />{t("history.fat")}</div>
+                      <span className="font-semibold">{macrosAvg.fat}%</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        {/* --- CONTROLES DE FECHA Y TIMELINE DE COMIDAS --- */}
         <div className="mt-8 pt-4 border-t border-border/50">
           <div className="flex items-center justify-between mb-4 bg-muted/30 p-2 rounded-lg border border-border/50">
             <Button variant="ghost" size="sm" onClick={() => changeDate(-1)} className="gap-1 hover:bg-background">
@@ -266,7 +317,7 @@ export const PatientHistoryPage = () => {
             </Button>
           </div>
           
-          <DetailedMealTimeline logs={logs} isLoading={isLoading} error={error} />
+          <DetailedMealTimeline logs={logs} isLoading={isTimelineLoading} error={timelineError} />
         </div>
 
       </main>

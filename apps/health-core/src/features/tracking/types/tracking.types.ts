@@ -67,6 +67,8 @@ export interface TodayDashboardSummary {
   totalCarbs: number;
   totalFats: number;
   totalWaterMl: number;
+  currentStreak: number;
+  bestStreak: number;
 }
 
 export interface DailyMacroSummary {

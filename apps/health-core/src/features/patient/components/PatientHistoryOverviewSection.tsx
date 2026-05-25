@@ -1,9 +1,11 @@
 import {
+  AlertCircle,
   Award,
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
   Flame,
+  Loader2,
   PieChart,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -13,15 +15,6 @@ import { DetailedMealTimeline } from '@/features/tracking/components/DetailedMea
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { WeightHistorySection } from '@/features/patient/components/WeightHistorySection';
-
-const HISTORY_DUMMY = {
-  caloriesAvg: 1650,
-  caloriesGoal: 2000,
-  caloriesHistory: [1800, 1950, 1600, 1500, 1650, 1700, 1420],
-  streakCurrent: 7,
-  streakBest: 21,
-  macrosAvg: { protein: 30, carbs: 45, fat: 25 },
-};
 
 function MacroDonut({ p, c, f }: { p: number; c: number; f: number }) {
   const r = 50;
@@ -80,15 +73,32 @@ interface PatientHistoryOverviewSectionProps {
   isWeightError?: boolean;
   onRetryWeight?: () => void;
   readOnlyWeightHistory?: boolean;
+  historicalMacros?: {
+    caloriesHistory: number[];
+    caloriesAvg: number;
+    macrosAvg: { protein: number; carbs: number; fat: number };
+    calorieGoal?: number | null;
+    isLoading: boolean;
+    error?: string | null;
+  };
+  onRetryHistoricalMacros?: () => void;
+  streakSummary?: {
+    currentStreak: number;
+    bestStreak: number;
+    isLoading: boolean;
+    error?: string | null;
+  };
   logs: any[];
   isLogsLoading: boolean;
   logsError: string | null;
-  selectedDateLabel: string;
+  selectedDateLabel?: string;
   onPreviousDay?: () => void;
   onNextDay?: () => void;
   disableNextDay?: boolean;
   showDateNavigation?: boolean;
   showLogRegistrationCard?: boolean;
+  showTrackingInsights?: boolean;
+  showMealTimeline?: boolean;
   emptyLogsMessage?: string;
 }
 
@@ -98,6 +108,9 @@ export const PatientHistoryOverviewSection = ({
   isWeightError,
   onRetryWeight,
   readOnlyWeightHistory = false,
+  historicalMacros,
+  onRetryHistoricalMacros,
+  streakSummary,
   logs,
   isLogsLoading,
   logsError,
@@ -107,30 +120,53 @@ export const PatientHistoryOverviewSection = ({
   disableNextDay = false,
   showDateNavigation = true,
   showLogRegistrationCard = true,
+  showTrackingInsights = Boolean(historicalMacros),
+  showMealTimeline = true,
   emptyLogsMessage,
 }: Readonly<PatientHistoryOverviewSectionProps>) => {
   const { t } = useTranslation('patient');
+  const calorieGoal = historicalMacros?.calorieGoal ?? null;
+  const maxCalories = Math.max(
+    calorieGoal ?? 0,
+    ...(historicalMacros?.caloriesHistory ?? []),
+    1
+  );
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-3">
-        <Card className="border-amber-500/20 bg-amber-500/5">
-          <CardContent className="flex flex-col gap-1 p-4">
-            <div className="flex items-center gap-2 text-amber-500">
-              <Award size={16} />
-              <span className="text-xs font-semibold uppercase tracking-wider">
-                {t('history.streak')}
-              </span>
-            </div>
-            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-              {t('history.streakDays', { count: HISTORY_DUMMY.streakCurrent })}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {t('history.bestStreak')}: {HISTORY_DUMMY.streakBest}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {streakSummary ? (
+        <div className="grid grid-cols-1 gap-3">
+          <Card className="border-amber-500/20 bg-amber-500/5">
+            <CardContent className="flex flex-col gap-1 p-4">
+              <div className="flex items-center gap-2 text-amber-500">
+                <Award size={16} />
+                <span className="text-xs font-semibold uppercase tracking-wider">
+                  {t('history.streak')}
+                </span>
+              </div>
+              {streakSummary.isLoading ? (
+                <div className="flex items-center gap-2 py-2 text-amber-600 dark:text-amber-400">
+                  <Loader2 size={18} className="animate-spin" />
+                </div>
+              ) : streakSummary.error ? (
+                <div className="mt-2 flex items-center gap-2 text-sm text-destructive">
+                  <AlertCircle size={16} />
+                  <span>{streakSummary.error}</span>
+                </div>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                    {t('history.streakDays', { count: streakSummary.currentStreak ?? 0 })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('history.bestStreak')}: {streakSummary.bestStreak ?? 0}
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
 
       <WeightHistorySection
         records={weightRecords}
@@ -140,122 +176,163 @@ export const PatientHistoryOverviewSection = ({
         readOnly={readOnlyWeightHistory}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card id="card-history-calories">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <Flame size={16} className="text-primary" />
-              {t('history.calorieTrend')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex items-baseline justify-between">
-              <div>
-                <p className="text-2xl font-bold">{HISTORY_DUMMY.caloriesAvg}</p>
-                <p className="text-xs text-muted-foreground">{t('history.calorieAvg')}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold">{HISTORY_DUMMY.caloriesGoal}</p>
-                <p className="text-xs text-muted-foreground">{t('history.calorieGoal')}</p>
-              </div>
-            </div>
-            <div className="flex h-12 items-end gap-1">
-              {HISTORY_DUMMY.caloriesHistory.map((calories, index) => (
-                <div
-                  key={`${calories}-${index}`}
-                  className="flex-1 rounded-t-sm bg-amber-500/40 transition-colors hover:bg-amber-500"
-                  style={{ height: `${(calories / 2500) * 100}%` }}
-                  title={`${calories} kcal`}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card id="card-history-macros">
-          <CardHeader className="pb-0">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <PieChart size={16} className="text-primary" />
-              {t('history.macroBreakdown')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-4 pt-4">
-            <MacroDonut
-              p={HISTORY_DUMMY.macrosAvg.protein}
-              c={HISTORY_DUMMY.macrosAvg.carbs}
-              f={HISTORY_DUMMY.macrosAvg.fat}
-            />
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-primary" />
-                  {t('history.protein')}
+      {showTrackingInsights ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Card id="card-history-calories">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <Flame size={16} className="text-primary" />
+                {t('history.calorieTrend')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {historicalMacros?.isLoading ? (
+                <div className="flex h-24 items-center justify-center">
+                  <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
-                <span className="font-semibold">{HISTORY_DUMMY.macrosAvg.protein}%</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                  {t('history.carbs')}
+              ) : historicalMacros?.error ? (
+                <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm">
+                  <p className="text-destructive">{historicalMacros.error}</p>
+                  {onRetryHistoricalMacros ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={onRetryHistoricalMacros}
+                    >
+                      {t('common.retry')}
+                    </Button>
+                  ) : null}
                 </div>
-                <span className="font-semibold">{HISTORY_DUMMY.macrosAvg.carbs}%</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-sky-400" />
-                  {t('history.fat')}
+              ) : (
+                <>
+                  <div className="mb-4 flex items-baseline justify-between">
+                    <div>
+                      <p className="text-2xl font-bold">{historicalMacros?.caloriesAvg ?? 0}</p>
+                      <p className="text-xs text-muted-foreground">{t('history.calorieAvg')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold">
+                        {calorieGoal == null ? '--' : calorieGoal}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{t('history.calorieGoal')}</p>
+                    </div>
+                  </div>
+                  <div className="flex h-12 items-end gap-1">
+                    {(historicalMacros?.caloriesHistory ?? []).map((calories, index) => (
+                      <div
+                        key={`${calories}-${index}`}
+                        className="flex-1 rounded-t-sm bg-amber-500/40 transition-colors hover:bg-amber-500"
+                        style={{ height: `${Math.min((calories / maxCalories) * 100, 100)}%` }}
+                        title={`${Math.round(calories)} kcal`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card id="card-history-macros">
+            <CardHeader className="pb-0">
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <PieChart size={16} className="text-primary" />
+                {t('history.macroBreakdown')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center gap-4 pt-4">
+              {historicalMacros?.isLoading ? (
+                <div className="flex h-32 w-full items-center justify-center">
+                  <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 </div>
-                <span className="font-semibold">{HISTORY_DUMMY.macrosAvg.fat}%</span>
+              ) : historicalMacros?.error ? (
+                <div className="w-full rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-sm">
+                  <p className="text-destructive">{historicalMacros.error}</p>
+                </div>
+              ) : (
+                <>
+                  <MacroDonut
+                    p={historicalMacros?.macrosAvg.protein ?? 0}
+                    c={historicalMacros?.macrosAvg.carbs ?? 0}
+                    f={historicalMacros?.macrosAvg.fat ?? 0}
+                  />
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                        {t('history.protein')}
+                      </div>
+                      <span className="font-semibold">{historicalMacros?.macrosAvg.protein ?? 0}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                        {t('history.carbs')}
+                      </div>
+                      <span className="font-semibold">{historicalMacros?.macrosAvg.carbs ?? 0}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-2.5 w-2.5 rounded-full bg-sky-400" />
+                        {t('history.fat')}
+                      </div>
+                      <span className="font-semibold">{historicalMacros?.macrosAvg.fat ?? 0}%</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
+
+      {showMealTimeline ? (
+        <div className="mt-8 border-t border-border/50 pt-4">
+          {showDateNavigation ? (
+            <div className="mb-4 flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 p-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onPreviousDay}
+                className="gap-1 hover:bg-background"
+              >
+                <ChevronLeft size={16} /> {t('history.previousDay')}
+              </Button>
+
+              <div className="flex items-center gap-2 font-medium">
+                <CalendarIcon size={16} className="text-primary" />
+                {selectedDateLabel ?? t('history.today')}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onNextDay}
+                disabled={disableNextDay}
+                className="gap-1 hover:bg-background"
+              >
+                {t('history.nextDay')} <ChevronRight size={16} />
+              </Button>
+            </div>
+          ) : (
+            <div className="mb-4 flex items-center justify-center rounded-lg border border-border/50 bg-muted/30 p-3">
+              <div className="flex items-center gap-2 font-medium">
+                <CalendarIcon size={16} className="text-primary" />
+                {selectedDateLabel ?? t('history.today')}
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
 
-      <div className="mt-8 border-t border-border/50 pt-4">
-        {showDateNavigation ? (
-          <div className="mb-4 flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onPreviousDay}
-              className="gap-1 hover:bg-background"
-            >
-              <ChevronLeft size={16} /> {t('history.previousDay')}
-            </Button>
-
-            <div className="flex items-center gap-2 font-medium">
-              <CalendarIcon size={16} className="text-primary" />
-              {selectedDateLabel}
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onNextDay}
-              disabled={disableNextDay}
-              className="gap-1 hover:bg-background"
-            >
-              {t('history.nextDay')} <ChevronRight size={16} />
-            </Button>
-          </div>
-        ) : (
-          <div className="mb-4 flex items-center justify-center rounded-lg border border-border/50 bg-muted/30 p-3">
-            <div className="flex items-center gap-2 font-medium">
-              <CalendarIcon size={16} className="text-primary" />
-              {selectedDateLabel}
-            </div>
-          </div>
-        )}
-
-        <DetailedMealTimeline
-          logs={logs}
-          isLoading={isLogsLoading}
-          error={logsError}
-          emptyMessage={emptyLogsMessage}
-          showAddCard={showLogRegistrationCard}
-        />
-      </div>
+          <DetailedMealTimeline
+            logs={logs}
+            isLoading={isLogsLoading}
+            error={logsError}
+            emptyMessage={emptyLogsMessage}
+            showAddCard={showLogRegistrationCard}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };

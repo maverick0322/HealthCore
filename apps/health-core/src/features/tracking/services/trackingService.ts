@@ -46,5 +46,31 @@ export const trackingService = {
       `/tracking/dashboard/history?startDate=${startDate}&endDate=${endDate}`
     );
     return response.data;
+  },
+
+  getNutritionistPatientTodaySummary: async (patientId: string, date?: string): Promise<TodayDashboardSummary> => {
+    const url = date
+      ? `/tracking/nutritionist/patients/${encodeURIComponent(patientId)}/dashboard/today?date=${date}`
+      : `/tracking/nutritionist/patients/${encodeURIComponent(patientId)}/dashboard/today`;
+    const response = await httpClient.get<TodayDashboardSummary>(url);
+    return response.data;
+  },
+
+  getNutritionistPatientDailyLogs: async (patientId: string, date: string) => {
+    const response = await httpClient.get(
+      `/tracking/nutritionist/patients/${encodeURIComponent(patientId)}/logs/daily?date=${date}`
+    );
+    return response.data;
+  },
+
+  getNutritionistPatientHistoricalMacros: async (
+    patientId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<DailyMacroSummary[]> => {
+    const response = await httpClient.get<DailyMacroSummary[]>(
+      `/tracking/nutritionist/patients/${encodeURIComponent(patientId)}/dashboard/history?startDate=${startDate}&endDate=${endDate}`
+    );
+    return response.data;
   }
 };

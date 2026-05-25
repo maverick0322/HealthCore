@@ -4,6 +4,7 @@ import type {
   ObservationResponse,
   WeightRecord,
 } from '@/features/clinical/types/clinical.types';
+import type { MealLogDTO, TodayDashboardSummary } from '@/features/tracking/types/tracking.types';
 
 interface PatientFilePdfLabels {
   title: string;
@@ -11,6 +12,9 @@ interface PatientFilePdfLabels {
   sections: {
     overview: string;
     weightHistory: string;
+    calorieTrend: string;
+    macroBreakdown: string;
+    mealTimeline: string;
     nutritionPlan: string;
     observations: string;
   };
@@ -25,17 +29,34 @@ interface PatientFilePdfLabels {
     allergies: string;
     excludedFoods: string;
     latestRecord: string;
+    currentWeight: string;
+    periodChange: string;
     date: string;
     change: string;
     mealSlot: string;
     dishCount: string;
     dailyGoals: string;
+    caloriesAverage: string;
+    calorieGoal: string;
+    protein: string;
+    carbs: string;
+    fat: string;
+    selectedDate: string;
+    mealType: string;
+    time: string;
+    foods: string;
+    calories: string;
+    streak: string;
+    bestStreak: string;
   };
   empty: {
     weightHistory: string;
+    tracking: string;
+    mealTimeline: string;
     observations: string;
     nutritionPlan: string;
     none: string;
+    noFoods: string;
   };
   mealSlots: Record<string, string>;
 }
@@ -45,6 +66,15 @@ interface ExportNutritionistPatientFilePdfOptions {
   nutritionPlan: NutritionPlanViewResponse | null;
   observations: ObservationResponse[];
   weightHistory: WeightRecord[];
+  trackingSummary?: TodayDashboardSummary | null;
+  historicalMacros?: {
+    caloriesHistory: number[];
+    caloriesAvg: number;
+    calorieGoal: number | null;
+    macrosAvg: { protein: number; carbs: number; fat: number };
+  } | null;
+  dailyTrackingLogs?: MealLogDTO[];
+  selectedTrackingDateLabel?: string | null;
   labels: PatientFilePdfLabels;
   fileName: string;
   locale: string;
@@ -104,6 +134,10 @@ export const exportNutritionistPatientFilePdf = async ({
   nutritionPlan,
   observations,
   weightHistory,
+  trackingSummary,
+  historicalMacros,
+  dailyTrackingLogs = [],
+  selectedTrackingDateLabel,
   labels,
   fileName,
   locale,
@@ -185,6 +219,18 @@ export const exportNutritionistPatientFilePdf = async ({
     writeLine(labels.empty.weightHistory);
   } else {
     const sortedRecords = [...weightHistory].sort((left, right) => left.date.localeCompare(right.date));
+    const latestRecord = sortedRecords[sortedRecords.length - 1];
+    const firstRecord = sortedRecords[0];
+    const netChange = latestRecord.weightKg - firstRecord.weightKg;
+
+    writeLine(
+      `${labels.fields.latestRecord}: ${formatDate(latestRecord.date, locale)} | ` +
+        `${labels.fields.currentWeight}: ${formatWeight(latestRecord.weightKg)} | ` +
+        `${labels.fields.change}: ${netChange > 0 ? '+' : ''}${netChange.toFixed(1)} kg`,
+      { size: 10 }
+    );
+    cursorY += 1;
+
     sortedRecords.forEach((record, index) => {
       const previous = index > 0 ? sortedRecords[index - 1] : null;
       const change = previous ? `${(record.weightKg - previous.weightKg > 0 ? '+' : '')}${(record.weightKg - previous.weightKg).toFixed(1)} kg` : '--';
@@ -192,6 +238,48 @@ export const exportNutritionistPatientFilePdf = async ({
         `${labels.fields.date}: ${formatDate(record.date, locale)} | ${labels.fields.weight}: ${formatWeight(record.weightKg)} | ${labels.fields.change}: ${change}`,
         { size: 10 }
       );
+    });
+  }
+
+  writeSectionTitle(labels.sections.calorieTrend);
+  if (!historicalMacros) {
+    writeLine(labels.empty.tracking);
+  } else {
+    writeField(labels.fields.caloriesAverage, `${historicalMacros.caloriesAvg} kcal`);
+    writeField(
+      labels.fields.calorieGoal,
+      historicalMacros.calorieGoal == null ? labels.empty.none : `${historicalMacros.calorieGoal} kcal`
+    );
+    if (trackingSummary) {
+      writeField(labels.fields.streak, `${trackingSummary.currentStreak}`);
+      writeField(labels.fields.bestStreak, `${trackingSummary.bestStreak}`);
+    }
+    writeLine(historicalMacros.caloriesHistory.map((value, index) => `D${index + 1}: ${Math.round(value)} kcal`).join(' | '), {
+      size: 10,
+    });
+  }
+
+  writeSectionTitle(labels.sections.macroBreakdown);
+  if (!historicalMacros) {
+    writeLine(labels.empty.tracking);
+  } else {
+    writeField(labels.fields.protein, `${historicalMacros.macrosAvg.protein}%`);
+    writeField(labels.fields.carbs, `${historicalMacros.macrosAvg.carbs}%`);
+    writeField(labels.fields.fat, `${historicalMacros.macrosAvg.fat}%`);
+  }
+
+  writeSectionTitle(labels.sections.mealTimeline);
+  writeField(labels.fields.selectedDate, selectedTrackingDateLabel ?? labels.empty.none);
+  if (dailyTrackingLogs.length === 0) {
+    writeLine(labels.empty.mealTimeline);
+  } else {
+    dailyTrackingLogs.forEach((log) => {
+      const foods = log.items?.map((item) => item.foodName).filter(Boolean).join(', ');
+      writeLine(`${labels.fields.mealType}: ${log.mealType}`, { bold: true, size: 10 });
+      writeLine(`${labels.fields.time}: ${formatDateTime(log.consumedAt, locale)}`, { size: 10 });
+      writeLine(`${labels.fields.calories}: ${Math.round(log.totalCalories)} kcal`, { size: 10 });
+      writeLine(`${labels.fields.foods}: ${foods || labels.empty.noFoods}`, { size: 10 });
+      cursorY += 1;
     });
   }
 

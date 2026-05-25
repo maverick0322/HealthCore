@@ -6,19 +6,17 @@ import {
   PieChart,
   Target,
   Award,
-  ChevronLeft,
-  ChevronRight,
-  Calendar as CalendarIcon,
   Loader2
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { PatientNav } from "@/features/patient/components/PatientNav";
-import { Button } from "@/shared/ui/button";
+
+import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
+
 import { useDailyLogs } from "@/features/tracking/hooks/useDailyLogs";
 import { useHistoricalMacros } from "@/features/tracking/hooks/useHistoricalMacros";
-import { DetailedMealTimeline } from "@/features/tracking/components/DetailedMealTimeline";
 import { trackingService } from "@/features/tracking/services/trackingService";
 
 const HISTORY_DUMMY = {
@@ -64,10 +62,8 @@ function MacroDonut({ p, c, f }: { p: number; c: number; f: number }) {
 export const PatientHistoryPage = () => {
   const { t } = useTranslation("patient");
 
-  const todayObj = new Date();
-  const todayStr = todayObj.toISOString().split('T')[0];
+  const todayStr = new Date().toISOString().split("T")[0];
   const [selectedDate, setSelectedDate] = useState(todayStr);
-  
   const [dashboardSummary, setDashboardSummary] = useState<any>(null);
 
   const { 
@@ -86,9 +82,9 @@ export const PatientHistoryPage = () => {
   }, []);
 
   const changeDate = (offsetDays: number) => {
-    const d = new Date(selectedDate + "T12:00:00");
+    const d = new Date(`${selectedDate}T12:00:00`);
     d.setDate(d.getDate() + offsetDays);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    setSelectedDate(d.toISOString().split("T")[0]);
   };
 
   const weightLost = HISTORY_DUMMY.weightStart - HISTORY_DUMMY.weightCurrent;
@@ -102,22 +98,22 @@ export const PatientHistoryPage = () => {
         <SettingsBar />
       </div>
 
-      <div className="relative bg-primary/10 border-b border-border overflow-hidden md:pl-56">
+      <div className="relative overflow-hidden border-b border-border bg-primary/10 md:pl-56">
         <div
           aria-hidden
-          className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
+          className="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-primary/20 blur-3xl pointer-events-none"
         />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Historial Nutricional
+        <div className="relative mx-auto max-w-7xl px-4 pb-6 pt-20 sm:px-6">
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            {t("history.title", "Historial Nutricional")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Tu evolución y registros detallados
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {t("history.subtitle", "Tu evolución y registros detallados")}
           </p>
         </div>
       </div>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-20 md:pb-8 md:pl-56 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <main className="animate-in slide-in-from-bottom-2 fade-in mx-auto flex-1 w-full max-w-7xl space-y-5 px-4 py-6 pb-20 duration-500 sm:px-6 md:pl-56 md:pb-8">
 
         <div className="grid grid-cols-2 gap-3">
           {/* Adherencia - Equipo Clinical */}
@@ -132,6 +128,7 @@ export const PatientHistoryPage = () => {
             </CardContent>
           </Card>
           
+          {/* Racha - Equipo Tracking */}
           <Card className="bg-amber-500/5 border-amber-500/20">
             <CardContent className="p-4 flex flex-col gap-1">
               <div className="flex items-center gap-2 text-amber-500">
@@ -139,7 +136,7 @@ export const PatientHistoryPage = () => {
                 <span className="text-xs font-semibold uppercase tracking-wider">{t("history.streak")}</span>
               </div>
               <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                {dashboardSummary ? t("history.streakDays", { count: dashboardSummary.currentStreak }) : <Loader2 className="animate-spin w-5 h-5" />}
+                {dashboardSummary ? t("history.streakDays", { count: dashboardSummary.currentStreak ?? 0 }) : <Loader2 className="animate-spin w-5 h-5" />}
               </p>
               <p className="text-xs text-muted-foreground">
                 {t("history.bestStreak")}: {dashboardSummary?.bestStreak || 0}
@@ -148,6 +145,7 @@ export const PatientHistoryPage = () => {
           </Card>
         </div>
 
+        {/* Evolución de Peso - Equipo Clinical */}
         <Card id="card-history-weight">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -190,6 +188,7 @@ export const PatientHistoryPage = () => {
           </CardContent>
         </Card>
 
+        {/* Calorías y Macros - Equipo Tracking */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card id="card-history-calories">
             <CardHeader className="pb-2">
@@ -265,30 +264,16 @@ export const PatientHistoryPage = () => {
           </Card>
         </div>
 
-        <div className="mt-8 pt-4 border-t border-border/50">
-          <div className="flex items-center justify-between mb-4 bg-muted/30 p-2 rounded-lg border border-border/50">
-            <Button variant="ghost" size="sm" onClick={() => changeDate(-1)} className="gap-1 hover:bg-background">
-              <ChevronLeft size={16} /> Anterior
-            </Button>
-            
-            <div className="flex items-center gap-2 font-medium">
-              <CalendarIcon size={16} className="text-primary" />
-              {selectedDate === todayStr ? "Hoy" : selectedDate}
-            </div>
-
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => changeDate(1)} 
-              disabled={selectedDate === todayStr}
-              className="gap-1 hover:bg-background"
-            >
-              Siguiente <ChevronRight size={16} />
-            </Button>
-          </div>
-          
-          <DetailedMealTimeline logs={logs} isLoading={isTimelineLoading} error={timelineError} />
-        </div>
+        {/* Sección de Timeline refactorizada (Rama main) */}
+        <PatientHistoryOverviewSection
+          logs={logs}
+          isLogsLoading={isTimelineLoading}
+          logsError={timelineError}
+          selectedDateLabel={selectedDate === todayStr ? t("history.today", "Hoy") : selectedDate}
+          onPreviousDay={() => changeDate(-1)}
+          onNextDay={() => changeDate(1)}
+          disableNextDay={selectedDate === todayStr}
+        />
 
       </main>
     </div>

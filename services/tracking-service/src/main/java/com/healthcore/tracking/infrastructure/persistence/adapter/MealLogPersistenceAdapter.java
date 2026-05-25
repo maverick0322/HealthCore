@@ -11,10 +11,15 @@ import com.healthcore.tracking.infrastructure.persistence.repository.SpringDataM
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -27,6 +32,7 @@ import java.util.stream.Collectors;
 public class MealLogPersistenceAdapter implements MealLogPort {
 
     private final SpringDataMongoMealLogRepository repository;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public MealLog save(MealLog mealLog) {
@@ -92,6 +98,34 @@ public class MealLogPersistenceAdapter implements MealLogPort {
             log.error("Unexpected infrastructure error while aggregating historical macros. userHash={} errorClass={}",
                     logHash(userId), ex.getClass().getSimpleName());
             throw new MealLogPersistenceException("Unexpected error during macro aggregation", ex);
+        }
+    }
+
+    @Override
+    public Set<LocalDate> findDistinctLoggedDatesByUserId(String userId) {
+        if (userId == null || userId.isBlank()) {
+            log.error("Invalid user id for distinct date query.");
+            throw new IllegalArgumentException("UserId cannot be null or blank");
+        }
+
+        try {
+            log.debug("Executing optimized date extraction projection. userHash={}", logHash(userId));
+            Query query = new Query(Criteria.where("userId").is(userId));
+
+            query.fields().include("consumedAt");
+
+            return mongoTemplate.find(query, MealLogDocument.class)
+                    .stream()
+                    .map(entity -> entity.getConsumedAt().toLocalDate())
+                    .collect(Collectors.toSet());
+        } catch (DataAccessException ex) {
+            log.error("Database error while extracting distinct dates. userHash={} errorClass={}",
+                    logHash(userId), ex.getClass().getSimpleName());
+            throw new MealLogPersistenceException("Failed to extract distinct dates due to DB error", ex);
+        } catch (Exception ex) {
+            log.error("Unexpected infrastructure error extracting distinct dates. userHash={} errorClass={}",
+                    logHash(userId), ex.getClass().getSimpleName());
+            throw new MealLogPersistenceException("Unexpected error during distinct date extraction", ex);
         }
     }
 

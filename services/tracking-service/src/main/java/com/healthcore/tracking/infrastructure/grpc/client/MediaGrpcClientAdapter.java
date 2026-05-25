@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class MediaGrpcClientAdapter {
 
-    // Asegúrate de definir "media-service" en tu application.yml bajo grpc.client
     @GrpcClient("media-service")
     private MediaServiceGrpcGrpc.MediaServiceGrpcBlockingStub mediaStub;
 

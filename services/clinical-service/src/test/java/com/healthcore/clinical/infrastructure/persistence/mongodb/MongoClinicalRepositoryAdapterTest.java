@@ -1,6 +1,7 @@
 package com.healthcore.clinical.infrastructure.persistence.mongodb;
 
 import com.healthcore.clinical.domain.model.ActivityLevel;
+import com.healthcore.clinical.domain.model.ClinicalTime;
 import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import org.junit.jupiter.api.AfterEach;
@@ -60,11 +61,11 @@ class MongoClinicalRepositoryAdapterTest {
                 "omnivore",
                 List.of(),
                 List.of(),
-                List.of(new com.healthcore.clinical.domain.model.WeightRecord(75.0, LocalDate.now().minusDays(7))),
+                List.of(new com.healthcore.clinical.domain.model.WeightRecord(75.0, ClinicalTime.today().minusDays(7))),
                 null
         );
         
-        newProfile.registerWeight(73.5, LocalDate.now());
+        newProfile.registerWeight(73.5, ClinicalTime.today());
 
         repositoryAdapter.save(newProfile);
         Optional<PatientProfile> retrievedProfileOpt = repositoryAdapter.findByUserId("user-integration-1");

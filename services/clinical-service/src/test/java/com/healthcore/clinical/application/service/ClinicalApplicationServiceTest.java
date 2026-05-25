@@ -2,6 +2,7 @@ package com.healthcore.clinical.application.service;
 
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.ActivityLevel;
+import com.healthcore.clinical.domain.model.ClinicalTime;
 import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.HealthGoal;
@@ -69,7 +70,7 @@ class ClinicalApplicationServiceTest {
     @Test
     void shouldUpdateWeightAndRecalculateGoals() {
         PatientProfile profile = createPatientProfile("user-123");
-        LocalDate targetDate = LocalDate.now();
+        LocalDate targetDate = ClinicalTime.today();
         when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
 
         HealthGoal newGoal = service.updateWeight("user-123", 75.0, targetDate);
@@ -86,14 +87,14 @@ class ClinicalApplicationServiceTest {
     void shouldThrowProfileNotFoundExceptionWhenUpdatingUnknownUser() {
         when(repositoryPort.findByUserId("ghost-user")).thenReturn(Optional.empty());
 
-        assertThrows(ProfileNotFoundException.class, () -> service.updateWeight("ghost-user", 80.0, LocalDate.now()));
+        assertThrows(ProfileNotFoundException.class, () -> service.updateWeight("ghost-user", 80.0, ClinicalTime.today()));
         verify(repositoryPort, never()).save(any());
     }
 
     @Test
     void shouldGetWeightHistory() {
         PatientProfile profile = createPatientProfile("user-123");
-        profile.registerWeight(68.0, LocalDate.now());
+        profile.registerWeight(68.0, ClinicalTime.today());
 
         when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
 
@@ -108,7 +109,7 @@ class ClinicalApplicationServiceTest {
     void shouldKeepCurrentWeightWhenRegisteringHistoricalWeight() {
         PatientProfile profile = createPatientProfile("user-123");
         LocalDate initialDate = profile.getWeightHistory().get(0).date();
-        profile.registerWeight(74.0, LocalDate.now());
+        profile.registerWeight(74.0, ClinicalTime.today());
         when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
 
         HealthGoal goal = service.updateWeight("user-123", 68.0, initialDate.minusDays(10));
@@ -123,7 +124,7 @@ class ClinicalApplicationServiceTest {
     void shouldEditWeightAndRecalculateCurrentProfileState() {
         PatientProfile profile = createPatientProfile("user-123");
         LocalDate initialDate = profile.getWeightHistory().get(0).date();
-        LocalDate latestDate = LocalDate.now();
+        LocalDate latestDate = ClinicalTime.today();
         profile.registerWeight(74.0, latestDate);
         when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
 
@@ -139,7 +140,7 @@ class ClinicalApplicationServiceTest {
     @Test
     void shouldDeleteLatestWeightAndRestorePreviousCurrentWeight() {
         PatientProfile profile = createPatientProfile("user-123");
-        LocalDate latestDate = LocalDate.now();
+        LocalDate latestDate = ClinicalTime.today();
         profile.registerWeight(74.0, latestDate);
         when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
 
@@ -383,14 +384,14 @@ class ClinicalApplicationServiceTest {
                 null,
                 70.0,
                 175.0,
-                LocalDate.now().minusYears(25),
+                ClinicalTime.today().minusYears(25),
                 Gender.MALE,
                 ActivityLevel.SEDENTARY,
                 "weight-loss",
                 "omnivore",
                 List.of(),
                 List.of(),
-                List.of(new WeightRecord(70.0, LocalDate.now().minusDays(7))),
+                List.of(new WeightRecord(70.0, ClinicalTime.today().minusDays(7))),
                 null
         );
     }

@@ -11,7 +11,7 @@ class PatientProfileTest {
 
     @Test
     void shouldCalculateHealthGoalsCorrectlyForMale() {
-        LocalDate birthDate = LocalDate.now().minusYears(25);
+        LocalDate birthDate = ClinicalTime.today().minusYears(25);
         PatientProfile profile = createPatientProfile("user-123", birthDate);
 
         HealthGoal goal = profile.generateHealthGoals();
@@ -32,7 +32,7 @@ class PatientProfileTest {
                         null,
                         70.0,
                         175.0,
-                        LocalDate.now().minusYears(20),
+                        ClinicalTime.today().minusYears(20),
                         Gender.FEMALE,
                         ActivityLevel.SEDENTARY,
                         "health",
@@ -45,8 +45,8 @@ class PatientProfileTest {
 
     @Test
     void shouldAddRecordToHistoryAndRecalculateGoalsWhenRegisteringLatestWeight() {
-        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
-        LocalDate latestDate = LocalDate.now();
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+        LocalDate latestDate = ClinicalTime.today();
 
         assertEquals(1, profile.getWeightHistory().size());
         assertEquals(70.0, profile.getWeightHistory().get(0).weightKg());
@@ -62,10 +62,10 @@ class PatientProfileTest {
 
     @Test
     void shouldKeepCurrentWeightWhenRegisteringHistoricalWeight() {
-        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
         LocalDate originalDate = profile.getWeightHistory().get(0).date();
 
-        profile.registerWeight(72.0, LocalDate.now());
+        profile.registerWeight(72.0, ClinicalTime.today());
         profile.registerWeight(68.5, originalDate.minusDays(5));
 
         assertEquals(72.0, profile.getWeightKg());
@@ -75,7 +75,7 @@ class PatientProfileTest {
 
     @Test
     void shouldReplaceWeightRecordWhenSameDateIsRegisteredAgain() {
-        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
         LocalDate existingDate = profile.getWeightHistory().get(0).date();
 
         profile.registerWeight(69.5, existingDate);
@@ -87,9 +87,9 @@ class PatientProfileTest {
 
     @Test
     void shouldEditHistoricalWeightWithoutChangingCurrentWeight() {
-        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
         LocalDate originalDate = profile.getWeightHistory().get(0).date();
-        LocalDate latestDate = LocalDate.now();
+        LocalDate latestDate = ClinicalTime.today();
 
         profile.registerWeight(72.0, latestDate);
         profile.editWeightRecord(originalDate, 68.0, originalDate.minusDays(3));
@@ -102,8 +102,8 @@ class PatientProfileTest {
 
     @Test
     void shouldDeleteLatestWeightAndRecalculateCurrentWeight() {
-        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
-        LocalDate latestDate = LocalDate.now();
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+        LocalDate latestDate = ClinicalTime.today();
 
         profile.registerWeight(72.0, latestDate);
         profile.deleteWeightRecord(latestDate);
@@ -114,7 +114,7 @@ class PatientProfileTest {
 
     @Test
     void shouldNotDeleteLastRemainingWeightRecord() {
-        PatientProfile profile = createPatientProfile("user-123", LocalDate.now().minusYears(25));
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
         LocalDate onlyDate = profile.getWeightHistory().get(0).date();
 
         IllegalStateException exception = assertThrows(
@@ -135,7 +135,7 @@ class PatientProfileTest {
                         null,
                         70.0,
                         175.0,
-                        LocalDate.now().minusYears(25),
+                        ClinicalTime.today().minusYears(25),
                         Gender.MALE,
                         ActivityLevel.SEDENTARY,
                         "weight-loss",
@@ -161,7 +161,7 @@ class PatientProfileTest {
                 "omnivore",
                 List.of(),
                 List.of(),
-                List.of(new WeightRecord(70.0, LocalDate.now().minusDays(7))),
+                List.of(new WeightRecord(70.0, ClinicalTime.today().minusDays(7))),
                 null
         );
     }

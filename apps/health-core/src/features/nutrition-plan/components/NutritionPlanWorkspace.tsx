@@ -662,9 +662,13 @@ export function NutritionPlanWorkspace({
                     className="pl-9"
                     value={searchQuery}
                     onChange={(event) => {
-                      setSearchQuery(event.target.value);
-                      setSearchFeedbackState('idle');
+                      const val = event.target.value;
+                      if (val.length <= 100) {
+                        setSearchQuery(val);
+                        setSearchFeedbackState('idle');
+                      }
                     }}
+                    maxLength={100}
                     placeholder={t('nutritionPlan.searchFoodPlaceholder')}
                   />
                 </div>
@@ -747,11 +751,13 @@ export function NutritionPlanWorkspace({
                             value={ingredient.quantityAmount ?? ''}
                             onChange={(event) => {
                               const rawValue = event.target.value.trim();
-                              updateEditorIngredient(
-                                index,
-                                rawValue === '' ? null : Number(rawValue),
-                                ingredient.unit
-                              );
+                              if (rawValue.length <= 5) {
+                                updateEditorIngredient(
+                                  index,
+                                  rawValue === '' ? null : Number(rawValue),
+                                  ingredient.unit
+                                );
+                              }
                             }}
                           />
                           <select

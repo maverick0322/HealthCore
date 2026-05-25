@@ -221,6 +221,17 @@
   "agenda": {
     "title": "Agenda",
     "subtitle": "Gestiona tus citas y disponibilidad",
+    "validation": {
+      "durationNotInteger": "La duración de la cita debe ser un número entero de minutos.",
+      "durationTooShort": "La duración de la cita no puede ser menor a 15 minutos.",
+      "durationTooLong": "La duración de la cita no puede ser mayor a 120 minutos.",
+      "timeBlockRequired": "Cada bloque de horario debe incluir hora de inicio y fin.",
+      "timeBlockOrder": "La hora de inicio debe ser anterior a la hora de fin.",
+      "timeBlockOutsideHours": "Los horarios deben estar entre 06:00 y 21:00.",
+      "timeBlockOverlap": "Los bloques de horario de un mismo día no pueden solaparse.",
+      "timeBlockPast": "No puedes generar horarios en horas pasadas.",
+      "timeBlockTooShortForDuration": "El bloque de horario es demasiado corto para la duración de cita seleccionada."
+    },
     "newAppointment": "Nueva Cita",
     "blockTime": "Bloquear Horario",
     "availability": "Configurar Disponibilidad",

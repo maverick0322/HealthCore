@@ -74,6 +74,7 @@ export const ForgotPasswordPage = () => {
                   className="h-12 text-base sm:text-sm bg-background border-border placeholder:text-muted-foreground transition-all duration-200"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  maxLength={254}
                   disabled={isLoading}
                   aria-describedby={fieldErrors.email ? "forgot-email-error" : undefined}
                   aria-invalid={!!fieldErrors.email}

@@ -220,6 +220,17 @@
   "agenda": {
     "title": "Schedule",
     "subtitle": "Manage your appointments and availability",
+    "validation": {
+      "durationNotInteger": "Appointment duration must be an integer number of minutes.",
+      "durationTooShort": "Appointment duration must be at least 15 minutes.",
+      "durationTooLong": "Appointment duration cannot exceed 120 minutes.",
+      "timeBlockRequired": "Each time block must include a start and end time.",
+      "timeBlockOrder": "Start time must be before end time.",
+      "timeBlockOutsideHours": "Slots must be between 06:00 and 21:00.",
+      "timeBlockOverlap": "Time blocks for the same day cannot overlap.",
+      "timeBlockPast": "You cannot generate slots in past hours.",
+      "timeBlockTooShortForDuration": "The time block is too short for the selected appointment duration."
+    },
     "newAppointment": "New Appointment",
     "blockTime": "Block Time",
     "availability": "Configure Availability",

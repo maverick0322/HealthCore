@@ -11,6 +11,13 @@ import { useGenerateSlots } from './useGenerateSlots';
 import { useNutritionistSlots } from './useNutritionistSlots';
 import { useDeactivateSlot } from './useDeactivateSlot';
 import type { AvailabilitySlotResponse, GenerateSlotsTimeBlock } from '../types/agenda.types';
+import {
+  validateDuration,
+  validateTimeBlock,
+  validateNoOverlap,
+  validateNotPastToday,
+  validateBlockFitsDuration,
+} from '@/features/agenda/validators/agendaValidation';
 
 type Tab = 'generate' | 'mySlots';
 type DayBlocksByDate = Record<string, GenerateSlotsTimeBlock[]>;
@@ -64,27 +71,6 @@ const createInitialScheduleState = () => {
 export const sortBlocks = (blocks: GenerateSlotsTimeBlock[]) =>
   [...blocks].sort((left, right) => left.startTime.localeCompare(right.startTime));
 
-const hasOverlappingBlocks = (blocks: GenerateSlotsTimeBlock[]) => {
-  const sorted = sortBlocks(blocks);
-  return sorted.some((block, index) => index > 0 && block.startTime < sorted[index - 1].endTime);
-};
-
-const hasInvalidBlockOrder = (blocks: GenerateSlotsTimeBlock[]) =>
-  blocks.some((block) => !block.startTime || !block.endTime || block.startTime >= block.endTime);
-
-const hasBlockOutsideVisibleHours = (blocks: GenerateSlotsTimeBlock[]) =>
-  blocks.some((block) => block.startTime < EARLIEST_SLOT_TIME || block.endTime > LATEST_SLOT_TIME);
-
-const hasPastSameDayBlock = (dateKey: string, blocks: GenerateSlotsTimeBlock[]) => {
-  if (dateKey !== todayDateKey()) return false;
-  const now = new Date();
-  return blocks.some((block) => {
-    const [hours, minutes] = block.startTime.split(':').map(Number);
-    const start = new Date();
-    start.setHours(hours, minutes, 0, 0);
-    return start <= now;
-  });
-};
 
 interface Toast {
   msg: string;
@@ -194,26 +180,37 @@ export const useNutritionistAvailabilityPage = () => {
       setToast({ msg: t('availability.selectAtLeastOneDay'), type: 'error' });
       return;
     }
-    if (duration < 15) {
-      setToast({ msg: t('availability.invalidDuration'), type: 'error' });
+    const durationError = validateDuration(duration);
+    if (durationError) {
+      setToast({ msg: t(durationError), type: 'error' });
       return;
     }
     for (const date of selectedDays) {
       const blocks = blocksForDay(date);
-      if (blocks.length === 0 || hasInvalidBlockOrder(blocks)) {
+      if (blocks.length === 0) {
         setToast({ msg: t('availability.invalidBlocks'), type: 'error' });
         return;
       }
-      if (hasOverlappingBlocks(blocks)) {
-        setToast({ msg: t('availability.overlappingBlocks'), type: 'error' });
+      for (const block of blocks) {
+        const blockError = validateTimeBlock(block.startTime, block.endTime);
+        if (blockError) {
+          setToast({ msg: t(blockError), type: 'error' });
+          return;
+        }
+        const fitsError = validateBlockFitsDuration(block.startTime, block.endTime, duration);
+        if (fitsError) {
+          setToast({ msg: t(fitsError), type: 'error' });
+          return;
+        }
+      }
+      const overlapError = validateNoOverlap(blocks);
+      if (overlapError) {
+        setToast({ msg: t(overlapError), type: 'error' });
         return;
       }
-      if (hasBlockOutsideVisibleHours(blocks)) {
-        setToast({ msg: t('availability.outsideVisibleHours'), type: 'error' });
-        return;
-      }
-      if (hasPastSameDayBlock(date, blocks)) {
-        setToast({ msg: t('availability.pastTimeBlocks'), type: 'error' });
+      const pastError = validateNotPastToday(date, blocks, todayDateKey());
+      if (pastError) {
+        setToast({ msg: t(pastError), type: 'error' });
         return;
       }
     }

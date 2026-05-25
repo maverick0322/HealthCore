@@ -96,7 +96,7 @@ export const PatientProfilePage = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-8">
           <button
             id="btn-back-dashboard"
-            onClick={() => navigate("/home")}
+            onClick={() => navigate("/dashboard")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 md:hidden"
           >
             <ChevronLeft size={16} />

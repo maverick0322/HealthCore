@@ -79,12 +79,30 @@ After successful login, backend returns JSON:
 }
 ```
 
-If the email is already registered with a different provider, the redirect includes:
+### Auth Providers & Collision Scenarios
 
-- `error=OAUTH2_PROVIDER_CONFLICT`
-- `message=...`
-- `existingProvider=LOCAL|AUTH0|...`
-- `requestedProvider=AUTH0|...`
+HealthCore supports multiple authentication options (e.g. `LOCAL` password login, or social logins via OAuth2 providers like `GOOGLE` and `AUTH0`). The following rules resolve conflicts when the same email is involved in multiple auth flows:
+
+#### Scenario A: Login via Google/OAuth2 but not yet registered
+If the email is not registered in HealthCore at all:
+- The system automatically registers (provisions) the user with `provider = GOOGLE` (or `AUTH0`), role = `PATIENT`, and sets `emailVerified = true`.
+- They are logged in immediately and issued JWT tokens.
+
+#### Scenario B: Local Registration with an email already registered via Google/OAuth2
+If a user tries to register locally using `POST /api/v1/auth/register` with an email that has already been registered through a social provider:
+- The system checks if the email exists.
+- The registration is rejected with `409 Conflict` containing the message: `"Email is already registered in HealthCore"`.
+
+#### Scenario C: Login via Google/OAuth2 with an email already registered locally (or with another provider)
+If a user authenticates via a social provider but their email is already registered under `LOCAL` (or a different provider):
+- The system blocks the authentication and throws `OAuth2ProviderConflictException`.
+- The `OAuth2LoginSuccessHandler` catches this and redirects the browser back to the frontend redirect callback URL with query parameters containing conflict details:
+  - `error=OAUTH2_PROVIDER_CONFLICT`
+  - `message=Email is already registered with a different authentication provider`
+  - `existingProvider=LOCAL` (or the actual current provider, e.g., `AUTH0`)
+  - `requestedProvider=GOOGLE` (or the requested provider)
+
+***
 
 ## 5) REST endpoints for frontend
 

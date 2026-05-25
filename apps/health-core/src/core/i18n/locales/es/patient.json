@@ -219,6 +219,8 @@
     "singleRecordHelp": "Registra tu próximo peso para comenzar a ver tu evolución aquí.",
     "rangeDisabledHint": "Este filtro estará disponible cuando tengas más historial registrado.",
     "rangeWindow": "Mostrando registros del {{from}} al {{to}}",
+    "downloadPdf": "Descargar PDF",
+    "exportingPdf": "Exportando PDF...",
     "ranges": {
       "30d": "1 mes",
       "90d": "3 meses",
@@ -269,6 +271,15 @@
       "title": "¿Deseas eliminar este registro de peso?",
       "description": "Se eliminará el registro de {{weight}} kg con fecha {{date}}.",
       "confirmAction": "Sí, eliminar"
+    },
+    "pdf": {
+      "generatedOn": "Generado el",
+      "mealType": "Tiempo de comida",
+      "time": "Hora",
+      "foods": "Alimentos",
+      "noTrackingData": "No hay datos de tendencia calórica disponibles.",
+      "noFoods": "Sin alimentos registrados",
+      "error": "No pudimos generar el PDF del historial. Intenta más tarde."
     },
     "filterAll": "Todos",
     "filterBreakfast": "Desayuno",

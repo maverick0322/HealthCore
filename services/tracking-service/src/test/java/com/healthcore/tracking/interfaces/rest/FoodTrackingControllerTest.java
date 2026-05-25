@@ -9,6 +9,7 @@ import com.healthcore.tracking.domain.model.FoodNutrients;
 import com.healthcore.tracking.domain.model.MealItem;
 import com.healthcore.tracking.domain.model.MealLog;
 import com.healthcore.tracking.domain.model.MealType;
+import com.healthcore.tracking.infrastructure.grpc.client.GrpcClinicalServiceClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,9 @@ class FoodTrackingControllerTest {
 
     @MockitoBean
     private FoodTrackingUseCase trackingUseCase;
+
+    @MockitoBean
+    private GrpcClinicalServiceClient clinicalServiceClient;
 
     @BeforeEach
     void setUp() {

@@ -20,6 +20,9 @@ const {
   mockExportPatientFilePdf,
   mockLogClientError,
   mockLogClientInfo,
+  mockGetNutritionistPatientTodaySummary,
+  mockGetNutritionistPatientHistoricalMacros,
+  mockGetNutritionistPatientDailyLogs,
 } = vi.hoisted(() => ({
   mockGetNutritionistPatientProfile: vi.fn(),
   mockGetNutritionistPatientNutritionPlan: vi.fn(),
@@ -34,6 +37,9 @@ const {
   mockExportPatientFilePdf: vi.fn(),
   mockLogClientError: vi.fn(),
   mockLogClientInfo: vi.fn(),
+  mockGetNutritionistPatientTodaySummary: vi.fn(),
+  mockGetNutritionistPatientHistoricalMacros: vi.fn(),
+  mockGetNutritionistPatientDailyLogs: vi.fn(),
 }));
 
 vi.mock('@/features/clinical/services/clinicalService', () => ({
@@ -55,6 +61,14 @@ vi.mock('@/features/clinical/services/clinicalService', () => ({
 vi.mock('@/core/utils/logger', () => ({
   logClientError: mockLogClientError,
   logClientInfo: mockLogClientInfo,
+}));
+
+vi.mock('@/features/tracking/services/trackingService', () => ({
+  trackingService: {
+    getNutritionistPatientTodaySummary: mockGetNutritionistPatientTodaySummary,
+    getNutritionistPatientHistoricalMacros: mockGetNutritionistPatientHistoricalMacros,
+    getNutritionistPatientDailyLogs: mockGetNutritionistPatientDailyLogs,
+  },
 }));
 
 vi.mock('@/features/nutritionist/components/NutritionistNav', () => ({
@@ -208,6 +222,34 @@ describe('NutritionistPatientFilePage', () => {
     mockUpdateObservation.mockResolvedValue(undefined);
     mockDeleteObservation.mockResolvedValue(undefined);
     mockExportPatientFilePdf.mockResolvedValue(undefined);
+    mockGetNutritionistPatientTodaySummary.mockResolvedValue({
+      totalCalories: 1800,
+      totalProteins: 120,
+      totalCarbs: 150,
+      totalFats: 50,
+      totalWaterMl: 1500,
+      currentStreak: 2,
+      bestStreak: 5,
+    });
+    mockGetNutritionistPatientHistoricalMacros.mockResolvedValue([
+      { date: '2026-05-16', totalCalories: 1800, totalProteins: 120, totalCarbs: 180, totalFats: 60 },
+      { date: '2026-05-17', totalCalories: 1700, totalProteins: 110, totalCarbs: 160, totalFats: 55 },
+      { date: '2026-05-18', totalCalories: 1750, totalProteins: 115, totalCarbs: 170, totalFats: 58 },
+    ]);
+    mockGetNutritionistPatientDailyLogs.mockResolvedValue([
+      {
+        id: 'log-1',
+        userId: 'patient-1',
+        mealType: 'BREAKFAST',
+        consumedAt: '2026-05-18T08:00:00Z',
+        photoKey: null,
+        items: [{ foodName: 'Avena' }],
+        totalCalories: 320,
+        totalProteins: 12,
+        totalCarbs: 45,
+        totalFats: 6,
+      },
+    ]);
   });
 
   it('loads and renders the nutrition plan tab for the nutritionist', async () => {

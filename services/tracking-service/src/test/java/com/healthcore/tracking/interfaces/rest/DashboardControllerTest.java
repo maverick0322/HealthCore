@@ -3,6 +3,7 @@ package com.healthcore.tracking.interfaces.rest;
 import com.healthcore.tracking.application.dto.TodayDashboardSummary;
 import com.healthcore.tracking.application.usecase.DashboardSummaryUseCase;
 import com.healthcore.tracking.domain.model.DailyMacroSummary;
+import com.healthcore.tracking.infrastructure.grpc.client.GrpcClinicalServiceClient;
 import com.healthcore.tracking.infrastructure.security.JwtValidationFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ class DashboardControllerTest {
 
     @MockitoBean
     private JwtValidationFilter jwtValidationFilter;
+
+    @MockitoBean
+    private GrpcClinicalServiceClient clinicalServiceClient;
 
 
     @Test

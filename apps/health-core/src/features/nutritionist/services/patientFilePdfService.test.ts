@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
-  mockAddPage,
   mockSave,
   mockText,
   mockLine,
@@ -39,7 +38,6 @@ const {
   });
 
   return {
-    mockAddPage: addPage,
     mockSave: save,
     mockText: text,
     mockLine: line,
@@ -119,7 +117,7 @@ describe('patientFilePdfService', () => {
           id: 'obs-1',
           patientId: 'patient-1',
           nutritionistId: 'nutri-1',
-          note: 'Mantener hidratación',
+          note: 'Mantener hidratacion',
           createdAt: '2026-05-18T12:00:00Z',
         },
       ],
@@ -127,12 +125,57 @@ describe('patientFilePdfService', () => {
         { weightKg: 65, date: '2026-05-01' },
         { weightKg: 64, date: '2026-05-18' },
       ],
+      trackingSummary: {
+        totalCalories: 1800,
+        totalProteins: 120,
+        totalCarbs: 150,
+        totalFats: 50,
+        totalWaterMl: 1500,
+        currentStreak: 2,
+        bestStreak: 5,
+      },
+      historicalMacros: {
+        caloriesHistory: [1800, 1700, 1750, 1600, 1680, 1720, 1690],
+        caloriesAvg: 1706,
+        calorieGoal: 2000,
+        macrosAvg: { protein: 30, carbs: 45, fat: 25 },
+      },
+      dailyTrackingLogs: [
+        {
+          id: 'log-1',
+          userId: 'patient-1',
+          mealType: 'BREAKFAST',
+          consumedAt: '2026-05-18T08:00:00Z',
+          photoKey: null,
+          items: [{
+            barcode: '123',
+            foodName: 'Avena',
+            consumedGrams: 60,
+            calories: 320,
+            proteins: 12,
+            carbohydrates: 45,
+            fats: 6,
+            fiberGrams: 4,
+            sodiumMg: 12,
+            sugarGrams: 2,
+            potassiumMg: 120,
+          }],
+          totalCalories: 320,
+          totalProteins: 12,
+          totalCarbs: 45,
+          totalFats: 6,
+        },
+      ],
+      selectedTrackingDateLabel: '2026-05-18',
       labels: {
-        title: 'Expediente clínico del paciente',
+        title: 'Expediente clinico del paciente',
         generatedOn: 'Generado el',
         sections: {
           overview: 'Resumen General',
           weightHistory: 'Historial',
+          calorieTrend: 'Tendencia calorica',
+          macroBreakdown: 'Macros',
+          mealTimeline: 'Registro diario',
           nutritionPlan: 'Plan Nutricional',
           observations: 'Observaciones',
         },
@@ -146,18 +189,35 @@ describe('patientFilePdfService', () => {
           dietType: 'Tipo de dieta',
           allergies: 'Alergias',
           excludedFoods: 'Alimentos a evitar',
-          latestRecord: 'Último registro',
+          latestRecord: 'Ultimo registro',
+          currentWeight: 'Peso actual',
+          periodChange: 'Cambio',
           date: 'Fecha',
-          change: 'Variación',
+          change: 'Variacion',
           mealSlot: 'Tiempo de comida',
           dishCount: 'Platillos',
           dailyGoals: 'Metas diarias',
+          caloriesAverage: 'Promedio',
+          calorieGoal: 'Meta',
+          protein: 'Proteina',
+          carbs: 'Carbs',
+          fat: 'Grasas',
+          selectedDate: 'Fecha seleccionada',
+          mealType: 'Tiempo de comida',
+          time: 'Hora',
+          foods: 'Alimentos',
+          calories: 'Calorias',
+          streak: 'Racha',
+          bestStreak: 'Mejor racha',
         },
         empty: {
           weightHistory: 'Sin peso',
+          tracking: 'Sin tracking',
+          mealTimeline: 'Sin registro diario',
           observations: 'Sin observaciones',
           nutritionPlan: 'Sin plan',
-          none: 'Sin información',
+          none: 'Sin informacion',
+          noFoods: 'Sin alimentos',
         },
         mealSlots: {
           BREAKFAST: 'Desayuno',
@@ -176,6 +236,5 @@ describe('patientFilePdfService', () => {
     expect(mockSetDrawColor).toHaveBeenCalled();
     expect(mockSplitTextToSize).toHaveBeenCalled();
     expect(mockSave).toHaveBeenCalledWith('expediente.pdf');
-    expect(mockAddPage).not.toHaveBeenCalled();
   });
 });

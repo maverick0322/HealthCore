@@ -9,11 +9,14 @@ import {
   Loader2
 } from "lucide-react";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { PatientNav } from "@/features/patient/components/PatientNav";
 
+// Componente refactorizado que viene de la rama 'main'
 import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
 
+// Nuestros hooks y servicios de tracking
 import { useDailyLogs } from "@/features/tracking/hooks/useDailyLogs";
 import { useHistoricalMacros } from "@/features/tracking/hooks/useHistoricalMacros";
 import { trackingService } from "@/features/tracking/services/trackingService";
@@ -57,8 +60,6 @@ function MacroDonut({ p, c, f }: { p: number; c: number; f: number }) {
     </div>
   );
 }
-import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
-import { useDailyLogs } from "@/features/tracking/hooks/useDailyLogs";
 
 export const PatientHistoryPage = () => {
   const { t } = useTranslation("patient");
@@ -81,13 +82,15 @@ export const PatientHistoryPage = () => {
       .then(setDashboardSummary)
       .catch(console.error);
   }, []);
-  const { logs, isLoading, error } = useDailyLogs(selectedDate);
 
   const changeDate = (offsetDays: number) => {
     const d = new Date(`${selectedDate}T12:00:00`);
     d.setDate(d.getDate() + offsetDays);
     setSelectedDate(d.toISOString().split("T")[0]);
   };
+
+  const weightLost = HISTORY_DUMMY.weightStart - HISTORY_DUMMY.weightCurrent;
+  const weightRemaining = HISTORY_DUMMY.weightCurrent - HISTORY_DUMMY.weightTarget;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
@@ -108,10 +111,6 @@ export const PatientHistoryPage = () => {
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {t("history.subtitle", "Tu evolución y registros detallados")}
-            {t("history.title")}
-          </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {t("history.subtitle")}
           </p>
         </div>
       </div>
@@ -273,11 +272,6 @@ export const PatientHistoryPage = () => {
           isLogsLoading={isTimelineLoading}
           logsError={timelineError}
           selectedDateLabel={selectedDate === todayStr ? t("history.today", "Hoy") : selectedDate}
-        <PatientHistoryOverviewSection
-          logs={logs}
-          isLogsLoading={isLoading}
-          logsError={error}
-          selectedDateLabel={selectedDate === todayStr ? t("history.today") : selectedDate}
           onPreviousDay={() => changeDate(-1)}
           onNextDay={() => changeDate(1)}
           disableNextDay={selectedDate === todayStr}

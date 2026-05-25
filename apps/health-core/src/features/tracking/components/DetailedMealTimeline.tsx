@@ -1,7 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Apple, Coffee, Loader2, Plus, Utensils, ImageOff } from 'lucide-react';
-import { AlertCircle, Apple, Coffee, Loader2, Plus, Utensils } from 'lucide-react';
-
 import { formatLocalTime } from '@/features/agenda/utils/agendaDateUtils';
 import { Card } from '@/shared/ui/card';
 
@@ -24,12 +22,9 @@ export const DetailedMealTimeline = ({
 
   const getMealIcon = (type: string) => {
     switch (type) {
-      case 'BREAKFAST':
-        return <Coffee className="text-emerald-700" size={16} />;
-      case 'SNACK':
-        return <Apple className="text-emerald-700" size={16} />;
-      default:
-        return <Utensils className="text-emerald-700" size={16} />;
+      case 'BREAKFAST': return <Coffee className="text-emerald-700" size={16} />;
+      case 'SNACK': return <Apple className="text-emerald-700" size={16} />;
+      default: return <Utensils className="text-emerald-700" size={16} />;
     }
   };
 
@@ -93,10 +88,6 @@ export const DetailedMealTimeline = ({
                   </div>
 
                   {/* --- SECCIÓN DE TEXTO --- */}
-                  <div className="flex h-32 shrink-0 items-center justify-center border-b border-border/50 bg-muted sm:h-auto sm:w-32 sm:border-r sm:border-b-0">
-                    <Utensils className="text-muted-foreground/30" size={32} />
-                  </div>
-
                   <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
                     <div>
                       <div className="flex items-start justify-between">
@@ -127,27 +118,6 @@ export const DetailedMealTimeline = ({
                       </div>
                       <div className="text-center">
                         <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Grasas</p>
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Calorías
-                        </p>
-                        <p className="text-sm font-bold">{Math.round(log.totalCalories)}</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Proteína
-                        </p>
-                        <p className="text-sm font-bold">{Math.round(log.totalProteins)}g</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Carbo
-                        </p>
-                        <p className="text-sm font-bold">{Math.round(log.totalCarbs)}g</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Grasas
-                        </p>
                         <p className="text-sm font-bold">{Math.round(log.totalFats)}g</p>
                       </div>
                     </div>
@@ -161,18 +131,12 @@ export const DetailedMealTimeline = ({
         {showAddCard && (
           <div className="relative pl-8 opacity-60 transition-opacity hover:opacity-100 md:pl-10">
             <div className="absolute -left-[17px] top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-dashed border-background bg-muted text-muted-foreground ring-1 ring-border">
-        {showAddCard ? (
-          <div className="relative pl-8 opacity-60 transition-opacity hover:opacity-100 md:pl-10">
-            <div className="absolute -left-[17px] top-4 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-dashed border-background bg-muted text-muted-foreground ring-1 ring-border">
               <Plus size={16} />
             </div>
             <Card className="flex cursor-pointer items-center justify-between border-dashed border-border bg-muted/10 p-4 shadow-none sm:p-5">
               <div>
                 <h3 className="text-base font-bold text-muted-foreground">Registrar nuevo alimento</h3>
                 <p className="mt-0.5 text-sm text-muted-foreground">Añade otra comida a tu historial de hoy</p>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Añade otra comida a tu historial de hoy
-                </p>
               </div>
               <div className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background">
                 <Plus size={16} className="text-muted-foreground" />
@@ -180,11 +144,9 @@ export const DetailedMealTimeline = ({
             </Card>
           </div>
         )}
-        ) : null}
       </div>
     );
   };
 
   return <div className="mt-4">{renderContent()}</div>;
-};
 };

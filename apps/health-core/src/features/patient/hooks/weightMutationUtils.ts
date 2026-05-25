@@ -12,12 +12,4 @@ export const refreshWeightQueries = async (queryClient: QueryClient) => {
     queryKey: HEALTH_GOALS_QUERY_KEY,
     refetchType: 'all',
   });
-  await queryClient.refetchQueries({
-    queryKey: WEIGHT_HISTORY_QUERY_KEY,
-    type: 'all',
-  });
-  await queryClient.refetchQueries({
-    queryKey: HEALTH_GOALS_QUERY_KEY,
-    type: 'all',
-  });
 };

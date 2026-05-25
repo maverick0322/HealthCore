@@ -1,4 +1,4 @@
-﻿import type { TFunction } from 'i18next';
+import type { TFunction } from 'i18next';
 
 const NAME_PATTERN = /^[A-Za-zÀ-ÖØ-öø-ÿ]+(?:[A-Za-zÀ-ÖØ-öø-ÿ' -]*[A-Za-zÀ-ÖØ-öø-ÿ])?$/;
 

@@ -30,16 +30,16 @@ El servidor host ejecuta múltiples contenedores aislados, cada uno con una resp
 * `healthcore-rabbitmq`: Broker de mensajería para coreografía de eventos asíncronos.
 
 ## 4. Estrategia de Persistencia y Aislamiento de Datos
-Para respetar el patrón *Database per Service* sin agotar los recursos de hardware, se utiliza una estrategia de **Aislamiento Lógico**. 
+Para respetar el patrón *Database per Service*, se utiliza una estrategia de **Aislamiento Físico** de base de datos en entornos de ejecución. 
 
-Existe un único contenedor físico de MongoDB, pero los microservicios no comparten información. Cada servicio de Spring Boot se conecta a un esquema/base de datos lógica independiente a través de su propia cadena de conexión (Connection String):
-* `mongodb://mongodb:27017/healthcore_identity`
-* `mongodb://mongodb:27017/healthcore_tracking`
-* `...`
+En lugar de compartir un único contenedor, se despliegan **tres instancias físicas independientes de MongoDB** ejecutándose en contenedores y volúmenes separados:
+* `mongodb` (puerto de host 27018) para las bases de datos lógicas `healthcore_identity` y `healthcore_tracking`.
+* `agenda-mongodb` (puerto de host 27019) para la base de datos `healthcore_agenda`.
+* `clinical-mongodb` (puerto de host 27020) para la base de datos `healthcore_clinical`.
 
 Si un servicio requiere información custodiada por otro, debe solicitarla a través de la red (vía gRPC) y nunca mediante consultas directas a la base de datos ajena (evitando el antipatrón de Base de Datos Compartida).
 
 ## 5. Servicios y Nubes Externas
 El ecosistema HealthCore delega responsabilidades no centrales a servicios de terceros de alta disponibilidad:
-* **AWS S3 (Amazon Web Services):** El `media-service` transfiere toda la carga de almacenamiento estático (fotografías de progreso, avatares) hacia buckets de S3 vía HTTPS. El sistema interno solo almacena las URLs resultantes.
-* **Open Food Facts API:** El `catalog-service` consulta esta base de datos global de código abierto para resolver códigos de barras de alimentos comerciales, alimentando el seguimiento nutricional de los pacientes.
+* **Cloudflare R2 (Object Storage):** Almacenamiento de objetos compatible con S3. El frontend sube los archivos directamente a través de URLs de subida PUT pre-firmadas generadas por `media-service`. La descarga se realiza mediante URLs GET pre-firmadas generadas bajo demanda por gRPC.
+* **FatSecret API:** El `catalog-service` consulta esta base de datos nutricional de terceros mediante OAuth 2.0 para resolver alimentos y sus macronutrientes correspondientes.

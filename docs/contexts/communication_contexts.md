@@ -25,10 +25,12 @@ Cuando un microservicio necesita información de otro *inmediatamente* para pode
 * **¿Por qué gRPC?** A diferencia de JSON, Protobuf comprime los datos en formato **binario**. Esto lo hace hasta 10 veces más rápido que REST y consume menos CPU. Además, los archivos `.proto` actúan como contratos estrictos; si un servicio cambia una variable, el código del otro servicio no compilará, evitando errores en producción.
 
 ### Mapa de Llamadas gRPC en HealthCore:
-1. **`Tracking Service` ➔ `Catalog Service` (Python):** Para consultar macronutrientes de un código de barras en tiempo real.
+1. **`Tracking Service` ➔ `Catalog Service` (Python):** Para consultar macronutrientes de un código de barras o búsqueda de texto en tiempo real.
 2. **`Agenda Service` ➔ `Clinical Service`:** Para verificar si un paciente tiene un vínculo activo (`ProfessionalLink`) con un nutriólogo antes de permitir agendar una cita.
 3. **`Tracking Service` ➔ `Clinical Service`:** Para solicitar la meta calórica y el peso actual del paciente y así calcular sus gráficas de progreso diario.
 4. **`Clinical Service` ➔ `Identity Service`:** Para obtener el nombre, apellido y correo del paciente (datos que solo Identity posee) al momento de armar el expediente clínico en pantalla.
+5. **`Tracking Service` ➔ `Media Service`:** Para solicitar URLs temporales pre-firmadas (GET) de lectura para las fotos asociadas a los consumos y progreso.
+6. **`Clinical Service` ➔ `Agenda Service`:** Para limpiar/cancelar citas futuras programadas entre un paciente y un nutriólogo al momento de desvincular la relación clínica.
 
 ---
 
@@ -121,10 +123,11 @@ Usamos RabbitMQ para acciones tipo "dispara y olvida" (*Fire-and-forget*). Cuand
   2. `Identity` guarda las credenciales y lanza un evento a RabbitMQ: *"¡Usuario Registrado (ID: 123)!"*.
   3. `Identity` le responde HTTP 200 OK al frontend de inmediato (el usuario ya puede usar la app).
   4. En segundo plano, `clinical-service` escucha el mensaje en RabbitMQ y crea un expediente clínico vacío para el ID 123. `Agenda` también podría escucharlo para mandarle un correo de bienvenida.
-* **Procesamiento Multimedia:**
-  1. El `media-service` sube una foto a AWS S3.
-  2. Publica un evento: *"¡Foto subida con URL 'x.jpg' para el paciente Y!"*.
-  3. El `clinical-service` escucha esto y anexa la URL al expediente del paciente de forma silenciosa.
+* **Procesamiento Multimedia (Offloading Delegado):**
+  1. El frontend (PWA) solicita al `media-service` una URL firmada de subida (PUT) mediante REST.
+  2. El frontend sube el binario (foto) directamente a Cloudflare R2 utilizando dicha URL.
+  3. El frontend envía únicamente la clave del archivo (`photoKey`) al microservicio destino (ej. `tracking-service`).
+  4. Al consultar registros, el servicio destino llama a `media-service` vía gRPC para obtener una URL pre-firmada de lectura (GET) temporal, enriqueciendo su respuesta REST.
 
 ---
 

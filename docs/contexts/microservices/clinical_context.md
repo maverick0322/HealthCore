@@ -217,11 +217,11 @@ Esto está alineado con la arquitectura actual del proyecto.
 # HTTP
 SERVER_PORT=8083
 
-# MongoDB
-SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/healthcore_clinical
+# MongoDB (Conectado al contenedor clinical-mongodb en Docker)
+SPRING_DATA_MONGODB_URI=mongodb://clinical-mongodb:27017/healthcore_clinical
 
 # RabbitMQ
-SPRING_RABBITMQ_HOST=localhost
+SPRING_RABBITMQ_HOST=rabbitmq
 
 # JWT
 JWT_SECRET=<secret>
@@ -229,8 +229,8 @@ JWT_SECRET=<secret>
 # gRPC server
 GRPC_CLINICAL_PORT=50051
 
-# gRPC clients
-GRPC_CLIENT_IDENTITY_ADDRESS=static://localhost:50051
+# gRPC clients (En Docker)
+GRPC_CLIENT_IDENTITY_ADDRESS=static://identity-service:9090
 GRPC_CATALOG_TARGET=catalog-service:50051
 GRPC_CLIENT_AGENDA_TARGET=agenda-service:50052
 ```

@@ -56,7 +56,8 @@ public class FoodTrackingUseCase {
     /**
      * Registers a complete meal by fetching necessary nutritional data and building the Aggregate.
      */
-    public MealLog logMealConsumption(String userId, String mealName, MealType mealType, LocalDateTime consumedAt, String photoKey, List<MealItemCommand> requestedItems) {
+    public MealLog logMealConsumption(String userId, String mealName, MealType mealType, LocalDateTime consumedAt,
+                                      String photoKey, List<MealItemCommand> requestedItems) {
         if (userId == null || userId.isBlank()) {
             throw new InvalidDomainDataException("User ID is required to log a meal.");
         }
@@ -65,7 +66,8 @@ public class FoodTrackingUseCase {
             throw new InvalidDomainDataException("Meal name is required and cannot exceed 60 characters.");
         }
 
-        log.info("Processing meal consumption log. userHash={} mealName='{}' mealType={} itemCount={}", logHash(userId), mealName, mealType, requestedItems.size());
+        log.info("Processing meal consumption log. userHash={} mealName='{}' mealType={} itemCount={}",
+                logHash(userId), mealName, mealType, requestedItems.size());
 
         List<MealItem> mealItems = requestedItems.stream()
                 .map(item -> {

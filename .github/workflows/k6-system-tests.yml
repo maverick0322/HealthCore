@@ -1,0 +1,68 @@
+name: k6 system tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: Tipo de prueba k6
+        type: choice
+        options:
+          - load
+          - stress
+          - spike
+          - soak
+        default: load
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'dev_jwt_secret' }}
+      JWT_ACCESS_TOKEN_VALIDITY_MS: ${{ secrets.JWT_ACCESS_TOKEN_VALIDITY_MS || '300000' }}
+      JWT_REFRESH_TOKEN_VALIDITY_MS: ${{ secrets.JWT_REFRESH_TOKEN_VALIDITY_MS || '86400000' }}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID || '' }}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET || '' }}
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI: ${{ secrets.AUTH0_ISSUER_URI || '' }}
+      RABBITMQ_USER: ${{ secrets.RABBITMQ_USER || 'healthcore' }}
+      RABBITMQ_PASS: ${{ secrets.RABBITMQ_PASS || 'healthcore' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Start services
+        run: docker compose up -d mongodb api-gateway identity-service tracking-service clinical-service agenda-service
+
+      - name: Wait for API Gateway
+        shell: bash
+        run: |
+          for i in {1..60}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/v1/auth/register)
+            if [ "$status" = "400" ] || [ "$status" = "401" ] || [ "$status" = "405" ]; then
+              echo "Gateway ready with status $status"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Gateway did not become ready"
+          docker compose ps
+          exit 1
+
+      - name: Seed data
+        run: node k6/seed-k6.js
+
+      - name: Run k6 system tests
+        run: k6 run -e TEST_TYPE=${{ github.event.inputs.test_type }} k6/system-tests.js
+
+      - name: Debug logs
+        if: failure()
+        run: |
+          docker compose logs --tail=150 api-gateway identity-service clinical-service agenda-service

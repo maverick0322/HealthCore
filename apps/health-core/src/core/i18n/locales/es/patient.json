@@ -75,6 +75,15 @@
     "goToOnboarding": "Completar configuración",
     "changePassword": "Cambiar contraseña",
     "changePasswordDesc": "Actualiza tu contraseña para mantener tu cuenta segura",
+    "changePhoto": "Cambiar foto de perfil",
+    "photoHint": "JPG, PNG o WEBP. Máximo 5 MB. Recomendado: imagen cuadrada de 512x512 o más",
+    "photoInvalidType": "Selecciona una imagen JPG, PNG o WEBP",
+    "photoInvalidSize": "La imagen supera el límite de 5 MB",
+    "photoPersistError": "No pudimos guardar la foto de perfil",
+    "photoUploadValidationError": "No pudimos procesar la imagen seleccionada",
+    "photoUploadRateLimitError": "Has hecho demasiados intentos. Espera un momento y vuelve a intentar",
+    "photoUploadNetworkError": "No pudimos subir la imagen en este momento. Intenta más tarde",
+    "photoUploadGenericError": "Ocurrió un error al subir la imagen. Intenta más tarde",
     "notifications": "Notificaciones",
     "notificationsDesc": "Administra tus preferencias de alertas y recordatorios",
     "disableNotifications": "Desactivar notificaciones",
@@ -83,6 +92,7 @@
     "actionsSection": "Acciones de cuenta"
   },
   "dashboard": {
+    "defaultName": "Paciente",
     "greeting": "¡Hola, {{name}}!",
     "greetingSubtitle": "Aquí tienes tu resumen nutricional de hoy.",
     "caloriesCard": "Calorías de hoy",

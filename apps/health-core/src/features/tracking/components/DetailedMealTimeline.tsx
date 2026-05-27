@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Apple, Coffee, Loader2, Plus, Utensils, ImageOff } from 'lucide-react';
-import { formatLocalTime } from '@/features/agenda/utils/agendaDateUtils';
 import { Card } from '@/shared/ui/card';
 
 interface DetailedMealTimelineProps {
@@ -18,7 +17,33 @@ export const DetailedMealTimeline = ({
   emptyMessage,
   showAddCard = true,
 }: DetailedMealTimelineProps) => {
-  const { t } = useTranslation('patient');
+  const { t, i18n } = useTranslation('patient');
+
+  const formatSafeLocalTime = (value: string) => {
+    if (!value) {
+      return '--:--';
+    }
+
+    const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`;
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+
+    const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'es-MX';
+    return parsed.toLocaleTimeString(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const getMealLabel = (mealType: string) =>
+    String(
+      t(`nutritionPlan.mealSlots.${mealType}`, {
+        defaultValue: t(mealType.toLowerCase(), { defaultValue: mealType }),
+      })
+    );
 
   const getMealIcon = (type: string) => {
     switch (type) {
@@ -90,16 +115,16 @@ export const DetailedMealTimeline = ({
                   <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
                     <div>
                       <div className="flex items-start justify-between">
-                        {/* NUEVO: Título principal usando mealName */}
+                        {/* NUEVO: Título principal usando mealName con fallback */}
                         <h3 className="text-lg font-bold text-foreground">
-                          {log.mealName}
+                          {log.mealName || getMealLabel(log.mealType)}
                         </h3>
                         <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center">
                           <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
-                            {String(t(`tracking.mealType.${log.mealType}`, { defaultValue: log.mealType }))}
+                            {getMealLabel(log.mealType)}
                           </span>
                           <span className="text-xs font-semibold text-muted-foreground">
-                            {formatLocalTime(log.consumedAt)}
+                            {formatSafeLocalTime(log.consumedAt)}
                           </span>
                         </div>
                       </div>

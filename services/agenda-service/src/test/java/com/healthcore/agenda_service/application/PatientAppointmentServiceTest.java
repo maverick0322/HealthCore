@@ -56,11 +56,13 @@ class PatientAppointmentServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Use relative future times so the temporal guard never fires on baseline fixtures
+        Instant base = Instant.now().plusSeconds(86400);
         slot = TimeSlot.builder()
             .id("slot-1")
             .nutritionistId("nutri-1")
-            .startTime(Instant.parse("2026-04-22T10:00:00Z"))
-            .endTime(Instant.parse("2026-04-22T10:30:00Z"))
+            .startTime(base)
+            .endTime(base.plusSeconds(1800))
             .reserved(false)
             .active(true)
             .version(1L)
@@ -198,19 +200,56 @@ class PatientAppointmentServiceTest {
 
     @Test
     void getAvailability_shouldOnlyReturnActiveFreeSlotsInRange() {
-        when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenAndActiveTrueOrderByStartTime("nutri-1",
-            Instant.parse("2026-04-22T00:00:00Z"),
-            Instant.parse("2026-04-23T00:00:00Z")))
+        Instant from = Instant.now();
+        Instant to   = Instant.now().plusSeconds(86400 * 7);
+        when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenAndActiveTrueOrderByStartTime(
+            eq("nutri-1"), any(Instant.class), any(Instant.class)))
             .thenReturn(List.of(slot, slot.toBuilder().id("slot-2").reserved(true).build()));
 
-        List<TimeSlot> availability = service.getAvailability(
-            "nutri-1",
-            Instant.parse("2026-04-22T00:00:00Z"),
-            Instant.parse("2026-04-23T00:00:00Z")
-        );
+        List<TimeSlot> availability = service.getAvailability("nutri-1", from, to);
 
         assertThat(availability).hasSize(1);
         assertThat(availability.getFirst().getId()).isEqualTo("slot-1");
+    }
+
+    @Test
+    void getAvailability_shouldExcludeSlotsInThePast() {
+        // startTime is in the past so the slot must be filtered out
+        TimeSlot pastSlot = slot.toBuilder()
+            .id("slot-past")
+            .startTime(Instant.now().minusSeconds(3600))
+            .endTime(Instant.now().minusSeconds(1800))
+            .build();
+        TimeSlot futureSlot = slot.toBuilder()
+            .id("slot-future")
+            .startTime(Instant.now().plusSeconds(3600))
+            .endTime(Instant.now().plusSeconds(5400))
+            .build();
+
+        Instant from = Instant.now().minusSeconds(7200);
+        Instant to   = Instant.now().plusSeconds(7200);
+        when(timeSlotRepository.findByNutritionistIdAndStartTimeBetweenAndActiveTrueOrderByStartTime(
+            "nutri-1", from, to))
+            .thenReturn(List.of(pastSlot, futureSlot));
+
+        List<TimeSlot> availability = service.getAvailability("nutri-1", from, to);
+
+        assertThat(availability).hasSize(1);
+        assertThat(availability.getFirst().getId()).isEqualTo("slot-future");
+    }
+
+    @Test
+    void createAppointment_shouldRejectPastSlot() {
+        TimeSlot pastSlot = slot.toBuilder()
+            .startTime(Instant.now().minusSeconds(3600))
+            .endTime(Instant.now().minusSeconds(1800))
+            .build();
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(pastSlot));
+
+        assertThatThrownBy(() -> service.createAppointment(
+            "patient-1", new CreateAppointmentCommand("slot-1", 1L, "es")))
+            .isInstanceOf(ConflictException.class)
+            .hasMessageContaining("ya pas");
     }
 
     @Test
@@ -226,11 +265,12 @@ class PatientAppointmentServiceTest {
             .locale("en")
             .build();
             
+        Instant newBase = Instant.now().plusSeconds(86400 * 2);
         TimeSlot newSlot = TimeSlot.builder()
             .id("slot-2")
             .nutritionistId("nutri-1")
-            .startTime(Instant.parse("2026-04-22T11:00:00Z"))
-            .endTime(Instant.parse("2026-04-22T11:30:00Z"))
+            .startTime(newBase)
+            .endTime(newBase.plusSeconds(1800))
             .reserved(false)
             .active(true)
             .version(1L)
@@ -264,11 +304,12 @@ class PatientAppointmentServiceTest {
             .status(AppointmentStatus.CONFIRMED)
             .build();
 
+        Instant newBase = Instant.now().plusSeconds(86400 * 2);
         TimeSlot newSlot = TimeSlot.builder()
             .id("slot-2")
             .nutritionistId("nutri-2")
-            .startTime(Instant.parse("2026-04-22T11:00:00Z"))
-            .endTime(Instant.parse("2026-04-22T11:30:00Z"))
+            .startTime(newBase)
+            .endTime(newBase.plusSeconds(1800))
             .reserved(false)
             .active(true)
             .version(1L)
@@ -298,4 +339,37 @@ class PatientAppointmentServiceTest {
         assertThatThrownBy(() -> service.rescheduleAppointment("patient-1", "app-1", command))
             .isInstanceOf(ForbiddenOperationException.class);
     }
+
+    @Test
+    void rescheduleAppointment_shouldRejectPastNewSlot() {
+        Appointment appointment = Appointment.builder()
+            .id("app-1")
+            .slotId("slot-1")
+            .patientId("patient-1")
+            .nutritionistId("nutri-1")
+            .startTime(slot.getStartTime())
+            .endTime(slot.getEndTime())
+            .status(AppointmentStatus.CONFIRMED)
+            .locale("es")
+            .build();
+
+        TimeSlot pastNewSlot = slot.toBuilder()
+            .id("slot-2")
+            .startTime(Instant.now().minusSeconds(3600))
+            .endTime(Instant.now().minusSeconds(1800))
+            .reserved(false)
+            .active(true)
+            .version(1L)
+            .build();
+
+        when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findById("slot-2")).thenReturn(Optional.of(pastNewSlot));
+
+        assertThatThrownBy(() -> service.rescheduleAppointment(
+            "patient-1", "app-1", new CreateAppointmentCommand("slot-2", 1L, "es")))
+            .isInstanceOf(ConflictException.class)
+            .hasMessageContaining("ya pas");
+    }
 }
+

@@ -34,9 +34,11 @@ public class PatientAppointmentService {
     private final AgendaEventPublisher agendaEventPublisher;
 
     public List<TimeSlot> getAvailability(String nutritionistId, Instant from, Instant to) {
+        Instant now = Instant.now();
         return timeSlotRepository.findByNutritionistIdAndStartTimeBetweenAndActiveTrueOrderByStartTime(nutritionistId, from, to)
             .stream()
             .filter(slot -> !slot.isReserved())
+            .filter(slot -> slot.getStartTime().isAfter(now))
             .toList();
     }
 
@@ -49,6 +51,9 @@ public class PatientAppointmentService {
         }
         if (!Objects.equals(slot.getVersion(), command.slotVersion())) {
             throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
+        }
+        if (!slot.getStartTime().isAfter(Instant.now())) {
+            throw new ConflictException("No puedes agendar una cita en un horario que ya pasó");
         }
         if (!clinicalServiceClient.validateLink(patientId, slot.getNutritionistId())) {
             throw new ForbiddenOperationException("No existe vinculo activo con el nutriologo");
@@ -190,6 +195,9 @@ public class PatientAppointmentService {
         }
         if (!Objects.equals(newSlot.getVersion(), command.slotVersion())) {
             throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
+        }
+        if (!newSlot.getStartTime().isAfter(Instant.now())) {
+            throw new ConflictException("No puedes reprogramar a un horario que ya pasó");
         }
         boolean sameNutritionist = Objects.equals(appointment.getNutritionistId(), newSlot.getNutritionistId());
         if (!sameNutritionist && !clinicalServiceClient.validateLink(patientId, newSlot.getNutritionistId())) {

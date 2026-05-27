@@ -1,69 +1,104 @@
 # 🍎 Microservicio: Catalog Service (Python)
 
 ## 1. Propósito y Responsabilidades
-El `healthcore-catalog-service` actúa como el "Traductor" y "Buscador" oficial de la plataforma. Su única responsabilidad es recibir códigos de barras, ir a buscar la información al mundo exterior (Internet) y devolver los macronutrientes limpios y estandarizados.
+El `healthcore-catalog-service` actúa como el "Traductor" y "Buscador" oficial de la plataforma. Su única responsabilidad es recibir códigos de barras o búsquedas por texto libre de alimentos, ir a buscar la información al catálogo externo (FatSecret) y devolver los macronutrientes y micronutrientes limpios y estandarizados.
 
-Implementa un patrón de diseño avanzado llamado **Anti-Corruption Layer (Capa de Anticorrupción)**. La API de Open Food Facts devuelve JSONs gigantes, desordenados y a veces con campos nulos. Este servicio filtra toda esa "basura" externa para que la suciedad no contamine a nuestros microservicios internos de Java.
+Implementa un patrón de diseño avanzado llamado **Anti-Corruption Layer (Capa de Anticorrupción)**. La API de FatSecret o de cualquier proveedor externo puede devolver JSONs gigantes, desordenados y con campos nulos. Este servicio filtra toda esa complejidad para que no contamine a nuestros microservicios internos de Java.
+
+---
 
 ## 2. Stack Tecnológico Core
 A diferencia del resto del sistema, este microservicio es ultraligero y puramente transaccional.
-* **Lenguaje:** Python 3.11+
-* **Framework RPC:** `grpcio` y `grpcio-tools`
-* **Cliente HTTP:** `requests` o `httpx` (para consumir la API pública)
+* **Lenguaje:** Python 3.13 (en Docker container ligero base `python:3.13-slim`).
+* **Framework RPC:** `grpcio` y `grpcio-tools` para el servidor gRPC.
 * **Persistencia:** **Ninguna.** Es un servicio *Stateless* (sin estado). No tiene base de datos propia.
-* **Caché:** No maneja caché internamente (esa responsabilidad se la delegamos al `tracking-service` con Redis).
+* **Integración Externa:** Consume la API de FatSecret mediante OAuth 2.0 Client Credentials Grant, traduciendo las peticiones del backend de HealthCore.
 
-## 3. Contratos de Comunicación (El Archivo `.proto`)
-Este servicio **NO expone una API REST** y no es accesible desde el API Gateway. Su único canal de comunicación es un puerto interno (50051) que escucha peticiones gRPC.
+---
 
-El contrato estricto que lo une con el mundo de Java está definido en un archivo `catalog.proto`:
+## 3. Contratos de Comunicación (El Archivo `catalog.proto`)
+Este servicio **NO expone una API REST en producción** (la REST API que contiene es únicamente para pruebas locales) y no es accesible desde el API Gateway. Su único canal de comunicación productivo es el puerto interno 50051 que escucha peticiones gRPC.
+
+El contrato estricto que lo une con el ecosistema de Java está definido en `protos/catalog.proto`:
 
 ```protobuf
 syntax = "proto3";
 
-package healthcore.catalog;
+option java_multiple_files = true;
+option java_package = "com.healthcore.catalog.grpc";
+option java_outer_classname = "CatalogProto";
+
+package catalog;
 
 // Definición del Servicio
-service FoodCatalog {
-  // El método que Java invocará
-  rpc GetFoodItem (FoodRequest) returns (FoodResponse);
+service NutritionalCatalog {
+  // Obtiene un alimento por código de barras
+  rpc GetFoodItem (FoodRequest) returns (FoodResponse) {}
+  
+  // Búsqueda libre por texto de alimentos
+  rpc SearchFood (SearchRequest) returns (SearchResponse) {}
 }
 
-// Lo que entra (El código de barras escaneado)
+// Mensaje de Entrada para código de barras
 message FoodRequest {
-  string barcode = 1;
+  string barcode = 1; 
 }
 
-// Lo que sale (Los datos limpios y estandarizados)
+// Estructura de Alimento Estandarizada
 message FoodResponse {
   string barcode = 1;
   string name = 2;
   string brand = 3;
-  double calories_per_100g = 4;
-  double protein_g = 5;
-  double carbs_g = 6;
-  double fat_g = 7;
-  bool is_found = 8; // Bandera para saber si el producto existe
+  string image_url = 4;
+  float calories_per_100g = 5;
+  float proteins_per_100g = 6;
+  float carbs_per_100g = 7;
+  float fats_per_100g = 8;
+  string source = 9;
+  float fiber_grams_per_100g = 10;
+  float sodium_mg_per_100g = 11;
+  float sugar_grams_per_100g = 12;
+  float potassium_mg_per_100g = 13;
+} 
+
+// Mensaje de Entrada para búsqueda de texto
+message SearchRequest {
+  string query = 1;
+  int32 limit = 2;
 }
 
-## 4. El Flujo de Ejecución (Ciclo de Vida de una Petición)
-1. **Recepción:** El servidor gRPC en Python recibe un `FoodRequest` del `tracking-service`.
-2. **Petición Externa:** Python hace un `GET` a la URL: `https://world.openfoodfacts.org/api/v2/product/{barcode}.json`
-3. **Mapeo (Anti-Corrupción):** * Si la API externa devuelve un `404 Not Found`, Python arma un `FoodResponse` con `is_found = false` y se lo regresa a Java.
-   * Si devuelve un `200 OK`, Python extrae únicamente los campos `product_name`, `brands` y el nodo `nutriments` (calorías, proteínas, etc.).
-4. **Respuesta:** Empaqueta esos datos matemáticos en el binario de Protobuf y se los devuelve al `tracking-service` a máxima velocidad.
+// Lista de resultados
+message SearchResponse {
+  repeated FoodResponse items = 1; 
+}
+```
 
-## 5. Resiliencia y Manejo de Errores
-Dado que este microservicio depende de una red externa que no controlamos (Open Food Facts), está programado con tolerancia a fallos:
-* **Timeouts:** Las peticiones a la API externa tienen un límite de tiempo estricto (ej. 2 segundos). Si Open Food Facts tarda más de eso, Python corta la conexión y devuelve un error gRPC de tipo `DEADLINE_EXCEEDED` a Java.
-* **Datos Incompletos:** Si un alimento en Open Food Facts no tiene registrada la cantidad de proteínas, Python le asigna por defecto el valor `0.0` para evitar que Java sufra un `NullPointerException` al intentar hacer cálculos matemáticos.
+---
+
+## 4. El Flujo de Ejecución (Ciclo de Vida de una Petición)
+1. **Recepción:** El servidor gRPC en Python recibe un `FoodRequest` (código de barras) o un `SearchRequest` (búsqueda de texto) del `tracking-service` o de `clinical-service`.
+2. **Consulta Externa:** Python autentica sus credenciales de FatSecret, realiza la llamada a su API REST y mapea la respuesta.
+3. **Capa de Anticorrupción:** Si un alimento no tiene registrada la cantidad de un macro o micro en FatSecret, Python le asigna por defecto el valor `0.0` para evitar que Java sufra excepciones de desempaquetado o nulos al realizar sus cálculos matemáticos.
+4. **Respuesta:** Retorna la información serializada en el binario de Protobuf a máxima velocidad.
+
+---
+
+## 5. Resiliencia y Tolerancia a Fallos
+* **Timeouts:** Las peticiones a la API externa de FatSecret tienen un límite de tiempo estricto. Si excede el tiempo límite, Python corta la conexión y lanza una excepción gRPC de tipo `DEADLINE_EXCEEDED` a Java.
+* **Caché en Java:** Aunque este servicio no tiene estado, el `tracking-service` implementa un caché Redis (Cache-Aside) sobre los métodos que llaman a gRPC, evitando repetir consultas idénticas.
+
+---
 
 ## 6. Variables de Entorno Requeridas (`.env`)
-Para levantar este contenedor en Docker, la configuración es mínima:
 ```properties
-# Puerto donde levantará el servidor gRPC
-GRPC_SERVER_PORT=50051
+# Puerto de gRPC Server
+GRPC_PORT=50051
 
-# URL base de la API externa (configurable por si cambia en el futuro)
-EXTERNAL_API_BASE_URL=[https://world.openfoodfacts.org/api/v2/product/](https://world.openfoodfacts.org/api/v2/product/)
+# Base de datos local (Opcional, en caso de cache local directo en Mongo)
+MONGO_URI=mongodb://mongodb:27017/
+MONGO_DB_NAME=healthcore_catalog
+
+# Credenciales de Plataforma FatSecret (OAuth 2.0)
+FATSECRET_CLIENT_ID=tu_client_id_aqui
+FATSECRET_CLIENT_SECRET=tu_client_secret_aqui
 ```

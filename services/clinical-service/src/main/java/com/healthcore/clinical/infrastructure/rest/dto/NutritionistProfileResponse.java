@@ -15,6 +15,7 @@ public record NutritionistProfileResponse(
         String phone,
         ClinicAddressResponse clinicAddress,
         String bio,
+        String profilePhotoUrl,
         boolean profileCompleted
 ) {
 }

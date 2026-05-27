@@ -15,7 +15,6 @@ import {
   Pencil,
   Ruler,
   ShieldCheck,
-  User,
   Weight,
   Zap,
 } from 'lucide-react';
@@ -29,11 +28,14 @@ import {
   formatPatientGoalLabel,
 } from '@/features/onboarding/utils/profilePresentation';
 import { ConfirmModal } from '@/shared/components/ConfirmModal';
+import { ProfileAvatar } from '@/shared/components/ProfileAvatar';
+import { useProfilePhotoUpload } from '@/shared/hooks/useProfilePhotoUpload';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { usePatientProfile } from '../hooks/usePatientProfile';
+import { clinicalApi } from '@/features/clinical/services/clinicalService';
 
 function bmiColor(category: string) {
   switch (category) {
@@ -56,6 +58,7 @@ export const PatientProfilePage = () => {
   
   const {
     profile,
+    setProfile,
     isLoadingProfile,
     showUnlinkDialog,
     setShowUnlinkDialog,
@@ -71,6 +74,27 @@ export const PatientProfilePage = () => {
     user,
     navigate,
   } = usePatientProfile();
+
+  const {
+    accept: profilePhotoAccept,
+    error: profilePhotoError,
+    handleFileSelected,
+    isUploading: isUploadingProfilePhoto,
+  } = useProfilePhotoUpload({
+    invalidTypeMessage: t('profile.photoInvalidType'),
+    invalidSizeMessage: t('profile.photoInvalidSize'),
+    persistErrorMessage: t('profile.photoPersistError'),
+    uploadErrorMessages: {
+      validation: t('profile.photoUploadValidationError'),
+      rateLimit: t('profile.photoUploadRateLimitError'),
+      network: t('profile.photoUploadNetworkError'),
+      generic: t('profile.photoUploadGenericError'),
+    },
+    onUploadComplete: async (storageKey) => {
+      const updatedProfile = await clinicalApi.updateMyProfilePhoto(storageKey);
+      setProfile(updatedProfile);
+    },
+  });
 
   if (isLoadingProfile) {
     return (
@@ -105,9 +129,20 @@ export const PatientProfilePage = () => {
 
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-5 min-w-0">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-primary/20 flex items-center justify-center shadow-inner flex-shrink-0">
-                <User className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
-              </div>
+              <ProfileAvatar
+                name={displayName}
+                photoUrl={profile?.profilePhotoUrl}
+                size="lg"
+                editable
+                accept={profilePhotoAccept}
+                onFileSelected={(file) => {
+                  void handleFileSelected(file);
+                }}
+                isUploading={isUploadingProfilePhoto}
+                error={profilePhotoError}
+                cameraLabel={t('profile.changePhoto')}
+                className="flex-shrink-0"
+              />
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">{displayName}</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">{tAuth('patient')}</p>

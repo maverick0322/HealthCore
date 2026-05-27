@@ -49,8 +49,8 @@ The main web application built with React, Vite, and Tailwind CSS.
 
 ## 🖥️ Desktop (`apps/health-core-desktop`)
 
-*(Placeholder)* This project is currently in the scaffolding phase. 
-- The folder contains a `.gitkeep` to ensure the structure is tracked in the repository.
+Este proyecto es un contenedor **Electron** completamente configurado que encapsula la PWA de React. Permite empaquetar la aplicación de escritorio y acceder a capacidades nativas del sistema operativo.
+* Para ver las instrucciones detalladas de ejecución en desarrollo y compilación para producción en Windows, macOS y Linux, consulta la [Guía de Escritorio](file:///c:/Users/eugen/Documents/DSER/HealthCore/docs/desktop.md).
 
 ---
 

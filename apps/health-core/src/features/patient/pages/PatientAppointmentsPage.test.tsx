@@ -87,6 +87,7 @@ describe('PatientAppointmentsPage', () => {
       phone: '',
       clinicAddress: null,
       bio: '',
+      profilePhotoUrl: null,
       profileCompleted: true,
     });
   });

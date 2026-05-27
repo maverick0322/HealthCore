@@ -19,6 +19,7 @@ public record PatientProfileResponse(
         List<String> allergies,
         List<String> excludedFoods,
         String nutritionistId,
+        String profilePhotoUrl,
         boolean profileCompleted
 ) {
 }

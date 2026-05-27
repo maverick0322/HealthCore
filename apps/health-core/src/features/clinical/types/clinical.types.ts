@@ -158,6 +158,7 @@ export interface PatientProfileResponse extends CreateProfilePayload {
   userId: string;
   fullName: string | null;
   nutritionistId?: string | null;
+  profilePhotoUrl: string | null;
   profileCompleted: boolean;
 }
 
@@ -196,6 +197,7 @@ export interface NutritionistProfilePayload {
 export interface NutritionistProfileResponse extends NutritionistProfilePayload {
   userId: string;
   fullName: string | null;
+  profilePhotoUrl: string | null;
   profileCompleted: boolean;
 }
 

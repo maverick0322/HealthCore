@@ -7,10 +7,10 @@ import { AlertCircle, CalendarDays, Loader2, Plus, Stethoscope } from "lucide-re
 import { PatientNav } from "@/features/patient/components/PatientNav";
 import { DashboardWeightCard } from "@/features/patient/components/DashboardWeightCard";
 import { HealthGoalsCard } from "@/features/patient/components/HealthGoalsCard";
+import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
-import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { clinicalApi } from "@/features/clinical/services/clinicalService";
 import type {
   NutritionistProfileResponse,
@@ -50,7 +50,6 @@ const getNutritionistSpecialtyChips = (
 export const PatientDashboardPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("patient");
-  const user = useAuthStore((state) => state.user);
 
   const { summary, addWater } = useTodaySummary();
   const { meals, isLoading: isMealsLoading } = useTodayMeals();
@@ -140,8 +139,7 @@ export const PatientDashboardPage = () => {
   const displayName =
     profile?.firstName?.trim() ||
     getFirstName(profile?.fullName) ||
-    user?.email?.split("@")[0] ||
-    "Usuario";
+    null;
 
   const nutritionistName =
     nutritionistProfile?.fullName?.trim() || t("dashboard.assignedNutritionist");
@@ -161,9 +159,18 @@ export const PatientDashboardPage = () => {
 
       <div className="border-b border-border bg-primary/10 md:pl-56">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            {t("dashboard.greeting", { name: displayName })}
-          </h1>
+          {profileLoading ? (
+            <div
+              aria-hidden="true"
+              className="h-8 w-44 rounded-md bg-foreground/10 animate-pulse sm:h-9 sm:w-56"
+            />
+          ) : (
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+              {t("dashboard.greeting", {
+                name: displayName ?? t("dashboard.defaultName"),
+              })}
+            </h1>
+          )}
           <p className="text-sm text-muted-foreground mt-0.5">
             {t("dashboard.greetingSubtitle")}
           </p>
@@ -285,31 +292,41 @@ export const PatientDashboardPage = () => {
                   </div>
                 ) : (
                   <div className="rounded-lg border border-border bg-muted/40 p-4">
-                    <p className="text-sm font-semibold">{nutritionistName}</p>
-                    {specialtyChips.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {specialtyChips.map((chip) => (
-                          <span
-                            key={chip}
-                            className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
-                          >
-                            {chip}
-                          </span>
-                        ))}
+                    <div className="flex items-start gap-3">
+                      <ProfileAvatar
+                        name={nutritionistName}
+                        photoUrl={nutritionistProfile?.profilePhotoUrl}
+                        size="sm"
+                        className="shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold">{nutritionistName}</p>
+                        {specialtyChips.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {specialtyChips.map((chip) => (
+                              <span
+                                key={chip}
+                                className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                              >
+                                {chip}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {consultationChips.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {consultationChips.map((chip) => (
+                              <span
+                                key={chip}
+                                className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                              >
+                                {chip}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {consultationChips.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {consultationChips.map((chip) => (
-                          <span
-                            key={chip}
-                            className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
-                          >
-                            {chip}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </CardContent>

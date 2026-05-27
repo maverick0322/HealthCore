@@ -129,6 +129,7 @@ export const HealthGoalsCard = () => {
   const caloriesConsumed = formatCalories(rawCaloriesConsumed);
   const caloriesGoal = formatCalories(rawCaloriesGoal);
   const remaining = caloriesGoal - caloriesConsumed;
+  const remainingDisplay = remaining < 0 ? `+${Math.abs(remaining)}` : `${remaining}`;
   const caloriePct = caloriesGoal > 0 ? Math.round((caloriesConsumed / caloriesGoal) * 100) : 0;
 
   return (
@@ -157,7 +158,7 @@ export const HealthGoalsCard = () => {
           <div>
             <p className="text-xs text-muted-foreground">{t('dashboard.remaining')}</p>
             <p className={`font-semibold text-sm ${remaining < 0 ? 'text-destructive' : 'text-emerald-500'}`}>
-              {remaining}
+              {remainingDisplay}
             </p>
           </div>
           <div className="w-px bg-border" />

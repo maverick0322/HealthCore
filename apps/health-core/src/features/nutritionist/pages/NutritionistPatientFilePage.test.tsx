@@ -184,6 +184,7 @@ const patientResponse: NutritionistPatientProfileResponse = {
   allergies: [],
   excludedFoods: [],
   nutritionistId: 'nutri-1',
+  profilePhotoUrl: null,
   profileCompleted: true,
 };
 

@@ -1,62 +1,74 @@
 # 🖼️ Microservicio: Media Service
 
 ## 1. Propósito y Responsabilidades
-El `healthcore-media-service` es el único encargado de la **Gestión de Archivos Multimedia**. Su responsabilidad es recibir imágenes (fotos de progreso del paciente, avatares, evidencias para observaciones), validarlas, comprimirlas si es necesario, y enviarlas de forma segura a un almacenamiento en la nube.
+El `healthcore-media-service` es el único encargado de la **Gestión Delegada de Archivos Multimedia**. Su responsabilidad principal es la generación de URLs temporales y criptográficamente seguras para la carga y descarga de recursos en el almacenamiento de objetos.
 
-Aplica el principio de "Offloading": libera a la base de datos de la carga de almacenar archivos binarios masivos (BLOBs), mejorando drásticamente el rendimiento general del sistema.
+Aplica el principio de "Offloading": libera a la base de datos de almacenar archivos binarios masivos (BLOBs), y evita que el backend consuma recursos de CPU y ancho de banda al procesar transferencias directas de archivos en formato multipart.
+
+---
 
 ## 2. Stack Tecnológico Core
 * **Lenguaje/Framework:** Java 21 + Spring Boot 3.x
-* **Almacenamiento (Nube):** AWS SDK (Amazon Simple Storage Service - S3)
-* **Persistencia Local:** Ninguna (Stateless). Las URLs finales se guardan en el `clinical-service`.
-* **Mensajería:** Spring AMQP (RabbitMQ) - Productor de eventos.
-* **Seguridad:** Validación de formatos MIME (solo `.jpg`, `.png`) y límite de tamaño por archivo.
+* **Almacenamiento (Nube):** Cloudflare R2 (S3-compatible) a través de AWS SDK para Java v2.
+* **Persistencia Local:** Ninguna (Stateless). Las claves lógicas de los archivos (`photoKey`) se guardan desacopladas en los microservicios destino.
+* **Seguridad:** Limitación de tasa (Rate Limiting) integrada por usuario mediante **Bucket4j**, previniendo abusos de facturación en la API de almacenamiento.
+* **Comunicaciones Internas:** Servidor gRPC en el puerto 9091 para proveer URLs de lectura temporales.
 
-## 3. El Flujo de Carga (Ciclo de Vida de una Imagen)
-Para mantener la respuesta al usuario lo más rápida posible y la arquitectura desacoplada, el flujo es semi-asíncrono:
+---
 
-1. **Recepción:** El paciente sube una "Foto de Progreso" desde la PWA (React). El archivo multipart pasa por el API Gateway y llega al `media-service`.
-2. **Validación y Carga (Síncrono):** El servicio verifica que sea una imagen válida y la sube al bucket de AWS S3. S3 responde con una URL pública o firmada (Ej. `https://healthcore-bucket.s3.amazonaws.com/paciente-123/foto1.jpg`).
-3. **Respuesta Rápida:** El `media-service` le responde un HTTP 202 (Accepted) al frontend de Eugenio casi de inmediato, indicando que el archivo se procesó con éxito.
-4. **Notificación (Asíncrono):** El `media-service` no sabe qué hacer con esa URL. Por lo tanto, publica un mensaje en RabbitMQ: *"¡Foto subida! Pertenece al paciente X y esta es la URL"*.
-5. **Consolidación:** El `clinical-service` escucha ese mensaje en segundo plano y anexa la URL al expediente clínico del paciente.
+## 3. El Flujo de Carga (Offloading Delegado)
+Para optimizar el rendimiento y la escalabilidad, el flujo es completamente desacoplado y directo del cliente al almacenamiento:
+
+1. **Solicitud de Carga:** El cliente (PWA/Frontend) solicita una URL de subida para un archivo específico llamando al REST API del `media-service` en `POST /api/v1/media/upload-request`.
+2. **Generación de Firma:** El `media-service` verifica el rate limit del usuario (máximo 3 peticiones por minuto). Si es aceptado, calcula un identificador único (UUID) combinándolo con el ID de usuario para formar una clave segura (`storageKey`). Llama al `S3Presigner` para firmar una petición PUT temporal (validez de 5 minutos).
+3. **Carga Directa:** El `media-service` devuelve la URL pre-firmada y la clave segura. El frontend realiza un HTTP PUT directo a Cloudflare R2 cargando el archivo binario.
+4. **Vinculación:** Tras finalizar la carga, el frontend envía únicamente la clave segura (`photoKey`/`storageKey`) al microservicio que requiere el recurso (como `tracking-service` al crear un registro de comidas).
+
+---
 
 ## 4. Contratos de Comunicación (API REST)
-Expone la subida de archivos a través del API Gateway en la ruta `/api/v1/media/**`.
+Expone la solicitud de carga segura a través de la ruta `/api/v1/media/**`.
 
-| Método | Endpoint | Descripción | Body de Entrada |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/upload/progress-photo` | Sube una foto de evidencia física. | `multipart/form-data` (file) |
-| `POST` | `/upload/avatar` | Sube la foto de perfil del usuario. | `multipart/form-data` (file) |
-| `DELETE`| `/files/{fileId}` | Elimina un archivo físicamente de AWS S3. | N/A |
+| Método | Endpoint | Descripción | Body de Entrada (JSON) | Salida Exitosa (201) |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/upload-request` | Solicita una URL firmada de subida temporal a Cloudflare R2. | `{"fileName": "mi_foto.jpg"}` | `{"uploadUrl": "https://...", "storageKey": "userId/uuid-mi_foto.jpg"}` |
 
-*Nota: La lectura o descarga de imágenes generalmente no pasa por este servicio; el frontend consume directamente las URLs de S3 o de un CDN asociado (CloudFront) para no consumir ancho de banda de nuestro servidor Linux.*
+### Códigos de Respuesta Específicos:
+* **201 Created:** URL firmada generada exitosamente.
+* **400 Bad Request:** Nombre del archivo inválido o con caracteres maliciosos.
+* **401 Unauthorized:** Token JWT ausente, inválido o expirado.
+* **429 Too Many Requests:** Se excedió la cuota de rate limit (máximo 3 peticiones/min por usuario).
+* **422 Unprocessable Entity:** Error de comunicación o configuración con el SDK de Cloudflare R2.
 
-## 5. Eventos Publicados (RabbitMQ)
-Este servicio es un publicador puro. Emite eventos que otros microservicios pueden elegir escuchar:
+---
 
-* **Evento:** `ProgressPhotoUploadedEvent`
-    * **Payload:** `{ "patientId": "UUID", "photoUrl": "https://...", "timestamp": "2026-04-13T..." }`
-    * **Consumidor:** `clinical-service` (para atarlo a un log de peso de ese día).
-* **Evento:** `AvatarUploadedEvent`
-    * **Payload:** `{ "userId": "UUID", "avatarUrl": "https://..." }`
-    * **Consumidor:** `identity-service` y `clinical-service`.
+## 5. Comunicación Síncrona gRPC (Servidor)
+Otros microservicios no guardan URLs completas en sus bases de datos, sino únicamente la referencia corta (`photoKey`). Cuando un servicio (como `tracking-service`) necesita que el frontend renderice una foto, le pide dinámicamente al `media-service` una URL temporal de lectura.
+
+* **Puerto Interno:** 9091
+* **Contrato Proto:** `media.proto`
+* **Servicio gRPC:** `MediaServiceGrpc`
+* **Operación:** `GetPresignedReadUrl(PresignedReadUrlRequest) returns (PresignedReadUrlResponse)`
+  * **Input:** `storageKey`
+  * **Output:** `presignedUrl` (válida por 60 minutos) o `errorMessage` en caso de fallo.
+
+---
 
 ## 6. Variables de Entorno Requeridas (`.env`)
-Dado que este servicio se conecta a Amazon Web Services, requiere credenciales estrictamente secretas que **jamás deben subirse a GitHub**.
-
 ```properties
-# RabbitMQ
-SPRING_RABBITMQ_HOST=rabbitmq
-SPRING_RABBITMQ_PORT=5672
+# Configuración del Puerto del Servidor
+SERVER_PORT=8088
 
-# Límites de Spring Boot (Para evitar OutOfMemory Errors)
-SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=5MB
-SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=5MB
+# Puerto de gRPC Server
+GRPC_SERVER_PORT=9091
 
-# AWS S3 Configuración
-AWS_ACCESS_KEY_ID=tu_access_key_aqui
-AWS_SECRET_ACCESS_KEY=tu_secret_key_aqui
-AWS_REGION=us-east-1
-AWS_S3_BUCKET_NAME=healthcore-media-assets
+# Parámetros del cliente Cloudflare R2
+CLOUDFLARE_R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+CLOUDFLARE_R2_ACCESS_KEY_ID=tu_access_key_aqui
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=tu_secret_access_key_aqui
+CLOUDFLARE_R2_BUCKET_NAME=healthcore-media-assets
+CLOUDFLARE_R2_REGION=auto
+
+# Clave Semilla JWT (para validar tokens del API Gateway)
+JWT_SECRET=super_secret_key_base64_encoded
 ```

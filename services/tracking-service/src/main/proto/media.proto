@@ -8,6 +8,7 @@ option java_outer_classname = "MediaProto";
 
 service MediaServiceGrpc {
   rpc GetPresignedReadUrl (PresignedReadUrlRequest) returns (PresignedReadUrlResponse);
+  rpc GetPresignedReadUrls (BatchPresignedReadUrlsRequest) returns (BatchPresignedReadUrlsResponse);
 }
 
 message PresignedReadUrlRequest {
@@ -17,4 +18,18 @@ message PresignedReadUrlRequest {
 message PresignedReadUrlResponse {
   string presignedUrl = 1;
   string errorMessage = 2;
+}
+
+message BatchPresignedReadUrlsRequest {
+  repeated string storageKeys = 1;
+}
+
+message PresignedReadUrlResult {
+  string storageKey = 1;
+  string presignedUrl = 2;
+  string errorMessage = 3;
+}
+
+message BatchPresignedReadUrlsResponse {
+  repeated PresignedReadUrlResult results = 1;
 }

@@ -85,6 +85,7 @@ describe('NutritionistProfilePage', () => {
         interiorNumber: '',
       },
       bio: 'Nutriologa clinica con enfoque preventivo.',
+      profilePhotoUrl: null,
       profileCompleted: true,
     });
   });

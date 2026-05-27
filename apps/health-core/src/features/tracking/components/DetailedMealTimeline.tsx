@@ -57,7 +57,6 @@ export const DetailedMealTimeline = ({
     return (
       <div className="relative mt-6 ml-4 space-y-8 border-l-2 border-muted/60 pb-4 md:ml-6">
         {logs.map((log) => {
-          const foodsDescription = log.items?.map((item: any) => item.foodName).join(', ');
           const imageUrl = log.photoKey;
 
           return (
@@ -74,7 +73,7 @@ export const DetailedMealTimeline = ({
                       <>
                         <img 
                           src={imageUrl} 
-                          alt="Meal"
+                          alt={log.mealName}
                           className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
@@ -91,21 +90,42 @@ export const DetailedMealTimeline = ({
                   <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
                     <div>
                       <div className="flex items-start justify-between">
-                        <h3 className="text-base font-bold text-foreground">
-                          {String(t(`tracking.mealType.${log.mealType}`, { defaultValue: log.mealType }))}
+                        {/* NUEVO: Título principal usando mealName */}
+                        <h3 className="text-lg font-bold text-foreground">
+                          {log.mealName}
                         </h3>
-                        <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
-                          {formatLocalTime(log.consumedAt)}
-                        </span>
+                        <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center">
+                          <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
+                            {String(t(`tracking.mealType.${log.mealType}`, { defaultValue: log.mealType }))}
+                          </span>
+                          <span className="text-xs font-semibold text-muted-foreground">
+                            {formatLocalTime(log.consumedAt)}
+                          </span>
+                        </div>
                       </div>
-                      <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                        {foodsDescription}
-                      </p>
+
+                      {/* NUEVO: Lista detallada de ingredientes */}
+                      <div className="mt-3 space-y-1">
+                        {log.items?.map((item: any, index: number) => (
+                          <div key={`${item.barcode}-${index}`} className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                              <span className="text-muted-foreground">{item.foodName}</span>
+                            </div>
+                            <div className="flex gap-3 text-xs text-muted-foreground">
+                              <span>{item.consumedGrams}g</span>
+                              <span className="font-medium text-slate-700 dark:text-slate-300">
+                                {Math.round(item.calories)} kcal
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-4 gap-2 border-t border-border/40 pt-4 sm:gap-4">
                       <div className="text-center">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Calorías</p>
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Calorías Totales</p>
                         <p className="text-sm font-bold">{Math.round(log.totalCalories)}</p>
                       </div>
                       <div className="text-center">

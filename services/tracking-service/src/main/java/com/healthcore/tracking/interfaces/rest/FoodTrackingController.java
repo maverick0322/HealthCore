@@ -78,8 +78,8 @@ public class FoodTrackingController {
             @Valid @RequestBody MealLogRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal String userId) {
 
-        log.info("REST request to log meal. mealType={} itemCount={} userHash={}",
-                request.mealType(), request.foods().size(), logHash(userId));
+        log.info("REST request to log meal. mealName='{}' mealType={} itemCount={} userHash={}",
+                request.mealName(), request.mealType(), request.foods().size(), logHash(userId));
 
         List<FoodTrackingUseCase.MealItemCommand> commandItems = request.foods().stream()
                 .map(item -> new FoodTrackingUseCase.MealItemCommand(item.barcode(), item.grams()))
@@ -87,6 +87,7 @@ public class FoodTrackingController {
 
         MealLog savedLog = trackingUseCase.logMealConsumption(
                 userId,
+                request.mealName(),
                 request.mealType(),
                 request.consumedAt(),
                 request.photoKey(),

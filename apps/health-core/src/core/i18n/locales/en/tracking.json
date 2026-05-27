@@ -18,5 +18,27 @@
   "registerFood": "Log Food",
   "saving": "Saving...",
   "successTitle": "Food Logged!",
-  "successMessage": "It has been saved to your diary for today."
+  "successMessage": "It has been saved to your diary for today.",
+  "errors": {
+    "loadFailed": "We couldn't load your records.",
+    "tryAgainLater": "The service might be down, please try again later.",
+    "connection": "Network error"
+  },
+  "dashboard": {
+    "noMealsToday": "You haven't logged any meals today.",
+    "todayLog": "Today's Log",
+    "viewFullHistory": "View full history",
+    "water": "Water",
+    "goal": "Goal"
+  },
+  "table": {
+    "meal": "Meal",
+    "time": "Time",
+    "category": "Category",
+    "evidence": "Evidence",
+    "calories": "Calories"
+  },
+  "common": {
+    "ingredients": "ingredients"
+  }
 }

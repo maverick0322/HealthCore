@@ -1,4 +1,4 @@
-import { Flame } from 'lucide-react';
+import { Flame, AlertCircle } from 'lucide-react'; // <-- Agregado AlertCircle
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { useHealthGoals } from '../hooks/useHealthGoals';
@@ -10,13 +10,11 @@ import { useTodaySummary } from '@/features/tracking/hooks/useTodaySummary';
  */
 const formatMacro = (value: number | undefined | null): string => {
   if (typeof value !== 'number' || isNaN(value)) return '0';
-  // If it's a whole number, don't show decimals. Otherwise, show 1 decimal place max.
   return Number.isInteger(value) ? value.toString() : value.toFixed(1);
 };
 
 const formatCalories = (value: number | undefined | null): number => {
   if (typeof value !== 'number' || isNaN(value)) return 0;
-  // Calories should strictly be rounded to the nearest integer for UI clarity
   return Math.round(value);
 };
 
@@ -74,11 +72,13 @@ function MacroBar({
 export const HealthGoalsCard = () => {
   const { t } = useTranslation('patient');
   const { data, isLoading: isGoalsLoading, isError: isGoalsError } = useHealthGoals();
-  const { summary, isLoading: isTrackingLoading } = useTodaySummary();
+  
+  // NUEVO: Extrayendo el error de tracking también
+  const { summary, isLoading: isTrackingLoading, error: trackingError } = useTodaySummary();
 
   if (isGoalsLoading || isTrackingLoading) {
     return (
-      <Card id="card-health-goals">
+      <Card id="card-health-goals" className="h-full">
         <CardHeader className="pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Flame size={16} className="text-primary" />
@@ -102,17 +102,24 @@ export const HealthGoalsCard = () => {
     );
   }
 
-  if (isGoalsError || !data) {
+  // NUEVO: Verificando ambos errores (Goals o Tracking) y mostrando una UI bonita
+  if (isGoalsError || trackingError || !data) {
     return (
-      <Card id="card-health-goals">
+      <Card id="card-health-goals" className="h-full">
         <CardHeader className="pb-0">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Flame size={16} className="text-primary" />
             {t('dashboard.caloriesCard')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-4 text-sm text-muted-foreground">
-          {t('dashboard.caloriesCard')}
+        <CardContent className="flex flex-col items-center justify-center h-[280px] text-center">
+          <AlertCircle className="w-10 h-10 text-destructive mb-3 opacity-80" />
+          <p className="text-sm font-medium text-destructive">
+            {t('errors.loadFailed', 'No pudimos cargar tus registros.')}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1 px-4">
+            {t('errors.tryAgainLater', 'El servicio podría estar inactivo, por favor intenta más tarde.')}
+          </p>
         </CardContent>
       </Card>
     );
@@ -133,7 +140,7 @@ export const HealthGoalsCard = () => {
   const caloriePct = caloriesGoal > 0 ? Math.round((caloriesConsumed / caloriesGoal) * 100) : 0;
 
   return (
-    <Card id="card-health-goals">
+    <Card id="card-health-goals" className="h-full">
       <CardHeader className="pb-0">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Flame size={16} className="text-primary" />

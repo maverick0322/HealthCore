@@ -1,21 +1,21 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
-import { Coffee, Sun, Utensils, Loader2 } from "lucide-react";
+import { Coffee, Sun, Utensils, Loader2, AlertCircle } from "lucide-react"; // <-- Importado AlertCircle
 import { useTranslation } from "react-i18next";
 import type { MealLogDTO } from "../types/tracking.types";
 
 interface TodayMealsListProps {
   meals: MealLogDTO[];
   isLoading: boolean;
+  error?: string | null; // <-- NUEVO: Propiedad agregada al contrato
 }
 
-export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading }) => {
+export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading, error }) => {
   const { t } = useTranslation("tracking");
 
   // --- SOLUCIÓN DE ZONA HORARIA ---
   const formatSafeLocalTime = (isoString: string) => {
     if (!isoString) return '--:--';
-    // Fuerza a JavaScript a tratar la fecha como UTC antes de convertirla a hora local
     const safeIso = isoString.endsWith('Z') ? isoString : `${isoString}Z`;
     const date = new Date(safeIso);
     return date.toLocaleTimeString('es-ES', { 
@@ -43,10 +43,25 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
       );
     }
 
+    // NUEVO: Estado de Error
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center py-10 px-4 text-center rounded-lg border border-destructive/20 bg-destructive/5">
+          <AlertCircle className="w-8 h-8 text-destructive mb-3 opacity-80" />
+          <p className="text-sm font-medium text-destructive">
+            {t('errors.loadFailed', 'No pudimos cargar tus registros.')}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {t('errors.tryAgainLater', 'El servicio podría estar inactivo, por favor intenta más tarde.')}
+          </p>
+        </div>
+      );
+    }
+
     if (!meals || meals.length === 0) {
       return (
         <p className="text-center py-6 text-muted-foreground">
-          Aún no has registrado alimentos hoy.
+          {t('dashboard.noMealsToday', 'Aún no has registrado alimentos hoy.')}
         </p>
       );
     }
@@ -56,16 +71,15 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/30">
             <tr>
-              <th className="px-4 py-3 font-medium">Platillo</th> {/* Cambiado a Platillo */}
-              <th className="px-4 py-3 font-medium text-center">Hora</th>
-              <th className="px-4 py-3 font-medium text-center">Categoría</th>
-              <th className="px-4 py-3 font-medium text-center">Evidencia</th>
-              <th className="px-4 py-3 font-medium text-right">Calorías</th>
+              <th className="px-4 py-3 font-medium">{t('table.meal', 'Platillo')}</th>
+              <th className="px-4 py-3 font-medium text-center">{t('table.time', 'Hora')}</th>
+              <th className="px-4 py-3 font-medium text-center">{t('table.category', 'Categoría')}</th>
+              <th className="px-4 py-3 font-medium text-center">{t('table.evidence', 'Evidencia')}</th>
+              <th className="px-4 py-3 font-medium text-right">{t('table.calories', 'Calorías')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {meals.map((log) => {
-              // La URL pre-firmada ya viene inyectada por el backend gRPC
               const imageUrl = log.photoKey;
 
               return (
@@ -75,18 +89,15 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
                       {getMealIcon(log.mealType)}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      {/* NUEVO: Usando mealName en lugar del primer ingrediente */}
                       <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[220px]" title={log.mealName}>
                         {log.mealName}
                       </span>
-                      {/* Información extra simplificada para la tabla */}
                       <span className="text-xs text-muted-foreground mt-0.5">
-                        {log.items?.length || 0} ingredientes
+                        {log.items?.length || 0} {t('common.ingredients', 'ingredientes')}
                       </span>
                     </div>
                   </td>
                   
-                  {/* HORA SEGURA APLICADA AQUÍ */}
                   <td className="px-4 py-4 text-center text-muted-foreground whitespace-nowrap">
                     {formatSafeLocalTime(log.consumedAt)}
                   </td>
@@ -97,7 +108,6 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
                     </span>
                   </td>
                   
-                  {/* MINIATURA FOTOGRÁFICA RENDERIZADA */}
                   <td className="px-4 py-4 text-center">
                     {imageUrl ? (
                       <div className="mx-auto h-10 w-10 rounded-md overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700 bg-slate-100 dark:bg-slate-800">
@@ -106,7 +116,6 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
                           alt={log.mealName} 
                           className="h-full w-full object-cover"
                           loading="lazy"
-                          // Fallback a ícono SVG gris si la URL pre-firmada expiró o falló
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
@@ -134,8 +143,10 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
   return (
     <Card className="border-none shadow-sm mt-4">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <CardTitle className="text-lg font-bold">Registro de Hoy</CardTitle>
-        <button className="text-sm text-primary font-medium hover:underline">Ver historial completo</button>
+        <CardTitle className="text-lg font-bold">{t('dashboard.todayLog', 'Registro de Hoy')}</CardTitle>
+        <button className="text-sm text-primary font-medium hover:underline">
+          {t('dashboard.viewFullHistory', 'Ver historial completo')}
+        </button>
       </CardHeader>
       <CardContent>{renderContent()}</CardContent>
     </Card>

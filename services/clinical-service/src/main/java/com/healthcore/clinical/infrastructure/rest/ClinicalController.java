@@ -2,6 +2,7 @@ package com.healthcore.clinical.infrastructure.rest;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -246,9 +247,18 @@ public class ClinicalController {
     public ResponseEntity<List<PatientProfileResponse>> getNutritionistPatients() {
         String nutritionistId = getCurrentUserId();
         logger.info("[ClinicalController] Getting linked patients for nutritionistHash={}", logHash(nutritionistId));
-        List<PatientProfileResponse> patients = manageProfileUseCase.getProfilesByNutritionistId(nutritionistId)
+        List<PatientProfile> linkedProfiles = manageProfileUseCase.getProfilesByNutritionistId(nutritionistId);
+        Map<String, String> profilePhotoUrls = resolveProfilePhotoUrls(
+                linkedProfiles.stream()
+                        .map(PatientProfile::getProfilePhotoKey)
+                        .toList()
+        );
+        List<PatientProfileResponse> patients = linkedProfiles
                 .stream()
-                .map(this::toPatientProfileResponse)
+                .map(profile -> toPatientProfileResponse(
+                        profile,
+                        profilePhotoUrls.get(profile.getProfilePhotoKey())
+                ))
                 .toList();
         return ResponseEntity.ok(patients);
     }
@@ -360,6 +370,10 @@ public class ClinicalController {
     }
 
     private PatientProfileResponse toPatientProfileResponse(PatientProfile profile) {
+        return toPatientProfileResponse(profile, resolveProfilePhotoUrl(profile.getProfilePhotoKey()));
+    }
+
+    private PatientProfileResponse toPatientProfileResponse(PatientProfile profile, String profilePhotoUrl) {
         return new PatientProfileResponse(
                 profile.getUserId(),
                 profile.getFirstName(),
@@ -376,7 +390,7 @@ public class ClinicalController {
                 profile.getAllergies() != null ? profile.getAllergies() : List.of(),
                 profile.getExcludedFoods() != null ? profile.getExcludedFoods() : List.of(),
                 profile.getNutritionistId(),
-                resolveProfilePhotoUrl(profile.getProfilePhotoKey()),
+                profilePhotoUrl,
                 profile.isProfileCompleted()
         );
     }
@@ -460,6 +474,10 @@ public class ClinicalController {
 
     private String resolveProfilePhotoUrl(String profilePhotoKey) {
         return mediaGrpcClientAdapter.getPresignedReadUrl(profilePhotoKey);
+    }
+
+    private Map<String, String> resolveProfilePhotoUrls(List<String> profilePhotoKeys) {
+        return mediaGrpcClientAdapter.getPresignedReadUrls(profilePhotoKeys);
     }
 
     private String logHash(String value) {

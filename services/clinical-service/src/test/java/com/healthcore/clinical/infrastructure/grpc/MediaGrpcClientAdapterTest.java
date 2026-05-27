@@ -1,8 +1,10 @@
 package com.healthcore.clinical.infrastructure.grpc;
 
+import com.healthcore.media.infrastructure.grpc.stubs.BatchPresignedReadUrlsResponse;
 import com.healthcore.media.infrastructure.grpc.stubs.MediaServiceGrpcGrpc;
 import com.healthcore.media.infrastructure.grpc.stubs.PresignedReadUrlRequest;
 import com.healthcore.media.infrastructure.grpc.stubs.PresignedReadUrlResponse;
+import com.healthcore.media.infrastructure.grpc.stubs.PresignedReadUrlResult;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.Test;
@@ -10,6 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,5 +80,46 @@ class MediaGrpcClientAdapterTest {
 
         assertNull(adapter.getPresignedReadUrl("user-123/avatar.webp"));
         verify(mediaStub).withDeadlineAfter(eq(5L), eq(TimeUnit.SECONDS));
+    }
+
+    @Test
+    void shouldResolveBatchPresignedReadUrls() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+        BatchPresignedReadUrlsResponse response = BatchPresignedReadUrlsResponse.newBuilder()
+                .addResults(PresignedReadUrlResult.newBuilder()
+                        .setStorageKey("user-1/avatar.webp")
+                        .setPresignedUrl("https://cdn.example.com/user-1/avatar.webp")
+                        .build())
+                .addResults(PresignedReadUrlResult.newBuilder()
+                        .setStorageKey("user-2/avatar.webp")
+                        .setErrorMessage("Internal error generating URL")
+                        .build())
+                .build();
+
+        when(mediaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenReturn(deadlineStub);
+        when(deadlineStub.getPresignedReadUrls(any())).thenReturn(response);
+
+        Map<String, String> result = adapter.getPresignedReadUrls(List.of(
+                "user-1/avatar.webp",
+                "user-2/avatar.webp",
+                "user-1/avatar.webp"
+        ));
+
+        assertEquals(1, result.size());
+        assertEquals("https://cdn.example.com/user-1/avatar.webp", result.get("user-1/avatar.webp"));
+        verify(mediaStub).withDeadlineAfter(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void shouldReturnEmptyMapWhenBatchRequestFails() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+
+        when(mediaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenReturn(deadlineStub);
+        when(deadlineStub.getPresignedReadUrls(any()))
+                .thenThrow(new StatusRuntimeException(Status.UNAVAILABLE));
+
+        Map<String, String> result = adapter.getPresignedReadUrls(List.of("user-1/avatar.webp"));
+
+        assertEquals(Map.of(), result);
     }
 }

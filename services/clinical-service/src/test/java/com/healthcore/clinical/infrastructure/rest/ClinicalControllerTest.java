@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -343,6 +344,7 @@ class ClinicalControllerTest {
 
         PatientProfile patientOne = createPatientProfile("patient-one@example.com");
         patientOne.assignNutritionist(nutritionistId);
+        patientOne.updateProfilePhoto("patient-one@example.com/avatar.webp");
         PatientProfile patientTwo = new PatientProfile(
                 "patient-two@example.com",
                 "Maria",
@@ -359,16 +361,24 @@ class ClinicalControllerTest {
                 List.of()
         );
         patientTwo.assignNutritionist(nutritionistId);
+        patientTwo.updateProfilePhoto("patient-two@example.com/avatar.webp");
 
         when(manageProfileUseCase.getProfilesByNutritionistId(nutritionistId))
                 .thenReturn(List.of(patientOne, patientTwo));
-        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
+        when(mediaGrpcClientAdapter.getPresignedReadUrls(anyList())).thenReturn(
+                java.util.Map.of(
+                        "patient-one@example.com/avatar.webp", "https://cdn.example.com/patient-one/avatar.webp",
+                        "patient-two@example.com/avatar.webp", "https://cdn.example.com/patient-two/avatar.webp"
+                )
+        );
 
         mockMvc.perform(get("/api/v1/clinical/nutritionist/patients"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].fullName").value("Carlos Gomez"))
-                .andExpect(jsonPath("$[1].fullName").value("Maria Lopez"));
+                .andExpect(jsonPath("$[0].profilePhotoUrl").value("https://cdn.example.com/patient-one/avatar.webp"))
+                .andExpect(jsonPath("$[1].fullName").value("Maria Lopez"))
+                .andExpect(jsonPath("$[1].profilePhotoUrl").value("https://cdn.example.com/patient-two/avatar.webp"));
     }
 
     @Test

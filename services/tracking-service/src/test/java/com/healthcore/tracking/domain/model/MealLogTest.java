@@ -64,8 +64,8 @@ class MealLogTest {
         FoodNutrients nutrients2 = createDummyNutrients(50.0, 5.0, 10.0, 2.0, 50.0);
         MealItem item2 = MealItem.create(nutrients2, 100.0); // Will contribute 50 cals, 5 proteins
 
-        // Act
-        MealLog log = MealLog.create("user-1", MealType.LUNCH, LocalDateTime.now(), "photo.jpg", List.of(item1, item2));
+        // Act - Inyectando mealName válido
+        MealLog log = MealLog.create("user-1", "Comida de prueba", MealType.LUNCH, LocalDateTime.now(), "photo.jpg", List.of(item1, item2));
 
         // Assert - The aggregate root should sum up all children
         assertEquals(250.0, log.getTotalCalories(), 0.01);
@@ -73,6 +73,7 @@ class MealLogTest {
         assertEquals(50.0, log.getTotalCarbs(), 0.01);
         assertEquals(12.0, log.getTotalFats(), 0.01);
         assertEquals(2, log.getItems().size());
+        assertEquals("Comida de prueba", log.getMealName());
     }
 
     @Test
@@ -80,6 +81,7 @@ class MealLogTest {
     void domain_shouldThrowExceptionForInvalidStates() {
         // Arrange
         FoodNutrients nutrients = createDummyNutrients(100, 10, 10, 10, 10);
+        MealItem validItem = MealItem.create(nutrients, 100.0);
 
         // Act & Assert 1: MealItem with zero or negative grams
         InvalidDomainDataException itemException = assertThrows(
@@ -90,16 +92,33 @@ class MealLogTest {
 
         assertThrows(InvalidDomainDataException.class, () -> MealItem.create(nutrients, -50.0));
 
-        // Act & Assert 2: MealLog with empty or null items
+        // Act & Assert 2: MealLog with empty or null items (Inyectando mealName válido)
         InvalidDomainDataException logException1 = assertThrows(
                 InvalidDomainDataException.class,
-                () -> MealLog.create("user-1", MealType.SNACK, LocalDateTime.now(), null, Collections.emptyList())
+                () -> MealLog.create("user-1", "Snack de prueba", MealType.SNACK, LocalDateTime.now(), null, Collections.emptyList())
         );
         assertTrue(logException1.getMessage().contains("at least one food item"));
 
         assertThrows(
                 InvalidDomainDataException.class,
-                () -> MealLog.create("user-1", MealType.SNACK, LocalDateTime.now(), null, null)
+                () -> MealLog.create("user-1", "Snack de prueba", MealType.SNACK, LocalDateTime.now(), null, null)
+        );
+
+        // Act & Assert 3: MealLog with invalid mealName (NUEVAS PRUEBAS)
+        assertThrows(
+                InvalidDomainDataException.class,
+                () -> MealLog.create("user-1", "", MealType.SNACK, LocalDateTime.now(), null, List.of(validItem))
+        );
+
+        assertThrows(
+                InvalidDomainDataException.class,
+                () -> MealLog.create("user-1", null, MealType.SNACK, LocalDateTime.now(), null, List.of(validItem))
+        );
+
+        String tooLongName = "A".repeat(61);
+        assertThrows(
+                InvalidDomainDataException.class,
+                () -> MealLog.create("user-1", tooLongName, MealType.SNACK, LocalDateTime.now(), null, List.of(validItem))
         );
     }
 }

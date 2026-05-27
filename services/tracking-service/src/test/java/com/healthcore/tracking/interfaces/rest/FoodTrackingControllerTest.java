@@ -111,7 +111,10 @@ class FoodTrackingControllerTest {
     void logMealConsumption_Created() throws Exception {
         // Arrange
         MealLogRequest.FoodItemRequest foodItemRequest = new MealLogRequest.FoodItemRequest("75017618", 150.0);
+
+        // CORRECCIÓN: Inyectando el parámetro mealName ("Desayuno de Avena") en el record
         MealLogRequest requestBody = new MealLogRequest(
+                "Desayuno de Avena",
                 MealType.BREAKFAST,
                 LocalDateTime.now(),
                 "avena-photo.jpg",
@@ -125,8 +128,10 @@ class FoodTrackingControllerTest {
                 .calories(583.5)
                 .build();
 
+        // CORRECCIÓN: Asegurándonos de que el mock también devuelva el mealName
         MealLog mockSavedLog = MealLog.builder()
                 .userId("user-123")
+                .mealName("Desayuno de Avena")
                 .mealType(MealType.BREAKFAST)
                 .photoKey("avena-photo.jpg")
                 .consumedAt(requestBody.consumedAt())
@@ -134,7 +139,8 @@ class FoodTrackingControllerTest {
                 .items(List.of(mockItem))
                 .build();
 
-        when(trackingUseCase.logMealConsumption(any(), eq(MealType.BREAKFAST), any(), any(), any()))
+        // CORRECCIÓN: Se actualizó el 'any()' que fallaba a 'anyString()' en la segunda posición (mealName)
+        when(trackingUseCase.logMealConsumption(any(), anyString(), eq(MealType.BREAKFAST), any(), any(), any()))
                 .thenReturn(mockSavedLog);
 
         // Act & Assert
@@ -142,6 +148,7 @@ class FoodTrackingControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestBody)))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.mealName").value("Desayuno de Avena")) // NUEVA ASERCIÓN
                 .andExpect(jsonPath("$.mealType").value("BREAKFAST"))
                 .andExpect(jsonPath("$.totalCalories").value(583.5))
                 .andExpect(jsonPath("$.items[0].foodName").value("Avena Integral")); // Asserting nested data
@@ -152,10 +159,10 @@ class FoodTrackingControllerTest {
     void getTodayLogs_Success() throws Exception {
         // Arrange
         MealItem item1 = MealItem.builder().foodName("Manzana").build();
-        MealLog log1 = MealLog.builder().mealType(MealType.SNACK).items(List.of(item1)).build();
+        MealLog log1 = MealLog.builder().mealName("Snack ligero").mealType(MealType.SNACK).items(List.of(item1)).build();
 
         MealItem item2 = MealItem.builder().foodName("Pera").build();
-        MealLog log2 = MealLog.builder().mealType(MealType.LUNCH).items(List.of(item2)).build();
+        MealLog log2 = MealLog.builder().mealName("Comida fuerte").mealType(MealType.LUNCH).items(List.of(item2)).build();
 
         when(trackingUseCase.getTodayLogs(any())).thenReturn(List.of(log1, log2));
 
@@ -164,7 +171,9 @@ class FoodTrackingControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].mealName").value("Snack ligero"))
                 .andExpect(jsonPath("$[0].items[0].foodName").value("Manzana"))
+                .andExpect(jsonPath("$[1].mealName").value("Comida fuerte"))
                 .andExpect(jsonPath("$[1].items[0].foodName").value("Pera"));
     }
 }

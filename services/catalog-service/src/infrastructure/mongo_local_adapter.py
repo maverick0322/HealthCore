@@ -41,8 +41,14 @@ class MongoLocalCatalogAdapter(LocalCatalogPort):
     def search_products_by_name(self, query: str) -> List[FoodItem]:
         logger.debug(f"Executing text search in local MongoDB for: '{query}'")
         try:
+            flexible_query = {
+                "$or": [
+                    {"name": {"$regex": query, "$options": "i"}},
+                    {"brand": {"$regex": query, "$options": "i"}}
+                ]
+            }
             # Requires a text index on the MongoDB collection: db.food_items.createIndex({"name": "text"})
-            cursor = self._collection.find({"$text": {"$search": query}}).limit(10)
+            cursor = self._collection.find(flexible_query).limit(10)
             
             results = []
             for doc in cursor:

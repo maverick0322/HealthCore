@@ -13,6 +13,7 @@ export interface LogFoodItemCommand {
 }
 
 export interface LogFoodRequest {
+  mealName: string;
   mealType: string;
   consumedAt: string; // ISO-8601 format strictly required (e.g., 2026-05-05T08:30:00Z)
   photoKey?: string;  // Cloudflare R2 secure storage key
@@ -34,8 +35,8 @@ export interface LogFoodResponse<T = unknown> {
 
 export interface MealLogItemDTO {
   barcode: string;
-  foodName: string;      // <-- Coincide con el JSON
-  consumedGrams: number; // <-- Coincide con el JSON
+  foodName: string;    
+  consumedGrams: number; 
   calories: number;
   proteins: number;
   carbohydrates: number;
@@ -49,10 +50,11 @@ export interface MealLogItemDTO {
 export interface MealLogDTO {
   id: string;
   userId: string;
+  mealName: string;
   mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK';
   consumedAt: string;
   photoKey: string | null;
-  items: MealLogItemDTO[]; // <-- Coincide con el JSON
+  items: MealLogItemDTO[];
   totalCalories: number;
   totalProteins: number;
   totalCarbs: number;

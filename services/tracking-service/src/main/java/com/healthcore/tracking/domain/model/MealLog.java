@@ -19,6 +19,7 @@ public class MealLog {
 
     private final String id;
     private final String userId;
+    private final String mealName;
     private final MealType mealType;
     private final LocalDateTime consumedAt;
     private final String photoKey; // Cloudflare R2 reference, decoupled from actual media storage
@@ -34,7 +35,10 @@ public class MealLog {
      * Factory method ensuring a MealLog cannot be created without items,
      * and calculating global meal totals cleanly using Stream API.
      */
-    public static MealLog create(String userId, MealType mealType, LocalDateTime consumedAt, String photoKey, List<MealItem> items) {
+    public static MealLog create(String userId, String mealName, MealType mealType, LocalDateTime consumedAt, String photoKey, List<MealItem> items) {
+        if (mealName == null || mealName.isBlank() || mealName.length() > 60) {
+            throw new InvalidDomainDataException("Meal name is invalid or exceeds 60 characters.");
+        }
         if (items == null || items.isEmpty()) {
             throw new InvalidDomainDataException("A meal log must contain at least one food item.");
         }
@@ -47,6 +51,7 @@ public class MealLog {
         return MealLog.builder()
                 .id(UUID.randomUUID().toString()) // Generated at the domain level
                 .userId(userId)
+                .mealName(mealName)
                 .mealType(mealType)
                 .consumedAt(consumedAt != null ? consumedAt : LocalDateTime.now(ZoneId.of("America/Mexico_City")))
                 .photoKey(photoKey)

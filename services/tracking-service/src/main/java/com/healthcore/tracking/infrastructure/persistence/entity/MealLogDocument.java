@@ -16,6 +16,7 @@ public class MealLogDocument {
     @Id
     private String id;
     private String userId;
+    private String mealName;
     private MealType mealType;
     private LocalDateTime consumedAt;
     private String photoKey;

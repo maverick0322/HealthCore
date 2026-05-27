@@ -23,6 +23,7 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
   const { t } = useTranslation('tracking');
   const { logFood, isLoading, error, isSuccess } = useLogFood();
   
+  const [mealName, setMealName] = useState<string>(''); // <-- Nuevo campo de nombre
   const [mealType, setMealType] = useState<MealType>('BREAKFAST');
   const [uploadedPhotoKey, setUploadedPhotoKey] = useState<string | undefined>(undefined);
   
@@ -48,6 +49,7 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
     // The component simply aggregates its local state and the props, 
     // delegating the actual network request entirely to the hook.
     await logFood({
+      mealName: mealName.trim() || t(`meals.${mealType.toLowerCase()}`),
       mealType,
       consumedAt: currentIsoDate,
       photoKey: uploadedPhotoKey,
@@ -84,6 +86,25 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
       <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700"></div>
       
       <h2 className="mb-6 text-xl font-bold text-slate-900 dark:text-white">Resumen de Comida</h2>
+
+      {/* NUEVO: Nombre del Platillo */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <label htmlFor="mealNameInput" className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+            ¿Qué comiste? <span className="text-red-500">*</span>
+          </label>
+          <span className="text-xs text-slate-400 font-medium">{mealName.length}/60</span>
+        </div>
+        <input 
+          id="mealNameInput"
+          type="text"
+          maxLength={60}
+          value={mealName}
+          onChange={(e) => setMealName(e.target.value)}
+          placeholder="Ej. Avena Integralcon frutos rojos"
+          className="w-full rounded-xl bg-slate-50 dark:bg-slate-800/50 p-3.5 text-sm font-medium text-slate-900 dark:text-white ring-1 ring-slate-200 dark:ring-slate-700 focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder:text-slate-400"
+        />
+      </div>
 
       {/* Tipo de Comida */}
       <div className="mb-6">
@@ -178,7 +199,7 @@ export const FoodLogForm: React.FC<FoodLogFormProps> = ({ selectedFoods, onFoods
       {/* Botón de Registro */}
       <button 
         onClick={handleRegister}
-        disabled={isLoading || selectedFoods.length === 0}
+        disabled={isLoading || selectedFoods.length === 0 || mealName.trim().length === 0}
         className="w-full rounded-xl bg-primary py-4 text-center text-lg font-bold text-white shadow-lg shadow-primary/30 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center"
       >
         {isLoading ? t('saving', 'Guardando...') : t('registerFood', 'Registrar Alimento')}

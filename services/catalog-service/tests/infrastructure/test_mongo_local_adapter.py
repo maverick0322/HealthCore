@@ -114,7 +114,12 @@ def test_search_products_with_results_returns_mapped_list(mongo_adapter, mock_co
     # Assert
     assert len(results) == 2
     assert isinstance(results[0], FoodItem)
-    mock_collection.find.assert_called_once_with({"$text": {"$search": query}})
+    mock_collection.find.assert_called_once_with({
+        "$or": [
+            {"name": {"$regex": query, "$options": "i"}},
+            {"brand": {"$regex": query, "$options": "i"}}
+        ]
+    })
     mock_find_result.limit.assert_called_once_with(10)
 
 def test_search_products_on_operation_failure_returns_empty_list(mongo_adapter, mock_collection):

@@ -116,6 +116,15 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
     }
 
     @Override
+    public PatientProfile updateProfilePhoto(String userId, String profilePhotoKey) {
+        PatientProfile profile = patientRepositoryPort.findByUserId(userId)
+                .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
+
+        profile.updateProfilePhoto(profilePhotoKey);
+        return patientRepositoryPort.save(profile);
+    }
+
+    @Override
     public NutritionistWeightProgressReport getNutritionistWeightProgressReport(
             String nutritionistId,
             LocalDate from,
@@ -215,6 +224,15 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
 
         validateClinicAddress(existingProfile.getClinicAddress());
         return nutritionistRepositoryPort.save(existingProfile);
+    }
+
+    @Override
+    public NutritionistProfile updateNutritionistProfilePhoto(String userId, String profilePhotoKey) {
+        NutritionistProfile profile = nutritionistRepositoryPort.findByUserId(userId)
+                .orElseThrow(() -> new ProfileNotFoundException("Nutritionist profile not found for user: " + userId));
+
+        profile.updateProfilePhoto(profilePhotoKey);
+        return nutritionistRepositoryPort.save(profile);
     }
 
     @Override

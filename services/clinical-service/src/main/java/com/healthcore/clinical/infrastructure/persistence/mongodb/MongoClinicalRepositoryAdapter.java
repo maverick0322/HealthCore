@@ -36,6 +36,7 @@ public class MongoClinicalRepositoryAdapter implements ClinicalRepositoryPort {
         document.setExcludedFoods(profile.getExcludedFoods());
         document.setWeightHistory(profile.getWeightHistory());
         document.setNutritionistId(profile.getNutritionistId());
+        document.setProfilePhotoKey(profile.getProfilePhotoKey());
 
         patientRepository.save(document);
         return profile;
@@ -70,7 +71,8 @@ public class MongoClinicalRepositoryAdapter implements ClinicalRepositoryPort {
                 doc.getAllergies(),
                 doc.getExcludedFoods(),
                 doc.getWeightHistory(),
-                doc.getNutritionistId()
+                doc.getNutritionistId(),
+                doc.getProfilePhotoKey()
         );
     }
 }

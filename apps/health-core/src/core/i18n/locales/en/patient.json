@@ -1,4 +1,4 @@
-{
+﻿{
   "profile": {
     "title": "My Profile",
     "subtitle": "Manage your personal information and health data",
@@ -75,6 +75,15 @@
     "goToOnboarding": "Complete setup",
     "changePassword": "Change password",
     "changePasswordDesc": "Update your password to keep your account secure",
+    "changePhoto": "Change profile photo",
+    "photoHint": "JPG, PNG, or WEBP. Up to 5 MB. Recommended: square image at 512x512 or larger.",
+    "photoInvalidType": "Choose a JPG, PNG, or WEBP image.",
+    "photoInvalidSize": "The image exceeds the 5 MB limit.",
+    "photoPersistError": "We could not save the profile photo.",
+    "photoUploadValidationError": "We could not process the selected image.",
+    "photoUploadRateLimitError": "You have tried too many times. Please wait a moment and try again.",
+    "photoUploadNetworkError": "We could not upload the image right now. Please try again later.",
+    "photoUploadGenericError": "An error occurred while uploading the image. Please try again later.",
     "notifications": "Notifications",
     "notificationsDesc": "Manage your alert and reminder preferences",
     "disableNotifications": "Disable notifications",
@@ -83,6 +92,7 @@
     "actionsSection": "Account actions"
   },
   "dashboard": {
+    "defaultName": "Patient",
     "greeting": "Hello, {{name}}!",
     "greetingSubtitle": "Here's your nutritional summary for today.",
     "caloriesCard": "Today's Calories",

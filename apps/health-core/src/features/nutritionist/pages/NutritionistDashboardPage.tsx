@@ -47,7 +47,7 @@ export const NutritionistDashboardPage = () => {
   const { t } = useTranslation(["nutritionist", "onboarding"]);
   const navigate = useNavigate();
 
-  const [displayName, setDisplayName] = useState("Profesional");
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [patients, setPatients] = useState<NutritionistPatientProfileResponse[]>([]);
   const [patientsLoading, setPatientsLoading] = useState(true);
   const [patientsError, setPatientsError] = useState<string | null>(null);
@@ -66,11 +66,11 @@ export const NutritionistDashboardPage = () => {
       try {
         const profile = await clinicalApi.getMyNutritionistProfile();
         if (!ignore) {
-          setDisplayName(getFirstName(profile.fullName) ?? "Profesional");
+          setDisplayName(getFirstName(profile.fullName) ?? t("dashboard.defaultName"));
         }
       } catch {
         if (!ignore) {
-          setDisplayName("Profesional");
+          setDisplayName(t("dashboard.defaultName"));
         }
       }
     };
@@ -153,7 +153,7 @@ export const NutritionistDashboardPage = () => {
       <div className="border-b border-border bg-primary/10 md:pl-56">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            {t("dashboard.greeting", { name: displayName })}
+            {t("dashboard.greeting", { name: displayName ?? t("dashboard.defaultName") })}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {t("dashboard.greetingSubtitle")}

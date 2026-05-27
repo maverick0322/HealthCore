@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ComponentType, type InputHTMLAttributes, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Phone, ShieldCheck, User } from 'lucide-react';
+import { ArrowLeft, FileText, Phone, ShieldCheck, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TFunction } from 'i18next';
 
@@ -246,7 +246,24 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
   };
 
   return (
-    <OnboardingLayout currentStep={step} totalSteps={5}>
+    <OnboardingLayout
+      currentStep={step}
+      totalSteps={5}
+      headerAction={
+        mode === 'edit' && step === 1 ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => navigate('/profile/nutritionist')}
+          >
+            <ArrowLeft size={16} />
+            {t('common.backToProfile')}
+          </Button>
+        ) : undefined
+      }
+    >
       {step === 1 ? (
         <StepFrame
           title={t('nutritionist.identity.title')}

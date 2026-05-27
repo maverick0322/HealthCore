@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type { CreateProfilePayload } from '@/features/clinical/types/clinical.types';
@@ -12,6 +13,7 @@ import { Step5Summary } from '@/features/onboarding/components/Step5Summary';
 import { OnboardingLayout } from '@/features/onboarding/layouts/OnboardingLayout';
 import { usePatientOnboardingStore } from '@/features/onboarding/store/usePatientOnboardingStore';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { Button } from '@/shared/ui/button';
 
 interface PatientOnboardingPageProps {
   mode?: 'create' | 'edit';
@@ -117,7 +119,24 @@ export const PatientOnboardingPage = ({
   }
 
   return (
-    <OnboardingLayout currentStep={step} totalSteps={5}>
+    <OnboardingLayout
+      currentStep={step}
+      totalSteps={5}
+      headerAction={
+        mode === 'edit' && step === 1 ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => navigate('/profile')}
+          >
+            <ArrowLeft size={16} />
+            {t('common.backToProfile')}
+          </Button>
+        ) : undefined
+      }
+    >
       {step === 1 ? <Step1Identity onNext={nextStep} /> : null}
       {step === 2 ? <Step2PhysicalData onNext={nextStep} onBack={prevStep} /> : null}
       {step === 3 ? <Step3Goals onNext={nextStep} onBack={prevStep} /> : null}

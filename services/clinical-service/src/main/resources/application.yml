@@ -19,6 +19,8 @@ grpc:
     port: ${GRPC_CLINICAL_PORT:50051}
   catalog:
     target: ${GRPC_CATALOG_TARGET:catalog-service:50051}
+  media:
+    target: ${GRPC_MEDIA_TARGET:media-service:9091}
   client:
     identity-service:
       address: ${GRPC_CLIENT_IDENTITY_ADDRESS:static://localhost:50051}

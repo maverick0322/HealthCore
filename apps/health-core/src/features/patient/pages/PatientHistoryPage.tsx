@@ -80,6 +80,12 @@ export const PatientHistoryPage = () => {
           mealTimeline: t("history.todayLogsEmpty"),
           noFoods: t("history.pdf.noFoods"),
         },
+        mealTypeLabels: {
+          BREAKFAST: t("nutritionPlan.mealSlots.BREAKFAST"),
+          LUNCH: t("nutritionPlan.mealSlots.LUNCH"),
+          DINNER: t("nutritionPlan.mealSlots.DINNER"),
+          SNACK: t("nutritionPlan.mealSlots.SNACK"),
+        },
         selectedDateLabel: selectedDate === todayStr ? t("history.today") : selectedDate,
         weightHistory,
         caloriesHistory,

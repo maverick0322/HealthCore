@@ -1,5 +1,6 @@
 {
   "common": {
+    "backToProfile": "Back to profile",
     "back": "Back",
     "continue": "Continue",
     "saveChanges": "Save changes",
@@ -157,7 +158,7 @@
     },
     "contact": {
       "title": "Contact and clinic",
-      "subtitle": "This information is optional, but it leaves your profile ready for future integrations.",
+      "subtitle": "These details are optional. If you enter any clinic address information, you must complete every required field for that address.",
       "fields": {
         "phoneOptional": "Mobile phone (optional)",
         "postalCode": "Postal code",

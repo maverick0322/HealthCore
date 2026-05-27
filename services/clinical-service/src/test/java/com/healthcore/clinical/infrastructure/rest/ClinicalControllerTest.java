@@ -10,8 +10,10 @@ import com.healthcore.clinical.domain.model.NutritionistProfile;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
+import com.healthcore.clinical.infrastructure.grpc.MediaGrpcClientAdapter;
 import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
+import com.healthcore.clinical.infrastructure.rest.dto.UpdateProfilePhotoRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdatePatientMetricsRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
@@ -59,6 +61,9 @@ class ClinicalControllerTest {
     @MockitoBean
     private ManageProfileUseCase manageProfileUseCase;
 
+    @MockitoBean
+    private MediaGrpcClientAdapter mediaGrpcClientAdapter;
+
     private void setSecurityContext(String userId, String... roles) {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
@@ -96,6 +101,7 @@ class ClinicalControllerTest {
         PatientProfile profile = createPatientProfile("user-123");
 
         when(manageProfileUseCase.updateProfile(eq("user-123"), any(PatientProfile.class))).thenReturn(profile);
+        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
 
         mockMvc.perform(put("/api/v1/clinical/profile/me")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -104,6 +110,23 @@ class ClinicalControllerTest {
                 .andExpect(jsonPath("$.firstName").value("Carlos"))
                 .andExpect(jsonPath("$.goal").value("weight-loss"))
                 .andExpect(jsonPath("$.profileCompleted").value(true));
+    }
+
+    @Test
+    void shouldUpdatePatientProfilePhotoAndReturnResolvedUrl() throws Exception {
+        setSecurityContext("user-123", "PATIENT");
+        PatientProfile profile = createPatientProfile("user-123");
+        profile.updateProfilePhoto("user-123/avatar.webp");
+
+        when(manageProfileUseCase.updateProfilePhoto("user-123", "user-123/avatar.webp")).thenReturn(profile);
+        when(mediaGrpcClientAdapter.getPresignedReadUrl("user-123/avatar.webp"))
+                .thenReturn("https://cdn.example.com/user-123/avatar.webp");
+
+        mockMvc.perform(put("/api/v1/clinical/profile/me/photo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateProfilePhotoRequest("user-123/avatar.webp"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profilePhotoUrl").value("https://cdn.example.com/user-123/avatar.webp"));
     }
 
     @Test
@@ -245,6 +268,7 @@ class ClinicalControllerTest {
         mockProfile.assignNutritionist("nutri-999");
 
         when(manageProfileUseCase.getProfileByUserId(patientId)).thenReturn(Optional.of(mockProfile));
+        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
 
         mockMvc.perform(get("/api/v1/clinical/profile/me"))
                 .andExpect(status().isOk())
@@ -271,6 +295,7 @@ class ClinicalControllerTest {
         setSecurityContext("nutri-123", "NUTRITIONIST");
         when(manageProfileUseCase.getNutritionistProfileByUserId("nutri-123"))
                 .thenReturn(Optional.of(createNutritionistProfile("nutri-123")));
+        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
 
         mockMvc.perform(get("/api/v1/clinical/nutritionist/profile/me"))
                 .andExpect(status().isOk())
@@ -284,12 +309,31 @@ class ClinicalControllerTest {
         setSecurityContext("nutri-123", "NUTRITIONIST");
         when(manageProfileUseCase.updateNutritionistProfile(eq("nutri-123"), any(NutritionistProfile.class)))
                 .thenReturn(createNutritionistProfile("nutri-123"));
+        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
 
         mockMvc.perform(put("/api/v1/clinical/nutritionist/profile/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createNutritionistRequest())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.professionalLicense").value("12345678"));
+    }
+
+    @Test
+    void shouldUpdateNutritionistProfilePhotoAndReturnResolvedUrl() throws Exception {
+        setSecurityContext("nutri-123", "NUTRITIONIST");
+        NutritionistProfile profile = createNutritionistProfile("nutri-123");
+        profile.updateProfilePhoto("nutri-123/avatar.webp");
+
+        when(manageProfileUseCase.updateNutritionistProfilePhoto("nutri-123", "nutri-123/avatar.webp"))
+                .thenReturn(profile);
+        when(mediaGrpcClientAdapter.getPresignedReadUrl("nutri-123/avatar.webp"))
+                .thenReturn("https://cdn.example.com/nutri-123/avatar.webp");
+
+        mockMvc.perform(put("/api/v1/clinical/nutritionist/profile/me/photo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new UpdateProfilePhotoRequest("nutri-123/avatar.webp"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.profilePhotoUrl").value("https://cdn.example.com/nutri-123/avatar.webp"));
     }
 
     @Test
@@ -318,6 +362,7 @@ class ClinicalControllerTest {
 
         when(manageProfileUseCase.getProfilesByNutritionistId(nutritionistId))
                 .thenReturn(List.of(patientOne, patientTwo));
+        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
 
         mockMvc.perform(get("/api/v1/clinical/nutritionist/patients"))
                 .andExpect(status().isOk())
@@ -336,6 +381,7 @@ class ClinicalControllerTest {
         patient.assignNutritionist(nutritionistId);
 
         when(manageProfileUseCase.getProfileForNutritionist(nutritionistId, patientId)).thenReturn(patient);
+        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
 
         mockMvc.perform(get("/api/v1/clinical/nutritionist/patients/{patientId}", patientId))
                 .andExpect(status().isOk())
@@ -356,6 +402,7 @@ class ClinicalControllerTest {
 
         when(manageProfileUseCase.updatePatientMetricsForNutritionist(nutritionistId, patientId, 74.5, 180.0))
                 .thenReturn(patient);
+        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
 
         mockMvc.perform(put("/api/v1/clinical/nutritionist/patients/{patientId}/metrics", patientId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -492,7 +539,8 @@ class ClinicalControllerTest {
                         "123",
                         null
                 ),
-                "Especialista en nutricion clinica."
+                "Especialista en nutricion clinica.",
+                null
         );
     }
 }

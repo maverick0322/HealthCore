@@ -26,6 +26,7 @@ import { NutritionistNav } from "@/features/nutritionist/components/Nutritionist
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
+import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import {
   Dialog,
   DialogContent,
@@ -1022,9 +1023,12 @@ export const NutritionistPatientFilePage = () => {
           </Button>
 
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-lg border-4 border-background">
-              {patientIdentity ? patientIdentity.charAt(0).toUpperCase() : "P"}
-            </div>
+            <ProfileAvatar
+              name={patientIdentity || "Paciente"}
+              photoUrl={patient?.profilePhotoUrl}
+              size="lg"
+              className="shrink-0"
+            />
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
                 {patientIdentity || t("patients.file.loading")}

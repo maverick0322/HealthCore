@@ -62,7 +62,8 @@ class MongoClinicalRepositoryAdapterTest {
                 List.of(),
                 List.of(),
                 List.of(new com.healthcore.clinical.domain.model.WeightRecord(75.0, ClinicalTime.today().minusDays(7))),
-                null
+                null,
+                "user-integration-1/avatar.webp"
         );
         
         newProfile.registerWeight(73.5, ClinicalTime.today());
@@ -80,5 +81,6 @@ class MongoClinicalRepositoryAdapterTest {
         assertEquals(2, retrievedProfile.getWeightHistory().size(), "Weight history should have 2 records in MongoDB");
         assertEquals(75.0, retrievedProfile.getWeightHistory().get(0).weightKg());
         assertEquals(73.5, retrievedProfile.getWeightHistory().get(1).weightKg());
+        assertEquals("user-integration-1/avatar.webp", retrievedProfile.getProfilePhotoKey());
     }
 }

@@ -10,7 +10,6 @@ import { HealthGoalsCard } from "@/features/patient/components/HealthGoalsCard";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { SettingsBar } from "@/shared/components/SettingsBar";
-import { useAuthStore } from "@/features/auth/store/useAuthStore";
 import { clinicalApi } from "@/features/clinical/services/clinicalService";
 import type {
   NutritionistProfileResponse,
@@ -50,7 +49,6 @@ const getNutritionistSpecialtyChips = (
 export const PatientDashboardPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("patient");
-  const user = useAuthStore((state) => state.user);
 
   const { summary, addWater } = useTodaySummary();
   const { meals, isLoading: isMealsLoading } = useTodayMeals();
@@ -138,10 +136,11 @@ export const PatientDashboardPage = () => {
   }, [appointments]);
 
   const displayName =
-    profile?.firstName?.trim() ||
-    getFirstName(profile?.fullName) ||
-    user?.email?.split("@")[0] ||
-    "Usuario";
+    profileLoading
+      ? t("dashboard.defaultName")
+      : profile?.firstName?.trim() ||
+        getFirstName(profile?.fullName) ||
+        t("dashboard.defaultName");
 
   const nutritionistName =
     nutritionistProfile?.fullName?.trim() || t("dashboard.assignedNutritionist");

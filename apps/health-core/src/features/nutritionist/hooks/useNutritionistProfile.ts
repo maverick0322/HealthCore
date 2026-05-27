@@ -63,6 +63,7 @@ export const useNutritionistProfile = () => {
 
   return {
     profile,
+    setProfile,
     isLoadingProfile,
     user,
     navigate,

@@ -42,6 +42,12 @@ export const SettingsBar = ({ className }: { className?: string }) => {
     location.pathname === "/reset-password";
 
   const showAccountMenu = Boolean(user) && !isAuthRoute;
+  const profilePath =
+    user?.role === "NUTRITIONIST"
+      ? "/profile/nutritionist"
+      : user?.role === "PATIENT"
+        ? "/profile"
+        : "/profile";
 
   return (
     <div className={containerClass}>
@@ -96,7 +102,7 @@ export const SettingsBar = ({ className }: { className?: string }) => {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 border-border bg-card shadow-lg">
             {user?.role !== "ADMIN" && (
-              <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => navigate(profilePath)} className="cursor-pointer">
                 <User className="mr-2 w-4 h-4" />
                 <span>{t("profile")}</span>
               </DropdownMenuItem>

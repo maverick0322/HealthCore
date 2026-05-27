@@ -7,6 +7,7 @@
     "profile": "Profile"
   },
   "dashboard": {
+    "defaultName": "Professional",
     "greeting": "Hello, Lic. {{name}}",
     "greetingSubtitle": "Here is a summary of your activity today.",
     "activePatients": "Active patients",
@@ -440,6 +441,15 @@
     "noAddress": "No address registered",
     "noConsultationTypes": "No consultation types registered",
     "completeBioPrompt": "Add your professional bio to complete your profile.",
+    "changePhoto": "Change profile photo",
+    "photoHint": "JPG, PNG, or WEBP. Up to 5 MB. Recommended: square image at 512x512 or larger.",
+    "photoInvalidType": "Choose a JPG, PNG, or WEBP image.",
+    "photoInvalidSize": "The image exceeds the 5 MB limit.",
+    "photoPersistError": "We could not save the profile photo.",
+    "photoUploadValidationError": "We could not process the selected image.",
+    "photoUploadRateLimitError": "You have tried too many times. Please wait a moment and try again.",
+    "photoUploadNetworkError": "We could not upload the image right now. Please try again later.",
+    "photoUploadGenericError": "An error occurred while uploading the image. Please try again later.",
     "logout": "Log out"
   },
   "common": {

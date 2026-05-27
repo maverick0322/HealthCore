@@ -537,6 +537,10 @@
     "alreadyLinkedDesc": "Para vincularte a otro nutriólogo, primero debes desvincularte del actual.",
     "unlinkFirst": "Debes desvincularte del nutriólogo anterior primero."
   },
+  "errors": {
+    "loadFailed": "No pudimos cargar tus registros.",
+    "tryAgainLater": "El servicio podría estar inactivo, por favor intenta más tarde."
+  },
   "common": {
     "back": "Regresar",
     "or": "O",

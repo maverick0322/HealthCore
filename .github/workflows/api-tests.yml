@@ -42,8 +42,11 @@ jobs:
         run: |
           wait_for_logic_response () {
             local name="$1"
-            local url="$2"
-            local expected="$3"
+            local service="$2"
+            local url="$3"
+            local expected="$4"
+            local max_attempts="${5:-18}"
+            local attempt=1
 
             echo "Waiting for ${name} at ${url}..."
             while true; do
@@ -58,14 +61,24 @@ jobs:
                 break
               fi
 
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                echo "${name} did not become ready in time. Last status: $STATUS"
+                echo "--- docker compose ps ${service} ---"
+                docker compose ps "${service}" || true
+                echo "--- docker compose logs --tail=150 ${service} ---"
+                docker compose logs --tail=150 "${service}" || true
+                exit 1
+              fi
+
               echo "${name} is not ready yet. Current status: $STATUS. Retrying in 10 seconds..."
+              attempt=$((attempt + 1))
               sleep 10
             done
           }
 
-          wait_for_logic_response "Identity Service" "http://localhost:80/api/v1/auth/register" "405"
-          wait_for_logic_response "Clinical Service" "http://localhost:80/api/v1/clinical/profile/me" "401"
-          wait_for_logic_response "Agenda Service" "http://localhost:80/api/v1/agenda/appointments/me" "401"
+          wait_for_logic_response "Identity Service" "identity-service" "http://localhost:80/api/v1/auth/register" "405" 18
+          wait_for_logic_response "Clinical Service" "clinical-service" "http://localhost:80/api/v1/clinical/profile/me" "401" 18
+          wait_for_logic_response "Agenda Service" "agenda-service" "http://localhost:80/api/v1/agenda/appointments/me" "401" 18
 
       - name: Run Newman Tests
         working-directory: ./postman

@@ -536,6 +536,10 @@
     "alreadyLinkedDesc": "To link with another nutritionist, you must first unlink from the current one.",
     "unlinkFirst": "You must unlink from your previous nutritionist first."
   },
+  "errors": {
+    "loadFailed": "We couldn't load your records.",
+    "tryAgainLater": "The service might be down, please try again later."
+  },
   "common": {
     "back": "Back",
     "or": "OR",

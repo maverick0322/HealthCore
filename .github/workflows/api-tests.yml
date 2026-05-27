@@ -44,7 +44,7 @@ jobs:
             local name="$1"
             local service="$2"
             local url="$3"
-            local expected="$4"
+            local accepted_statuses="$4"
             local max_attempts="${5:-18}"
             local attempt=1
 
@@ -56,7 +56,7 @@ jobs:
 
               STATUS=${STATUS:-000}
 
-              if [ "$STATUS" = "$expected" ]; then
+              if [[ " ${accepted_statuses} " == *" ${STATUS} "* ]]; then
                 echo "${name} is ready with response code: $STATUS"
                 break
               fi
@@ -77,8 +77,8 @@ jobs:
           }
 
           wait_for_logic_response "Identity Service" "identity-service" "http://localhost:80/api/v1/auth/register" "405" 18
-          wait_for_logic_response "Clinical Service" "clinical-service" "http://localhost:80/api/v1/clinical/profile/me" "401" 18
-          wait_for_logic_response "Agenda Service" "agenda-service" "http://localhost:80/api/v1/agenda/appointments/me" "401" 18
+          wait_for_logic_response "Clinical Service" "clinical-service" "http://localhost:80/api/v1/clinical/profile/me" "401 403" 18
+          wait_for_logic_response "Agenda Service" "agenda-service" "http://localhost:80/api/v1/agenda/appointments/me" "401 403" 18
 
       - name: Run Newman Tests
         working-directory: ./postman

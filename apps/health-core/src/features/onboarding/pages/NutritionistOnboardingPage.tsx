@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ComponentType, type InputHTMLAttributes, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, FileText, Phone, ShieldCheck, User } from 'lucide-react';
+import { FileText, Phone, ShieldCheck, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { TFunction } from 'i18next';
 
@@ -246,24 +246,7 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
   };
 
   return (
-    <OnboardingLayout
-      currentStep={step}
-      totalSteps={5}
-      headerAction={
-        mode === 'edit' && step === 1 ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => navigate('/profile/nutritionist')}
-          >
-            <ArrowLeft size={16} />
-            {t('common.backToProfile')}
-          </Button>
-        ) : undefined
-      }
-    >
+    <OnboardingLayout currentStep={step} totalSteps={5}>
       {step === 1 ? (
         <StepFrame
           title={t('nutritionist.identity.title')}
@@ -271,6 +254,18 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
           onBack={null}
           onNext={handleStepNext}
           nextLabel={t('common.continue')}
+          leadingAction={
+            mode === 'edit' ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full sm:w-auto h-12 text-muted-foreground"
+                onClick={() => navigate('/profile/nutritionist')}
+              >
+                {t('common.backToProfile')}
+              </Button>
+            ) : undefined
+          }
         >
           <CounterField
             id="nutri-first-name"
@@ -633,9 +628,10 @@ interface StepFrameProps {
   onNext: () => void;
   nextLabel: string;
   children: ReactNode;
+  leadingAction?: ReactNode;
 }
 
-const StepFrame = ({ title, subtitle, onBack, onNext, nextLabel, children }: StepFrameProps) => {
+const StepFrame = ({ title, subtitle, onBack, onNext, nextLabel, children, leadingAction }: StepFrameProps) => {
   const { t } = useTranslation('onboarding');
 
   return (
@@ -648,7 +644,9 @@ const StepFrame = ({ title, subtitle, onBack, onNext, nextLabel, children }: Ste
       <div className="flex flex-col gap-5">{children}</div>
 
       <div className="mt-8 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-        {onBack ? (
+        {leadingAction ? (
+          leadingAction
+        ) : onBack ? (
           <Button onClick={onBack} variant="ghost" className="w-full sm:w-auto h-12 text-muted-foreground">
             {t('common.back')}
           </Button>

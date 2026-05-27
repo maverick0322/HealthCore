@@ -8,9 +8,10 @@ import { Input } from '@/shared/ui/input';
 
 interface Step1IdentityProps {
   onNext: () => void;
+  onBackToProfile?: () => void;
 }
 
-export const Step1Identity = ({ onNext }: Step1IdentityProps) => {
+export const Step1Identity = ({ onNext, onBackToProfile }: Step1IdentityProps) => {
   const { t } = useTranslation('onboarding');
   const identity = usePatientOnboardingStore((state) => state.identity);
   const setIdentityData = usePatientOnboardingStore((state) => state.setIdentityData);
@@ -79,12 +80,26 @@ export const Step1Identity = ({ onNext }: Step1IdentityProps) => {
         />
       </div>
 
-      <Button
-        onClick={handleNext}
-        className="w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl text-lg shadow-lg shadow-primary/20 hover:bg-primary/90"
-      >
-        {t('common.continue')}
-      </Button>
+      <div className="mt-2 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+        {onBackToProfile ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full sm:w-auto h-12 text-muted-foreground"
+            onClick={onBackToProfile}
+          >
+            {t('common.backToProfile')}
+          </Button>
+        ) : (
+          <div />
+        )}
+        <Button
+          onClick={handleNext}
+          className="w-full sm:w-72 h-14 bg-primary text-primary-foreground font-bold rounded-xl text-lg shadow-lg shadow-primary/20 hover:bg-primary/90"
+        >
+          {t('common.continue')}
+        </Button>
+      </div>
     </div>
   );
 };

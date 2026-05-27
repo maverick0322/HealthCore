@@ -79,6 +79,7 @@ describe('patientFilePdfService', () => {
         allergies: [],
         excludedFoods: ['cebolla'],
         nutritionistId: 'nutri-1',
+        profilePhotoUrl: null,
         profileCompleted: true,
       },
       nutritionPlan: {

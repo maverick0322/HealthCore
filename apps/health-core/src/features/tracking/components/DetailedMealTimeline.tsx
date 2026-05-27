@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, Apple, Coffee, Loader2, Plus, Utensils, ImageOff } from 'lucide-react';
-import { formatLocalTime } from '@/features/agenda/utils/agendaDateUtils';
 import { Card } from '@/shared/ui/card';
 
 interface DetailedMealTimelineProps {
@@ -18,7 +17,33 @@ export const DetailedMealTimeline = ({
   emptyMessage,
   showAddCard = true,
 }: DetailedMealTimelineProps) => {
-  const { t } = useTranslation('patient');
+  const { t, i18n } = useTranslation('patient');
+
+  const formatSafeLocalTime = (value: string) => {
+    if (!value) {
+      return '--:--';
+    }
+
+    const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`;
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+
+    const locale = i18n.resolvedLanguage?.startsWith('en') ? 'en-US' : 'es-MX';
+    return parsed.toLocaleTimeString(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  };
+
+  const getMealLabel = (mealType: string) =>
+    String(
+      t(`nutritionPlan.mealSlots.${mealType}`, {
+        defaultValue: t(mealType.toLowerCase(), { defaultValue: mealType }),
+      })
+    );
 
   const getMealIcon = (type: string) => {
     switch (type) {
@@ -92,10 +117,10 @@ export const DetailedMealTimeline = ({
                     <div>
                       <div className="flex items-start justify-between">
                         <h3 className="text-base font-bold text-foreground">
-                          {String(t(`tracking.mealType.${log.mealType}`, { defaultValue: log.mealType }))}
+                          {getMealLabel(log.mealType)}
                         </h3>
                         <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
-                          {formatLocalTime(log.consumedAt)}
+                          {formatSafeLocalTime(log.consumedAt)}
                         </span>
                       </div>
                       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">

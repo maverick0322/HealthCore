@@ -2,6 +2,7 @@ package com.healthcore.clinical.infrastructure.rest;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import com.healthcore.clinical.domain.model.NutritionistWeightProgressRow;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
+import com.healthcore.clinical.infrastructure.grpc.MediaGrpcClientAdapter;
 import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
@@ -39,6 +41,7 @@ import com.healthcore.clinical.infrastructure.rest.dto.NutritionistProfileRespon
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressReportResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressRowResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.PatientProfileResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.UpdateProfilePhotoRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdatePatientMetricsRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
@@ -52,9 +55,14 @@ public class ClinicalController {
     private static final Logger logger = LoggerFactory.getLogger(ClinicalController.class);
 
     private final ManageProfileUseCase manageProfileUseCase;
+    private final MediaGrpcClientAdapter mediaGrpcClientAdapter;
 
-    public ClinicalController(ManageProfileUseCase manageProfileUseCase) {
+    public ClinicalController(
+            ManageProfileUseCase manageProfileUseCase,
+            MediaGrpcClientAdapter mediaGrpcClientAdapter
+    ) {
         this.manageProfileUseCase = manageProfileUseCase;
+        this.mediaGrpcClientAdapter = mediaGrpcClientAdapter;
     }
 
     @PostMapping("/profile")
@@ -74,6 +82,17 @@ public class ClinicalController {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Updating patient profile for userHash={}", logHash(userId));
         PatientProfile updatedProfile = manageProfileUseCase.updateProfile(userId, toPatientProfile(userId, request));
+        return ResponseEntity.ok(toPatientProfileResponse(updatedProfile));
+    }
+
+    @PutMapping("/profile/me/photo")
+    @PreAuthorize("hasRole('PATIENT')")
+    public ResponseEntity<PatientProfileResponse> updateMyProfilePhoto(
+            @Valid @RequestBody UpdateProfilePhotoRequest request
+    ) {
+        String userId = getCurrentUserId();
+        logger.info("[ClinicalController] Updating patient profile photo for userHash={}", logHash(userId));
+        PatientProfile updatedProfile = manageProfileUseCase.updateProfilePhoto(userId, request.profilePhotoKey());
         return ResponseEntity.ok(toPatientProfileResponse(updatedProfile));
     }
 
@@ -199,6 +218,20 @@ public class ClinicalController {
         return ResponseEntity.ok(toNutritionistProfileResponse(updatedProfile));
     }
 
+    @PutMapping("/nutritionist/profile/me/photo")
+    @PreAuthorize("hasRole('NUTRITIONIST')")
+    public ResponseEntity<NutritionistProfileResponse> updateMyNutritionistProfilePhoto(
+            @Valid @RequestBody UpdateProfilePhotoRequest request
+    ) {
+        String userId = getCurrentUserId();
+        logger.info("[ClinicalController] Updating nutritionist profile photo for userHash={}", logHash(userId));
+        NutritionistProfile updatedProfile = manageProfileUseCase.updateNutritionistProfilePhoto(
+                userId,
+                request.profilePhotoKey()
+        );
+        return ResponseEntity.ok(toNutritionistProfileResponse(updatedProfile));
+    }
+
     @GetMapping("/nutritionist/profile/me")
     @PreAuthorize("hasRole('NUTRITIONIST')")
     public ResponseEntity<NutritionistProfileResponse> getMyNutritionistProfile() {
@@ -214,9 +247,18 @@ public class ClinicalController {
     public ResponseEntity<List<PatientProfileResponse>> getNutritionistPatients() {
         String nutritionistId = getCurrentUserId();
         logger.info("[ClinicalController] Getting linked patients for nutritionistHash={}", logHash(nutritionistId));
-        List<PatientProfileResponse> patients = manageProfileUseCase.getProfilesByNutritionistId(nutritionistId)
+        List<PatientProfile> linkedProfiles = manageProfileUseCase.getProfilesByNutritionistId(nutritionistId);
+        Map<String, String> profilePhotoUrls = resolveProfilePhotoUrls(
+                linkedProfiles.stream()
+                        .map(PatientProfile::getProfilePhotoKey)
+                        .toList()
+        );
+        List<PatientProfileResponse> patients = linkedProfiles
                 .stream()
-                .map(this::toPatientProfileResponse)
+                .map(profile -> toPatientProfileResponse(
+                        profile,
+                        profilePhotoUrls.get(profile.getProfilePhotoKey())
+                ))
                 .toList();
         return ResponseEntity.ok(patients);
     }
@@ -306,7 +348,8 @@ public class ClinicalController {
                 request.consultationTypes(),
                 request.phone(),
                 toClinicAddress(request.clinicAddress()),
-                request.bio()
+                request.bio(),
+                null
         );
     }
 
@@ -327,6 +370,10 @@ public class ClinicalController {
     }
 
     private PatientProfileResponse toPatientProfileResponse(PatientProfile profile) {
+        return toPatientProfileResponse(profile, resolveProfilePhotoUrl(profile.getProfilePhotoKey()));
+    }
+
+    private PatientProfileResponse toPatientProfileResponse(PatientProfile profile, String profilePhotoUrl) {
         return new PatientProfileResponse(
                 profile.getUserId(),
                 profile.getFirstName(),
@@ -343,6 +390,7 @@ public class ClinicalController {
                 profile.getAllergies() != null ? profile.getAllergies() : List.of(),
                 profile.getExcludedFoods() != null ? profile.getExcludedFoods() : List.of(),
                 profile.getNutritionistId(),
+                profilePhotoUrl,
                 profile.isProfileCompleted()
         );
     }
@@ -371,6 +419,7 @@ public class ClinicalController {
                 profile.getPhone(),
                 toClinicAddressResponse(profile.getClinicAddress()),
                 profile.getBio(),
+                resolveProfilePhotoUrl(profile.getProfilePhotoKey()),
                 profile.isProfileCompleted()
         );
     }
@@ -421,6 +470,14 @@ public class ClinicalController {
         return org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
+    }
+
+    private String resolveProfilePhotoUrl(String profilePhotoKey) {
+        return mediaGrpcClientAdapter.getPresignedReadUrl(profilePhotoKey);
+    }
+
+    private Map<String, String> resolveProfilePhotoUrls(List<String> profilePhotoKeys) {
+        return mediaGrpcClientAdapter.getPresignedReadUrls(profilePhotoKeys);
     }
 
     private String logHash(String value) {

@@ -33,6 +33,7 @@ interface PatientHistoryPdfLabels {
     mealTimeline: string;
     noFoods: string;
   };
+  mealTypeLabels: Record<string, string>;
 }
 
 interface PatientHistoryMealLog {
@@ -51,6 +52,7 @@ interface ExportPatientHistoryPdfOptions {
   sections: PatientHistoryPdfLabels["sections"];
   fields: PatientHistoryPdfLabels["fields"];
   empty: PatientHistoryPdfLabels["empty"];
+  mealTypeLabels: PatientHistoryPdfLabels["mealTypeLabels"];
   selectedDateLabel: string;
   weightHistory: WeightRecord[];
   caloriesHistory: number[];
@@ -68,7 +70,8 @@ const formatDate = (value: string, locale: string) =>
   });
 
 const formatDateTime = (value: string, locale: string) => {
-  const parsed = new Date(value);
+  const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`;
+  const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) {
     return value;
   }
@@ -79,6 +82,7 @@ const formatDateTime = (value: string, locale: string) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
 };
 
@@ -102,6 +106,7 @@ export const exportPatientHistoryPdf = async ({
   sections,
   fields,
   empty,
+  mealTypeLabels,
   selectedDateLabel,
   weightHistory,
   caloriesHistory,
@@ -221,7 +226,10 @@ export const exportPatientHistoryPdf = async ({
   } else {
     logs.forEach((log) => {
       const foods = log.items?.map((item) => item.foodName).filter(Boolean).join(", ");
-      writeLine(`${fields.mealType}: ${log.mealType}`, { bold: true, size: 10 });
+      writeLine(`${fields.mealType}: ${mealTypeLabels[log.mealType] ?? log.mealType}`, {
+        bold: true,
+        size: 10,
+      });
       writeLine(`${fields.time}: ${formatDateTime(log.consumedAt, locale)}`, { size: 10 });
       writeLine(`${fields.calories}: ${Math.round(log.totalCalories ?? 0)} kcal`, { size: 10 });
       writeLine(`${fields.foods}: ${foods || empty.noFoods}`, { size: 10 });

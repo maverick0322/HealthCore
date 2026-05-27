@@ -46,12 +46,13 @@ describe('clinicalService', () => {
     };
 
     (httpClient.put as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      data: { userId: 'user-123', profileCompleted: true, ...payload },
+      data: { userId: 'user-123', profilePhotoUrl: null, profileCompleted: true, ...payload },
     });
     (httpClient.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       data: {
         userId: 'user-123',
         fullName: 'Carlos Gomez',
+        profilePhotoUrl: null,
         profileCompleted: true,
         nutritionistId: null,
         ...payload,
@@ -93,11 +94,23 @@ describe('clinicalService', () => {
     };
 
     (httpClient.put as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      data: { userId: 'nutri-1', fullName: 'Daniel Martinez', profileCompleted: true, ...payload },
+      data: {
+        userId: 'nutri-1',
+        fullName: 'Daniel Martinez',
+        profilePhotoUrl: null,
+        profileCompleted: true,
+        ...payload,
+      },
     });
     (httpClient.get as ReturnType<typeof vi.fn>)
       .mockResolvedValueOnce({
-        data: { userId: 'nutri-1', fullName: 'Daniel Martinez', profileCompleted: true, ...payload },
+        data: {
+          userId: 'nutri-1',
+          fullName: 'Daniel Martinez',
+          profilePhotoUrl: null,
+          profileCompleted: true,
+          ...payload,
+        },
       })
       .mockResolvedValueOnce({
         data: {

@@ -360,10 +360,10 @@ export const NutritionistReportsPage = () => {
                   </CardTitle>
                   <CardDescription className="text-xs">
                     {latestWeightReportDate
-                      ? t('reports.weightTable.latestDate', {
+                      ? `${t('reports.weightTable.latestDate', {
                           date: formatLongDate(latestWeightReportDate, i18n.language),
-                        })
-                      : t('reports.weightTable.noLatestDate')}
+                        })} · ${t(`reports.ranges.${rangeKey}`)}`
+                      : `${t('reports.weightTable.noLatestDate')} · ${t(`reports.ranges.${rangeKey}`)}`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">

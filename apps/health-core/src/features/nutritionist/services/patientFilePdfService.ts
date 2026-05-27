@@ -90,14 +90,22 @@ const formatDate = (value: string, locale: string) =>
     year: 'numeric',
   });
 
-const formatDateTime = (value: string, locale: string) =>
-  new Date(value).toLocaleString(locale, {
+const formatDateTime = (value: string, locale: string) => {
+  const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`;
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleString(locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   });
+};
 
 const formatWeight = (value: number | null | undefined) =>
   value == null ? '--' : `${value.toFixed(1)} kg`;
@@ -275,7 +283,10 @@ export const exportNutritionistPatientFilePdf = async ({
   } else {
     dailyTrackingLogs.forEach((log) => {
       const foods = log.items?.map((item) => item.foodName).filter(Boolean).join(', ');
-      writeLine(`${labels.fields.mealType}: ${log.mealType}`, { bold: true, size: 10 });
+      writeLine(`${labels.fields.mealType}: ${labels.mealSlots[log.mealType] ?? log.mealType}`, {
+        bold: true,
+        size: 10,
+      });
       writeLine(`${labels.fields.time}: ${formatDateTime(log.consumedAt, locale)}`, { size: 10 });
       writeLine(`${labels.fields.calories}: ${Math.round(log.totalCalories)} kcal`, { size: 10 });
       writeLine(`${labels.fields.foods}: ${foods || labels.empty.noFoods}`, { size: 10 });

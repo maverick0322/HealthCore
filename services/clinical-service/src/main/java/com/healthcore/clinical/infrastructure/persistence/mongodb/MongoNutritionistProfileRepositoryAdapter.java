@@ -32,6 +32,7 @@ public class MongoNutritionistProfileRepositoryAdapter implements NutritionistPr
         document.setPhone(profile.getPhone());
         document.setClinicAddress(mapClinicAddress(profile.getClinicAddress()));
         document.setBio(profile.getBio());
+        document.setProfilePhotoKey(profile.getProfilePhotoKey());
 
         nutritionistRepository.save(document);
         return profile;
@@ -54,7 +55,8 @@ public class MongoNutritionistProfileRepositoryAdapter implements NutritionistPr
                 doc.getConsultationTypes(),
                 doc.getPhone(),
                 mapClinicAddress(doc.getClinicAddress()),
-                doc.getBio()
+                doc.getBio(),
+                doc.getProfilePhotoKey()
         );
     }
 

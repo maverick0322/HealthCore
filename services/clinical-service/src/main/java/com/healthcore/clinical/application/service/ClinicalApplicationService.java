@@ -20,9 +20,16 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 @Service
 public class ClinicalApplicationService implements ManageProfileUseCase {
+
+    private static final Pattern PROFILE_PHOTO_SEGMENT_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9-]+-[A-Za-z0-9._-]+\\.(?i:jpg|jpeg|png|webp)$"
+    );
+    private static final Set<String> ALLOWED_PROFILE_PHOTO_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
 
     private final ClinicalRepositoryPort patientRepositoryPort;
     private final NutritionistProfileRepositoryPort nutritionistRepositoryPort;
@@ -112,6 +119,15 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
                 profile.getExcludedFoods()
         );
 
+        return patientRepositoryPort.save(profile);
+    }
+
+    @Override
+    public PatientProfile updateProfilePhoto(String userId, String profilePhotoKey) {
+        PatientProfile profile = patientRepositoryPort.findByUserId(userId)
+                .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
+
+        profile.updateProfilePhoto(validateProfilePhotoKeyOwnership(userId, profilePhotoKey));
         return patientRepositoryPort.save(profile);
     }
 
@@ -218,6 +234,15 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
     }
 
     @Override
+    public NutritionistProfile updateNutritionistProfilePhoto(String userId, String profilePhotoKey) {
+        NutritionistProfile profile = nutritionistRepositoryPort.findByUserId(userId)
+                .orElseThrow(() -> new ProfileNotFoundException("Nutritionist profile not found for user: " + userId));
+
+        profile.updateProfilePhoto(validateProfilePhotoKeyOwnership(userId, profilePhotoKey));
+        return nutritionistRepositoryPort.save(profile);
+    }
+
+    @Override
     public Optional<NutritionistProfile> getNutritionistProfileByUserId(String userId) {
         return nutritionistRepositoryPort.findByUserId(userId);
     }
@@ -277,5 +302,37 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
         if (catalogEntry.isPresent() && !catalogEntry.get().matches(clinicAddress)) {
             throw new IllegalArgumentException("Clinic address does not match the postal code catalog.");
         }
+    }
+
+    private String validateProfilePhotoKeyOwnership(String userId, String profilePhotoKey) {
+        if (profilePhotoKey == null || profilePhotoKey.isBlank()) {
+            throw new IllegalArgumentException("Profile photo key is required.");
+        }
+
+        String expectedPrefix = userId + "/";
+        if (!profilePhotoKey.startsWith(expectedPrefix)) {
+            throw new AccessDeniedException("Profile photo key does not belong to the authenticated user.");
+        }
+
+        String relativeKey = profilePhotoKey.substring(expectedPrefix.length());
+        if (relativeKey.isBlank() || relativeKey.contains("/")) {
+            throw new IllegalArgumentException("Profile photo key format is invalid.");
+        }
+
+        if (!PROFILE_PHOTO_SEGMENT_PATTERN.matcher(relativeKey).matches()) {
+            throw new IllegalArgumentException("Profile photo key format is invalid.");
+        }
+
+        int extensionIndex = relativeKey.lastIndexOf('.');
+        if (extensionIndex < 0) {
+            throw new IllegalArgumentException("Profile photo key format is invalid.");
+        }
+
+        String extension = relativeKey.substring(extensionIndex + 1).toLowerCase();
+        if (!ALLOWED_PROFILE_PHOTO_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("Profile photo key format is invalid.");
+        }
+
+        return profilePhotoKey;
     }
 }

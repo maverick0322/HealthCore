@@ -254,6 +254,18 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
           onBack={null}
           onNext={handleStepNext}
           nextLabel={t('common.continue')}
+          leadingAction={
+            mode === 'edit' ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full sm:w-auto h-12 text-muted-foreground"
+                onClick={() => navigate('/profile/nutritionist')}
+              >
+                {t('common.backToProfile')}
+              </Button>
+            ) : undefined
+          }
         >
           <CounterField
             id="nutri-first-name"
@@ -616,9 +628,10 @@ interface StepFrameProps {
   onNext: () => void;
   nextLabel: string;
   children: ReactNode;
+  leadingAction?: ReactNode;
 }
 
-const StepFrame = ({ title, subtitle, onBack, onNext, nextLabel, children }: StepFrameProps) => {
+const StepFrame = ({ title, subtitle, onBack, onNext, nextLabel, children, leadingAction }: StepFrameProps) => {
   const { t } = useTranslation('onboarding');
 
   return (
@@ -631,7 +644,9 @@ const StepFrame = ({ title, subtitle, onBack, onNext, nextLabel, children }: Ste
       <div className="flex flex-col gap-5">{children}</div>
 
       <div className="mt-8 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-        {onBack ? (
+        {leadingAction ? (
+          leadingAction
+        ) : onBack ? (
           <Button onClick={onBack} variant="ghost" className="w-full sm:w-auto h-12 text-muted-foreground">
             {t('common.back')}
           </Button>

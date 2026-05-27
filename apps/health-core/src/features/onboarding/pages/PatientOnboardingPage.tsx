@@ -118,7 +118,12 @@ export const PatientOnboardingPage = ({
 
   return (
     <OnboardingLayout currentStep={step} totalSteps={5}>
-      {step === 1 ? <Step1Identity onNext={nextStep} /> : null}
+      {step === 1 ? (
+        <Step1Identity
+          onNext={nextStep}
+          onBackToProfile={mode === 'edit' ? () => navigate('/profile') : undefined}
+        />
+      ) : null}
       {step === 2 ? <Step2PhysicalData onNext={nextStep} onBack={prevStep} /> : null}
       {step === 3 ? <Step3Goals onNext={nextStep} onBack={prevStep} /> : null}
       {step === 4 ? <Step4Preferences onNext={nextStep} onBack={prevStep} /> : null}

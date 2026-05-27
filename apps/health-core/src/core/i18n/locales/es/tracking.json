@@ -18,5 +18,27 @@
   "registerFood": "Registrar Alimento",
   "saving": "Guardando...",
   "successTitle": "¡Alimento Registrado!",
-  "successMessage": "Se ha guardado en tu diario de hoy."
+  "successMessage": "Se ha guardado en tu diario de hoy.",
+  "errors": {
+    "loadFailed": "No pudimos cargar tus registros.",
+    "tryAgainLater": "El servicio podría estar inactivo, por favor intenta más tarde.",
+    "connection": "Error de red"
+  },
+  "dashboard": {
+    "noMealsToday": "Aún no has registrado alimentos hoy.",
+    "todayLog": "Registro de Hoy",
+    "viewFullHistory": "Ver historial completo",
+    "water": "Agua",
+    "goal": "Meta"
+  },
+  "table": {
+    "meal": "Platillo",
+    "time": "Hora",
+    "category": "Categoría",
+    "evidence": "Evidencia",
+    "calories": "Calorías"
+  },
+  "common": {
+    "ingredients": "ingredientes"
+  }
 }

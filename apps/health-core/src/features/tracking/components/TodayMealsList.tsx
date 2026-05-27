@@ -56,7 +56,7 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/30">
             <tr>
-              <th className="px-4 py-3 font-medium">Alimento</th>
+              <th className="px-4 py-3 font-medium">Platillo</th> {/* Cambiado a Platillo */}
               <th className="px-4 py-3 font-medium text-center">Hora</th>
               <th className="px-4 py-3 font-medium text-center">Categoría</th>
               <th className="px-4 py-3 font-medium text-center">Evidencia</th>
@@ -65,16 +65,6 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
           </thead>
           <tbody className="divide-y divide-border">
             {meals.map((log) => {
-              const foodItems = log.items || [];
-              
-              const primaryFoodName = foodItems.length > 0 
-                ? foodItems[0].foodName 
-                : 'Registro sin alimentos';
-                
-              const extraFoodsCount = foodItems.length > 0 
-                ? foodItems.length - 1 
-                : 0;
-
               // La URL pre-firmada ya viene inyectada por el backend gRPC
               const imageUrl = log.photoKey;
 
@@ -85,14 +75,14 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
                       {getMealIcon(log.mealType)}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="font-medium truncate max-w-[220px]" title={primaryFoodName}>
-                        {primaryFoodName}
+                      {/* NUEVO: Usando mealName en lugar del primer ingrediente */}
+                      <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[220px]" title={log.mealName}>
+                        {log.mealName}
                       </span>
-                      {extraFoodsCount > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          + {extraFoodsCount} alimento(s)
-                        </span>
-                      )}
+                      {/* Información extra simplificada para la tabla */}
+                      <span className="text-xs text-muted-foreground mt-0.5">
+                        {log.items?.length || 0} ingredientes
+                      </span>
                     </div>
                   </td>
                   
@@ -113,7 +103,7 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
                       <div className="mx-auto h-10 w-10 rounded-md overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700 bg-slate-100 dark:bg-slate-800">
                         <img 
                           src={imageUrl} 
-                          alt="Evidencia del platillo" 
+                          alt={log.mealName} 
                           className="h-full w-full object-cover"
                           loading="lazy"
                           // Fallback a ícono SVG gris si la URL pre-firmada expiró o falló

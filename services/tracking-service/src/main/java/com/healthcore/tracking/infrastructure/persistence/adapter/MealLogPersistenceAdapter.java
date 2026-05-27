@@ -145,6 +145,7 @@ public class MealLogPersistenceAdapter implements MealLogPort {
         return MealLogDocument.builder()
                 .id(domain.getId())
                 .userId(domain.getUserId())
+                .mealName(domain.getMealName())
                 .mealType(domain.getMealType())
                 .consumedAt(domain.getConsumedAt())
                 .photoKey(domain.getPhotoKey())
@@ -179,9 +180,14 @@ public class MealLogPersistenceAdapter implements MealLogPort {
                 .map(this::toItemDomain)
                 .collect(Collectors.toList());
 
+        String safeMealName = document.getMealName() != null && !document.getMealName().isBlank()
+                ? document.getMealName()
+                : document.getMealType().name();
+
         return MealLog.builder()
                 .id(document.getId())
                 .userId(document.getUserId())
+                .mealName(safeMealName)
                 .mealType(document.getMealType())
                 .consumedAt(document.getConsumedAt())
                 .photoKey(document.getPhotoKey())

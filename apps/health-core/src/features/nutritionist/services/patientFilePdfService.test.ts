@@ -144,6 +144,7 @@ describe('patientFilePdfService', () => {
         {
           id: 'log-1',
           userId: 'patient-1',
+          mealName: 'Desayuno de prueba',
           mealType: 'BREAKFAST',
           consumedAt: '2026-05-18T08:00:00Z',
           photoKey: null,

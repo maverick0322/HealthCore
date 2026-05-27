@@ -8,6 +8,7 @@ import com.healthcore.tracking.domain.model.MealLog;
 import com.healthcore.tracking.domain.model.MealType;
 import com.healthcore.tracking.domain.port.FoodCatalogPort;
 import com.healthcore.tracking.domain.port.MealLogPort;
+import com.healthcore.tracking.infrastructure.grpc.client.MediaGrpcClientAdapter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,9 @@ class FoodTrackingUseCaseTest {
     @Mock
     private MealLogPort logPort;
 
+    @Mock
+    private MediaGrpcClientAdapter mediaGrpcClient;
+
     @InjectMocks
     private FoodTrackingUseCase useCase;
 
@@ -42,6 +46,7 @@ class FoodTrackingUseCaseTest {
     void logMealConsumption_Success() {
         // Arrange
         String userId = "user-123";
+        String mealName = "Snack de media tarde"; // <-- NUEVO PARÁMETRO
         String barcode = "7622300336738";
         double grams = 200.0;
         String photoKey = "my-lunch-photo.jpg";
@@ -57,13 +62,14 @@ class FoodTrackingUseCaseTest {
         when(catalogPort.getNutrientsByBarcode(barcode)).thenReturn(Optional.of(mockNutrients));
         when(logPort.save(any(MealLog.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act
-        MealLog result = useCase.logMealConsumption(userId, MealType.LUNCH, LocalDateTime.now(), photoKey, List.of(command));
+        // Act - Inyectando mealName aquí
+        MealLog result = useCase.logMealConsumption(userId, mealName, MealType.LUNCH, LocalDateTime.now(), photoKey, List.of(command));
 
         // Assert - Structural checks
         assertNotNull(result);
         assertNotNull(result.getId());
         assertEquals(userId, result.getUserId());
+        assertEquals(mealName, result.getMealName()); // <-- NUEVA ASERCIÓN
         assertEquals(MealType.LUNCH, result.getMealType());
         assertEquals(photoKey, result.getPhotoKey());
         assertEquals(1, result.getItems().size());
@@ -90,9 +96,9 @@ class FoodTrackingUseCaseTest {
         FoodTrackingUseCase.MealItemCommand command = new FoodTrackingUseCase.MealItemCommand("invalid-code", 100.0);
         when(catalogPort.getNutrientsByBarcode(anyString())).thenReturn(Optional.empty());
 
-        // Act & Assert
+        // Act & Assert - Inyectando mealName genérico aquí
         assertThrows(ResourceNotFoundException.class, () ->
-                useCase.logMealConsumption("user", MealType.SNACK, LocalDateTime.now(), null, List.of(command))
+                useCase.logMealConsumption("user", "Comida fallida", MealType.SNACK, LocalDateTime.now(), null, List.of(command))
         );
 
         verify(logPort, never()).save(any());
@@ -155,6 +161,7 @@ class FoodTrackingUseCaseTest {
         String userId = "user-123";
         MealLog mockLog = MealLog.builder()
                 .userId(userId)
+                .mealName("Desayuno de prueba")
                 .mealType(MealType.BREAKFAST)
                 .build();
 

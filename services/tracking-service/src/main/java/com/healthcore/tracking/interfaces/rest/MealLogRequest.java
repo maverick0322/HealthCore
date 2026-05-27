@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +17,10 @@ import java.util.List;
  * Modeled as a Java Record for absolute immutability and thread-safety.
  */
 public record MealLogRequest(
+        @NotBlank(message = "El nombre de la comida es obligatorio.")
+        @Size(max = 60, message = "El nombre de la comida no puede exceder los 60 caracteres.")
+        String mealName,
+
         @NotNull(message = "Meal type is required.")
         MealType mealType,
 

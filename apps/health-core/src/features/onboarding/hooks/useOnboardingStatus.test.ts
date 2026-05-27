@@ -62,6 +62,7 @@ describe('useOnboardingStatus', () => {
       allergies: [],
       excludedFoods: [],
       nutritionistId: null,
+      profilePhotoUrl: null,
       profileCompleted: true,
     };
 
@@ -114,6 +115,7 @@ describe('useOnboardingStatus', () => {
       allergies: [],
       excludedFoods: [],
       nutritionistId: null,
+      profilePhotoUrl: null,
       profileCompleted: true,
     });
 
@@ -156,6 +158,7 @@ describe('useOnboardingStatus', () => {
       phone: '',
       clinicAddress: null,
       bio: 'Bio',
+      profilePhotoUrl: null,
       profileCompleted: true,
     });
 

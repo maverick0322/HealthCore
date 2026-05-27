@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -177,7 +178,8 @@ class ClinicalApplicationServiceTest {
                         new WeightRecord(72.0, LocalDate.of(2026, 5, 10)),
                         new WeightRecord(71.0, LocalDate.of(2026, 5, 21))
                 ),
-                nutritionistId
+                nutritionistId,
+                null
         );
         PatientProfile patientTwo = PatientProfile.rehydrate(
                 "patient-2",
@@ -194,7 +196,8 @@ class ClinicalApplicationServiceTest {
                 List.of(),
                 List.of(),
                 List.of(new WeightRecord(80.0, LocalDate.of(2026, 4, 15))),
-                nutritionistId
+                nutritionistId,
+                null
         );
 
         when(repositoryPort.findAllByNutritionistId(nutritionistId)).thenReturn(List.of(patientOne, patientTwo));
@@ -258,6 +261,47 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void shouldUpdatePatientProfilePhoto() {
+        PatientProfile profile = createPatientProfile("user-123");
+
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+        when(repositoryPort.save(profile)).thenReturn(profile);
+
+        PatientProfile result = service.updateProfilePhoto("user-123", "user-123/uuid-avatar.webp");
+
+        assertEquals("user-123/uuid-avatar.webp", result.getProfilePhotoKey());
+        verify(repositoryPort).save(profile);
+    }
+
+    @Test
+    void shouldRejectPatientProfilePhotoKeyThatDoesNotBelongToAuthenticatedUser() {
+        PatientProfile profile = createPatientProfile("user-123");
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> service.updateProfilePhoto("user-123", "other-user/uuid-avatar.webp")
+        );
+
+        assertEquals("Profile photo key does not belong to the authenticated user.", exception.getMessage());
+        verify(repositoryPort, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectPatientProfilePhotoKeyWithInvalidFormat() {
+        PatientProfile profile = createPatientProfile("user-123");
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.updateProfilePhoto("user-123", "user-123/not-an-image.txt")
+        );
+
+        assertEquals("Profile photo key format is invalid.", exception.getMessage());
+        verify(repositoryPort, never()).save(any());
+    }
+
+    @Test
     void shouldCreateNutritionistProfile() {
         NutritionistProfile profile = createNutritionistProfile("nutri-123");
         when(postalCodeCatalogPort.findByPostalCode("03100")).thenReturn(Optional.of(createPostalCodeEntry("03100")));
@@ -292,7 +336,8 @@ class ClinicalApplicationServiceTest {
                         "456",
                         "7B"
                 ),
-                "Bio actualizada"
+                "Bio actualizada",
+                null
         );
 
         when(nutritionistRepositoryPort.findByUserId("nutri-123")).thenReturn(Optional.of(existingProfile));
@@ -304,6 +349,36 @@ class ClinicalApplicationServiceTest {
         assertEquals("Daniela", result.getFirstName());
         assertEquals(List.of("ONLINE"), result.getConsultationTypes());
         verify(nutritionistRepositoryPort).save(existingProfile);
+    }
+
+    @Test
+    void shouldUpdateNutritionistProfilePhoto() {
+        NutritionistProfile profile = createNutritionistProfile("nutri-123");
+
+        when(nutritionistRepositoryPort.findByUserId("nutri-123")).thenReturn(Optional.of(profile));
+        when(nutritionistRepositoryPort.save(profile)).thenReturn(profile);
+
+        NutritionistProfile result = service.updateNutritionistProfilePhoto(
+                "nutri-123",
+                "nutri-123/uuid-avatar.webp"
+        );
+
+        assertEquals("nutri-123/uuid-avatar.webp", result.getProfilePhotoKey());
+        verify(nutritionistRepositoryPort).save(profile);
+    }
+
+    @Test
+    void shouldRejectNutritionistProfilePhotoKeyThatDoesNotBelongToAuthenticatedUser() {
+        NutritionistProfile profile = createNutritionistProfile("nutri-123");
+        when(nutritionistRepositoryPort.findByUserId("nutri-123")).thenReturn(Optional.of(profile));
+
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> service.updateNutritionistProfilePhoto("nutri-123", "other-user/uuid-avatar.webp")
+        );
+
+        assertEquals("Profile photo key does not belong to the authenticated user.", exception.getMessage());
+        verify(nutritionistRepositoryPort, never()).save(any());
     }
 
     @Test
@@ -328,7 +403,8 @@ class ClinicalApplicationServiceTest {
                         "123",
                         null
                 ),
-                "Especialista en nutricion clinica."
+                "Especialista en nutricion clinica.",
+                null
         );
 
         when(postalCodeCatalogPort.findByPostalCode("99999")).thenReturn(Optional.empty());
@@ -362,7 +438,8 @@ class ClinicalApplicationServiceTest {
                         "123",
                         null
                 ),
-                "Especialista en nutricion clinica."
+                "Especialista en nutricion clinica.",
+                null
         );
 
         when(postalCodeCatalogPort.findByPostalCode("03100")).thenReturn(Optional.of(createPostalCodeEntry("03100")));
@@ -392,6 +469,7 @@ class ClinicalApplicationServiceTest {
                 List.of(),
                 List.of(),
                 List.of(new WeightRecord(70.0, ClinicalTime.today().minusDays(7))),
+                null,
                 null
         );
     }
@@ -417,7 +495,8 @@ class ClinicalApplicationServiceTest {
                         "123",
                         null
                 ),
-                "Especialista en nutricion clinica."
+                "Especialista en nutricion clinica.",
+                null
         );
     }
 

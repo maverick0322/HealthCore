@@ -26,6 +26,7 @@ public class PatientProfileDocument {
     private List<String> excludedFoods;
     private List<WeightRecord> weightHistory;
     private String nutritionistId;
+    private String profilePhotoKey;
 
     public PatientProfileDocument() {
     }
@@ -148,5 +149,13 @@ public class PatientProfileDocument {
 
     public void setNutritionistId(String nutritionistId) {
         this.nutritionistId = nutritionistId;
+    }
+
+    public String getProfilePhotoKey() {
+        return profilePhotoKey;
+    }
+
+    public void setProfilePhotoKey(String profilePhotoKey) {
+        this.profilePhotoKey = profilePhotoKey;
     }
 }

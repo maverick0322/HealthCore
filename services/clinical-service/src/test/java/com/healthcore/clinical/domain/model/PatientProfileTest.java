@@ -162,6 +162,7 @@ class PatientProfileTest {
                 List.of(),
                 List.of(),
                 List.of(new WeightRecord(70.0, ClinicalTime.today().minusDays(7))),
+                null,
                 null
         );
     }

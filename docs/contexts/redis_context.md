@@ -24,9 +24,9 @@ Cuando un paciente escanea un código de barras (ej. `75010001` para unas gallet
 ## 4. Estrategia de Evicción (TTL)
 La memoria RAM es cara y limitada, por lo que Redis no puede crecer infinitamente. Implementamos una política de **TTL (Time To Live)**. 
 
-Cuando guardamos un alimento en Redis, le decimos: *"Conserva este dato por 48 horas"*. Una vez cumplido ese tiempo, Redis borra el dato automáticamente. Esto asegura que:
+Cuando guardamos un alimento en Redis, le decimos: *"Conserva este dato por 24 horas"*. Una vez cumplido ese tiempo, Redis borra el dato automáticamente. Esto asegura que:
 * La memoria no se sature.
-* Si la tabla nutricional del alimento cambia en la vida real, nuestro sistema se actualizará a los dos días.
+* Si la tabla nutricional del alimento cambia en la vida real, nuestro sistema se actualizará al día siguiente.
 
 ## 5. Implementación Práctica en Spring Boot
 Para los desarrolladores (como Arturo) que toquen el código de Java, la implementación de Redis en Spring Boot es casi transparente gracias a las anotaciones.

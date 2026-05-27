@@ -26,6 +26,7 @@ import { NutritionistNav } from "@/features/nutritionist/components/Nutritionist
 import { SettingsBar } from "@/shared/components/SettingsBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
+import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import {
   Dialog,
   DialogContent,
@@ -1022,14 +1023,34 @@ export const NutritionistPatientFilePage = () => {
           </Button>
 
           <div className="flex items-center gap-5">
-            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-3xl shadow-lg border-4 border-background">
-              {patientIdentity ? patientIdentity.charAt(0).toUpperCase() : "P"}
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
-                {patientIdentity || t("patients.file.loading")}
-              </h1>
-            </div>
+            {isLoadingPatient && !patient ? (
+              <>
+                <div
+                  aria-hidden="true"
+                  className="h-20 w-20 shrink-0 rounded-full bg-foreground/10 animate-pulse"
+                />
+                <div className="min-w-0">
+                  <div
+                    aria-hidden="true"
+                    className="h-8 w-56 rounded-md bg-foreground/10 animate-pulse sm:h-9 sm:w-72"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <ProfileAvatar
+                  name={patientIdentity || "Paciente"}
+                  photoUrl={patient?.profilePhotoUrl}
+                  size="lg"
+                  className="shrink-0"
+                />
+                <div className="min-w-0">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
+                    {patientIdentity || t("patients.file.loading")}
+                  </h1>
+                </div>
+              </>
+            )}
 
             <div className="ml-auto flex flex-wrap items-center gap-3 self-start sm:self-auto">
               <Button

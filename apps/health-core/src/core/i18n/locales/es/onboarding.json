@@ -1,5 +1,6 @@
 {
   "common": {
+    "backToProfile": "Volver al perfil",
     "back": "Atrás",
     "continue": "Continuar",
     "saveChanges": "Guardar cambios",
@@ -240,7 +241,7 @@
     },
     "contact": {
       "title": "Contacto y consultorio",
-      "subtitle": "Estos datos son opcionales, pero dejan listo el perfil para futuras integraciones.",
+      "subtitle": "Estos datos son opcionales. Si capturas cualquier dato de la direccion del consultorio, debes completar todos los campos requeridos de esa direccion.",
       "fields": {
         "phoneOptional": "Telefono celular (opcional)",
         "postalCode": "Código postal",

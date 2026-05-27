@@ -5,6 +5,7 @@ import { Search, ChevronRight, User, QrCode, AlertCircle } from "lucide-react";
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import { Card } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
@@ -17,6 +18,7 @@ import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePrese
 interface NutritionistPatientCardViewModel {
   id: string;
   name: string;
+  profilePhotoUrl: string | null;
   lastVisit: string;
   goal: string;
   futureAppointments: number;
@@ -39,6 +41,7 @@ const toPatientCardViewModel = (
 ): NutritionistPatientCardViewModel => ({
   id: patient.userId,
   name: patient.fullName?.trim() || getDisplayIdentity(patient.userId),
+  profilePhotoUrl: patient.profilePhotoUrl,
   lastVisit: futureAppointments[0]?.startTime ?? lastVisitPlaceholder,
   goal: goalLabel,
   futureAppointments: futureAppointments.length,
@@ -151,9 +154,12 @@ export const NutritionistPatientsPage = () => {
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg border border-primary/20 shrink-0">
-                  {patient.name.charAt(0).toUpperCase()}
-                </div>
+                <ProfileAvatar
+                  name={patient.name}
+                  photoUrl={patient.profilePhotoUrl}
+                  size="sm"
+                  className="shrink-0"
+                />
                 <div className="min-w-0">
                   <h3 className="font-bold text-base group-hover:text-primary transition-colors truncate">
                     {patient.name}

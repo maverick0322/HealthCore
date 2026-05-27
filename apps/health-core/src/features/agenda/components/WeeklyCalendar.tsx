@@ -48,8 +48,20 @@ interface WeeklyCalendarProps {
   isLoading?: boolean;
 }
 
-const HOUR_HEIGHT = 56;
 
+const HOUR_HEIGHT = 80; // px per hour — ensures even 30-min slots (40px space) never overflow their grid cell
+
+const getItemLayout = (item: WeeklyCalendarItem, minHour: number) => {
+  const start = new Date(item.startTime);
+  const end = new Date(item.endTime);
+  const startMinutes = (start.getHours() - minHour) * 60 + start.getMinutes();
+  const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+  return {
+    top: Math.max(0, (startMinutes / 60) * HOUR_HEIGHT),
+    // Subtract 2px visual gap. No min-height clamp — proportional sizing prevents overlap.
+    height: Math.max(16, (durationMinutes / 60) * HOUR_HEIGHT - 2),
+  };
+};
 const kindClasses: Record<WeeklyCalendarItemKind, string> = {
   available: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-100 hover:border-emerald-500',
   selected: 'border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20',
@@ -59,16 +71,6 @@ const kindClasses: Record<WeeklyCalendarItemKind, string> = {
   inactive: 'border-border bg-muted/60 text-muted-foreground',
 };
 
-const getItemLayout = (item: WeeklyCalendarItem, minHour: number) => {
-  const start = new Date(item.startTime);
-  const end = new Date(item.endTime);
-  const startMinutes = (start.getHours() - minHour) * 60 + start.getMinutes();
-  const durationMinutes = Math.max((end.getTime() - start.getTime()) / 60000, 15);
-  return {
-    top: Math.max(0, (startMinutes / 60) * HOUR_HEIGHT),
-    height: Math.max(30, (durationMinutes / 60) * HOUR_HEIGHT - 4),
-  };
-};
 
 export const WeeklyCalendar = ({
   title,
@@ -222,6 +224,7 @@ export const WeeklyCalendar = ({
                   })}
               </div>
             ))}
+
           </div>
         </div>
 

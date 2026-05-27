@@ -16,6 +16,7 @@ public class NutritionistProfile {
     private String phone;
     private ClinicAddress clinicAddress;
     private String bio;
+    private String profilePhotoKey;
 
     public NutritionistProfile(
             String userId,
@@ -28,7 +29,8 @@ public class NutritionistProfile {
             List<String> consultationTypes,
             String phone,
             ClinicAddress clinicAddress,
-            String bio
+            String bio,
+            String profilePhotoKey
     ) {
         this.userId = ProfileFieldValidator.requireUserId(userId);
         applyValidatedData(
@@ -43,6 +45,7 @@ public class NutritionistProfile {
                 clinicAddress,
                 bio
         );
+        this.profilePhotoKey = ProfileFieldValidator.normalizeText(profilePhotoKey);
     }
 
     public static NutritionistProfile rehydrate(
@@ -56,7 +59,8 @@ public class NutritionistProfile {
             List<String> consultationTypes,
             String phone,
             ClinicAddress clinicAddress,
-            String bio
+            String bio,
+            String profilePhotoKey
     ) {
         NutritionistProfile profile = new NutritionistProfile(
                 userId,
@@ -69,7 +73,8 @@ public class NutritionistProfile {
                 List.of("ONLINE"),
                 null,
                 null,
-                "Temp"
+                "Temp",
+                null
         );
         profile.firstName = ProfileFieldValidator.validateOptionalName(firstName, "First name");
         profile.paternalLastName = ProfileFieldValidator.validateOptionalName(paternalLastName, "Paternal last name");
@@ -81,6 +86,7 @@ public class NutritionistProfile {
         profile.phone = ProfileFieldValidator.validatePhone(phone);
         profile.clinicAddress = clinicAddress;
         profile.bio = ProfileFieldValidator.validateOptionalBio(bio);
+        profile.profilePhotoKey = ProfileFieldValidator.normalizeText(profilePhotoKey);
         return profile;
     }
 
@@ -132,6 +138,10 @@ public class NutritionistProfile {
         this.phone = ProfileFieldValidator.validatePhone(phone);
         this.clinicAddress = clinicAddress;
         this.bio = ProfileFieldValidator.validateBio(bio);
+    }
+
+    public void updateProfilePhoto(String profilePhotoKey) {
+        this.profilePhotoKey = ProfileFieldValidator.normalizeText(profilePhotoKey);
     }
 
     public boolean isProfileCompleted() {
@@ -202,5 +212,9 @@ public class NutritionistProfile {
 
     public String getBio() {
         return bio;
+    }
+
+    public String getProfilePhotoKey() {
+        return profilePhotoKey;
     }
 }

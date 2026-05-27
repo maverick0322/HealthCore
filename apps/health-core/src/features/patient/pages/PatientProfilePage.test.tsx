@@ -97,6 +97,7 @@ describe('PatientProfilePage', () => {
       allergies: ['lactose'],
       excludedFoods: [],
       nutritionistId: null,
+      profilePhotoUrl: null,
       profileCompleted: true,
     });
   });

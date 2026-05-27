@@ -96,6 +96,12 @@ describe("patientHistoryPdfService", () => {
         mealTimeline: "Sin logs",
         noFoods: "Sin alimentos",
       },
+      mealTypeLabels: {
+        BREAKFAST: "Desayuno",
+        LUNCH: "Comida",
+        DINNER: "Cena",
+        SNACK: "Snack",
+      },
       selectedDateLabel: "Hoy",
       weightHistory: [
         { weightKg: 82, date: "2026-05-01" },

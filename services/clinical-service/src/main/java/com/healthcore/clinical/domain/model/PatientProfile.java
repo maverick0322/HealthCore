@@ -22,6 +22,7 @@ public class PatientProfile {
     private List<String> excludedFoods;
     private List<WeightRecord> weightHistory;
     private String nutritionistId;
+    private String profilePhotoKey;
 
     public PatientProfile(
             String userId,
@@ -71,7 +72,8 @@ public class PatientProfile {
             List<String> allergies,
             List<String> excludedFoods,
             List<WeightRecord> weightHistory,
-            String nutritionistId
+            String nutritionistId,
+            String profilePhotoKey
     ) {
         PatientProfile profile = new PatientProfile(
                 userId,
@@ -105,6 +107,7 @@ public class PatientProfile {
             profile.weightKg = profile.weightHistory.get(profile.weightHistory.size() - 1).weightKg();
         }
         profile.nutritionistId = ProfileFieldValidator.normalizeText(nutritionistId);
+        profile.profilePhotoKey = ProfileFieldValidator.normalizeText(profilePhotoKey);
         return profile;
     }
 
@@ -216,6 +219,10 @@ public class PatientProfile {
 
     public void removeNutritionist() {
         this.nutritionistId = null;
+    }
+
+    public void updateProfilePhoto(String profilePhotoKey) {
+        this.profilePhotoKey = ProfileFieldValidator.normalizeText(profilePhotoKey);
     }
 
     private double calculateTMB() {
@@ -357,5 +364,9 @@ public class PatientProfile {
 
     public void setNutritionistId(String nutritionistId) {
         this.nutritionistId = ProfileFieldValidator.normalizeText(nutritionistId);
+    }
+
+    public String getProfilePhotoKey() {
+        return profilePhotoKey;
     }
 }

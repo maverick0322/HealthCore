@@ -88,6 +88,7 @@ export const usePatientProfile = () => {
 
   return {
     profile,
+    setProfile,
     isLoadingProfile,
     showUnlinkDialog,
     setShowUnlinkDialog,

@@ -43,4 +43,4 @@ Para el trabajo diario en HealthCore, estos son los comandos esenciales:
 * **Limpiar volúmenes (¡CUIDADO, BORRA LA BD!):** `docker-compose down -v`
 
 ---
-**Nota para el equipo:** Nunca guarden secretos (como llaves de AWS) directamente en el `docker-compose.yml`. Usaremos un archivo `.env` que Docker cargará automáticamente para mantener la seguridad.
+**Nota para el equipo:** Nunca guarden secretos (como llaves de Cloudflare R2) directamente en el `docker-compose.yml`. Usaremos un archivo `.env` que Docker cargará automáticamente para mantener la seguridad.

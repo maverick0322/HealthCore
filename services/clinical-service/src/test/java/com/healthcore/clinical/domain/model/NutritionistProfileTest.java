@@ -25,7 +25,8 @@ class NutritionistProfileTest {
                 List.of("ONLINE", "PRESENTIAL"),
                 "5512345678",
                 null,
-                "Especialista en nutricion clinica"
+                "Especialista en nutricion clinica",
+                null
         );
 
         assertTrue(profile.isProfileCompleted());
@@ -48,7 +49,8 @@ class NutritionistProfileTest {
                         List.of("ONLINE"),
                         null,
                         null,
-                        "Especialista en nutricion clinica"
+                        "Especialista en nutricion clinica",
+                        null
                 )
         );
 
@@ -66,6 +68,7 @@ class NutritionistProfileTest {
                 null,
                 null,
                 List.of(),
+                null,
                 null,
                 null,
                 null
@@ -89,7 +92,8 @@ class NutritionistProfileTest {
                 List.of("ONLINE"),
                 null,
                 null,
-                "Especialista en nutricion clinica"
+                "Especialista en nutricion clinica",
+                null
         );
 
         profile.updateProfile(

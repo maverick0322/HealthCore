@@ -8,7 +8,7 @@ interface UseMediaUploadReturn {
   uploadFile: (file: File) => Promise<string | null>;
 }
 
-const ERROR_MESSAGES = {
+const DEFAULT_ERROR_MESSAGES = {
   VALIDATION: 'The file is invalid or not supported.',
   NETWORK_RATE_LIMIT: 'Too many requests. Please wait a moment and try again.',
   NETWORK_OR_SERVER: 'A connection error occurred. Please try again later.',
@@ -18,13 +18,28 @@ const ERROR_MESSAGES = {
 const FILE_NAME_SANITIZATION_REGEX = /[^a-zA-Z0-9.\-_]/g;
 const SANITIZATION_REPLACEMENT_CHAR = '_';
 
+interface UseMediaUploadOptions {
+  errorMessages?: {
+    validation?: string;
+    rateLimit?: string;
+    network?: string;
+    generic?: string;
+  };
+}
+
 /**
  * Application hook managing the media upload state machine and orchestration.
  * Adheres to SRP by abstracting the multi-step upload process from the UI layer.
  */
-export const useMediaUpload = (): UseMediaUploadReturn => {
+export const useMediaUpload = (options: UseMediaUploadOptions = {}): UseMediaUploadReturn => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const errorMessages = {
+    validation: options.errorMessages?.validation ?? DEFAULT_ERROR_MESSAGES.VALIDATION,
+    rateLimit: options.errorMessages?.rateLimit ?? DEFAULT_ERROR_MESSAGES.NETWORK_RATE_LIMIT,
+    network: options.errorMessages?.network ?? DEFAULT_ERROR_MESSAGES.NETWORK_OR_SERVER,
+    generic: options.errorMessages?.generic ?? DEFAULT_ERROR_MESSAGES.GENERIC,
+  };
 
   const uploadFile = async (file: File): Promise<string | null> => {
     setIsUploading(true);
@@ -43,16 +58,16 @@ export const useMediaUpload = (): UseMediaUploadReturn => {
         const statusCode = err.response?.status;
         
         if (statusCode === 400 || statusCode === 422) {
-          setError(ERROR_MESSAGES.VALIDATION);
+          setError(errorMessages.validation);
         } else if (statusCode === 429) {
-          setError(ERROR_MESSAGES.NETWORK_RATE_LIMIT);
+          setError(errorMessages.rateLimit);
         } else {
-          setError(ERROR_MESSAGES.NETWORK_OR_SERVER);
+          setError(errorMessages.network);
         }
       } else if (err instanceof Error) {
-        setError(ERROR_MESSAGES.GENERIC);
+        setError(errorMessages.generic);
       } else {
-        setError(ERROR_MESSAGES.GENERIC);
+        setError(errorMessages.generic);
       }
       
       return null;

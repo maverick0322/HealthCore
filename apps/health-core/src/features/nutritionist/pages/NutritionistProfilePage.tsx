@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Award, FileText, LogOut, Mail, MapPin, Pencil, Phone, User } from 'lucide-react';
 
 import { NutritionistNav } from '@/features/nutritionist/components/NutritionistNav';
+import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import {
   consultationTypeOptions,
   formatConsultationTypeLabel,
@@ -10,7 +11,9 @@ import {
   getConsultationTypeMetadata,
   getNutritionistSpecializationMetadata,
 } from '@/features/onboarding/utils/profilePresentation';
+import { ProfileAvatar } from '@/shared/components/ProfileAvatar';
 import { SettingsBar } from '@/shared/components/SettingsBar';
+import { useProfilePhotoUpload } from '@/shared/hooks/useProfilePhotoUpload';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
@@ -21,12 +24,34 @@ export const NutritionistProfilePage = () => {
 
   const {
     profile,
+    setProfile,
     isLoadingProfile,
     user,
     navigate,
     handleLogout,
     specializationSummary,
   } = useNutritionistProfile();
+
+  const {
+    accept: profilePhotoAccept,
+    error: profilePhotoError,
+    handleFileSelected,
+    isUploading: isUploadingProfilePhoto,
+  } = useProfilePhotoUpload({
+    invalidTypeMessage: t('profile.photoInvalidType'),
+    invalidSizeMessage: t('profile.photoInvalidSize'),
+    persistErrorMessage: t('profile.photoPersistError'),
+    uploadErrorMessages: {
+      validation: t('profile.photoUploadValidationError'),
+      rateLimit: t('profile.photoUploadRateLimitError'),
+      network: t('profile.photoUploadNetworkError'),
+      generic: t('profile.photoUploadGenericError'),
+    },
+    onUploadComplete: async (storageKey) => {
+      const updatedProfile = await clinicalApi.updateMyNutritionistProfilePhoto(storageKey);
+      setProfile(updatedProfile);
+    },
+  });
 
   if (isLoadingProfile) {
     return (
@@ -66,9 +91,19 @@ export const NutritionistProfilePage = () => {
           <div className="h-32 bg-primary/20" />
           <div className="px-6 pb-6">
             <div className="relative mb-6 flex justify-between -mt-12">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-card bg-primary text-4xl font-bold text-primary-foreground">
-                {(profile?.fullName ?? user?.email ?? 'N').charAt(0).toUpperCase()}
-              </div>
+              <ProfileAvatar
+                name={profile?.fullName ?? user?.email ?? 'N'}
+                photoUrl={profile?.profilePhotoUrl}
+                size="xl"
+                editable
+                accept={profilePhotoAccept}
+                onFileSelected={(file) => {
+                  void handleFileSelected(file);
+                }}
+                isUploading={isUploadingProfilePhoto}
+                error={profilePhotoError}
+                cameraLabel={t('profile.changePhoto')}
+              />
             </div>
 
             <div className="space-y-3">

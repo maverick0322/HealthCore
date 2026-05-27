@@ -1,64 +1,104 @@
-# 🔐 Microservicio: Identity Service
+# 📊 Microservicio: Tracking Service
 
 ## 1. Propósito y Responsabilidades
-El `healthcore-identity-service` es el Guardián de la plataforma. Su responsabilidad única y exclusiva es la **Gestión de Identidades, Autenticación y Autorización**. 
+El `healthcore-tracking-service` es el motor de seguimiento diario y consolidación nutricional del paciente. Su responsabilidad principal es permitir el registro diario de consumos de alimentos y agua, calcular las métricas calóricas y de macronutrientes correspondientes, y servir resúmenes operativos y reportes históricos tanto para el paciente como para el nutriólogo vinculado.
 
-Ningún otro microservicio de HealthCore debe manejar contraseñas ni validar sesiones. Si un servicio necesita saber "quién" está haciendo una petición, debe confiar en el token emitido por Identity.
+---
 
 ## 2. Stack Tecnológico Core
 * **Lenguaje/Framework:** Java 21 + Spring Boot 3.x
-* **Seguridad:** Spring Security + JSON Web Tokens (JWT)
-* **Persistencia:** Spring Data MongoDB
-* **Mensajería:** Spring AMQP (RabbitMQ)
-* **Comunicaciones Internas:** gRPC Server (grpc-spring-boot-starter)
+* **Persistencia:** Spring Data MongoDB (Base de datos lógica `healthcore_tracking` hospedada físicamente en el contenedor `healthcore-mongodb`).
+* **Caché:** Spring Data Redis (para almacenamiento en memoria RAM de los alimentos buscados y cacheados bajo el patrón Cache-Aside).
+* **Seguridad:** JWT validado a nivel del API Gateway; obtención del usuario autenticado vía `@AuthenticationPrincipal String userId`.
+* **Comunicaciones Internas (gRPC Clients):**
+  * Cliente hacia `catalog-service` para la traducción de códigos de barras y búsquedas.
+  * Cliente hacia `media-service` para enriquecer referencias de fotos con URLs de lectura pre-firmadas.
+  * Cliente hacia `clinical-service` para validaciones de vinculación paciente-nutriólogo.
 
-## 3. Modelo de Dominio (Entidades Propias)
-Este servicio es el "dueño" absoluto de las siguientes entidades. Se persisten en el esquema lógico `healthcore_identity` en MongoDB:
+---
 
-* **`User` (Abstracta/Documento Principal):** Contiene `id` (UUID), `email`, `passwordHash`, `role` (PATIENT, NUTRITIONIST, ADMIN), `isActive`, `createdAt`.
-* **Subtipos lógicos:** Aunque la tabla sea única, el sistema diferencia lógicamente entre Pacientes y Nutriólogos para temas de roles y permisos.
-* *(Nota: El peso, la edad o el número de cédula profesional NO viven aquí, pertenecen al Clinical Service).*
+## 3. Modelo de Dominio (Entidades y Agregados)
+El dominio del microservicio se divide en dos agregados independientes y modelos de consulta:
 
-## 4. Contratos de Comunicación (API REST)
-Expone los endpoints públicos consumidos directamente por la aplicación Web/Móvil (a través del API Gateway en la ruta `/api/v1/auth/**`).
+* **`MealLog` (Aggregate Root):** Representa una comida completa registrada por el usuario.
+  * *Atributos:* `id`, `userId`, `mealType` (BREAKFAST, LUNCH, DINNER, SNACK), `consumedAt`, `photoKey` (clave del archivo en R2), `items` (Lista inmutable de MealItem), `totalCalories`, `totalProteins`, `totalCarbs`, `totalFats`.
+  * *Comportamiento:* Calcula automáticamente los totales de macronutrientes del log en su constructor de dominio a partir de los ítems hijos.
 
-| Método | Endpoint | Descripción | Body de Entrada (Ejemplo) | Salida Exitosa |
-| :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/register` | Registra un nuevo usuario y encripta su contraseña (BCrypt). | `{"email": "x@x.com", "password": "...", "role": "PATIENT"}` | `201 Created` |
-| `POST` | `/login` | Valida credenciales y emite tokens de sesión. | `{"email": "x@x.com", "password": "..."}` | `200 OK` + `{ "accessToken": "eyJ...", "refreshToken": "..." }` |
-| `POST` | `/forgot-password` | Genera y envía un código de recuperación por correo. | `{"email": "x@x.com"}` | `200 OK` |
-| `POST` | `/verify-code` | Valida el código temporal para restaurar contraseña. | `{"email": "x@x.com", "code": "123456"}` | `200 OK` + Token temporal |
+* **`MealItem` (Child Entity):** Elemento individual que compone una comida.
+  * *Atributos:* `barcode` (opcional), `foodName`, `consumedGrams`, y macros/micros prorrateados (`calories`, `proteins`, `carbohydrates`, `fats`, `fiberGrams`, `sodiumMg`, `sugarGrams`, `potassiumMg`).
+  * *Comportamiento:* Recibe los nutrientes base (por 100g) y calcula mediante regla de tres los valores exactos consumidos según los gramos introducidos.
 
-## 5. El Flujo de Seguridad (JWT)
-1. El usuario envía credenciales a `/login`.
-2. Spring Security verifica el hash de la contraseña contra MongoDB.
-3. Si es correcto, el servicio genera un **Access Token (JWT)** firmado criptográficamente con un `JWT_SECRET`.
-4. El token incluye en su "Payload" el `UUID` del usuario y su `Role`.
-5. A partir de ese momento, el cliente (Frontend) debe enviar este token en la cabecera HTTP (`Authorization: Bearer <token>`) en cada petición subsecuente al API Gateway.
+* **`WaterLog` (Aggregate Root):** Consumo individual de agua.
+  * *Atributos:* `id`, `userId`, `amountMl` (rango validado de 1 a 5000 ml), `consumedAt`.
 
-## 6. Integración y Comunicación Interna
+* **`DailyMacroSummary`:** DTO de lectura acumulado que representa el total diario de un paciente en una fecha específica para renderizar gráficas e históricos.
 
-### A. Como Productor de Eventos (RabbitMQ)
-El `identity-service` es el origen del ciclo de vida del usuario. Cuando ocurre un registro exitoso, no hace peticiones síncronas para no hacer esperar al cliente. En su lugar, publica eventos asíncronos:
-* **Evento:** `UserRegisteredEvent`
-* **Payload:** `{ "userId": "UUID", "email": "x@x.com", "role": "PATIENT" }`
-* **Consumidores esperados:** `clinical-service` (para crear el expediente clínico vacío) y `agenda-service` (para perfiles de nutriólogos).
+---
 
-### B. Como Servidor gRPC (Síncrono)
-Otros microservicios conocen a los usuarios solo por su `UUID`. Cuando el `clinical-service` necesita mostrar el nombre real del paciente en el expediente, le pregunta a Identity vía gRPC.
-* **Operación Protobuf:** `GetUserInfo(UserRequest) returns (UserResponse)`
-* **Datos expuestos:** Solo datos no sensibles (Nombre, Apellidos, Email). ¡NUNCA expone el password hash!
+## 4. Estrategia de Caché de Catálogo (Redis)
+Para mitigar la latencia de llamadas externas de API nutricional, implementamos el patrón **Cache-Aside** con Redis en el cliente gRPC de catálogo:
+1. **Lectura:** Al buscar un alimento por código de barras o texto, se verifica primero en el caché de Redis.
+2. **Cache Hit:** Si existe, se devuelve la respuesta en menos de 2ms.
+3. **Cache Miss:** Si no existe, se ejecuta la llamada gRPC al `catalog-service` (quien consulta al API externa), y se almacena el resultado en Redis antes de retornar.
+4. **TTL:** El TTL está configurado en **24 horas** (`REDIS_TTL_MS:86400000`) para garantizar la frescura de los datos.
+
+---
+
+## 5. API REST Expuesta
+La ruta pública expuesta a través del API Gateway es `/api/v1/tracking/**`.
+
+### 5.1. Búsqueda en Catálogo
+| Método | Endpoint | Rol | Descripción |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/catalog/{barcode}` | Paciente | Obtiene detalles de macronutrientes por código de barras. |
+| `GET` | `/catalog/search?query=...` | Paciente | Búsqueda libre por texto (mínimo 3 caracteres). |
+
+### 5.2. Registros Diarios de Comida y Agua
+| Método | Endpoint | Rol | Descripción |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/logs/meal` | Paciente | Registra una comida con su lista de alimentos y `photoKey` opcional. |
+| `GET` | `/logs/today` | Paciente | Obtiene la lista de comidas registradas para el día de hoy. |
+| `GET` | `/logs/daily?date=YYYY-MM-DD` | Paciente | Obtiene los consumos de comidas para una fecha específica. |
+| `POST` | `/logs/water` | Paciente | Registra un consumo de agua en mililitros. |
+
+### 5.3. Dashboard y Resúmenes
+| Método | Endpoint | Rol | Descripción |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/dashboard/today?date=YYYY-MM-DD` | Paciente | Obtiene resumen calórico diario (consumido vs meta clínica gRPC). |
+| `GET` | `/dashboard/history?startDate=...&endDate=...` | Paciente | Obtiene lista de históricos de macros diarios en un rango. |
+
+### 5.4. Nutriólogo (Acceso a Expediente de Pacientes Vinculados)
+| Método | Endpoint | Rol | Descripción |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/nutritionist/patients/{patientId}/logs/daily?date=...` | Nutriólogo | Registros de comida del paciente (requiere vínculo activo). |
+| `GET` | `/nutritionist/patients/{patientId}/dashboard/today?date=...` | Nutriólogo | Resumen del día actual del paciente vinculado. |
+| `GET` | `/nutritionist/patients/{patientId}/dashboard/history?startDate=...&endDate=...` | Nutriólogo | Histórico de macros del paciente vinculado. |
+
+---
+
+## 6. Integración y Comunicaciones gRPC (Cliente)
+`tracking-service` consume los siguientes canales gRPC:
+1. **`catalog-service` (Puerto 50051):** Llama a `NutritionalCatalog` para resolver alimentos escaneados y realizar búsquedas de texto.
+2. **`media-service` (Puerto 9091):** Cuando obtiene un `MealLog` con un `photoKey` no nulo, realiza una llamada a `MediaServiceGrpc` para inyectar dinámicamente la URL pre-firmada de lectura (GET) de Cloudflare R2 antes de responder al frontend.
+3. **`clinical-service` (Puerto 50051):** Invocado dinámicamente para validar el vínculo activo entre paciente y nutriólogo en los endpoints de lectura del nutriólogo.
+
+---
 
 ## 7. Variables de Entorno Requeridas (`.env`)
-Para levantar este contenedor, Docker inyecta las siguientes variables:
 ```properties
-# Base de Datos
-SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_identity
+# MongoDB (Conectado al contenedor mongodb en puerto 27018 expuesto)
+SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/healthcore_tracking
 
-# Seguridad (Semilla para firmar los tokens - NO SUBIR A GITHUB)
-JWT_SECRET_KEY=super_secret_key_base64_encoded_minimum_256_bits
-JWT_EXPIRATION_MS=86400000 # 1 día
+# Redis Cache Config
+SPRING_DATA_REDIS_HOST=redis
+SPRING_DATA_REDIS_PORT=6379
+REDIS_TTL_MS=86400000
 
-# Broker de Mensajes
-SPRING_RABBITMQ_HOST=rabbitmq
-SPRING_RABBITMQ_PORT=5672
+# Targets gRPC
+GRPC_CATALOG_TARGET=catalog-service:50051
+GRPC_CLIENT_MEDIA-SERVICE_ADDRESS=static://media-service:9091
+GRPC_CLIENT_CLINICAL_ADDRESS=static://clinical-service:50051
+
+# Clave Semilla JWT
+JWT_SECRET=super_secret_key_base64_encoded
+```

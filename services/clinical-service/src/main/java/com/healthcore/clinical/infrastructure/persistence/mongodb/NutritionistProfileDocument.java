@@ -20,6 +20,7 @@ public class NutritionistProfileDocument {
     private String phone;
     private ClinicAddressDocument clinicAddress;
     private String bio;
+    private String profilePhotoKey;
 
     public String getUserId() {
         return userId;
@@ -107,5 +108,13 @@ public class NutritionistProfileDocument {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getProfilePhotoKey() {
+        return profilePhotoKey;
+    }
+
+    public void setProfilePhotoKey(String profilePhotoKey) {
+        this.profilePhotoKey = profilePhotoKey;
     }
 }

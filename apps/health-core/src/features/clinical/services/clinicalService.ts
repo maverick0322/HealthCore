@@ -42,6 +42,7 @@ const normalizePatientProfile = (
   allergies: profile.allergies ?? [],
   excludedFoods: profile.excludedFoods ?? [],
   nutritionistId: profile.nutritionistId ?? null,
+  profilePhotoUrl: profile.profilePhotoUrl ?? null,
   profileCompleted: profile.profileCompleted ?? false,
 });
 
@@ -71,6 +72,7 @@ const normalizeNutritionistProfile = (
       }
     : null,
   bio: profile.bio ?? '',
+  profilePhotoUrl: profile.profilePhotoUrl ?? null,
   profileCompleted: profile.profileCompleted ?? false,
 });
 
@@ -81,6 +83,13 @@ export const clinicalApi = {
 
   updateMyProfile: async (payload: CreateProfilePayload): Promise<PatientProfileResponse> => {
     const response = await httpClient.put<PatientProfileResponse>(`${CLINICAL_API_URL}/profile/me`, payload);
+    return normalizePatientProfile(response.data);
+  },
+
+  updateMyProfilePhoto: async (profilePhotoKey: string): Promise<PatientProfileResponse> => {
+    const response = await httpClient.put<PatientProfileResponse>(`${CLINICAL_API_URL}/profile/me/photo`, {
+      profilePhotoKey,
+    });
     return normalizePatientProfile(response.data);
   },
 
@@ -102,6 +111,16 @@ export const clinicalApi = {
     payload: NutritionistProfilePayload
   ): Promise<NutritionistProfileResponse> => {
     const response = await httpClient.put<NutritionistProfileResponse>(`${CLINICAL_API_URL}/nutritionist/profile/me`, payload);
+    return normalizeNutritionistProfile(response.data);
+  },
+
+  updateMyNutritionistProfilePhoto: async (
+    profilePhotoKey: string
+  ): Promise<NutritionistProfileResponse> => {
+    const response = await httpClient.put<NutritionistProfileResponse>(
+      `${CLINICAL_API_URL}/nutritionist/profile/me/photo`,
+      { profilePhotoKey }
+    );
     return normalizeNutritionistProfile(response.data);
   },
 

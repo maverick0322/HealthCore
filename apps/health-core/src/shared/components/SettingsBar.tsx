@@ -13,7 +13,15 @@ import {
   DropdownMenuSeparator,
 } from "@/shared/ui/dropdown-menu";
 
-export const SettingsBar = ({ className }: { className?: string }) => {
+interface SettingsBarProps {
+  className?: string;
+  showAccountMenu?: boolean;
+}
+
+export const SettingsBar = ({
+  className,
+  showAccountMenu = true,
+}: SettingsBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation("auth");
@@ -41,7 +49,7 @@ export const SettingsBar = ({ className }: { className?: string }) => {
     location.pathname === "/verify-code" ||
     location.pathname === "/reset-password";
 
-  const showAccountMenu = Boolean(user) && !isAuthRoute;
+  const shouldShowAccountMenu = showAccountMenu && Boolean(user) && !isAuthRoute;
   const profilePath =
     user?.role === "NUTRITIONIST"
       ? "/profile/nutritionist"
@@ -88,7 +96,7 @@ export const SettingsBar = ({ className }: { className?: string }) => {
         <span className="sr-only">{t("toggleTheme")}</span>
       </Button>
 
-      {showAccountMenu && (
+      {shouldShowAccountMenu && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 

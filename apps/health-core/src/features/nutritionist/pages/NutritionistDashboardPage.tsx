@@ -47,6 +47,7 @@ export const NutritionistDashboardPage = () => {
   const { t } = useTranslation(["nutritionist", "onboarding"]);
   const navigate = useNavigate();
 
+  const [profileLoading, setProfileLoading] = useState(true);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [patients, setPatients] = useState<NutritionistPatientProfileResponse[]>([]);
   const [patientsLoading, setPatientsLoading] = useState(true);
@@ -63,14 +64,19 @@ export const NutritionistDashboardPage = () => {
     let ignore = false;
 
     const loadProfile = async () => {
+      setProfileLoading(true);
       try {
         const profile = await clinicalApi.getMyNutritionistProfile();
         if (!ignore) {
-          setDisplayName(getFirstName(profile.fullName) ?? t("dashboard.defaultName"));
+          setDisplayName(getFirstName(profile.fullName));
         }
       } catch {
         if (!ignore) {
-          setDisplayName(t("dashboard.defaultName"));
+          setDisplayName(null);
+        }
+      } finally {
+        if (!ignore) {
+          setProfileLoading(false);
         }
       }
     };
@@ -152,9 +158,18 @@ export const NutritionistDashboardPage = () => {
 
       <div className="border-b border-border bg-primary/10 md:pl-56">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            {t("dashboard.greeting", { name: displayName ?? t("dashboard.defaultName") })}
-          </h1>
+          {profileLoading ? (
+            <div
+              aria-hidden="true"
+              className="h-8 w-48 rounded-md bg-foreground/10 animate-pulse sm:h-9 sm:w-60"
+            />
+          ) : (
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+              {t("dashboard.greeting", {
+                name: displayName ?? t("dashboard.defaultName"),
+              })}
+            </h1>
+          )}
           <p className="text-sm text-muted-foreground mt-0.5">
             {t("dashboard.greetingSubtitle")}
           </p>

@@ -137,11 +137,9 @@ export const PatientDashboardPage = () => {
   }, [appointments]);
 
   const displayName =
-    profileLoading
-      ? t("dashboard.defaultName")
-      : profile?.firstName?.trim() ||
-        getFirstName(profile?.fullName) ||
-        t("dashboard.defaultName");
+    profile?.firstName?.trim() ||
+    getFirstName(profile?.fullName) ||
+    null;
 
   const nutritionistName =
     nutritionistProfile?.fullName?.trim() || t("dashboard.assignedNutritionist");
@@ -161,9 +159,18 @@ export const PatientDashboardPage = () => {
 
       <div className="border-b border-border bg-primary/10 md:pl-56">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-6">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            {t("dashboard.greeting", { name: displayName })}
-          </h1>
+          {profileLoading ? (
+            <div
+              aria-hidden="true"
+              className="h-8 w-44 rounded-md bg-foreground/10 animate-pulse sm:h-9 sm:w-56"
+            />
+          ) : (
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+              {t("dashboard.greeting", {
+                name: displayName ?? t("dashboard.defaultName"),
+              })}
+            </h1>
+          )}
           <p className="text-sm text-muted-foreground mt-0.5">
             {t("dashboard.greetingSubtitle")}
           </p>

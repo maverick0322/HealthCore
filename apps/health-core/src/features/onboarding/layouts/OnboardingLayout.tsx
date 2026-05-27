@@ -30,7 +30,7 @@ export const OnboardingLayout = ({
               <div className="hidden sm:flex min-w-[84px] items-center justify-center overflow-hidden rounded-full h-8 px-4 bg-primary/10 text-primary text-xs font-bold leading-normal">
                 <span>{t('stepper.step', { current: currentStep, total: totalSteps })}</span>
               </div>
-              <SettingsBar className="flex items-center gap-2" />
+              <SettingsBar className="flex items-center gap-2" showAccountMenu={false} />
             </div>
           </header>
 

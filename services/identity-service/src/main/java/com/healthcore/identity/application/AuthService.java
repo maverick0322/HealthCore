@@ -69,6 +69,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final LoginAttemptService loginAttemptService;
+    private final ActiveUserMetricsTracker activeUserMetricsTracker;
     private final Environment environment;
     private final java.util.Optional<com.healthcore.identity.infrastructure.testing.DevEmailCodeStore> devEmailCodeStore;
     private final IdentityEventPublisher identityEventPublisher;
@@ -181,6 +182,7 @@ public class AuthService {
         }
 
         loginAttemptService.recordSuccessfulAttempt(loginKey);
+        activeUserMetricsTracker.recordLogin(user.getId());
 
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
@@ -203,6 +205,8 @@ public class AuthService {
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
         persistRefreshToken(user, refreshToken);
+
+        activeUserMetricsTracker.recordLogin(user.getId());
 
         return buildTokenResponse(accessToken, refreshToken);
     }

@@ -12,6 +12,7 @@ import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,7 @@ public class MediaGrpcClientAdapter {
     private final MediaServiceGrpcGrpc.MediaServiceGrpcBlockingStub mediaStub;
     private final ManagedChannel managedChannel;
 
+    @Autowired
     public MediaGrpcClientAdapter(@Value("${grpc.media.target:media-service:9091}") String grpcTarget) {
         log.info("Initializing gRPC client for Media Service at target: {}", grpcTarget);
         this.managedChannel = ManagedChannelBuilder.forTarget(grpcTarget)

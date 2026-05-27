@@ -39,3 +39,263 @@ Diseño conceptual de la base de datos (NoSQL / Relacional).
 
 == Descripciones de casos de uso
 Detalle paso a paso de los flujos principales (Flujo básico, alterno y excepciones).
+
+=== CU-01 Gestionar Cuenta
+*Actor principal:* Paciente, Nutriólogo o Administrador.
+
+*Descripción:* Permite registrar cuentas locales, verificar correo, iniciar sesión, refrescar tokens, cerrar sesión y recuperar contraseña mediante códigos enviados por correo.
+
+*Precondiciones:* El usuario no autenticado cuenta con correo y contraseña válidos, o el administrador cuenta con sesión activa para crear usuarios administrados.
+
+*Flujo básico:*
+. El usuario registra una cuenta local indicando correo, contraseña, rol y locale.
+. El sistema crea la cuenta, genera código de verificación y envía notificación por correo.
+. El usuario verifica el código y posteriormente inicia sesión.
+. El sistema entrega tokens JWT de acceso y refresh.
+. Durante la sesión, el usuario puede consultar `/auth/me`, refrescar tokens o cerrar sesión.
+
+*Flujos alternos y excepciones:*
+* Si el correo ya existe, el sistema rechaza el registro.
+* Si el código de verificación o recuperación expira, el sistema solicita generar uno nuevo.
+* Si se detectan intentos excesivos de inicio de sesión, se aplica rate limiting o bloqueo temporal.
+
+=== CU-02 Vincularse con Nutriólogo
+*Actor principal:* Paciente.
+
+*Descripción:* Permite que un paciente establezca relación profesional con un nutriólogo mediante un código temporal generado por el nutriólogo.
+
+*Precondiciones:* El paciente y el nutriólogo tienen cuenta activa; el nutriólogo generó un código vigente.
+
+*Flujo básico:*
+. El paciente escanea el QR o captura el código alfanumérico.
+. El sistema valida vigencia y existencia del código.
+. El sistema asocia el `patientId` con el `nutritionistId`.
+. El paciente puede consultar el perfil de su nutriólogo vinculado.
+. Los servicios clínicos y de tracking validan la relación antes de exponer datos al nutriólogo.
+
+*Flujos alternos y excepciones:*
+* Si el código expiró o no existe, se rechaza la vinculación.
+* El paciente puede desvincularse.
+* El nutriólogo puede desvincular a un paciente de su cartera.
+
+=== CU-03 Registrar Ingesta Alimenticia
+*Actor principal:* Paciente.
+
+*Descripción:* Permite buscar alimentos en catálogo local o FatSecret y registrar comidas con cantidades en gramos, tipo de comida, fecha y evidencia opcional.
+
+*Precondiciones:* El paciente está autenticado y tiene perfil clínico suficiente para calcular metas.
+
+*Flujo básico:*
+. El paciente busca alimentos por texto o código de barras.
+. El `tracking-service` consulta el catálogo local/cache y, si no hay coincidencia, solicita datos al `catalog-service`.
+. El `catalog-service` consulta FatSecret, normaliza macronutrientes y micronutrientes, y guarda resultados en la base local/cache.
+. El paciente selecciona alimentos, gramos, tipo de comida y fecha.
+. El sistema guarda el registro de comida y calcula los totales nutricionales.
+
+*Flujos alternos y excepciones:*
+* Si FatSecret no responde, el sistema devuelve un error controlado y puede operar con datos locales previamente cacheados.
+* Si el alimento no existe, se informa al usuario.
+* La evidencia multimedia se referencia mediante `photoKey` cuando el paciente ya subió una foto.
+
+=== CU-04 Subir Evidencia Multimedia
+*Actor principal:* Paciente.
+
+*Descripción:* Permite adjuntar fotografías de comidas o progreso mediante subida directa a Cloudflare R2 con URL firmada.
+
+*Precondiciones:* El paciente está autenticado y el archivo cumple reglas de nombre/tipo configuradas.
+
+*Flujo básico:*
+. El cliente solicita una URL firmada al `media-service`.
+. El sistema valida JWT y aplica límite de 3 solicitudes por minuto por usuario.
+. El servicio genera una URL de subida de un solo uso.
+. El cliente sube el archivo directamente a Cloudflare R2.
+. El registro alimenticio o expediente conserva la referencia del archivo.
+
+*Flujos alternos y excepciones:*
+* Si se excede la cuota, el sistema responde con error 429.
+* Si falla la integración de almacenamiento, se reporta error sin bloquear otros registros clínicos.
+
+=== CU-05 Gestionar Citas
+*Actor principal:* Paciente.
+
+*Descripción:* Permite consultar disponibilidad del nutriólogo, reservar, cancelar, reprogramar y consultar citas.
+
+*Precondiciones:* El paciente está autenticado y conoce el nutriólogo al que desea consultar.
+
+*Flujo básico:*
+. El paciente consulta horarios libres por nutriólogo y rango de fechas.
+. El paciente selecciona un slot disponible.
+. El sistema reserva la cita con control de versión para evitar dobles reservas.
+. El paciente consulta sus próximas citas o historial por rango y estado.
+. El paciente puede cancelar o reprogramar una cita.
+
+*Flujos alternos y excepciones:*
+* Si otro paciente tomó el slot, se responde conflicto.
+* Si la cita no pertenece al paciente, se rechaza la operación.
+* Al reprogramar, el sistema libera el slot anterior y reserva el nuevo de forma consistente.
+
+=== CU-06 Consultar Progreso
+*Actor principal:* Paciente.
+
+*Descripción:* Permite visualizar resumen del día, histórico de macronutrientes, registros de comida, metas y evolución de peso.
+
+*Precondiciones:* El paciente está autenticado y cuenta con registros o perfil clínico.
+
+*Flujo básico:*
+. El paciente abre su dashboard.
+. El sistema consulta metas clínicas, resumen nutricional diario y consumos registrados.
+. El paciente consulta histórico de macros por rango de fechas.
+. El paciente registra, edita o elimina mediciones de peso.
+. El sistema recalcula metas cuando corresponde.
+
+*Flujos alternos y excepciones:*
+* Si no existe perfil clínico, el sistema solicita completar onboarding.
+* Si no hay registros para el rango, se muestra estado vacío sin error.
+
+=== CU-07 Generar Invitación de Vinculación
+*Actor principal:* Nutriólogo.
+
+*Descripción:* Permite generar y consultar un código temporal para vincular pacientes.
+
+*Precondiciones:* El nutriólogo está autenticado con rol `NUTRITIONIST`.
+
+*Flujo básico:*
+. El nutriólogo solicita generar código.
+. El sistema crea un código alfanumérico temporal asociado al nutriólogo.
+. El frontend lo representa como QR o código capturable.
+. El nutriólogo puede consultar el código vigente y su tiempo restante.
+
+*Flujos alternos y excepciones:*
+* Si no existe código vigente, la consulta responde sin contenido.
+* Un código vencido no permite vinculación.
+
+=== CU-08 Configurar Disponibilidad
+*Actor principal:* Nutriólogo.
+
+*Descripción:* Permite que el nutriólogo configure bloques de atención para que los pacientes puedan reservar citas sin dobles reservas.
+
+*Precondiciones:* El nutriólogo está autenticado con rol `NUTRITIONIST`.
+
+*Flujo básico:*
+. El nutriólogo captura días, bloques horarios, duración de slot y zona horaria.
+. El sistema valida que los bloques sean válidos, no estén en el pasado y respeten duración mínima/máxima.
+. El `agenda-service` genera slots en bloque para el nutriólogo autenticado.
+. El nutriólogo consulta sus slots por rango de fechas.
+. El nutriólogo desactiva slots cuando ya no estarán disponibles.
+. El nutriólogo consulta sus citas reservadas por rango.
+
+*Flujos alternos y excepciones:*
+* Si un slot reservado se desactiva con más de 24 horas de anticipación, la cita asociada se cancela y el sistema conserva auditoría.
+* Si faltan menos de 24 horas para el slot, la desactivación se rechaza.
+* Si el slot no pertenece al nutriólogo, se rechaza la operación.
+
+=== CU-09 Supervisar Expediente
+*Actor principal:* Nutriólogo.
+
+*Descripción:* Permite consultar expedientes de pacientes vinculados: perfil, métricas, historial de peso, consumo diario, macros históricos, plan nutricional y observaciones.
+
+*Precondiciones:* El nutriólogo está autenticado y el paciente está vinculado a él.
+
+*Flujo básico:*
+. El nutriólogo consulta su lista de pacientes vinculados.
+. Selecciona un paciente.
+. El sistema valida la relación nutriólogo-paciente.
+. El sistema muestra perfil clínico, peso, registros de comida, resumen diario, histórico de macros y plan nutricional.
+. El nutriólogo puede actualizar peso/estatura del paciente cuando sea necesario.
+
+*Flujos alternos y excepciones:*
+* Si el paciente no está vinculado al nutriólogo, el acceso se deniega.
+* Si no existen registros, se muestra el expediente con secciones vacías.
+
+=== CU-10 Registrar Observaciones
+*Actor principal:* Nutriólogo.
+
+*Descripción:* Permite registrar, editar, eliminar y consultar observaciones clínicas para pacientes vinculados.
+
+*Precondiciones:* El nutriólogo está autenticado y tiene relación válida con el paciente.
+
+*Flujo básico:*
+. El nutriólogo abre el expediente del paciente.
+. Captura una nota clínica.
+. El sistema guarda la observación con `patientId`, `nutritionistId` y fecha.
+. El nutriólogo puede editar o eliminar observaciones propias.
+. El paciente puede consultar las observaciones asociadas a su cuenta.
+
+*Flujos alternos y excepciones:*
+* Si el nutriólogo intenta modificar una observación que no le corresponde, el sistema rechaza la operación.
+* Si la nota no cumple validaciones, no se guarda.
+
+=== CU-11 Analizar Reportes Operativos
+*Actor principal:* Nutriólogo.
+
+*Descripción:* Permite consultar reportes auditables de agenda y progreso de pacientes vinculados.
+
+*Precondiciones:* El nutriólogo está autenticado.
+
+*Flujo básico:*
+. El nutriólogo selecciona rango de fechas.
+. El sistema consulta reporte de citas por estado y paciente opcional.
+. El sistema consulta reporte de slots por rango y estado.
+. El sistema consulta progreso de peso de pacientes vinculados.
+. El frontend permite visualizar y exportar reportes en PDF.
+
+*Flujos alternos y excepciones:*
+* Si el rango de fechas es inválido, se rechaza la consulta.
+* Si no hay datos, se muestra reporte vacío.
+
+=== CU-12 Gestionar Usuario y Roles
+*Actor principal:* Administrador.
+
+*Descripción:* Permite administrar usuarios locales mediante creación, listado y habilitación/deshabilitación de cuentas.
+
+*Precondiciones:* El administrador está autenticado con rol `ADMIN`.
+
+*Flujo básico:*
+. El administrador abre el panel de administración.
+. Consulta la lista de usuarios.
+. Crea un usuario local indicando correo, contraseña, rol y locale.
+. Habilita o deshabilita cuentas existentes según necesidad operativa.
+
+*Flujos alternos y excepciones:*
+* Si el correo ya existe, se rechaza la creación.
+* Si un usuario no existe, se responde error de no encontrado.
+* Los roles no administradores no pueden acceder a estos endpoints.
+
+=== CU-13 Gestionar Catálogos
+*Actor principal:* Administrador; Nutriólogo con alcance limitado.
+
+*Estado:* Pendiente de implementación.
+
+*Descripción planificada:* Permitirá mantener alimentos en la base local. El administrador podrá crear, actualizar y desactivar registros con borrado lógico. El nutriólogo solo podrá crear alimentos locales para apoyar planes o registros, sin editar ni desactivar registros globales.
+
+*Precondiciones planificadas:* El usuario está autenticado y tiene rol `ADMIN` para administración completa o `NUTRITIONIST` para creación limitada.
+
+*Flujo básico planificado:*
+. El usuario captura datos nutricionales obligatorios del alimento.
+. El sistema valida duplicidad por código de barras o nombre/marca cuando aplique.
+. Si el usuario es administrador, puede crear o actualizar el alimento.
+. Si el usuario es nutriólogo, solo puede crear un registro local permitido.
+. El administrador puede desactivar alimentos mediante soft delete para conservar trazabilidad.
+
+*Restricciones:*
+* Actualmente el `catalog-service` solo expone consulta gRPC por código de barras y búsqueda por texto.
+* La base local se usa como caché/read-through de resultados provenientes de FatSecret.
+* No existen todavía endpoints productivos de administración de catálogo.
+
+=== CU-14 Monitorear Salud del Sistema
+*Actor principal:* Administrador u operador técnico.
+
+*Descripción:* Permite observar el estado operativo del ecosistema mediante métricas, logs y trazas centralizadas.
+
+*Precondiciones:* El stack de observabilidad está levantado con Docker Compose y el usuario tiene acceso a Grafana.
+
+*Flujo básico:*
+. Prometheus recolecta métricas de servicios Spring Boot mediante endpoints de Actuator/Micrometer.
+. Promtail descubre contenedores y envía logs a Loki.
+. Los servicios emiten trazas OpenTelemetry hacia Tempo.
+. Grafana se provisiona con Prometheus, Loki y Tempo como fuentes de datos.
+. El administrador consulta dashboards, logs correlacionados por `trace_id` y trazas distribuidas.
+
+*Flujos alternos y excepciones:*
+* Si un servicio deja de exponer métricas o logs, Grafana muestra ausencia de datos para ese componente.
+* Si Tempo no recibe trazas, las métricas y logs siguen disponibles de manera independiente.

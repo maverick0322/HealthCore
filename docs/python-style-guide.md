@@ -33,7 +33,7 @@ Para garantizar la separación de responsabilidades y la inversión de dependenc
 
 * *`domain/`*: Entidades puras (`dataclasses` o modelos de `Pydantic`), enumeradores (`Enum`) y excepciones de negocio. *Regla de oro:* Cero dependencias de frameworks externos o librerías de infraestructura.
 * *`application/`*: Casos de uso (Services) que orquestan el dominio. Aquí se definen las interfaces (Abstract Base Classes - ABC) que indican qué necesita el sistema.
-* *`infrastructure/`*: Implementaciones técnicas (adaptadores). Clientes HTTP externos (ej. llamadas a Open Food Facts con `httpx` o `requests`), conexión a bases de datos y configuraciones.
+* *`infrastructure/`*: Implementaciones técnicas (adaptadores). Clientes HTTP externos (ej. llamadas a FatSecret con `httpx` o `requests`), conexión a bases de datos y configuraciones.
 * *`interfaces/`*: Puntos de entrada hacia el microservicio (Servidores gRPC, Controladores REST, DTOs).
 
 == 5. Reglas de nombramiento (Basado en PEP 8)
@@ -218,7 +218,7 @@ Usar `#` exclusivamente para explicar el _por qué_ de una decisión técnica, n
 +
 [source,python]
 ----
-# Timeout is 10s because the Open Food Facts API is slow during peak hours
+# Timeout is 10s because the FatSecret API can be slow during peak hours
 ----
 
 * *Incorrecto*:
@@ -326,7 +326,7 @@ Para caídas totales del servicio (ej. no se pudo levantar el servidor gRPC).
 
 === 11.2. Error (`logging.error()`)
 Para fallos no esperados donde se rompe el flujo. Opcionalmente usar `logging.exception()` para imprimir el _stacktrace_.
-* *Ejemplo*: `logger.exception("Failed to connect to Open Food Facts")`
+* *Ejemplo*: `logger.exception("Failed to connect to FatSecret")`
 
 === 11.3. Warning (`logging.warning()`)
 Situaciones anómalas que no detienen el sistema, como un código de barras no encontrado.

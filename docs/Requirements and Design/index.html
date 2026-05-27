@@ -480,7 +480,24 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_vista_de_procesos_diagramas_uml_de_secuencia">15. Vista de procesos (diagramas uml de secuencia)</a></li>
 <li><a href="#_vista_de_despliegue_diagrama_uml_de_despliegue">16. Vista de despliegue (diagrama uml de despliegue)</a></li>
 <li><a href="#_modelo_de_datos_diagrama_de_entidad_relación">17. Modelo de datos (diagrama de entidad-relación)</a></li>
-<li><a href="#_descripciones_de_casos_de_uso">18. Descripciones de casos de uso</a></li>
+<li><a href="#_descripciones_de_casos_de_uso">18. Descripciones de casos de uso</a>
+<ul class="sectlevel2">
+<li><a href="#_cu_01_gestionar_cuenta">18.1. CU-01 Gestionar Cuenta</a></li>
+<li><a href="#_cu_02_vincularse_con_nutriólogo">18.2. CU-02 Vincularse con Nutriólogo</a></li>
+<li><a href="#_cu_03_registrar_ingesta_alimenticia">18.3. CU-03 Registrar Ingesta Alimenticia</a></li>
+<li><a href="#_cu_04_subir_evidencia_multimedia">18.4. CU-04 Subir Evidencia Multimedia</a></li>
+<li><a href="#_cu_05_gestionar_citas">18.5. CU-05 Gestionar Citas</a></li>
+<li><a href="#_cu_06_consultar_progreso">18.6. CU-06 Consultar Progreso</a></li>
+<li><a href="#_cu_07_generar_invitación_de_vinculación">18.7. CU-07 Generar Invitación de Vinculación</a></li>
+<li><a href="#_cu_08_configurar_disponibilidad">18.8. CU-08 Configurar Disponibilidad</a></li>
+<li><a href="#_cu_09_supervisar_expediente">18.9. CU-09 Supervisar Expediente</a></li>
+<li><a href="#_cu_10_registrar_observaciones">18.10. CU-10 Registrar Observaciones</a></li>
+<li><a href="#_cu_11_analizar_reportes_operativos">18.11. CU-11 Analizar Reportes Operativos</a></li>
+<li><a href="#_cu_12_gestionar_usuario_y_roles">18.12. CU-12 Gestionar Usuario y Roles</a></li>
+<li><a href="#_cu_13_gestionar_catálogos">18.13. CU-13 Gestionar Catálogos</a></li>
+<li><a href="#_cu_14_monitorear_salud_del_sistema">18.14. CU-14 Monitorear Salud del Sistema</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -505,7 +522,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="sect2">
 <h3 id="_alcance_del_sistema"><a class="anchor" href="#_alcance_del_sistema"></a>1.1. Alcance del sistema</h3>
 <div class="paragraph">
-<p>El sistema permitirá el registro de alimentos (vía catálogo local y Open Food Facts ), gestión de citas con control de concurrencia , y visualización de progreso. El acceso será multiplataforma: Web, Escritorio (Electron) y Móvil (PWA).</p>
+<p>El sistema permite el registro de alimentos mediante catálogo local y consulta externa a FatSecret, gestión de citas con control de concurrencia, seguimiento clínico-nutricional y visualización de progreso. El acceso será multiplataforma: Web, Escritorio (Electron) y Móvil (PWA).</p>
 </div>
 </div>
 </div>
@@ -592,7 +609,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Vinculación Dinámica: Capacidad de establecer una relación profesional con un nutriólogo mediante el escaneo de un código QR único.</p>
 </li>
 <li>
-<p>Registro Multimodal de Alimentos: Búsqueda en catálogo local o externo (Open Food Facts) para registrar ingesta calórica diaria.</p>
+<p>Registro Multimodal de Alimentos: Búsqueda en catálogo local o externo (FatSecret) para registrar ingesta calórica diaria.</p>
 </li>
 <li>
 <p>Gestión de Citas: Consulta de disponibilidad en tiempo real y reservación de espacios de atención.</p>
@@ -630,10 +647,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Gestión de Usuarios y Roles: Administrar altas, bajas y permisos de acceso para asegurar la integridad del sistema.</p>
 </li>
 <li>
-<p>Gestión de Catálogos: Actualizar la base de datos interna de alimentos y parámetros de referencia nutricional.</p>
+<p>Gestión de Catálogos: Funcionalidad pendiente de implementación. Se contempla que el administrador pueda crear, actualizar y desactivar alimentos mediante borrado lógico; el nutriólogo solo podrá crear alimentos en la base local sin editar ni desactivar registros globales.</p>
 </li>
 <li>
-<p>Monitoreo de Salud del Sistema: Supervisar el estado de los microservicios y la conectividad con servicios externos.</p>
+<p>Monitoreo de Salud del Sistema: Supervisar métricas, logs y trazas del ecosistema mediante Grafana, Prometheus, Loki, Promtail y Tempo.</p>
 </li>
 </ul>
 </div>
@@ -662,8 +679,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-01</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Gestionar Cuenta</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Paciente</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">El paciente puede registrarse, iniciar sesión y recuperar su contraseña por correo electrónico.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Paciente / Nutriólogo / Administrador</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El usuario puede registrarse, verificar correo, iniciar sesión, refrescar sesión, cerrar sesión y recuperar su contraseña; el administrador puede crear usuarios locales.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-02</p></td>
@@ -675,25 +692,25 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-03</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Registrar Ingesta Alimenticia</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Paciente</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">El paciente busca alimentos en el catálogo local o mediante la API de Open Food Facts para registrar su consumo diario.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El paciente busca alimentos en el catálogo local o mediante FatSecret, registra comidas por tipo, fecha, gramos y evidencia opcional, y el sistema calcula sus nutrientes.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-04</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Subir Evidencia Multimedia</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Paciente</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">El paciente carga fotografías de sus comidas o progreso físico como apoyo visual para el nutriólogo.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El paciente solicita una URL firmada y sube fotografías directamente a Cloudflare R2 como evidencia de comidas o progreso, con control de cuota por usuario.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-05</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Gestionar Citas</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Paciente</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Consultar horarios disponibles del nutriólogo vinculado y reservar, reprogramar o cancelar citas.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Consultar horarios disponibles del nutriólogo vinculado y reservar, reprogramar, cancelar o consultar citas e historial.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-06</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Consultar Progreso</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Paciente</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Visualizar gráficas de consumo calórico, evolución de peso y reportes de cumplimiento de metas.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Visualizar resumen diario, histórico de macronutrientes, metas nutricionales, evolución de peso y registros de consumo.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-07</p></td>
@@ -705,43 +722,43 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-08</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Configurar Disponibilidad</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Nutriólogo</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">El nutriólogo define sus horarios de atención y cupos máximos para la gestión de la agenda.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El nutriólogo genera bloques de horarios por día o rango, consulta sus slots, desactiva horarios disponibles y revisa sus citas asociadas.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-09</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Supervisar Expediente</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Nutriólogo</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Acceder al historial alimenticio, evidencias fotográficas y gráficas de progreso de los pacientes vinculados.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Acceder únicamente a pacientes vinculados para consultar perfil, peso, plan nutricional, consumo diario, macros históricos y observaciones.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-10</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Registrar Observaciones</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Nutriólogo</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Emitir comentarios técnicos y ajustes al plan nutricional basados en los registros del paciente.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Crear, actualizar, eliminar y consultar observaciones clínicas de pacientes vinculados; el paciente puede consultar las observaciones emitidas para él.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-11</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Analizar Reportes Operativos</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Nutriólogo</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Consultar estadísticas de citas y niveles de adherencia de su grupo de pacientes.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Consultar reportes auditables de citas, slots y progreso de peso de pacientes vinculados por rangos de fechas.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-12</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Gestionar Usuario y Roles</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Administrador</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Administrar altas, bajas y permisos de acceso para asegurar la integridad del sistema.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Crear usuarios locales, listar usuarios administrados y habilitar o deshabilitar cuentas mediante control de rol administrador.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-13</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Gestionar Catálogos</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Administrador</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Actualizar la base de datos interna de alimentos y parámetros de referencia nutricional.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Administrador / Nutriólogo</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Funcionalidad pendiente: el administrador podrá crear, actualizar y desactivar alimentos de forma lógica; el nutriólogo solo podrá crear alimentos en la base local.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">CU-14</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Monitorear Salud del Sistema</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Administrador</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Supervisar el estado de los microservicios y la conectividad con servicios externos.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Supervisar métricas, logs y trazas de los microservicios con Grafana, Prometheus, Loki, Promtail y Tempo.</p></td>
 </tr>
 </tbody>
 </table>
@@ -804,7 +821,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="sect2">
 <h3 id="_limitaciones_y_restricciones"><a class="anchor" href="#_limitaciones_y_restricciones"></a>8.1. Limitaciones y restricciones</h3>
 <div class="paragraph">
-<p>Dependencia Externa: El catálogo nutricional extendido depende totalmente de la disponibilidad y estructura de datos de Open Food Facts.</p>
+<p>Dependencia Externa: El catálogo nutricional extendido depende de la disponibilidad, cuotas y estructura de datos de FatSecret. El sistema mitiga esta dependencia con una capa de catálogo propia, normalización de datos y caché local.</p>
 </div>
 <div class="paragraph">
 <p>Alcance Multiplataforma: El acceso móvil tendrá funciones limitadas de reporte comparado con la versión web/escritorio.</p>
@@ -924,9 +941,9 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <td class="tableblock halign-left valign-top"><p class="tableblock">Mitigación Propuesta</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Inestabilidad de la API Externa (Open Food Facts): El servicio de terceros responde lento o cambia su formato de datos.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inestabilidad de la API Externa (FatSecret): El servicio de terceros responde lento, limita cuotas o cambia su formato de datos.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Técnico: Fallos en el registro alimenticio y degradación del rendimiento.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Aislar la integración en el microservicio de Catálogo (Python) y usar Caché Local para alimentos comunes, permitiendo consultas aunque la API externa falle.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Aislar la integración en el microservicio de Catálogo (Python), usar OAuth 2.0 Client Credentials y conservar una base local/cache de alimentos comunes para reducir llamadas externas.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Baja Adherencia por Complejidad: El paciente encuentra difícil registrar alimentos y abandona la plataforma.</p></td>
@@ -958,7 +975,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Compatibilidad Limitada de OS: El sistema solo garantiza funcionamiento óptimo en entornos basados en Linux/Docker, asumiendo que el despliegue en otros sistemas operativos podría requerir ajustes manuales.</p>
 </li>
 <li>
-<p>Volatilidad de Datos no Normalizados: Se acepta que algunos campos de Open Food Facts puedan venir vacíos o incompletos, enfocándose solo en las métricas nutricionales críticas para el seguimiento.</p>
+<p>Volatilidad de Datos no Normalizados: Se acepta que algunos campos de FatSecret puedan venir vacíos o incompletos, enfocándose solo en las métricas nutricionales críticas para el seguimiento.</p>
 </li>
 </ul>
 </div>
@@ -1050,6 +1067,365 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="sectionbody">
 <div class="paragraph">
 <p>Detalle paso a paso de los flujos principales (Flujo básico, alterno y excepciones).</p>
+</div>
+<div class="sect2">
+<h3 id="_cu_01_gestionar_cuenta"><a class="anchor" href="#_cu_01_gestionar_cuenta"></a>18.1. CU-01 Gestionar Cuenta</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Paciente, Nutriólogo o Administrador.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite registrar cuentas locales, verificar correo, iniciar sesión, refrescar tokens, cerrar sesión y recuperar contraseña mediante códigos enviados por correo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El usuario no autenticado cuenta con correo y contraseña válidos, o el administrador cuenta con sesión activa para crear usuarios administrados.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El usuario registra una cuenta local indicando correo, contraseña, rol y locale.
+. El sistema crea la cuenta, genera código de verificación y envía notificación por correo.
+. El usuario verifica el código y posteriormente inicia sesión.
+. El sistema entrega tokens JWT de acceso y refresh.
+. Durante la sesión, el usuario puede consultar <code>/auth/me</code>, refrescar tokens o cerrar sesión.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si el correo ya existe, el sistema rechaza el registro.
+* Si el código de verificación o recuperación expira, el sistema solicita generar uno nuevo.
+* Si se detectan intentos excesivos de inicio de sesión, se aplica rate limiting o bloqueo temporal.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_02_vincularse_con_nutriólogo"><a class="anchor" href="#_cu_02_vincularse_con_nutriólogo"></a>18.2. CU-02 Vincularse con Nutriólogo</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Paciente.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite que un paciente establezca relación profesional con un nutriólogo mediante un código temporal generado por el nutriólogo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El paciente y el nutriólogo tienen cuenta activa; el nutriólogo generó un código vigente.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El paciente escanea el QR o captura el código alfanumérico.
+. El sistema valida vigencia y existencia del código.
+. El sistema asocia el <code>patientId</code> con el <code>nutritionistId</code>.
+. El paciente puede consultar el perfil de su nutriólogo vinculado.
+. Los servicios clínicos y de tracking validan la relación antes de exponer datos al nutriólogo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si el código expiró o no existe, se rechaza la vinculación.
+* El paciente puede desvincularse.
+* El nutriólogo puede desvincular a un paciente de su cartera.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_03_registrar_ingesta_alimenticia"><a class="anchor" href="#_cu_03_registrar_ingesta_alimenticia"></a>18.3. CU-03 Registrar Ingesta Alimenticia</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Paciente.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite buscar alimentos en catálogo local o FatSecret y registrar comidas con cantidades en gramos, tipo de comida, fecha y evidencia opcional.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El paciente está autenticado y tiene perfil clínico suficiente para calcular metas.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El paciente busca alimentos por texto o código de barras.
+. El <code>tracking-service</code> consulta el catálogo local/cache y, si no hay coincidencia, solicita datos al <code>catalog-service</code>.
+. El <code>catalog-service</code> consulta FatSecret, normaliza macronutrientes y micronutrientes, y guarda resultados en la base local/cache.
+. El paciente selecciona alimentos, gramos, tipo de comida y fecha.
+. El sistema guarda el registro de comida y calcula los totales nutricionales.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si FatSecret no responde, el sistema devuelve un error controlado y puede operar con datos locales previamente cacheados.
+* Si el alimento no existe, se informa al usuario.
+* La evidencia multimedia se referencia mediante <code>photoKey</code> cuando el paciente ya subió una foto.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_04_subir_evidencia_multimedia"><a class="anchor" href="#_cu_04_subir_evidencia_multimedia"></a>18.4. CU-04 Subir Evidencia Multimedia</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Paciente.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite adjuntar fotografías de comidas o progreso mediante subida directa a Cloudflare R2 con URL firmada.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El paciente está autenticado y el archivo cumple reglas de nombre/tipo configuradas.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El cliente solicita una URL firmada al <code>media-service</code>.
+. El sistema valida JWT y aplica límite de 3 solicitudes por minuto por usuario.
+. El servicio genera una URL de subida de un solo uso.
+. El cliente sube el archivo directamente a Cloudflare R2.
+. El registro alimenticio o expediente conserva la referencia del archivo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si se excede la cuota, el sistema responde con error 429.
+* Si falla la integración de almacenamiento, se reporta error sin bloquear otros registros clínicos.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_05_gestionar_citas"><a class="anchor" href="#_cu_05_gestionar_citas"></a>18.5. CU-05 Gestionar Citas</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Paciente.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite consultar disponibilidad del nutriólogo, reservar, cancelar, reprogramar y consultar citas.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El paciente está autenticado y conoce el nutriólogo al que desea consultar.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El paciente consulta horarios libres por nutriólogo y rango de fechas.
+. El paciente selecciona un slot disponible.
+. El sistema reserva la cita con control de versión para evitar dobles reservas.
+. El paciente consulta sus próximas citas o historial por rango y estado.
+. El paciente puede cancelar o reprogramar una cita.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si otro paciente tomó el slot, se responde conflicto.
+* Si la cita no pertenece al paciente, se rechaza la operación.
+* Al reprogramar, el sistema libera el slot anterior y reserva el nuevo de forma consistente.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_06_consultar_progreso"><a class="anchor" href="#_cu_06_consultar_progreso"></a>18.6. CU-06 Consultar Progreso</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Paciente.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite visualizar resumen del día, histórico de macronutrientes, registros de comida, metas y evolución de peso.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El paciente está autenticado y cuenta con registros o perfil clínico.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El paciente abre su dashboard.
+. El sistema consulta metas clínicas, resumen nutricional diario y consumos registrados.
+. El paciente consulta histórico de macros por rango de fechas.
+. El paciente registra, edita o elimina mediciones de peso.
+. El sistema recalcula metas cuando corresponde.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si no existe perfil clínico, el sistema solicita completar onboarding.
+* Si no hay registros para el rango, se muestra estado vacío sin error.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_07_generar_invitación_de_vinculación"><a class="anchor" href="#_cu_07_generar_invitación_de_vinculación"></a>18.7. CU-07 Generar Invitación de Vinculación</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Nutriólogo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite generar y consultar un código temporal para vincular pacientes.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El nutriólogo está autenticado con rol <code>NUTRITIONIST</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El nutriólogo solicita generar código.
+. El sistema crea un código alfanumérico temporal asociado al nutriólogo.
+. El frontend lo representa como QR o código capturable.
+. El nutriólogo puede consultar el código vigente y su tiempo restante.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si no existe código vigente, la consulta responde sin contenido.
+* Un código vencido no permite vinculación.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_08_configurar_disponibilidad"><a class="anchor" href="#_cu_08_configurar_disponibilidad"></a>18.8. CU-08 Configurar Disponibilidad</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Nutriólogo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite que el nutriólogo configure bloques de atención para que los pacientes puedan reservar citas sin dobles reservas.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El nutriólogo está autenticado con rol <code>NUTRITIONIST</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El nutriólogo captura días, bloques horarios, duración de slot y zona horaria.
+. El sistema valida que los bloques sean válidos, no estén en el pasado y respeten duración mínima/máxima.
+. El <code>agenda-service</code> genera slots en bloque para el nutriólogo autenticado.
+. El nutriólogo consulta sus slots por rango de fechas.
+. El nutriólogo desactiva slots cuando ya no estarán disponibles.
+. El nutriólogo consulta sus citas reservadas por rango.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si un slot reservado se desactiva con más de 24 horas de anticipación, la cita asociada se cancela y el sistema conserva auditoría.
+* Si faltan menos de 24 horas para el slot, la desactivación se rechaza.
+* Si el slot no pertenece al nutriólogo, se rechaza la operación.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_09_supervisar_expediente"><a class="anchor" href="#_cu_09_supervisar_expediente"></a>18.9. CU-09 Supervisar Expediente</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Nutriólogo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite consultar expedientes de pacientes vinculados: perfil, métricas, historial de peso, consumo diario, macros históricos, plan nutricional y observaciones.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El nutriólogo está autenticado y el paciente está vinculado a él.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El nutriólogo consulta su lista de pacientes vinculados.
+. Selecciona un paciente.
+. El sistema valida la relación nutriólogo-paciente.
+. El sistema muestra perfil clínico, peso, registros de comida, resumen diario, histórico de macros y plan nutricional.
+. El nutriólogo puede actualizar peso/estatura del paciente cuando sea necesario.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si el paciente no está vinculado al nutriólogo, el acceso se deniega.
+* Si no existen registros, se muestra el expediente con secciones vacías.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_10_registrar_observaciones"><a class="anchor" href="#_cu_10_registrar_observaciones"></a>18.10. CU-10 Registrar Observaciones</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Nutriólogo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite registrar, editar, eliminar y consultar observaciones clínicas para pacientes vinculados.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El nutriólogo está autenticado y tiene relación válida con el paciente.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El nutriólogo abre el expediente del paciente.
+. Captura una nota clínica.
+. El sistema guarda la observación con <code>patientId</code>, <code>nutritionistId</code> y fecha.
+. El nutriólogo puede editar o eliminar observaciones propias.
+. El paciente puede consultar las observaciones asociadas a su cuenta.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si el nutriólogo intenta modificar una observación que no le corresponde, el sistema rechaza la operación.
+* Si la nota no cumple validaciones, no se guarda.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_11_analizar_reportes_operativos"><a class="anchor" href="#_cu_11_analizar_reportes_operativos"></a>18.11. CU-11 Analizar Reportes Operativos</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Nutriólogo.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite consultar reportes auditables de agenda y progreso de pacientes vinculados.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El nutriólogo está autenticado.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El nutriólogo selecciona rango de fechas.
+. El sistema consulta reporte de citas por estado y paciente opcional.
+. El sistema consulta reporte de slots por rango y estado.
+. El sistema consulta progreso de peso de pacientes vinculados.
+. El frontend permite visualizar y exportar reportes en PDF.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si el rango de fechas es inválido, se rechaza la consulta.
+* Si no hay datos, se muestra reporte vacío.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_12_gestionar_usuario_y_roles"><a class="anchor" href="#_cu_12_gestionar_usuario_y_roles"></a>18.12. CU-12 Gestionar Usuario y Roles</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Administrador.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite administrar usuarios locales mediante creación, listado y habilitación/deshabilitación de cuentas.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El administrador está autenticado con rol <code>ADMIN</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. El administrador abre el panel de administración.
+. Consulta la lista de usuarios.
+. Crea un usuario local indicando correo, contraseña, rol y locale.
+. Habilita o deshabilita cuentas existentes según necesidad operativa.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si el correo ya existe, se rechaza la creación.
+* Si un usuario no existe, se responde error de no encontrado.
+* Los roles no administradores no pueden acceder a estos endpoints.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_13_gestionar_catálogos"><a class="anchor" href="#_cu_13_gestionar_catálogos"></a>18.13. CU-13 Gestionar Catálogos</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Administrador; Nutriólogo con alcance limitado.</p>
+</div>
+<div class="paragraph">
+<p><strong>Estado:</strong> Pendiente de implementación.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción planificada:</strong> Permitirá mantener alimentos en la base local. El administrador podrá crear, actualizar y desactivar registros con borrado lógico. El nutriólogo solo podrá crear alimentos locales para apoyar planes o registros, sin editar ni desactivar registros globales.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones planificadas:</strong> El usuario está autenticado y tiene rol <code>ADMIN</code> para administración completa o <code>NUTRITIONIST</code> para creación limitada.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico planificado:</strong>
+. El usuario captura datos nutricionales obligatorios del alimento.
+. El sistema valida duplicidad por código de barras o nombre/marca cuando aplique.
+. Si el usuario es administrador, puede crear o actualizar el alimento.
+. Si el usuario es nutriólogo, solo puede crear un registro local permitido.
+. El administrador puede desactivar alimentos mediante soft delete para conservar trazabilidad.</p>
+</div>
+<div class="paragraph">
+<p><strong>Restricciones:</strong>
+* Actualmente el <code>catalog-service</code> solo expone consulta gRPC por código de barras y búsqueda por texto.
+* La base local se usa como caché/read-through de resultados provenientes de FatSecret.
+* No existen todavía endpoints productivos de administración de catálogo.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_cu_14_monitorear_salud_del_sistema"><a class="anchor" href="#_cu_14_monitorear_salud_del_sistema"></a>18.14. CU-14 Monitorear Salud del Sistema</h3>
+<div class="paragraph">
+<p><strong>Actor principal:</strong> Administrador u operador técnico.</p>
+</div>
+<div class="paragraph">
+<p><strong>Descripción:</strong> Permite observar el estado operativo del ecosistema mediante métricas, logs y trazas centralizadas.</p>
+</div>
+<div class="paragraph">
+<p><strong>Precondiciones:</strong> El stack de observabilidad está levantado con Docker Compose y el usuario tiene acceso a Grafana.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujo básico:</strong>
+. Prometheus recolecta métricas de servicios Spring Boot mediante endpoints de Actuator/Micrometer.
+. Promtail descubre contenedores y envía logs a Loki.
+. Los servicios emiten trazas OpenTelemetry hacia Tempo.
+. Grafana se provisiona con Prometheus, Loki y Tempo como fuentes de datos.
+. El administrador consulta dashboards, logs correlacionados por <code>trace_id</code> y trazas distribuidas.</p>
+</div>
+<div class="paragraph">
+<p><strong>Flujos alternos y excepciones:</strong>
+* Si un servicio deja de exponer métricas o logs, Grafana muestra ausencia de datos para ese componente.
+* Si Tempo no recibe trazas, las métricas y logs siguen disponibles de manera independiente.</p>
+</div>
 </div>
 </div>
 </div>

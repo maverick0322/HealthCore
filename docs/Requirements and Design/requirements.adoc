@@ -5,8 +5,8 @@
 == Propósito
 Definir los requisitos funcionales, no funcionales y reglas de negocio para el desarrollo de Health Core, una plataforma distribuida que centralice el seguimiento nutricional entre pacientes y profesionales.
 
-=== Alcance del sistema 
-El sistema permitirá el registro de alimentos (vía catálogo local y Open Food Facts ), gestión de citas con control de concurrencia , y visualización de progreso. El acceso será multiplataforma: Web, Escritorio (Electron) y Móvil (PWA).
+=== Alcance del sistema
+El sistema permite el registro de alimentos mediante catálogo local y consulta externa a FatSecret, gestión de citas con control de concurrencia, seguimiento clínico-nutricional y visualización de progreso. El acceso será multiplataforma: Web, Escritorio (Electron) y Móvil (PWA).
 
 == Descripción General 
 El sistema se basa en una arquitectura de microservicios utilizando tecnologías heterogéneas como Spring Boot, Python y React. Se desplegará mediante contenedores Docker en entornos Linux.
@@ -46,7 +46,7 @@ Listado de capacidades que el sistema debe proveer.
 
 * Vinculación Dinámica: Capacidad de establecer una relación profesional con un nutriólogo mediante el escaneo de un código QR único.
 
-* Registro Multimodal de Alimentos: Búsqueda en catálogo local o externo (Open Food Facts) para registrar ingesta calórica diaria.
+* Registro Multimodal de Alimentos: Búsqueda en catálogo local o externo (FatSecret) para registrar ingesta calórica diaria.
 
 * Gestión de Citas: Consulta de disponibilidad en tiempo real y reservación de espacios de atención.
 
@@ -66,9 +66,9 @@ Listado de capacidades que el sistema debe proveer.
 
 * Gestión de Usuarios y Roles: Administrar altas, bajas y permisos de acceso para asegurar la integridad del sistema.
 
-* Gestión de Catálogos: Actualizar la base de datos interna de alimentos y parámetros de referencia nutricional.
+* Gestión de Catálogos: Funcionalidad pendiente de implementación. Se contempla que el administrador pueda crear, actualizar y desactivar alimentos mediante borrado lógico; el nutriólogo solo podrá crear alimentos en la base local sin editar ni desactivar registros globales.
 
-* Monitoreo de Salud del Sistema: Supervisar el estado de los microservicios y la conectividad con servicios externos.
+* Monitoreo de Salud del Sistema: Supervisar métricas, logs y trazas del ecosistema mediante Grafana, Prometheus, Loki, Promtail y Tempo.
 
 == Casos de uso
 Descripción funcional de las interacciones principales.
@@ -76,20 +76,20 @@ Descripción funcional de las interacciones principales.
 [cols="1,1,1,3"]
 |===
 | ID | Caso de Uso | Actor | Descripción Breve
-| CU-01 | Gestionar Cuenta | Paciente | El paciente puede registrarse, iniciar sesión y recuperar su contraseña por correo electrónico.
+| CU-01 | Gestionar Cuenta | Paciente / Nutriólogo / Administrador | El usuario puede registrarse, verificar correo, iniciar sesión, refrescar sesión, cerrar sesión y recuperar su contraseña; el administrador puede crear usuarios locales.
 | CU-02 | Vincularse con Nutriólogo | Paciente | El paciente escanea un código QR generado por el nutriólogo para establecer una relación de seguimiento profesional y autorizar el acceso a sus datos.
-| CU-03 | Registrar Ingesta Alimenticia | Paciente | El paciente busca alimentos en el catálogo local o mediante la API de Open Food Facts para registrar su consumo diario.
-| CU-04 | Subir Evidencia Multimedia | Paciente | El paciente carga fotografías de sus comidas o progreso físico como apoyo visual para el nutriólogo.
-| CU-05 | Gestionar Citas | Paciente |Consultar horarios disponibles del nutriólogo vinculado y reservar, reprogramar o cancelar citas.
-| CU-06 | Consultar Progreso | Paciente | Visualizar gráficas de consumo calórico, evolución de peso y reportes de cumplimiento de metas.
+| CU-03 | Registrar Ingesta Alimenticia | Paciente | El paciente busca alimentos en el catálogo local o mediante FatSecret, registra comidas por tipo, fecha, gramos y evidencia opcional, y el sistema calcula sus nutrientes.
+| CU-04 | Subir Evidencia Multimedia | Paciente | El paciente solicita una URL firmada y sube fotografías directamente a Cloudflare R2 como evidencia de comidas o progreso, con control de cuota por usuario.
+| CU-05 | Gestionar Citas | Paciente | Consultar horarios disponibles del nutriólogo vinculado y reservar, reprogramar, cancelar o consultar citas e historial.
+| CU-06 | Consultar Progreso | Paciente | Visualizar resumen diario, histórico de macronutrientes, metas nutricionales, evolución de peso y registros de consumo.
 | CU-07 | Generar Invitación de Vinculación | Nutriólogo | El nutriólogo genera un código QR o alfanumérico temporal para que un nuevo paciente se vincule a su cartera.
-| CU-08 | Configurar Disponibilidad | Nutriólogo | El nutriólogo define sus horarios de atención y cupos máximos para la gestión de la agenda.
-| CU-09 | Supervisar Expediente | Nutriólogo | Acceder al historial alimenticio, evidencias fotográficas y gráficas de progreso de los pacientes vinculados.
-| CU-10 | Registrar Observaciones | Nutriólogo | Emitir comentarios técnicos y ajustes al plan nutricional basados en los registros del paciente.
-| CU-11 | Analizar Reportes Operativos | Nutriólogo | Consultar estadísticas de citas y niveles de adherencia de su grupo de pacientes.
-| CU-12 | Gestionar Usuario y Roles | Administrador | Administrar altas, bajas y permisos de acceso para asegurar la integridad del sistema.
-| CU-13 | Gestionar Catálogos | Administrador | Actualizar la base de datos interna de alimentos y parámetros de referencia nutricional.
-| CU-14 | Monitorear Salud del Sistema | Administrador | Supervisar el estado de los microservicios y la conectividad con servicios externos.
+| CU-08 | Configurar Disponibilidad | Nutriólogo | El nutriólogo genera bloques de horarios por día o rango, consulta sus slots, desactiva horarios disponibles y revisa sus citas asociadas.
+| CU-09 | Supervisar Expediente | Nutriólogo | Acceder únicamente a pacientes vinculados para consultar perfil, peso, plan nutricional, consumo diario, macros históricos y observaciones.
+| CU-10 | Registrar Observaciones | Nutriólogo | Crear, actualizar, eliminar y consultar observaciones clínicas de pacientes vinculados; el paciente puede consultar las observaciones emitidas para él.
+| CU-11 | Analizar Reportes Operativos | Nutriólogo | Consultar reportes auditables de citas, slots y progreso de peso de pacientes vinculados por rangos de fechas.
+| CU-12 | Gestionar Usuario y Roles | Administrador | Crear usuarios locales, listar usuarios administrados y habilitar o deshabilitar cuentas mediante control de rol administrador.
+| CU-13 | Gestionar Catálogos | Administrador / Nutriólogo | Funcionalidad pendiente: el administrador podrá crear, actualizar y desactivar alimentos de forma lógica; el nutriólogo solo podrá crear alimentos en la base local.
+| CU-14 | Monitorear Salud del Sistema | Administrador | Supervisar métricas, logs y trazas de los microservicios con Grafana, Prometheus, Loki, Promtail y Tempo.
 |===
 
 == Preocupaciones de los Stakeholders
@@ -115,7 +115,7 @@ Restricciones y calidades técnicas del sistema.
 
 === Limitaciones y restricciones
 
-Dependencia Externa: El catálogo nutricional extendido depende totalmente de la disponibilidad y estructura de datos de Open Food Facts.
+Dependencia Externa: El catálogo nutricional extendido depende de la disponibilidad, cuotas y estructura de datos de FatSecret. El sistema mitiga esta dependencia con una capa de catálogo propia, normalización de datos y caché local.
 
 Alcance Multiplataforma: El acceso móvil tendrá funciones limitadas de reporte comparado con la versión web/escritorio.
 
@@ -155,7 +155,7 @@ Riesgos que afectan la fluidez del uso diario o la calidad técnica esperada.
 [cols="1,1,1"]
 |===
 | Riesgo | Impacto | Mitigación Propuesta 
-| Inestabilidad de la API Externa (Open Food Facts): El servicio de terceros responde lento o cambia su formato de datos. | Técnico: Fallos en el registro alimenticio y degradación del rendimiento. | Aislar la integración en el microservicio de Catálogo (Python) y usar Caché Local para alimentos comunes, permitiendo consultas aunque la API externa falle. 
+| Inestabilidad de la API Externa (FatSecret): El servicio de terceros responde lento, limita cuotas o cambia su formato de datos. | Técnico: Fallos en el registro alimenticio y degradación del rendimiento. | Aislar la integración en el microservicio de Catálogo (Python), usar OAuth 2.0 Client Credentials y conservar una base local/cache de alimentos comunes para reducir llamadas externas. 
 | Baja Adherencia por Complejidad: El paciente encuentra difícil registrar alimentos y abandona la plataforma. | Negocio: El sistema deja de ser útil para el seguimiento nutricional. | Priorizar la Usabilidad Móvil con flujos de registro de "pocos pasos" y búsqueda predictiva en el catálogo. 
 | Deuda Técnica por Falta de Pruebas: No alcanzar el 70% de cobertura de código exigido. | Técnico: Aparición de bugs en producción y dificultad para escalar el sistema. | Integrar Pruebas Automatizadas en el flujo de desarrollo y usar herramientas de reporte de cobertura.
 |===
@@ -167,7 +167,7 @@ Situaciones que, aunque no son ideales, se deciden aceptar dado el contexto acad
 * Latencia en Redes Externas: Se acepta que la carga de imágenes pesadas en el media-service pueda ser más lenta que el texto, siempre que no bloquee el hilo principal del sistema.
 * Limitación de Funciones en Móvil: Se asume que el paciente no podrá generar reportes complejos ni realizar administración avanzada desde su teléfono, delegando eso a la versión Web/Desktop.
 * Compatibilidad Limitada de OS: El sistema solo garantiza funcionamiento óptimo en entornos basados en Linux/Docker, asumiendo que el despliegue en otros sistemas operativos podría requerir ajustes manuales.
-* Volatilidad de Datos no Normalizados: Se acepta que algunos campos de Open Food Facts puedan venir vacíos o incompletos, enfocándose solo en las métricas nutricionales críticas para el seguimiento.
+* Volatilidad de Datos no Normalizados: Se acepta que algunos campos de FatSecret puedan venir vacíos o incompletos, enfocándose solo en las métricas nutricionales críticas para el seguimiento.
 
 
 

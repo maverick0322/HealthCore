@@ -1,11 +1,11 @@
 # ⚡ HealthCore: Caché Distribuido con Redis
 
 ## 1. El Problema del Rendimiento y las APIs Externas
-En la arquitectura de HealthCore, nuestro `tracking-service` (Java) se comunica por gRPC con el `catalog-service` (Python), el cual a su vez consulta la API pública de **Open Food Facts** para obtener los macronutrientes de los alimentos.
+En la arquitectura de HealthCore, nuestro `tracking-service` (Java) se comunica por gRPC con el `catalog-service` (Python), el cual a su vez consulta la API de **FatSecret** para obtener los macronutrientes de los alimentos.
 
 Si no tuviéramos un caché, enfrentaríamos tres problemas críticos:
 1. **Latencia:** Cada búsqueda tomaría entre 300ms y 1 segundo en viajar por internet.
-2. **Rate Limiting:** Open Food Facts bloquearía nuestra IP si cientos de pacientes buscan alimentos al mismo tiempo.
+2. **Rate Limiting:** FatSecret puede limitar cuotas si cientos de pacientes buscan alimentos al mismo tiempo.
 3. **Disponibilidad:** Si la API externa se cae, nuestros pacientes no podrían registrar sus comidas.
 
 ## 2. La Solución: Redis in-memory data store

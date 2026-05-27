@@ -51,8 +51,9 @@ export const PatientDashboardPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("patient");
 
-  const { summary, addWater } = useTodaySummary();
-  const { meals, isLoading: isMealsLoading } = useTodayMeals();
+  // NUEVO: Extrayendo loading y error de los hooks de Tracking
+  const { summary, addWater, isLoading: isSummaryLoading, error: summaryError } = useTodaySummary();
+  const { meals, isLoading: isMealsLoading, error: mealsError } = useTodayMeals();
 
   const [profile, setProfile] = useState<PatientProfileResponse | null>(null);
   const [nutritionistProfile, setNutritionistProfile] =
@@ -248,9 +249,12 @@ export const PatientDashboardPage = () => {
                 </CardContent>
               </Card>
 
+              {/* NUEVO: Inyectando loading y error */}
               <WaterTrackerCard 
                 totalWaterMl={summary?.totalWaterMl ?? 0} 
-                onAddWater={addWater} 
+                onAddWater={addWater}
+                isLoading={isSummaryLoading}
+                error={summaryError}
               />
             </div>
 
@@ -335,7 +339,12 @@ export const PatientDashboardPage = () => {
         </div>
 
         <div className="w-full mt-2">
-          <TodayMealsList meals={meals} isLoading={isMealsLoading} />
+          {/* NUEVO: Inyectando el error aquí también */}
+          <TodayMealsList 
+            meals={meals} 
+            isLoading={isMealsLoading} 
+            error={mealsError} 
+          />
         </div>
       </main>
     </div>

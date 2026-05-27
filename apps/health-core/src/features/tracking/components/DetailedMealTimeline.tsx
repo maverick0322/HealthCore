@@ -62,11 +62,13 @@ export const DetailedMealTimeline = ({
       );
     }
 
+    // NUEVO: Diseño de error actualizado con i18n
     if (error) {
       return (
-        <div className="mt-4 flex items-center gap-2 rounded-lg border border-destructive/25 bg-destructive/10 px-4 py-4 text-sm text-destructive">
-          <AlertCircle size={16} />
-          <span>{error}</span>
+        <div className="mt-8 mb-4 flex flex-col items-center justify-center gap-2 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-10 text-center text-sm text-destructive">
+          <AlertCircle size={32} className="opacity-80 mb-2" />
+          <span className="font-semibold text-base">{t('errors.loadFailed', 'No pudimos cargar tus registros.')}</span>
+          <span className="text-xs opacity-80 max-w-xs">{t('errors.tryAgainLater', 'El servicio podría estar inactivo, por favor intenta más tarde.')}</span>
         </div>
       );
     }
@@ -74,7 +76,7 @@ export const DetailedMealTimeline = ({
     if (logs.length === 0) {
       return (
         <p className="mt-4 rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
-          {emptyMessage ?? 'No hay registros para este día.'}
+          {emptyMessage ?? t('dashboard.noMealsToday', 'No hay registros para este día.')}
         </p>
       );
     }
@@ -115,7 +117,8 @@ export const DetailedMealTimeline = ({
                   <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
                     <div>
                       <div className="flex items-start justify-between">
-                        {/* NUEVO: Título principal usando mealName con fallback */}
+                        
+                        {/* Título principal usando mealName con fallback */}
                         <h3 className="text-lg font-bold text-foreground">
                           {log.mealName || getMealLabel(log.mealType)}
                         </h3>
@@ -129,7 +132,7 @@ export const DetailedMealTimeline = ({
                         </div>
                       </div>
 
-                      {/* NUEVO: Lista detallada de ingredientes */}
+                      {/* Lista detallada de ingredientes */}
                       <div className="mt-3 space-y-1">
                         {log.items?.map((item: any, index: number) => (
                           <div key={`${item.barcode}-${index}`} className="flex items-center justify-between text-sm">
@@ -150,19 +153,19 @@ export const DetailedMealTimeline = ({
 
                     <div className="mt-4 grid grid-cols-4 gap-2 border-t border-border/40 pt-4 sm:gap-4">
                       <div className="text-center">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Calorías Totales</p>
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t('table.calories', 'Calorías Totales')}</p>
                         <p className="text-sm font-bold">{Math.round(log.totalCalories)}</p>
                       </div>
                       <div className="text-center">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Proteína</p>
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t('dashboard.protein', 'Proteína')}</p>
                         <p className="text-sm font-bold">{Math.round(log.totalProteins)}g</p>
                       </div>
                       <div className="text-center">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Carbo</p>
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t('dashboard.carbs', 'Carbo')}</p>
                         <p className="text-sm font-bold">{Math.round(log.totalCarbs)}g</p>
                       </div>
                       <div className="text-center">
-                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Grasas</p>
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t('dashboard.fat', 'Grasas')}</p>
                         <p className="text-sm font-bold">{Math.round(log.totalFats)}g</p>
                       </div>
                     </div>

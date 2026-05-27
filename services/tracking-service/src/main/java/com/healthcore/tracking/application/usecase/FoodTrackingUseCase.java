@@ -34,6 +34,7 @@ public class FoodTrackingUseCase {
     private final MediaGrpcClientAdapter mediaGrpcClient;
 
     private static final int MIN_SEARCH_QUERY_LENGTH = 3;
+    private static final int MAX_MEALNAME_LENGTH = 30;
 
     public FoodNutrients getFoodFromCatalog(String barcode) {
         if (barcode == null || barcode.trim().isEmpty()) {
@@ -55,11 +56,16 @@ public class FoodTrackingUseCase {
     /**
      * Registers a complete meal by fetching necessary nutritional data and building the Aggregate.
      */
-    public MealLog logMealConsumption(String userId, MealType mealType, LocalDateTime consumedAt, String photoKey, List<MealItemCommand> requestedItems) {
+    public MealLog logMealConsumption(String userId, String mealName, MealType mealType, LocalDateTime consumedAt, String photoKey, List<MealItemCommand> requestedItems) {
         if (userId == null || userId.isBlank()) {
             throw new InvalidDomainDataException("User ID is required to log a meal.");
         }
-        log.info("Processing meal consumption log. userHash={} mealType={} itemCount={}", logHash(userId), mealType, requestedItems.size());
+
+        if (mealName == null || mealName.isBlank() || mealName.length() > MAX_MEALNAME_LENGTH) {
+            throw new InvalidDomainDataException("Meal name is required and cannot exceed 60 characters.");
+        }
+
+        log.info("Processing meal consumption log. userHash={} mealName='{}' mealType={} itemCount={}", logHash(userId), mealName, mealType, requestedItems.size());
 
         List<MealItem> mealItems = requestedItems.stream()
                 .map(item -> {
@@ -68,7 +74,7 @@ public class FoodTrackingUseCase {
                 })
                 .collect(Collectors.toList());
 
-        MealLog newMealLog = MealLog.create(userId, mealType, consumedAt, photoKey, mealItems);
+        MealLog newMealLog = MealLog.create(userId, mealName, mealType, consumedAt, photoKey, mealItems);
 
         return logPort.save(newMealLog);
     }

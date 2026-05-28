@@ -34,6 +34,19 @@ public class WaterTrackingUseCase {
         return waterLogPort.save(waterLog);
     }
 
+    public void removeLatestWaterLog(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new InvalidDomainDataException("User identification is required to remove water logs.");
+        }
+
+        log.info("Removing latest water log for userHash={}", logHash(userId));
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
+        waterLogPort.deleteLatest(userId, startOfDay, endOfDay);
+    }
+
     private String logHash(String value) {
         return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }

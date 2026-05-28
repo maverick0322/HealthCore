@@ -4,6 +4,7 @@ import {
   Droplets,
   Flame,
   Info,
+  Loader2,
   Pencil,
   Plus,
   Save,
@@ -106,6 +107,8 @@ interface NutritionPlanWorkspaceProps {
   onSave?: (payload: NutritionPlanUpsertRequest) => Promise<NutritionPlanViewResponse>;
   onSearchFoods?: (query: string) => Promise<CatalogFoodResponse[]>;
   onOpenCreateLocalFood?: (initialName: string) => void;
+  onQuickTrack?: (payload: { mealSlot: MealSlot; ingredients: any[] }) => void;
+  isQuickTracking?: boolean;
 }
 
 const EMPTY_EDITOR_STATE: EditorState = {
@@ -144,6 +147,8 @@ export function NutritionPlanWorkspace({
   onSave,
   onSearchFoods,
   onOpenCreateLocalFood,
+  onQuickTrack,
+  isQuickTracking,
 }: Readonly<NutritionPlanWorkspaceProps>) {
   const { t, i18n } = useTranslation(namespace);
   const [sections, setSections] = useState<EditableSection[]>(EMPTY_SECTIONS);
@@ -322,9 +327,24 @@ export function NutritionPlanWorkspace({
 
                   <CardFooter className="justify-between gap-2">
                     {showRegisterAction ? (
-                      <Button className="w-full gap-2">
-                        <UtensilsCrossed size={14} />
-                        {t('nutritionPlan.registerDish')}
+                      <Button 
+                        className="w-full gap-2" 
+                        disabled={isQuickTracking}
+                        onClick={() => {
+                          if (onQuickTrack) {
+                            onQuickTrack({
+                              mealSlot: section.mealSlot,
+                              ingredients: option.ingredients
+                            });
+                          }
+                        }}
+                      >
+                        {isQuickTracking ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <UtensilsCrossed size={14} />
+                        )}
+                        {isQuickTracking ? 'Registrando...' : t('nutritionPlan.registerDish')}
                       </Button>
                     ) : (
                       <div className="flex w-full items-center gap-2">

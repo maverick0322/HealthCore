@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "description": "HealthCore Desktop Application (Electron wrapper)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maverick0322/HealthCore.git"
+  },
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -11,19 +15,39 @@
     "build:win": "npm run build && electron-builder --win --dir",
     "dist:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux"
+    "build:linux": "npm run build && electron-builder --linux",
+    "dist": "npm run build && electron-builder --publish always"
   },
   "build": {
     "appId": "com.healthcore.desktop",
     "productName": "HealthCore",
+    "icon": "build/icons/icon.png",
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "maverick0322",
+        "repo": "HealthCore"
+      }
+    ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icons/icon.ico"
+    },
+    "nsis": {
+      "installerIcon": "build/icons/icon.ico",
+      "uninstallerIcon": "build/icons/icon.ico",
+      "installerHeaderIcon": "build/icons/icon.ico",
+      "shortcutName": "HealthCore"
     },
     "mac": {
       "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icons/icon.png"
     }
   },
   "dependencies": {

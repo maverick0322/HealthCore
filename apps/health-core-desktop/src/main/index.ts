@@ -1,4 +1,5 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell } from 'electron'
+import { existsSync } from 'fs'
 import { join } from 'path'
 
 const isDev = !app.isPackaged
@@ -9,17 +10,23 @@ if (isDev) {
 }
 
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  const iconPath = join(app.getAppPath(), 'build', 'icons', 'icon.png')
+  const windowOptions: Electron.BrowserWindowConstructorOptions = {
     width: 1280,
     height: 800,
     minWidth: 900,
     minHeight: 600,
     title: 'HealthCore',
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
     },
-  })
+    ...(existsSync(iconPath) ? { icon: iconPath } : {}),
+  }
+
+  const mainWindow = new BrowserWindow(windowOptions)
+  mainWindow.setMenu(null)
 
   // Open external links in the default browser instead of a new Electron window
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -38,6 +45,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -281,6 +281,26 @@ class ClinicalControllerTest {
     }
 
     @Test
+    void shouldReturnLinkedNutritionistProfileForPatient() throws Exception {
+        String patientId = "patient-123";
+        setSecurityContext(patientId, "PATIENT");
+
+        PatientProfile patientProfile = createPatientProfile(patientId);
+        patientProfile.assignNutritionist("nutri-123");
+
+        when(manageProfileUseCase.getProfileByUserId(patientId)).thenReturn(Optional.of(patientProfile));
+        when(manageProfileUseCase.getNutritionistProfileByUserId("nutri-123"))
+                .thenReturn(Optional.of(createNutritionistProfile("nutri-123")));
+        when(mediaGrpcClientAdapter.getPresignedReadUrl(any())).thenReturn(null);
+
+        mockMvc.perform(get("/api/v1/clinical/profile/me/nutritionist"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value("nutri-123"))
+                .andExpect(jsonPath("$.fullName").value("Daniel Martinez"))
+                .andExpect(jsonPath("$.professionalLicense").value("12345678"));
+    }
+
+    @Test
     void shouldCreateNutritionistProfile() throws Exception {
         setSecurityContext("nutri-123", "NUTRITIONIST");
         when(manageProfileUseCase.createNutritionistProfile(any())).thenReturn(createNutritionistProfile("nutri-123"));

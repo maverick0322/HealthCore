@@ -1,5 +1,6 @@
 package com.healthcore.clinical.infrastructure.grpc;
 
+import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,10 +16,12 @@ public class ClinicalGrpcServer implements SmartLifecycle {
     private boolean running;
 
     public ClinicalGrpcServer(
-            ClinicalLinkGrpcService clinicalLinkGrpcService,
+            ClinicalRepositoryPort clinicalRepositoryPort,
             @Value("${grpc.clinical.port:50051}") int port
     ) {
-        this.clinicalLinkGrpcService = clinicalLinkGrpcService;
+        this.clinicalLinkGrpcService = new ClinicalLinkGrpcService(
+                patientId -> clinicalRepositoryPort.findByUserId(patientId).map(profile -> profile.getNutritionistId())
+        );
         this.port = port;
     }
 

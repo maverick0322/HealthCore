@@ -1,21 +1,21 @@
 package com.healthcore.clinical.infrastructure.grpc;
 
-import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+
 import com.healthcore.clinical.grpc.ClinicalLinkValidatorGrpc;
 import com.healthcore.clinical.grpc.ValidateLinkRequest;
 import com.healthcore.clinical.grpc.ValidateLinkResponse;
+
 import io.grpc.stub.StreamObserver;
-import org.springframework.stereotype.Component;
 
-import java.util.Objects;
-
-@Component
 public class ClinicalLinkGrpcService extends ClinicalLinkValidatorGrpc.ClinicalLinkValidatorImplBase {
 
-    private final ClinicalRepositoryPort clinicalRepositoryPort;
+    private final Function<String, Optional<String>> nutritionistLookup;
 
-    public ClinicalLinkGrpcService(ClinicalRepositoryPort clinicalRepositoryPort) {
-        this.clinicalRepositoryPort = clinicalRepositoryPort;
+    public ClinicalLinkGrpcService(Function<String, Optional<String>> nutritionistLookup) {
+        this.nutritionistLookup = nutritionistLookup;
     }
 
     @Override
@@ -23,8 +23,8 @@ public class ClinicalLinkGrpcService extends ClinicalLinkValidatorGrpc.ClinicalL
             ValidateLinkRequest request,
             StreamObserver<ValidateLinkResponse> responseObserver
     ) {
-        boolean valid = clinicalRepositoryPort.findByUserId(request.getPatientId())
-                .map(profile -> Objects.equals(profile.getNutritionistId(), request.getNutritionistId()))
+        boolean valid = nutritionistLookup.apply(request.getPatientId())
+                .map(nutritionistId -> Objects.equals(nutritionistId, request.getNutritionistId()))
                 .orElse(false);
 
         responseObserver.onNext(ValidateLinkResponse.newBuilder().setValid(valid).build());

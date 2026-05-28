@@ -130,4 +130,16 @@ class LinkingControllerTest {
         mockMvc.perform(get("/api/v1/clinical/linking/current"))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    void getCurrentCode_ReturnsOkAndCode() throws Exception {
+        setSecurityContext("nutri-123", "NUTRITIONIST");
+        LinkingCode mockCode = new LinkingCode("ZX98YU", "nutri-123", LocalDateTime.now());
+        when(linkingUseCase.getCurrentLinkingCode("nutri-123")).thenReturn(mockCode);
+
+        mockMvc.perform(get("/api/v1/clinical/linking/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("ZX98YU"))
+                .andExpect(jsonPath("$.expiresInSeconds").value(900));
+    }
 }

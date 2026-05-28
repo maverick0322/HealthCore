@@ -95,6 +95,21 @@ class NutritionPlanControllerTest {
     }
 
     @Test
+    void shouldUpsertNutritionistPatientPlan() throws Exception {
+        setSecurityContext("nutri-123", "NUTRITIONIST");
+        when(manageNutritionPlanUseCase.upsertNutritionistPatientNutritionPlan(eq("nutri-123"), eq("patient-123"), any()))
+                .thenReturn(createView(true, createContextPlan()));
+
+        mockMvc.perform(put("/api/v1/clinical/nutritionist/patients/{patientId}/nutrition-plan", "patient-123")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequestBody())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mode").value("NUTRITIONIST"))
+                .andExpect(jsonPath("$.sections[0].options[0].name").value("Avena"))
+                .andExpect(jsonPath("$.contextSelfManagedPlan.authorType").value("SELF_MANAGED"));
+    }
+
+    @Test
     void shouldSearchCatalogFoods() throws Exception {
         when(manageNutritionPlanUseCase.searchCatalogFoods("oat")).thenReturn(List.of(
                 new CatalogFoodItem("food-1", "Oats", "Brand", "", 100, 10, 20, 5)

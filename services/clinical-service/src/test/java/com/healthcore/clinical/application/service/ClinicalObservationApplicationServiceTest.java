@@ -236,6 +236,89 @@ class ClinicalObservationApplicationServiceTest {
     }
 
     @Test
+    void updateObservation_TrimsValidatedNoteBeforeSaving() {
+        ClinicalObservation observation = new ClinicalObservation(
+                "obs-1",
+                "patient-123",
+                "nutri-456",
+                "Nota original",
+                LocalDateTime.now()
+        );
+        PatientProfile profile = new PatientProfile(
+                "patient-123",
+                "Carlos",
+                "Gomez",
+                null,
+                70.0,
+                175.0,
+                LocalDate.of(1990, 1, 1),
+                Gender.MALE,
+                ActivityLevel.MODERATELY_ACTIVE,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of()
+        );
+        profile.assignNutritionist("nutri-456");
+
+        when(observationRepositoryPort.findById("obs-1")).thenReturn(Optional.of(observation));
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+        when(observationRepositoryPort.save(any(ClinicalObservation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ClinicalObservation updated = service.updateObservation("obs-1", "nutri-456", "  Nota actualizada  ");
+
+        assertEquals("Nota actualizada", updated.getNote());
+    }
+
+    @Test
+    void updateObservation_ThrowsAccessDenied_WhenObservationBelongsToAnotherNutritionist() {
+        ClinicalObservation observation = new ClinicalObservation(
+                "obs-1",
+                "patient-123",
+                "nutri-999",
+                "Nota original",
+                LocalDateTime.now()
+        );
+
+        when(observationRepositoryPort.findById("obs-1")).thenReturn(Optional.of(observation));
+
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> service.updateObservation("obs-1", "nutri-456", "Nota actualizada")
+        );
+
+        assertEquals("Action denied: Observation does not belong to this nutritionist.", exception.getMessage());
+        verify(observationRepositoryPort, never()).save(any());
+        verify(clinicalRepositoryPort, never()).findByUserId(anyString());
+    }
+
+    @Test
+    void getPatientObservations_ThrowsProfileNotFound_WhenNutritionistRequestsUnknownPatient() {
+        when(clinicalRepositoryPort.findByUserId("ghost-patient")).thenReturn(Optional.empty());
+
+        ProfileNotFoundException exception = assertThrows(
+                ProfileNotFoundException.class,
+                () -> service.getPatientObservations("ghost-patient", "nutri-456")
+        );
+
+        assertEquals("Cannot add observation. Patient clinical profile not found.", exception.getMessage());
+        verify(observationRepositoryPort, never()).findAllByPatientId(anyString());
+    }
+
+    @Test
+    void deleteObservation_ThrowsProfileNotFound_WhenObservationDoesNotExist() {
+        when(observationRepositoryPort.findById("missing-observation")).thenReturn(Optional.empty());
+
+        ProfileNotFoundException exception = assertThrows(
+                ProfileNotFoundException.class,
+                () -> service.deleteObservation("missing-observation", "nutri-456")
+        );
+
+        assertEquals("Observation not found.", exception.getMessage());
+        verify(observationRepositoryPort, never()).deleteById(anyString());
+    }
+
+    @Test
     void deleteObservation_RemovesOwnedObservation() {
         ClinicalObservation observation = new ClinicalObservation(
                 "obs-1",

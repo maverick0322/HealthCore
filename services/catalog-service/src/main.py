@@ -1,7 +1,7 @@
 import os
 import logging
-from typing import List, Annotated
-from fastapi import FastAPI, HTTPException, Path, Query, Depends
+from typing import Dict, List, Annotated
+from fastapi import FastAPI, HTTPException, Path, Query, Depends, Body
 from pymongo import MongoClient
 
 from src.application.catalog_use_case import CatalogUseCase
@@ -16,6 +16,7 @@ from src.infrastructure.mongo_local_adapter import MongoLocalCatalogAdapter
 from src.infrastructure.fatsecret.fatsecret_authenticator import FatSecretAuthenticator
 from src.infrastructure.fatsecret.fatsecret_mapper import FatSecretMapper
 from src.infrastructure.fatsecret.fatsecret_adapter import FatSecretAdapter
+from src.infrastructure.security import get_current_user_data
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -151,3 +152,91 @@ def search_products(
             status_code=500, 
             detail="An internal server error occurred. Please try again later."
         )
+    
+@app.post(
+    "/api/v1/catalog/local", 
+    response_model=FoodItem, 
+    tags=["Catalog Management"],
+    status_code=201
+)
+def create_local_food(
+    food_data: Dict[str, Any] = Body(...),
+    use_case: UseCaseDep = Depends(get_catalog_use_case),
+    user_context: Dict[str, str] = Depends(get_current_user_data)
+):
+    """
+    CU-13: Creates a local food item. Requires valid JWT with Nutritionist or Admin role.
+    """
+    user_id = user_context["user_id"]
+    role = user_context["role"]
+    
+    logger.info(f"REST request to create local food. userHash={user_id}")
+    try:
+        return use_case.create_local_food(food_data, user_id, role)
+    except PermissionError as e:
+        # Mapeo a 403 Forbidden para errores de rol
+        raise HTTPException(status_code=403, detail=str(e))
+    except InvalidDomainDataError as e:
+        # Mapeo a 400 Bad Request para errores de negocio
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("Critical error in create_local_food.")
+        raise HTTPException(status_code=500, detail="Internal error.")
+
+@app.put(
+    "/api/v1/catalog/local/{barcode}", 
+    response_model=FoodItem, 
+    tags=["Catalog Management"]
+)
+def update_local_food(
+    barcode: Annotated[str, Path(title="Barcode", min_length=1)],
+    food_data: Dict[str, Any] = Body(...),
+    use_case: UseCaseDep = Depends(get_catalog_use_case),
+    user_context: Dict[str, str] = Depends(get_current_user_data)
+):
+    """
+    CU-13: Updates a local food item. Strictly requires Admin role.
+    """
+    user_id = user_context["user_id"]
+    role = user_context["role"]
+    
+    try:
+        return use_case.update_local_food(barcode, food_data, user_id, role)
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except FoodNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except InvalidDomainDataError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception(f"Critical error updating food barcode '{barcode}'.")
+        raise HTTPException(status_code=500, detail="Internal error.")
+
+@app.delete(
+    "/api/v1/catalog/local/{barcode}", 
+    tags=["Catalog Management"],
+    status_code=204
+)
+def deactivate_local_food(
+    barcode: Annotated[str, Path(title="Barcode", min_length=1)],
+    use_case: UseCaseDep = Depends(get_catalog_use_case),
+    user_context: Dict[str, str] = Depends(get_current_user_data)
+):
+    """
+     Soft-deletes a local food item. Strictly requires Admin role.
+    """
+    user_id = user_context["user_id"]
+    role = user_context["role"]
+    
+    try:
+        use_case.deactivate_food(barcode, user_id, role)
+        return None 
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except FoodNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except InvalidDomainDataError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception(f"Critical error deactivating food barcode '{barcode}'.")
+        raise HTTPException(status_code=500, detail="Internal error.")

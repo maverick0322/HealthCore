@@ -70,6 +70,12 @@ public class WaterLogPersistenceAdapter implements WaterLogPort {
         }
     }
 
+    @Override
+    public void deleteLatest(String userId, LocalDateTime start, LocalDateTime end) {
+        repository.findFirstByUserIdAndConsumedAtBetweenOrderByConsumedAtDesc(userId, start, end)
+                .ifPresent(repository::delete);
+    }
+
     // --- Mappers: Domain to Document ---
 
     private WaterLogDocument toDocument(WaterLog domain) {

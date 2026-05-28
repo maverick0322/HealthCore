@@ -6,6 +6,8 @@ import com.resend.core.exception.ResendException;
 import com.resend.services.emails.model.CreateEmailOptions;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 @Slf4j
 public class ResendSdkEmailClient implements ResendEmailClient {
 
@@ -27,9 +29,29 @@ public class ResendSdkEmailClient implements ResendEmailClient {
 
         try {
             resend.emails().send(options);
+            List<String> maskedRecipients = request.to().stream()
+                    .map(this::maskEmail)
+                    .toList();
+            log.info("Email sent successfully. recipients={} subject=\"{}\"", maskedRecipients, request.subject());
         } catch (ResendException e) {
-            log.warn("Failed to send email through Resend. recipients={}", request.to().size(), e);
+            List<String> maskedRecipients = request.to().stream()
+                    .map(this::maskEmail)
+                    .toList();
+            log.warn("Failed to send email through Resend. recipients={}", maskedRecipients, e);
             throw new EmailDeliveryException("Failed to send email through Resend", e);
         }
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            return "unknown";
+        }
+        int index = email.indexOf("@");
+        String localPart = email.substring(0, index);
+        String domainPart = email.substring(index);
+        if (localPart.length() <= 3) {
+            return "***" + domainPart;
+        }
+        return localPart.substring(0, 3) + "***" + domainPart;
     }
 }

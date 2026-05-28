@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, FileDown, RefreshCcw } from 'lucide-react';
+import { AlertCircle, FileDown, RefreshCcw, CheckCircle2 } from 'lucide-react';
 
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type {
@@ -11,6 +11,7 @@ import type {
 import { NutritionPlanWorkspace } from '@/features/nutrition-plan/components/NutritionPlanWorkspace';
 import { PatientNav } from '@/features/patient/components/PatientNav';
 import { exportPatientNutritionPlanPdf } from '@/features/patient/services/patientNutritionPlanPdfService';
+import { useLogFood } from '@/features/tracking/hooks/useLogFood';
 import { logClientError, logClientInfo } from '@/core/utils/logger';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { Button } from '@/shared/ui/button';
@@ -25,6 +26,25 @@ export const PatientPlanPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // --- ESTADOS DE QUICK TRACK ---
+  const { logFood, isLoading: isLoggingFood, error: logError, isSuccess: logSuccess } = useLogFood();
+  const [quickTrackFeedback, setQuickTrackFeedback] = useState<{type: 'success'|'error', message: string} | null>(null);
+
+  // Efectos para escuchar el resultado de useLogFood
+  useEffect(() => {
+    if (logSuccess) {
+      setQuickTrackFeedback({ type: 'success', message: '¡Platillo registrado en tu diario exitosamente!' });
+      setTimeout(() => setQuickTrackFeedback(null), 5000);
+    }
+  }, [logSuccess]);
+
+  useEffect(() => {
+    if (logError) {
+      setQuickTrackFeedback({ type: 'error', message: logError });
+      setTimeout(() => setQuickTrackFeedback(null), 5000);
+    }
+  }, [logError]);
 
   const loadPlan = useCallback(
     async ({
@@ -111,6 +131,21 @@ export const PatientPlanPage = () => {
       logClientError('PatientPlanPage.save.error', error, { sections: payload.sections.length });
       throw error;
     }
+  };
+
+  // Transformador de datos: De Plan Nutrimental a Tracking
+  const handleQuickTrack = async (payload: { mealSlot: string, optionName: string, ingredients: any[] }) => {
+    await logFood({
+      mealName: payload.optionName, // Nombre del platillo (ej. "Desayuno Fuerte")
+      mealType: payload.mealSlot,   // BREAKFAST, LUNCH, etc.
+      consumedAt: new Date().toISOString(), // Fecha y hora exacta del registro
+      foods: payload.ingredients.map(ing => ({
+        barcode: ing.barcode,
+        name: ing.name,
+        baseCalories: ing.baseCaloriesPer100Units || ing.calories,
+        grams: ing.quantityAmount ?? 0
+      }))
+    });
   };
 
   const handleExportPdf = async () => {
@@ -221,6 +256,22 @@ export const PatientPlanPage = () => {
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 pb-24 sm:px-6 md:pl-56">
+        {/* --- FEEDBACK DE QUICK TRACK --- */}
+        {quickTrackFeedback ? (
+          <div className={`mb-6 flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
+            quickTrackFeedback.type === 'success' 
+              ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' 
+              : 'border-destructive/25 bg-destructive/10 text-destructive'
+          }`}>
+            {quickTrackFeedback.type === 'success' ? (
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+            ) : (
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+            )}
+            <span>{quickTrackFeedback.message}</span>
+          </div>
+        ) : null}
+
         {loadError && !isLoading ? (
           <Card className="mb-6 border-destructive/20">
             <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
@@ -244,6 +295,10 @@ export const PatientPlanPage = () => {
           isLoading={isLoading}
           onSave={handleSave}
           onSearchFoods={clinicalApi.searchCatalogFoods}
+          
+          // --- CONEXIÓN DE QUICK TRACK ---
+          onQuickTrack={handleQuickTrack}
+          isQuickTracking={isLoggingFood}
         />
       </main>
     </div>

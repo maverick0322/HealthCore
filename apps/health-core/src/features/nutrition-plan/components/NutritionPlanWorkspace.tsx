@@ -107,7 +107,7 @@ interface NutritionPlanWorkspaceProps {
   onSave?: (payload: NutritionPlanUpsertRequest) => Promise<NutritionPlanViewResponse>;
   onSearchFoods?: (query: string) => Promise<CatalogFoodResponse[]>;
   onOpenCreateLocalFood?: (initialName: string) => void;
-  onQuickTrack?: (payload: { mealSlot: MealSlot; ingredients: any[] }) => void;
+  onQuickTrack?: (payload: { mealSlot: MealSlot; optionName: string; ingredients: any[] }) => void;
   isQuickTracking?: boolean;
 }
 
@@ -334,6 +334,7 @@ export function NutritionPlanWorkspace({
                           if (onQuickTrack) {
                             onQuickTrack({
                               mealSlot: section.mealSlot,
+                              optionName: option.name,
                               ingredients: option.ingredients
                             });
                           }

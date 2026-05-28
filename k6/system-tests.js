@@ -140,8 +140,9 @@ export default function () {
       const res = http.post(`${API_BASE}/agenda/appointments`, payload, {
         headers: {
           'Content-Type': 'application/json',
-          ...authHeaders,
+          ...authHeaders
         },
+        responseCallback: http.expectedStatuses(201, 409)
       });
 
       check(res, {

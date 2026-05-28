@@ -21,7 +21,7 @@ export const CreateLocalFoodModal: React.FC<CreateLocalFoodModalProps> = ({
   initialName = "",
   onSuccess 
 }) => {
-  const { t } = useTranslation('admin'); // O 'nutritionist' si prefieres
+  const { t } = useTranslation('admin'); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +52,7 @@ export const CreateLocalFoodModal: React.FC<CreateLocalFoodModalProps> = ({
 
     const payload: CreateLocalFoodRequest = {
       name: name.trim(),
-      brand: brand.trim() || 'Genérico',
+      brand: brand.trim() || 'Generic',
       nutrition: {
         calories: Number(calories),
         proteins: Number(proteins),
@@ -61,9 +61,8 @@ export const CreateLocalFoodModal: React.FC<CreateLocalFoodModalProps> = ({
       }
     };
 
-    // Validaciones básicas de front
     if (!payload.name || isNaN(payload.nutrition.calories)) {
-      setError("Por favor completa los campos obligatorios.");
+      setError(t('catalog.validationError'));
       return;
     }
 
@@ -73,7 +72,7 @@ export const CreateLocalFoodModal: React.FC<CreateLocalFoodModalProps> = ({
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || "Error al guardar el alimento.");
+      setError(err.response?.data?.detail || err.message || t('catalog.saveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,10 +84,10 @@ export const CreateLocalFoodModal: React.FC<CreateLocalFoodModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PlusCircle className="text-primary" size={20} />
-            Crear Alimento Local
+            {t('catalog.createTitle')}
           </DialogTitle>
           <DialogDescription>
-            Añade un alimento a la base de datos local. Estará disponible inmediatamente para tus planes nutricionales. (Basado en 100g/ml)
+            {t('catalog.createDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -96,39 +95,41 @@ export const CreateLocalFoodModal: React.FC<CreateLocalFoodModalProps> = ({
           {error && <div className="text-sm font-medium text-destructive bg-destructive/10 p-2 rounded">{error}</div>}
           
           <div className="space-y-2">
-            <Label htmlFor="foodName">Nombre del alimento *</Label>
-            <Input id="foodName" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Ej. Tamal Ranchero" />
+            <Label htmlFor="foodName">{t('catalog.nameLabel')}</Label>
+            <Input id="foodName" value={name} onChange={(e) => setName(e.target.value)} required placeholder={t('catalog.namePlaceholder')} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="brand">Marca (Opcional)</Label>
-            <Input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Ej. Casero, Bimbo..." />
+            <Label htmlFor="brand">{t('catalog.brandLabel')}</Label>
+            <Input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder={t('catalog.brandPlaceholder')} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="calories">Kcal / 100g *</Label>
+              <Label htmlFor="calories">{t('catalog.caloriesLabel')}</Label>
               <Input id="calories" type="number" step="0.1" min="0" value={calories} onChange={(e) => setCalories(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="proteins">Proteínas (g) *</Label>
+              <Label htmlFor="proteins">{t('catalog.proteinsLabel')}</Label>
               <Input id="proteins" type="number" step="0.1" min="0" value={proteins} onChange={(e) => setProteins(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="carbs">Carbohidratos (g) *</Label>
+              <Label htmlFor="carbs">{t('catalog.carbsLabel')}</Label>
               <Input id="carbs" type="number" step="0.1" min="0" value={carbs} onChange={(e) => setCarbs(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fats">Grasas (g) *</Label>
+              <Label htmlFor="fats">{t('catalog.fatsLabel')}</Label>
               <Input id="fats" type="number" step="0.1" min="0" value={fats} onChange={(e) => setFats(e.target.value)} required />
             </div>
           </div>
 
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+              {t('catalog.cancelBtn')}
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Guardar Alimento
+              {isSubmitting ? t('catalog.saving') : t('catalog.saveBtn')}
             </Button>
           </DialogFooter>
         </form>

@@ -34,7 +34,6 @@ class WaterTrackingUseCaseTest {
         int amountMl = 250;
         LocalDateTime consumedAt = LocalDateTime.of(2026, 5, 17, 10, 30);
 
-        // Simulamos que al guardar, el puerto nos devuelve un objeto simulado (mock) o real.
         WaterLog mockSavedLog = mock(WaterLog.class);
         when(waterLogPort.save(any(WaterLog.class))).thenReturn(mockSavedLog);
 
@@ -45,15 +44,11 @@ class WaterTrackingUseCaseTest {
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(mockSavedLog);
 
-        // Usamos ArgumentCaptor para interceptar el WaterLog que se instanció dentro del método
         ArgumentCaptor<WaterLog> logCaptor = ArgumentCaptor.forClass(WaterLog.class);
         verify(waterLogPort, times(1)).save(logCaptor.capture());
 
         WaterLog capturedLog = logCaptor.getValue();
         assertThat(capturedLog).isNotNull();
-        // Validamos que el objeto enviado a guardar pertenece al usuario correcto
-        // (Asumiendo que WaterLog tiene un getter para userId. Si no lo tiene, puedes borrar esta línea)
-        // assertThat(capturedLog.getUserId()).isEqualTo(VALID_USER_ID);
     }
 
     @Test
@@ -66,7 +61,6 @@ class WaterTrackingUseCaseTest {
                 .isInstanceOf(InvalidDomainDataException.class)
                 .hasMessageContaining("User identification is required to log water.");
 
-        // Verificamos que NUNCA se llame a la base de datos si la validación falla
         verifyNoInteractions(waterLogPort);
     }
 
@@ -79,6 +73,28 @@ class WaterTrackingUseCaseTest {
         assertThatThrownBy(() -> useCase.logWaterConsumption("   ", 250, consumedAt))
                 .isInstanceOf(InvalidDomainDataException.class)
                 .hasMessageContaining("User identification is required to log water.");
+
+        verifyNoInteractions(waterLogPort);
+    }
+
+    @Test
+    void removeLatestWaterLog_Success() {
+        // Act
+        useCase.removeLatestWaterLog(VALID_USER_ID);
+
+        // Assert
+        verify(waterLogPort, times(1)).deleteLatest(
+                eq(VALID_USER_ID),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class)
+        );
+    }
+
+    @Test
+    void removeLatestWaterLog_ThrowsExceptionIfUserIdIsNull() {
+        // Act & Assert
+        assertThatThrownBy(() -> useCase.removeLatestWaterLog(null))
+                .isInstanceOf(InvalidDomainDataException.class);
 
         verifyNoInteractions(waterLogPort);
     }

@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Repository
 public interface SpringDataMongoWaterLogRepository extends MongoRepository<WaterLogDocument, String> {
@@ -15,4 +16,6 @@ public interface SpringDataMongoWaterLogRepository extends MongoRepository<Water
             "{ $group: { '_id': null, 'totalMl': { $sum: '$amountMl' } } }"
     })
     Integer sumWaterAmountByUserIdAndDateRange(String userId, LocalDateTime start, LocalDateTime end);
+
+    Optional<WaterLogDocument> findFirstByUserIdAndConsumedAtBetweenOrderByConsumedAtDesc(String userId, LocalDateTime start, LocalDateTime end);
 }

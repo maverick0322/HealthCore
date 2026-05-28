@@ -49,6 +49,22 @@ public class WaterTrackingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedLog);
     }
 
+    @DeleteMapping("/latest")
+    @Operation(
+            summary = "Deshacer último consumo de agua",
+            description = "Elimina el registro de agua más reciente que el usuario haya hecho en el día actual.",
+            security = @SecurityRequirement(name = "Bearer Authentication")
+    )
+    public ResponseEntity<Void> removeLatestWaterLog(
+            @Parameter(hidden = true) @AuthenticationPrincipal String userId) {
+
+        log.info("REST request to remove latest water log. userHash={}", logHash(userId));
+
+        waterUseCase.removeLatestWaterLog(userId);
+
+        return ResponseEntity.noContent().build();
+    }
+
     private String logHash(String value) {
         return value == null || value.isBlank() ? "unknown" : Integer.toHexString(value.hashCode());
     }

@@ -51,8 +51,7 @@ export const PatientDashboardPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("patient");
 
-  // NUEVO: Extrayendo loading y error de los hooks de Tracking
-  const { summary, addWater, isLoading: isSummaryLoading, error: summaryError } = useTodaySummary();
+  const { summary, addWater, removeWater, isLoading: isSummaryLoading, error: summaryError } = useTodaySummary();
   const { meals, isLoading: isMealsLoading, error: mealsError } = useTodayMeals();
 
   const [profile, setProfile] = useState<PatientProfileResponse | null>(null);
@@ -253,6 +252,7 @@ export const PatientDashboardPage = () => {
               <WaterTrackerCard 
                 totalWaterMl={summary?.totalWaterMl ?? 0} 
                 onAddWater={addWater}
+                onRemoveWater={removeWater}
                 isLoading={isSummaryLoading}
                 error={summaryError}
               />

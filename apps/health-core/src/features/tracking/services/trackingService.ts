@@ -29,6 +29,10 @@ export const trackingService = {
     return response.data;
   },
 
+  removeLatestWater: async (): Promise<void> => {
+    await httpClient.delete('/tracking/logs/water/latest');
+  },
+
   // -- CQRS Queries ---
   getTodaySummary: async (date?: string): Promise<TodayDashboardSummary> => {
     const url = date ? `/tracking/dashboard/today?date=${date}` : '/tracking/dashboard/today';

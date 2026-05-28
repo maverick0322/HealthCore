@@ -6,8 +6,9 @@ import com.healthcore.tracking.domain.port.WaterLogPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * Application Service for managing water consumption.
@@ -31,6 +32,19 @@ public class WaterTrackingUseCase {
         WaterLog waterLog = WaterLog.create(userId, amountMl, consumedAt);
 
         return waterLogPort.save(waterLog);
+    }
+
+    public void removeLatestWaterLog(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new InvalidDomainDataException("User identification is required to remove water logs.");
+        }
+
+        log.info("Removing latest water log for userHash={}", logHash(userId));
+
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
+        waterLogPort.deleteLatest(userId, startOfDay, endOfDay);
     }
 
     private String logHash(String value) {

@@ -31,7 +31,7 @@ export const useTodaySummary = () => {
   const addWater = async (amountMl: number) => {
     try {
       await trackingService.logWater({ amountMl });
-      await fetchSummary(); // Recargamos para actualizar la UI
+      await fetchSummary();
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         const serverMessage = err.response?.data?.message || 'Error de red.';
@@ -41,9 +41,18 @@ export const useTodaySummary = () => {
     }
   };
 
+  const removeWater = async () => {
+    try {
+      await trackingService.removeLatestWater();
+      await fetchSummary(); 
+    } catch (err) {
+      console.error("Error al borrar agua", err);
+    }
+  };
+
   useEffect(() => {
     void fetchSummary();
   }, [fetchSummary]);
 
-  return { summary, isLoading, error, addWater };
+  return { summary, isLoading, error, addWater, removeWater };
 };

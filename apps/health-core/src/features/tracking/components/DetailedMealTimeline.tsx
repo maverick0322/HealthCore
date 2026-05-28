@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from "react-router-dom";
 import { AlertCircle, Apple, Coffee, Loader2, Plus, Utensils, ImageOff } from 'lucide-react';
 import { Card } from '@/shared/ui/card';
 
@@ -17,6 +18,7 @@ export const DetailedMealTimeline = ({
   emptyMessage,
   showAddCard = true,
 }: DetailedMealTimelineProps) => {
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation('patient');
 
   const formatSafeLocalTime = (value: string) => {
@@ -181,7 +183,9 @@ export const DetailedMealTimeline = ({
             <div className="absolute -left-[17px] top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border-[3px] border-dashed border-background bg-muted text-muted-foreground ring-1 ring-border">
               <Plus size={16} />
             </div>
-            <Card className="flex cursor-pointer items-center justify-between border-dashed border-border bg-muted/10 p-4 shadow-none sm:p-5">
+            <Card 
+                onClick={() => navigate('/tracking/log-food')}
+                className="flex cursor-pointer items-center justify-between border-dashed border-border bg-muted/10 p-4 shadow-none sm:p-5">
               <div>
                 <h3 className="text-base font-bold text-muted-foreground">Registrar nuevo alimento</h3>
                 <p className="mt-0.5 text-sm text-muted-foreground">Añade otra comida a tu historial de hoy</p>

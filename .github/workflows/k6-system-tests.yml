@@ -44,17 +44,45 @@ jobs:
       - name: Wait for API Gateway
         shell: bash
         run: |
-          for i in {1..60}; do
-            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:80/api/v1/auth/register)
-            if [ "$status" = "400" ] || [ "$status" = "401" ] || [ "$status" = "405" ]; then
-              echo "Gateway ready with status $status"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Gateway did not become ready"
-          docker compose ps
-          exit 1
+          wait_for_logic_response () {
+            local name="$1"
+            local service="$2"
+            local url="$3"
+            local accepted_statuses="$4"
+            local max_attempts="${5:-18}"
+            local attempt=1
+
+            echo "Waiting for ${name} at ${url}..."
+            while true; do
+              set +e
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+              set -e
+
+              STATUS=${STATUS:-000}
+
+              if [[ " ${accepted_statuses} " == *" ${STATUS} "* ]]; then
+                echo "${name} is ready with response code: $STATUS"
+                break
+              fi
+
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                echo "${name} did not become ready in time. Last status: $STATUS"
+                echo "--- docker compose ps ${service} ---"
+                docker compose ps "${service}" || true
+                echo "--- docker compose logs --tail=150 ${service} ---"
+                docker compose logs --tail=150 "${service}" || true
+                exit 1
+              fi
+
+              echo "${name} is not ready yet. Current status: $STATUS. Retrying in 10 seconds..."
+              attempt=$((attempt + 1))
+              sleep 10
+            done
+          }
+
+          wait_for_logic_response "Identity Service" "identity-service" "http://localhost:80/api/v1/auth/register" "405" 18
+          wait_for_logic_response "Clinical Service" "clinical-service" "http://localhost:80/api/v1/clinical/profile/me" "401 403" 18
+          wait_for_logic_response "Agenda Service" "agenda-service" "http://localhost:80/api/v1/agenda/appointments/me" "401 403" 18
 
       - name: Seed data
         run: node k6/seed-k6.js

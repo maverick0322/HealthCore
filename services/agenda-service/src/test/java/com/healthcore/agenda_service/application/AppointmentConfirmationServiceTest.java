@@ -5,6 +5,7 @@ import com.healthcore.agenda_service.application.ports.AgendaEventPublisher;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -39,6 +41,9 @@ class AppointmentConfirmationServiceTest {
     @Mock
     private MeterRegistry meterRegistry;
 
+    @Mock
+    private Counter counter;
+
     @InjectMocks
     private AppointmentConfirmationService confirmationService;
 
@@ -46,6 +51,7 @@ class AppointmentConfirmationServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
         pendingAppointment = Appointment.builder()
                 .id("app-1")
                 .patientId("patient-1")

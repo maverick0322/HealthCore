@@ -12,6 +12,7 @@ import com.healthcore.agenda_service.domain.repository.TimeSlotRepository;
 import com.healthcore.agenda_service.infrastructure.clinical.ClinicalServiceClient;
 import com.healthcore.agenda_service.application.events.AppointmentCancelledEvent;
 import com.healthcore.agenda_service.application.ports.AgendaEventPublisher;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -53,6 +55,9 @@ class PatientAppointmentServiceTest {
     @Mock
     private MeterRegistry meterRegistry;
 
+    @Mock
+    private Counter counter;
+
     @InjectMocks
     private PatientAppointmentService service;
 
@@ -60,6 +65,7 @@ class PatientAppointmentServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(meterRegistry.counter(anyString())).thenReturn(counter);
         // Use relative future times so the temporal guard never fires on baseline fixtures
         Instant base = Instant.now().plusSeconds(86400);
         slot = TimeSlot.builder()

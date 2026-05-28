@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,7 +66,7 @@ class PatientAppointmentServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(meterRegistry.counter(anyString())).thenReturn(counter);
+        lenient().when(meterRegistry.counter(anyString())).thenReturn(counter);
         // Use relative future times so the temporal guard never fires on baseline fixtures
         Instant base = Instant.now().plusSeconds(86400);
         slot = TimeSlot.builder()

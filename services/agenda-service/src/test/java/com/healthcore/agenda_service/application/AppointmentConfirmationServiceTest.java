@@ -51,7 +51,7 @@ class AppointmentConfirmationServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(meterRegistry.counter(anyString())).thenReturn(counter);
+        lenient().when(meterRegistry.counter(anyString())).thenReturn(counter);
         pendingAppointment = Appointment.builder()
                 .id("app-1")
                 .patientId("patient-1")

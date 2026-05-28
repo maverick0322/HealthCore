@@ -13,6 +13,7 @@ import type { AuthTokensResponse } from '@/features/auth/types/auth.types';
 const httpClient = axios.create({
   baseURL: ENV.API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 20000,
 });
 
 // ── Auth callback contract (set by setupInterceptors) ────────

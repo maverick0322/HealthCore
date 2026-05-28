@@ -1,0 +1,96 @@
+name: k6 system tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: Tipo de prueba k6
+        type: choice
+        options:
+          - load
+          - stress
+          - spike
+          - soak
+        default: load
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'dev_jwt_secret' }}
+      JWT_ACCESS_TOKEN_VALIDITY_MS: ${{ secrets.JWT_ACCESS_TOKEN_VALIDITY_MS || '3600000' }}
+      JWT_REFRESH_TOKEN_VALIDITY_MS: ${{ secrets.JWT_REFRESH_TOKEN_VALIDITY_MS || '86400000' }}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID || '' }}
+      SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET || '' }}
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_AUTH0_ISSUER_URI: ${{ secrets.AUTH0_ISSUER_URI || '' }}
+      RABBITMQ_USER: ${{ secrets.RABBITMQ_USER || 'healthcore' }}
+      RABBITMQ_PASS: ${{ secrets.RABBITMQ_PASS || 'healthcore' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Start services
+        run: docker compose up -d mongodb api-gateway identity-service tracking-service clinical-service agenda-service
+
+      - name: Wait for API Gateway
+        shell: bash
+        run: |
+          wait_for_logic_response () {
+            local name="$1"
+            local service="$2"
+            local url="$3"
+            local accepted_statuses="$4"
+            local max_attempts="${5:-18}"
+            local attempt=1
+
+            echo "Waiting for ${name} at ${url}..."
+            while true; do
+              set +e
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+              set -e
+
+              STATUS=${STATUS:-000}
+
+              if [[ " ${accepted_statuses} " == *" ${STATUS} "* ]]; then
+                echo "${name} is ready with response code: $STATUS"
+                break
+              fi
+
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                echo "${name} did not become ready in time. Last status: $STATUS"
+                echo "--- docker compose ps ${service} ---"
+                docker compose ps "${service}" || true
+                echo "--- docker compose logs --tail=150 ${service} ---"
+                docker compose logs --tail=150 "${service}" || true
+                exit 1
+              fi
+
+              echo "${name} is not ready yet. Current status: $STATUS. Retrying in 10 seconds..."
+              attempt=$((attempt + 1))
+              sleep 10
+            done
+          }
+
+          wait_for_logic_response "Identity Service" "identity-service" "http://localhost:80/api/v1/auth/register" "405" 18
+          wait_for_logic_response "Clinical Service" "clinical-service" "http://localhost:80/api/v1/clinical/profile/me" "401 403" 18
+          wait_for_logic_response "Agenda Service" "agenda-service" "http://localhost:80/api/v1/agenda/appointments/me" "401 403" 18
+
+      - name: Seed data
+        run: node k6/seed-k6.js
+
+      - name: Run k6 system tests
+        run: k6 run -e TEST_TYPE=${{ github.event.inputs.test_type }} k6/system-tests.js
+
+      - name: Debug logs
+        if: failure()
+        run: |
+          docker compose logs --tail=150 api-gateway identity-service clinical-service agenda-service

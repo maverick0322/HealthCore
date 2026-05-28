@@ -2,6 +2,9 @@
 node_modules/
 dist/
 build/
+!apps/health-core-desktop/build/
+!apps/health-core-desktop/build/icons/
+!apps/health-core-desktop/build/icons/**
 
 # Java / Maven / Spring Boot
 target/

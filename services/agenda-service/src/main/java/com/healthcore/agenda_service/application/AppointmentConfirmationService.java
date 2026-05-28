@@ -5,6 +5,7 @@ import com.healthcore.agenda_service.application.ports.AgendaEventPublisher;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class AppointmentConfirmationService {
 
     private final AppointmentRepository appointmentRepository;
     private final AgendaEventPublisher agendaEventPublisher;
+    private final MeterRegistry meterRegistry;
 
     @Async
     public void confirmAppointmentAsync(String appointmentId) {
@@ -44,6 +46,7 @@ public class AppointmentConfirmationService {
                     saved.getEndTime().toString(),
                     saved.getLocale()
                 ));
+                meterRegistry.counter("agenda.appointments.confirmed").increment();
                 return;
             } catch (InterruptedException interruptedException) {
                 Thread.currentThread().interrupt();

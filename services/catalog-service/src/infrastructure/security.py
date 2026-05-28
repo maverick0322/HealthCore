@@ -57,6 +57,9 @@ def get_current_user_data(credentials: HTTPAuthorizationCredentials = Security(t
     except jwt.DecodeError:
         logger.error("Security alert: Malformed JWT token detected.")
         raise HTTPException(status_code=401, detail="Invalid or corrupted security token.")
+    
+    except HTTPException:
+        raise
         
     except Exception as e:
         logger.error(f"Security error: Unexpected error validating token: {e}")

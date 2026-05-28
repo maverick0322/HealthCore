@@ -138,70 +138,90 @@ def test_search_food_with_whitespace_query_raises_invalid_domain_data_error(cata
     mock_local_port.search_products_by_name.assert_not_called()
     mock_external_port.search_products_by_name.assert_not_called()
 
-def test_create_local_food_success_as_nutritionist(self, use_case, mock_local_port):
-        # Arrange
-        food_data = {
-            "name": "Tamal",
-            "brand": "Casero",
-            "nutrition": {"calories": 250, "proteins": 10, "carbohydrates": 30, "fats": 10}
-        }
-        mock_local_port.find_food_by_barcode.return_value = None # No existe duplicado
-        
-        # Act
-        result = use_case.create_local_food(food_data, user_id="user123", role="ROLE_NUTRITIONIST")
-        
-        # Assert
-        assert result.name == "Tamal"
-        assert result.is_local is True
-        mock_local_port.create_food.assert_called_once()
+def test_create_local_food_success_as_nutritionist(catalog_use_case, mock_local_port):
+    # Arrange
+    food_data = {
+        "name": "Tamal",
+        "brand": "Casero",
+        "nutrition": {"calories": 250, "proteins": 10, "carbohydrates": 30, "fats": 10}
+    }
+    mock_local_port.get_product_by_barcode.return_value = None  # No existe duplicado de código
+    
+    # Act
+    result = catalog_use_case.create_local_food(food_data, user_id="user123", role="ROLE_NUTRITIONIST")
+    
+    # Assert
+    assert result.name == "Tamal"
+    assert result.is_local is True
+    mock_local_port.save_product.assert_called_once()
 
-def test_create_local_food_fails_if_patient(self, use_case):
+
+def test_create_local_food_fails_if_patient(catalog_use_case):
     # Arrange
     food_data = {"name": "Tamal", "nutrition": {"calories": 250, "proteins": 10, "carbohydrates": 30, "fats": 10}}
     
     # Act & Assert
-    with pytest.raises(PermissionError, match="Insufficient privileges"):
-        use_case.create_local_food(food_data, user_id="user123", role="ROLE_PATIENT")
+    with pytest.raises(PermissionError, match="Access Denied"):
+        catalog_use_case.create_local_food(food_data, user_id="user123", role="ROLE_PATIENT")
 
-def test_update_local_food_success_as_admin(self, use_case, mock_local_port):
+
+def test_update_local_food_success_as_admin(catalog_use_case, mock_local_port):
     # Arrange
     barcode = "local-123"
     food_data = {"name": "Tamal Modificado"}
-    # Mockeamos que el alimento existe y es local
-    existing_food = FoodItem(barcode=barcode, name="Tamal", brand="C", is_local=True, is_active=True, nutrition=None)
-    mock_local_port.find_food_by_barcode.return_value = existing_food
+    
+    # Mocking object state and Pydantic model serialization behavior 
+    existing_food = MagicMock()
+    existing_food.is_local = True
+    existing_food.is_active = True
+    existing_food.model_dump.return_value = {
+        "barcode": barcode, 
+        "name": "Tamal", 
+        "brand": "C", 
+        "is_local": True, 
+        "is_active": True, 
+        "nutrition": {"calories": 200, "proteins": 5, "carbohydrates": 20, "fats": 5}
+    }
+    mock_local_port.get_product_by_barcode.return_value = existing_food
     
     # Act
-    result = use_case.update_local_food(barcode, food_data, user_id="admin1", role="ROLE_ADMIN")
+    result = catalog_use_case.update_local_food(barcode, food_data, user_id="admin1", role="ROLE_ADMIN")
     
     # Assert
-    mock_local_port.update_food.assert_called_once()
+    mock_local_port.save_product.assert_called_once()
     assert result.name == "Tamal Modificado"
 
-def test_update_local_food_fails_if_nutritionist(self, use_case):
-    # Arrange
-    with pytest.raises(PermissionError, match="Strictly ADMIN"):
-        use_case.update_local_food("123", {}, user_id="nutri1", role="ROLE_NUTRITIONIST")
 
-def test_deactivate_food_success_as_admin(self, use_case, mock_local_port):
+def test_update_local_food_fails_if_nutritionist(catalog_use_case):
+    # Arrange
+    with pytest.raises(PermissionError, match="Access Denied"):
+        catalog_use_case.update_local_food("123", {}, user_id="nutri1", role="ROLE_NUTRITIONIST")
+
+
+def test_deactivate_food_success_as_admin(catalog_use_case, mock_local_port):
     # Arrange
     barcode = "local-123"
-    existing_food = FoodItem(barcode=barcode, name="Tamal", brand="C", is_local=True, is_active=True, nutrition=None)
-    mock_local_port.find_food_by_barcode.return_value = existing_food
+    existing_food = MagicMock()
+    existing_food.is_local = True
+    existing_food.is_active = True
+    mock_local_port.get_product_by_barcode.return_value = existing_food
     
     # Act
-    use_case.deactivate_food(barcode, user_id="admin1", role="ROLE_ADMIN")
+    catalog_use_case.deactivate_food(barcode, user_id="admin1", role="ROLE_ADMIN")
     
     # Assert
-    mock_local_port.deactivate_food.assert_called_once_with(barcode)
+    assert existing_food.is_active is False
+    mock_local_port.save_product.assert_called_once_with(existing_food)
 
-def test_modify_external_food_fails(self, use_case, mock_local_port):
+
+def test_modify_external_food_fails(catalog_use_case, mock_local_port):
     # Arrange
     barcode = "fatsecret-123"
-    # Mockeamos un alimento que NO es local (viene de FatSecret)
-    existing_food = FoodItem(barcode=barcode, name="Oreo", brand="C", is_local=False, is_active=True, nutrition=None)
-    mock_local_port.find_food_by_barcode.return_value = existing_food
+    existing_food = MagicMock()
+    existing_food.is_local = False
+    existing_food.is_active = True
+    mock_local_port.get_product_by_barcode.return_value = existing_food
     
     # Act & Assert
-    with pytest.raises(InvalidDomainDataError, match="Cannot modify external catalog items"):
-        use_case.deactivate_food(barcode, user_id="admin1", role="ROLE_ADMIN")
+    with pytest.raises(InvalidDomainDataError, match="External foods .* cannot be deactivated"):
+        catalog_use_case.deactivate_food(barcode, user_id="admin1", role="ROLE_ADMIN")

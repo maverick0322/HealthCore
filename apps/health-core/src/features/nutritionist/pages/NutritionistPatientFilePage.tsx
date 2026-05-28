@@ -49,6 +49,7 @@ import type {
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
+import { CreateLocalFoodModal } from "@/features/admin/components/CreateLocalFoodModal";
 import { logClientError, logClientInfo } from "@/core/utils/logger";
 import { getNutritionistUnlinkErrorMessage } from "@/features/clinical/utils/linkingErrorMessages";
 import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
@@ -146,6 +147,8 @@ export const NutritionistPatientFilePage = () => {
 
   const [activeTab, setActiveTab] = useState<"overview" | "plan" | "history" | "observations">("overview");
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [isCreateFoodModalOpen, setIsCreateFoodModalOpen] = useState(false);
+  const [suggestedFoodName, setSuggestedFoodName] = useState("");
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [pageFeedback, setPageFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const todayIso = new Date().toISOString().split("T")[0];
@@ -838,6 +841,10 @@ export const NutritionistPatientFilePage = () => {
               isLoading={isLoadingNutritionPlan}
               onSave={handleSaveNutritionPlan}
               onSearchFoods={clinicalApi.searchCatalogFoods}
+              onOpenCreateLocalFood={(name) => {
+                setSuggestedFoodName(name);
+                setIsCreateFoodModalOpen(true);
+              }}
             />
           </CardContent>
         </Card>
@@ -1316,7 +1323,23 @@ export const NutritionistPatientFilePage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* --- MODAL DE CREACIÓN DE ALIMENTOS (CU-13) --- */}
+      <CreateLocalFoodModal
+        isOpen={isCreateFoodModalOpen}
+        onClose={() => setIsCreateFoodModalOpen(false)}
+        initialName={suggestedFoodName}
+        onSuccess={() => {
+          setPageFeedback({
+            type: "success",
+            message: "Alimento local guardado exitosamente. Ya puedes buscarlo e integrarlo al plan.",
+          });
+          setTimeout(() => setPageFeedback(null), 5000);
+        }}
+      />
     </div>
   );
 };
+
+export default NutritionistPatientFilePage;
 

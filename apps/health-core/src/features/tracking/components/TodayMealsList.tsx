@@ -147,7 +147,7 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
         <CardTitle className="text-lg font-bold">{t('dashboard.todayLog', 'Registro de Hoy')}</CardTitle>
         <button 
           className="text-sm text-primary font-medium hover:underline"
-          onClick={() => navigate("/tracking/history")}
+          onClick={() => navigate("/history/patient")}
         >
           {t('dashboard.viewFullHistory', 'Ver historial completo')}
         </button>

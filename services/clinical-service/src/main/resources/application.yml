@@ -1,6 +1,12 @@
 server:
   port: ${SERVER_PORT:8083} 
 
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /docs
+
 spring:
   application:
     name: clinical-service
@@ -11,6 +17,13 @@ spring:
   
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:localhost}
+
+app:
+  openapi:
+    title: ${APP_OPENAPI_TITLE:HealthCore Clinical Service API}
+    version: ${APP_OPENAPI_VERSION:1.0.0}
+    description: ${APP_OPENAPI_DESCRIPTION:Clinical records, professional linking, observations and nutrition plans}
+    server-url: ${APP_OPENAPI_SERVER_URL:http://localhost:8087}
 
 grpc:
   agenda:

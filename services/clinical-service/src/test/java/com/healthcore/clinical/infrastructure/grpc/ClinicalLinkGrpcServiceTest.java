@@ -35,7 +35,9 @@ class ClinicalLinkGrpcServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ClinicalLinkGrpcService(clinicalRepositoryPort);
+        service = new ClinicalLinkGrpcService(
+                patientId -> clinicalRepositoryPort.findByUserId(patientId).map(PatientProfile::getNutritionistId)
+        );
     }
 
     @Test

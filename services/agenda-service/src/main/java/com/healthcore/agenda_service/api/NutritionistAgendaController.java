@@ -1,16 +1,12 @@
 package com.healthcore.agenda_service.api;
 
-import com.healthcore.agenda_service.api.dto.AppointmentResponse;
-import com.healthcore.agenda_service.api.dto.AvailabilitySlotResponse;
-import com.healthcore.agenda_service.api.dto.GenerateSlotsRequest;
-import com.healthcore.agenda_service.application.GenerateSlotsCommand;
-import com.healthcore.agenda_service.application.NutritionistAvailabilityService;
-import com.healthcore.agenda_service.domain.Appointment;
-import com.healthcore.agenda_service.domain.AppointmentStatus;
-import com.healthcore.agenda_service.domain.TimeSlot;
-import com.healthcore.agenda_service.domain.exception.BadRequestException;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -26,18 +22,23 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.healthcore.agenda_service.api.dto.AppointmentResponse;
+import com.healthcore.agenda_service.api.dto.AvailabilitySlotResponse;
+import com.healthcore.agenda_service.api.dto.GenerateSlotsRequest;
+import com.healthcore.agenda_service.application.GenerateSlotsCommand;
+import com.healthcore.agenda_service.application.NutritionistAvailabilityService;
+import com.healthcore.agenda_service.domain.Appointment;
+import com.healthcore.agenda_service.domain.AppointmentStatus;
+import com.healthcore.agenda_service.domain.TimeSlot;
+import com.healthcore.agenda_service.domain.exception.BadRequestException;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
-
-@Tag(name = "Agenda Nutriólogo", description = "Operaciones de configuración de disponibilidad y agenda para nutriólogos")
+@Tag(name = "Nutritionist Agenda", description = "Availability and scheduling operations for nutritionists")
 @RestController
 @RequestMapping("/api/v1/agenda/nutritionist")
 @RequiredArgsConstructor
@@ -48,10 +49,10 @@ public class NutritionistAgendaController {
     @Value("${agenda.default-time-zone:America/Mexico_City}")
     private String defaultTimeZone;
 
-    @Operation(summary = "Generar slots de disponibilidad", description = "Genera en bloque los horarios de atención (TimeSlots) para el nutriólogo autenticado.")
-    @ApiResponse(responseCode = "201", description = "Horarios generados exitosamente")
-    @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos")
-    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @Operation(summary = "Generate availability slots", description = "Generates availability time slots in bulk for the authenticated nutritionist.")
+    @ApiResponse(responseCode = "201", description = "Availability slots generated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request payload")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     @PostMapping("/slots/generate")
     @ResponseStatus(HttpStatus.CREATED)
     public List<AvailabilitySlotResponse> generateSlots(
@@ -65,10 +66,10 @@ public class NutritionistAgendaController {
         ).stream().map(this::toAvailabilityResponse).toList();
     }
 
-    @Operation(summary = "Consultar mis slots", description = "Devuelve la lista de horarios que el nutriólogo ha configurado en un rango de fechas.")
-    @ApiResponse(responseCode = "200", description = "Lista de horarios obtenida exitosamente")
-    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
-    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @Operation(summary = "Get my slots", description = "Returns the slots configured by the authenticated nutritionist within a date range.")
+    @ApiResponse(responseCode = "200", description = "Slots returned successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid date range")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     @GetMapping("/slots")
     public List<AvailabilitySlotResponse> getMySlots(
         Authentication authentication,
@@ -85,12 +86,12 @@ public class NutritionistAgendaController {
             .toList();
     }
 
-    @Operation(summary = "Desactivar un slot", description = "Deshabilita un horario. Si está reservado y faltan más de 24 hrs, cancela la cita automáticamente.")
-    @ApiResponse(responseCode = "204", description = "Horario desactivado exitosamente")
-    @ApiResponse(responseCode = "400", description = "No se puede desactivar un horario a menos de 24 horas de ocurrir")
-    @ApiResponse(responseCode = "401", description = "No autorizado")
-    @ApiResponse(responseCode = "403", description = "El horario no pertenece al nutriólogo")
-    @ApiResponse(responseCode = "404", description = "Horario no encontrado")
+    @Operation(summary = "Deactivate slot", description = "Disables a slot. If it is reserved and more than 24 hours remain, the appointment is cancelled automatically.")
+    @ApiResponse(responseCode = "204", description = "Slot deactivated successfully")
+    @ApiResponse(responseCode = "400", description = "A slot cannot be deactivated within 24 hours of its start time")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Slot does not belong to the nutritionist")
+    @ApiResponse(responseCode = "404", description = "Slot not found")
     @PatchMapping("/slots/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deactivateSlot(
@@ -101,10 +102,10 @@ public class NutritionistAgendaController {
         nutritionistAvailabilityService.deactivateTimeSlot(nutritionistId, slotId);
     }
 
-    @Operation(summary = "Consultar mis citas", description = "Devuelve las citas que han sido reservadas con el nutriólogo autenticado.")
-    @ApiResponse(responseCode = "200", description = "Lista de citas obtenida exitosamente")
-    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
-    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @Operation(summary = "Get my appointments", description = "Returns the appointments booked with the authenticated nutritionist.")
+    @ApiResponse(responseCode = "200", description = "Appointments returned successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid date range")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     @GetMapping("/appointments")
     public List<AppointmentResponse> getMyAppointments(
         Authentication authentication,
@@ -121,10 +122,10 @@ public class NutritionistAgendaController {
             .toList();
     }
 
-    @Operation(summary = "Reporte de citas", description = "Devuelve citas del nutriólogo autenticado por rango, estado y paciente opcional para reportes auditables.")
-    @ApiResponse(responseCode = "200", description = "Reporte de citas obtenido exitosamente")
-    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
-    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @Operation(summary = "Get appointment report", description = "Returns appointments for the authenticated nutritionist filtered by date range, optional status and optional patient for reporting scenarios.")
+    @ApiResponse(responseCode = "200", description = "Appointment report returned successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid date range")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     @GetMapping("/reports/appointments")
     public List<AppointmentResponse> getAppointmentReport(
         Authentication authentication,
@@ -146,10 +147,10 @@ public class NutritionistAgendaController {
         ).stream().map(this::toAppointmentResponse).toList();
     }
 
-    @Operation(summary = "Reporte de slots", description = "Devuelve slots del nutriólogo autenticado por rango. Use state=inactive para consultar slots desactivados/cancelados.")
-    @ApiResponse(responseCode = "200", description = "Reporte de slots obtenido exitosamente")
-    @ApiResponse(responseCode = "400", description = "Rango de fechas inválido")
-    @ApiResponse(responseCode = "401", description = "No autorizado")
+    @Operation(summary = "Get slot report", description = "Returns slots for the authenticated nutritionist within a date range. Use state=inactive to inspect disabled or cancelled slots.")
+    @ApiResponse(responseCode = "200", description = "Slot report returned successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid date range")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
     @GetMapping("/reports/slots")
     public List<AvailabilitySlotResponse> getSlotReport(
         Authentication authentication,

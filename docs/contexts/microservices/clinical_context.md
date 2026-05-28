@@ -1,227 +1,198 @@
 # Microservicio: Clinical Service
 
-## 1. Propósito y responsabilidades
-El `healthcore-clinical-service` es el custodio del expediente clínico del paciente dentro de HealthCore.
+## 1. Proposito y responsabilidades
 
-Sus responsabilidades actuales son:
+El `healthcore-clinical-service` es el custodio del expediente clinico dentro de HealthCore.
 
-* gestionar el perfil clínico del paciente
-* calcular metas nutricionales derivadas del perfil biométrico
-* registrar y mantener el historial de peso
-* administrar la vinculación entre paciente y nutriólogo
-* exponer el expediente del paciente al nutriólogo autorizado
-* almacenar observaciones clínicas del nutriólogo
-* administrar planes nutricionales autogestionados y asignados por el nutriólogo
-* exponer reportes clínicos consolidados para el nutriólogo
-* resolver datos de referencia para la clínica, como códigos postales
+Responsabilidades actuales:
 
-Este servicio no implementa tiempo real para la interfaz. Su contrato con frontend es REST síncrono; la sincronización visual depende de reconsultas del cliente.
+- gestionar el perfil clinico del paciente
+- calcular metas nutricionales derivadas del perfil biometrico
+- registrar y mantener el historial de peso
+- gestionar fotos de perfil de pacientes y nutriologos usando `media-service`
+- administrar la vinculacion entre paciente y nutriologo
+- exponer el expediente base del paciente al nutriologo autorizado
+- almacenar observaciones clinicas
+- administrar planes nutricionales autogestionados y administrados por nutriologos
+- exponer reportes clinicos consolidados
+- resolver datos de referencia como codigos postales SEPOMEX
 
-## 2. Stack tecnológico core
-* **Lenguaje/Framework:** Java 21 + Spring Boot 3.x
-* **Persistencia:** Spring Data MongoDB
-* **Base lógica:** `healthcore_clinical`
-* **Seguridad:** JWT validado en el backend; el usuario autenticado se obtiene desde `Authentication.getName()`
-* **Comunicaciones internas:**
-  * gRPC server para validaciones clínicas consumidas por otros microservicios
-  * gRPC client hacia `identity-service`
-  * gRPC client hacia `catalog-service`
-  * gRPC client hacia `agenda-service` para limpieza de citas futuras al desvincular
-* **Mensajería:** Spring AMQP (RabbitMQ) para integraciones asíncronas del ecosistema
+El contrato con frontend es REST sin sincronizacion en tiempo real.
+
+## 2. Stack tecnologico
+
+- **Lenguaje/Framework:** Java 21 + Spring Boot 3.x
+- **Persistencia:** Spring Data MongoDB
+- **Base logica:** `healthcore_clinical`
+- **Seguridad:** JWT backend; identidad obtenida desde `Authentication.getName()`
+- **Documentacion API:** Springdoc OpenAPI (`/docs`, `/api-docs`, compat `/v3/api-docs`)
+- **Comunicacion interna actual:**
+  - gRPC server para validaciones clinicas
+  - gRPC client hacia `catalog-service`
+  - gRPC client hacia `media-service`
+  - gRPC client hacia `agenda-service`
+- **Mensajeria:** no hay publicadores ni consumidores RabbitMQ activos en el codigo actual del servicio
 
 ## 3. Modelo de dominio
-Las piezas principales del dominio hoy son:
 
-* **`PatientProfile`**
-  Guarda identidad clínica, biométricos, objetivo, dieta, alergias, alimentos excluidos, vínculo profesional y evolución de peso.
+- **`PatientProfile`**: identidad clinica, biometria, objetivo, dieta, alergias, alimentos excluidos, foto, vinculacion profesional e historial de peso.
+- **`WeightRecord`**: registro historico de peso por fecha.
+- **`NutritionistProfile`**: perfil publico del nutriologo, especialidades, cedula, contacto, direccion, biografia y foto.
+- **`ClinicalObservation`**: nota clinica emitida por el nutriologo para un paciente vinculado.
+- **`NutritionPlan` / `NutritionPlanView`**: modelo del plan nutricional autogestionado o administrado.
+- **`LinkingCode`**: codigo temporal de vinculacion.
+- **`HealthGoal`**: metas diarias derivadas del expediente clinico.
 
-* **`WeightRecord`**
-  Representa un registro de peso por fecha. Es la fuente de verdad para la evolución de peso y para recalcular metas derivadas.
+## 4. Reglas clinicas importantes
 
-* **`NutritionistProfile`**
-  Guarda el perfil profesional público del nutriólogo, incluyendo especialidades, tipos de consulta, cédula, contacto, dirección y biografía.
+### 4.1 Perfil y metas
 
-* **`ClinicalObservation`**
-  Nota clínica emitida por el nutriólogo para un paciente vinculado.
+- el perfil clinico es la base para IMC y metas nutricionales
+- si cambia peso o altura, tambien cambian las metas derivadas
 
-* **`NutritionPlan` / `NutritionPlanView`**
-  Modelo del plan nutricional, tanto para pacientes autogestionados como para pacientes vinculados a un nutriólogo.
+### 4.2 Historial de peso
 
-* **`LinkingCode`**
-  Código temporal usado para vincular pacientes con nutriólogos.
+- el peso se registra con fecha explicita
+- solo puede existir un registro por fecha
+- no se permiten fechas futuras
+- rango valido de peso: `40.0` a `200.0 kg`
+- rango valido de altura: `100.0` a `250.0 cm`
+- al editar o eliminar un peso, se recalculan perfil actual y metas
 
-* **`HealthGoal`**
-  Metas diarias derivadas del perfil clínico: calorías, proteína, carbohidratos, grasas y agua.
+### 4.3 Modificacion clinica por nutriologo
 
-## 4. Reglas clínicas importantes
-### 4.1. Perfil y metas
-* El perfil clínico del paciente es la base para calcular IMC y metas nutricionales.
-* Si cambia el peso o la altura, cambian también el IMC y las metas derivadas.
-* El backend calcula usando la zona horaria clínica definida para evitar desfases de fecha.
+- el nutriologo puede actualizar peso y altura del paciente vinculado
+- si cambia el peso, el backend registra o reemplaza el peso del dia actual
 
-### 4.2. Historial de peso
-* El peso se registra con fecha explícita.
-* Solo puede existir un registro por fecha.
-* Si se registra nuevamente una fecha ya existente, el valor se reemplaza.
-* No se permiten fechas futuras.
-* El rango válido de peso es `40.0` a `200.0 kg`.
-* El peso admite máximo un decimal.
-* Al editar o eliminar un peso, el perfil actual y las metas se recalculan según el registro más reciente resultante.
+### 4.4 Vinculo profesional
 
-### 4.3. Modificación clínica por nutriólogo
-* El nutriólogo puede actualizar peso y altura del paciente vinculado desde el expediente.
-* Si cambia el peso, el backend registra o reemplaza el peso del día actual y recalcula metas.
-* Si cambia la altura, actualiza el perfil biométrico y recalcula métricas derivadas.
+- el acceso del nutriologo depende de una vinculacion activa
+- al desvincular:
+  - se termina la relacion clinica
+  - se limpian observaciones asociadas
+  - se cancelan citas futuras via `agenda-service`
 
-### 4.4. Vínculo profesional
-* El acceso del nutriólogo al expediente depende de una vinculación activa con el paciente.
-* Al desvincular:
-  * se termina la relación clínica
-  * se limpian observaciones asociadas a esa relación
-  * se cancelan citas futuras vía integración con `agenda-service`
+## 5. Seguridad y autenticacion
 
-## 5. Seguridad y autenticación
-El servicio usa JWT como fuente de identidad del usuario autenticado.
-
-Reglas:
-
-* los endpoints protegidos usan `@PreAuthorize`
-* el `userId` se deriva del principal autenticado
-* el backend no debe confiar en encabezados del cliente para decidir a qué perfil afecta una operación clínica
-
-En otras palabras, las operaciones clínicas trabajan sobre el usuario autenticado o sobre un paciente validado contra el nutriólogo autenticado.
+- los endpoints funcionales usan `@PreAuthorize`
+- el `userId` se deriva del principal autenticado
+- el backend no confia en headers del cliente para decidir sobre que expediente opera
+- Swagger y OpenAPI se publican sin autenticacion en `/docs`, `/api-docs` y `/v3/api-docs`
 
 ## 6. API REST expuesta
-Base pública vía API Gateway:
 
-* `/api/v1/clinical/**`
+Base publica:
 
-### 6.1. Perfil del paciente
-| Método | Endpoint | Actor | Descripción |
+- `/api/v1/clinical/**`
+
+### 6.1 Perfil del paciente
+
+| Metodo | Endpoint | Actor | Descripcion |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/profile` | Paciente | Crea el perfil clínico inicial |
-| `PUT` | `/profile/me` | Paciente | Actualiza el perfil clínico completo |
-| `GET` | `/profile/me` | Paciente | Obtiene el perfil clínico propio |
+| `POST` | `/profile` | Paciente | Crea el perfil clinico inicial |
+| `PUT` | `/profile/me` | Paciente | Actualiza el perfil clinico completo |
+| `PUT` | `/profile/me/photo` | Paciente | Actualiza la foto de perfil |
+| `GET` | `/profile/me` | Paciente | Obtiene el perfil clinico propio |
 | `GET` | `/goals/me` | Paciente | Obtiene metas nutricionales derivadas |
-| `GET` | `/profile/me/nutritionist` | Paciente | Obtiene el perfil del nutriólogo vinculado |
+| `GET` | `/profile/me/nutritionist` | Paciente | Obtiene el perfil del nutriologo vinculado |
 
-### 6.2. Historial de peso
-| Método | Endpoint | Actor | Descripción |
+### 6.2 Historial de peso
+
+| Metodo | Endpoint | Actor | Descripcion |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/weight` | Paciente | Registra un peso con fecha |
 | `PUT` | `/weight/{originalDate}` | Paciente | Edita un registro de peso |
 | `DELETE` | `/weight/{date}` | Paciente | Elimina un registro de peso |
 | `GET` | `/weight/history` | Paciente | Obtiene su historial de peso |
-| `GET` | `/nutritionist/patients/{patientId}/weight-history` | Nutriólogo | Obtiene el historial de peso de un paciente vinculado |
+| `GET` | `/nutritionist/patients/{patientId}/weight-history` | Nutriologo | Obtiene el historial de peso de un paciente vinculado |
 
-### 6.3. Perfil del nutriólogo y expediente de pacientes
-| Método | Endpoint | Actor | Descripción |
+### 6.3 Perfil del nutriologo y expediente de pacientes
+
+| Metodo | Endpoint | Actor | Descripcion |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/nutritionist/profile` | Nutriólogo | Crea perfil profesional |
-| `PUT` | `/nutritionist/profile/me` | Nutriólogo | Actualiza perfil profesional |
-| `GET` | `/nutritionist/profile/me` | Nutriólogo | Obtiene perfil profesional propio |
-| `GET` | `/nutritionist/patients` | Nutriólogo | Lista pacientes vinculados |
-| `GET` | `/nutritionist/patients/{patientId}` | Nutriólogo | Obtiene el expediente base del paciente |
-| `PUT` | `/nutritionist/patients/{patientId}/metrics` | Nutriólogo | Actualiza peso y altura del paciente vinculado |
+| `POST` | `/nutritionist/profile` | Nutriologo | Crea perfil profesional |
+| `PUT` | `/nutritionist/profile/me` | Nutriologo | Actualiza perfil profesional |
+| `PUT` | `/nutritionist/profile/me/photo` | Nutriologo | Actualiza la foto de perfil |
+| `GET` | `/nutritionist/profile/me` | Nutriologo | Obtiene perfil profesional propio |
+| `GET` | `/nutritionist/patients` | Nutriologo | Lista pacientes vinculados |
+| `GET` | `/nutritionist/patients/{patientId}` | Nutriologo | Obtiene el expediente base del paciente |
+| `PUT` | `/nutritionist/patients/{patientId}/metrics` | Nutriologo | Actualiza peso y altura del paciente vinculado |
 
-### 6.4. Reportes clínicos para nutriólogo
-| Método | Endpoint | Actor | Descripción |
+### 6.4 Reportes clinicos
+
+| Metodo | Endpoint | Actor | Descripcion |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/nutritionist/reports/weight-progress?from=YYYY-MM-DD&to=YYYY-MM-DD` | Nutriólogo | Reporte consolidado de progreso de peso por paciente |
+| `GET` | `/nutritionist/reports/weight-progress?from=YYYY-MM-DD&to=YYYY-MM-DD` | Nutriologo | Reporte consolidado de progreso de peso por paciente |
 
-Este endpoint devuelve un contrato específico de reportes con:
+### 6.5 Vinculacion paciente-nutriologo
 
-* `activePatients`
-* `patientsWithoutWeightInRange`
-* `rows`
-
-Cada fila incluye:
-
-* `patientId`
-* `fullName`
-* `latestRecordDateInRange`
-* `startWeightKg`
-* `currentWeightKg`
-* `netChangeKg`
-* `hasRecordsInRange`
-
-### 6.5. Vinculación paciente-nutriólogo
-| Método | Endpoint | Actor | Descripción |
+| Metodo | Endpoint | Actor | Descripcion |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/linking/generate` | Nutriólogo | Genera código de vinculación |
-| `GET` | `/linking/current` | Nutriólogo | Obtiene código vigente |
-| `POST` | `/linking/connect` | Paciente | Se vincula con un código |
-| `POST` | `/linking/disconnect/patient` | Paciente | Se desvincula de su nutriólogo |
-| `POST` | `/linking/disconnect/nutritionist/{patientId}` | Nutriólogo | Desvincula a un paciente |
+| `POST` | `/linking/generate` | Nutriologo | Genera codigo de vinculacion |
+| `GET` | `/linking/current` | Nutriologo | Obtiene codigo vigente o `204 No Content` |
+| `POST` | `/linking/connect` | Paciente | Se vincula con un codigo |
+| `POST` | `/linking/disconnect/patient` | Paciente | Se desvincula de su nutriologo |
+| `POST` | `/linking/disconnect/nutritionist/{patientId}` | Nutriologo | Desvincula a un paciente |
 
-### 6.6. Observaciones clínicas
-| Método | Endpoint | Actor | Descripción |
+### 6.6 Observaciones clinicas
+
+| Metodo | Endpoint | Actor | Descripcion |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/observations` | Nutriólogo | Crea una observación |
-| `PUT` | `/observations/{observationId}` | Nutriólogo | Edita una observación |
-| `DELETE` | `/observations/{observationId}` | Nutriólogo | Elimina una observación |
-| `GET` | `/observations/patient/{patientId}` | Nutriólogo | Lista observaciones del paciente vinculado |
-| `GET` | `/observations/me` | Paciente | Lista sus observaciones clínicas |
+| `POST` | `/observations` | Nutriologo | Crea una observacion |
+| `PUT` | `/observations/{observationId}` | Nutriologo | Edita una observacion |
+| `DELETE` | `/observations/{observationId}` | Nutriologo | Elimina una observacion |
+| `GET` | `/observations/patient/{patientId}` | Nutriologo | Lista observaciones del paciente vinculado |
+| `GET` | `/observations/me` | Paciente | Lista sus observaciones clinicas |
 
-### 6.7. Plan nutricional
-| Método | Endpoint | Actor | Descripción |
+### 6.7 Plan nutricional
+
+| Metodo | Endpoint | Actor | Descripcion |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/nutrition-plan/me` | Paciente | Obtiene su plan nutricional |
 | `PUT` | `/nutrition-plan/me` | Paciente | Crea o actualiza su plan autogestionado |
-| `GET` | `/nutritionist/patients/{patientId}/nutrition-plan` | Nutriólogo | Obtiene el plan de un paciente vinculado |
-| `PUT` | `/nutritionist/patients/{patientId}/nutrition-plan` | Nutriólogo | Crea o actualiza el plan del paciente vinculado |
-| `GET` | `/catalog/foods/search?query=...` | Paciente/Nutriólogo | Busca alimentos del catálogo nutricional |
+| `GET` | `/nutritionist/patients/{patientId}/nutrition-plan` | Nutriologo | Obtiene el plan de un paciente vinculado |
+| `PUT` | `/nutritionist/patients/{patientId}/nutrition-plan` | Nutriologo | Crea o actualiza el plan del paciente vinculado |
+| `GET` | `/catalog/foods/search?query=...` | Paciente/Nutriologo | Busca alimentos del catalogo nutricional |
 
-### 6.8. Referencias
-| Método | Endpoint | Actor | Descripción |
+### 6.8 Referencias
+
+| Metodo | Endpoint | Actor | Descripcion |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/reference/postal-codes/{postalCode}` | Paciente/Nutriólogo | Resuelve datos de SEPOMEX para dirección de clínica |
+| `GET` | `/reference/postal-codes/{postalCode}` | Paciente/Nutriologo | Resuelve datos SEPOMEX para direccion de clinica |
 
 ## 7. Integraciones distribuidas
-### 7.1. gRPC server
-El servicio expone validaciones clínicas a otros microservicios.
 
-Casos principales:
+### 7.1 gRPC server
 
-* validar vínculo activo paciente-nutriólogo para `agenda-service`
-* proveer metas clínicas requeridas por otros servicios
+El servicio expone validaciones clinicas a otros microservicios, principalmente para validar vinculos paciente-nutriologo.
 
-### 7.2. gRPC clients
-`clinical-service` consume otros servicios cuando necesita datos o efectos inmediatos:
+### 7.2 gRPC clients activos
 
-* **`identity-service`**
-  para resolver identidad visible de pacientes y nutriólogos
+- **`catalog-service`** para buscar alimentos y enriquecer ingredientes del plan nutricional
+- **`media-service`** para resolver URLs de lectura de fotos de perfil
+- **`agenda-service`** para cancelar citas futuras al finalizar una vinculacion
 
-* **`catalog-service`**
-  para buscar alimentos y validar ingredientes del plan nutricional
+### 7.3 RabbitMQ
 
-* **`agenda-service`**
-  para cancelar citas futuras cuando una vinculación clínica termina
-
-### 7.3. RabbitMQ
-El servicio participa en flujos asíncronos del ecosistema. El caso base documentado y esperado es el alta inicial de usuarios para preparar el expediente clínico.
+Existe configuracion base en `application.yml`, pero no hay publicadores ni consumidores activos de RabbitMQ en el codigo actual de `clinical-service`.
 
 ## 8. Contrato esperado con frontend
-El backend clínico expone datos por REST. No existe contrato de sincronización en vivo por WebSocket o SSE.
 
-Por lo tanto, en frontend el comportamiento esperado es:
-
-* la vista que guarda un cambio debe actualizar su estado local inmediatamente
-* otras vistas clínicas pueden refrescarse al volver al foco o al reingresar
-* no se debe asumir actualización instantánea entre dos sesiones abiertas sin una capa de realtime adicional
-
-Esto está alineado con la arquitectura actual del proyecto.
+- la vista que guarda un cambio debe actualizar su estado local inmediatamente
+- otras vistas clinicas pueden refrescarse al volver al foco o al reingresar
+- no se debe asumir actualizacion instantanea entre sesiones sin una capa de realtime adicional
 
 ## 9. Variables de entorno principales
+
 ```properties
-# HTTP
+# HTTP interno del servicio
 SERVER_PORT=8083
 
-# MongoDB (Conectado al contenedor clinical-mongodb en Docker)
-SPRING_DATA_MONGODB_URI=mongodb://clinical-mongodb:27017/healthcore_clinical
+# HTTP publicado al host para desarrollo local
+SERVER_PORT_CLINICAL=8087
 
-# RabbitMQ
-SPRING_RABBITMQ_HOST=rabbitmq
+# MongoDB
+SPRING_DATA_MONGODB_URI=mongodb://clinical-mongodb:27017/healthcore_clinical
 
 # JWT
 JWT_SECRET=<secret>
@@ -229,13 +200,20 @@ JWT_SECRET=<secret>
 # gRPC server
 GRPC_CLINICAL_PORT=50051
 
-# gRPC clients (En Docker)
-GRPC_CLIENT_IDENTITY_ADDRESS=static://identity-service:9090
+# gRPC clients
 GRPC_CATALOG_TARGET=catalog-service:50051
+GRPC_MEDIA_TARGET=media-service:9091
 GRPC_CLIENT_AGENDA_TARGET=agenda-service:50052
+
+# OpenAPI
+APP_OPENAPI_TITLE=HealthCore Clinical Service API
+APP_OPENAPI_VERSION=1.0.0
+APP_OPENAPI_DESCRIPTION=Clinical records, professional linking, observations and nutrition plans
+APP_OPENAPI_SERVER_URL=http://localhost:8087
 ```
 
-## 10. Notas para mantenimiento
-* Si se agregan más reglas de peso, este documento debe actualizarse junto con `PatientProfile` y `ProfileFieldValidator`.
-* Si en el futuro se introduce realtime real para frontend, esa decisión debe documentarse aquí y en `docs/contexts/communication_contexts.md`.
-* Si cambian contratos del expediente del nutriólogo o de reportes, este contexto debe mantenerse sincronizado con `nutritionist_reports_context.md`.
+## 10. Notas de mantenimiento
+
+- si cambian reglas de peso o altura, actualiza este documento junto con DTOs y validadores
+- si se agregan integraciones RabbitMQ reales, documentalas explicitamente aqui y en `docs/contexts/communication_contexts.md`
+- si cambian contratos de reportes o del plan nutricional, manten sincronizado este contexto y Swagger

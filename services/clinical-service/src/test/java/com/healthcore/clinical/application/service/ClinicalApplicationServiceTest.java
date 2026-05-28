@@ -69,6 +69,20 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void shouldGetProfilesByNutritionistId() {
+        List<PatientProfile> profiles = List.of(
+                createPatientProfile("patient-1"),
+                createPatientProfile("patient-2")
+        );
+        when(repositoryPort.findAllByNutritionistId("nutri-123")).thenReturn(profiles);
+
+        List<PatientProfile> result = service.getProfilesByNutritionistId("nutri-123");
+
+        assertEquals(2, result.size());
+        verify(repositoryPort).findAllByNutritionistId("nutri-123");
+    }
+
+    @Test
     void shouldUpdateWeightAndRecalculateGoals() {
         PatientProfile profile = createPatientProfile("user-123");
         LocalDate targetDate = ClinicalTime.today();
@@ -214,6 +228,21 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void shouldRejectInvalidNutritionistWeightProgressReportRange() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.getNutritionistWeightProgressReport(
+                        "nutri-123",
+                        LocalDate.of(2026, 5, 31),
+                        LocalDate.of(2026, 5, 1)
+                )
+        );
+
+        assertEquals("Invalid report range.", exception.getMessage());
+        verify(repositoryPort, never()).findAllByNutritionistId(any());
+    }
+
+    @Test
     void shouldUpdatePatientProfile() {
         PatientProfile existingProfile = createPatientProfile("user-123");
         PatientProfile updatedProfile = new PatientProfile(
@@ -258,6 +287,34 @@ class ClinicalApplicationServiceTest {
         assertEquals(180.0, result.getHeightCm());
         assertEquals(2, result.getWeightHistory().size());
         verify(repositoryPort).save(profile);
+    }
+
+    @Test
+    void shouldThrowAccessDeniedWhenNutritionistRequestsPatientLinkedToAnotherNutritionist() {
+        PatientProfile profile = createPatientProfile("patient-123");
+        profile.assignNutritionist("nutri-999");
+        when(repositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> service.getProfileForNutritionist("nutri-123", "patient-123")
+        );
+
+        assertEquals("Action denied: Patient is not linked to this nutritionist.", exception.getMessage());
+    }
+
+    @Test
+    void shouldReturnWeightHistoryForLinkedPatientWhenNutritionistOwnsProfile() {
+        String nutritionistId = "nutri-123";
+        PatientProfile profile = createPatientProfile("patient-123");
+        profile.assignNutritionist(nutritionistId);
+        profile.registerWeight(72.5, ClinicalTime.today());
+        when(repositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+
+        List<WeightRecord> history = service.getWeightHistoryForNutritionist(nutritionistId, "patient-123");
+
+        assertEquals(2, history.size());
+        assertEquals(72.5, history.get(1).weightKg());
     }
 
     @Test
@@ -352,6 +409,17 @@ class ClinicalApplicationServiceTest {
     }
 
     @Test
+    void shouldReturnNutritionistProfileByUserId() {
+        NutritionistProfile profile = createNutritionistProfile("nutri-123");
+        when(nutritionistRepositoryPort.findByUserId("nutri-123")).thenReturn(Optional.of(profile));
+
+        Optional<NutritionistProfile> result = service.getNutritionistProfileByUserId("nutri-123");
+
+        assertTrue(result.isPresent());
+        assertEquals("nutri-123", result.get().getUserId());
+    }
+
+    @Test
     void shouldUpdateNutritionistProfilePhoto() {
         NutritionistProfile profile = createNutritionistProfile("nutri-123");
 
@@ -379,6 +447,34 @@ class ClinicalApplicationServiceTest {
 
         assertEquals("Profile photo key does not belong to the authenticated user.", exception.getMessage());
         verify(nutritionistRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectBlankPatientProfilePhotoKey() {
+        PatientProfile profile = createPatientProfile("user-123");
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.updateProfilePhoto("user-123", " ")
+        );
+
+        assertEquals("Profile photo key is required.", exception.getMessage());
+        verify(repositoryPort, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectNestedPatientProfilePhotoKeyPath() {
+        PatientProfile profile = createPatientProfile("user-123");
+        when(repositoryPort.findByUserId("user-123")).thenReturn(Optional.of(profile));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.updateProfilePhoto("user-123", "user-123/folder/avatar.webp")
+        );
+
+        assertEquals("Profile photo key format is invalid.", exception.getMessage());
+        verify(repositoryPort, never()).save(any());
     }
 
     @Test
@@ -450,6 +546,42 @@ class ClinicalApplicationServiceTest {
         );
 
         assertEquals("Clinic address does not match the postal code catalog.", exception.getMessage());
+        verify(nutritionistRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectIncompleteClinicAddress() {
+        NutritionistProfile profile = new NutritionistProfile(
+                "nutri-123",
+                "Daniel",
+                "Martinez",
+                null,
+                List.of("CLINICAL"),
+                null,
+                "12345678",
+                List.of("PRESENTIAL"),
+                "5512345678",
+                ClinicAddress.rehydrate(
+                        "03100",
+                        "Ciudad de Mexico",
+                        null,
+                        "Benito Juarez",
+                        "Narvarte Oriente",
+                        "Xola",
+                        "123",
+                        null
+                ),
+                "Especialista en nutricion clinica.",
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.createNutritionistProfile(profile)
+        );
+
+        assertEquals("Clinic address must be complete when provided.", exception.getMessage());
+        verify(postalCodeCatalogPort, never()).findByPostalCode(any());
         verify(nutritionistRepositoryPort, never()).save(any());
     }
 

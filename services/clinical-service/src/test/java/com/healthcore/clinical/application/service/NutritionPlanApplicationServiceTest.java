@@ -212,6 +212,116 @@ class NutritionPlanApplicationServiceTest {
         assertNull(view.contextSelfManagedPlan());
     }
 
+    @Test
+    void shouldReturnReadOnlyViewWhenLinkedPatientHasActiveNutritionistPlan() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        NutritionPlan nutritionistPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.NUTRITIONIST,
+                "nutri-1",
+                new DailyGoalsSnapshot(2000, 100, 200, 60, 10),
+                emptySections()
+        );
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
+        )).thenReturn(Optional.of(nutritionistPlan));
+
+        NutritionPlanView view = service.getMyNutritionPlan("patient-1");
+
+        assertEquals("READ_ONLY", view.mode());
+        assertFalse(view.canEdit());
+        assertEquals(AuthorType.NUTRITIONIST, view.authorType());
+        assertEquals(nutritionistPlan.getSections(), view.sections());
+    }
+
+    @Test
+    void shouldReturnSelfManagedViewWhenPatientHasActiveSelfManagedPlan() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", null);
+        NutritionPlan selfManagedPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.SELF_MANAGED,
+                "patient-1",
+                new DailyGoalsSnapshot(1800, 90, 180, 55, 9),
+                emptySections()
+        );
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.SELF_MANAGED, "patient-1"
+        )).thenReturn(Optional.of(selfManagedPlan));
+
+        NutritionPlanView view = service.getMyNutritionPlan("patient-1");
+
+        assertEquals("SELF_MANAGED", view.mode());
+        assertTrue(view.canEdit());
+        assertEquals(AuthorType.SELF_MANAGED, view.authorType());
+    }
+
+    @Test
+    void shouldSearchCatalogFoodsByQuery() {
+        List<CatalogFoodItem> foods = List.of(createCatalogItem());
+        when(nutritionCatalogPort.searchFoods("oats")).thenReturn(foods);
+
+        List<CatalogFoodItem> result = service.searchCatalogFoods("oats");
+
+        assertEquals(1, result.size());
+        assertEquals("food-1", result.get(0).barcode());
+        verify(nutritionCatalogPort).searchFoods("oats");
+    }
+
+    @Test
+    void shouldRejectDraftWhenMealSlotSectionIsDuplicatedAndAnotherIsMissing() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", null);
+        NutritionPlanDraft incompleteDraft = new NutritionPlanDraft(List.of(
+                new MealSectionDraft(MealSlot.BREAKFAST, List.of()),
+                new MealSectionDraft(MealSlot.LUNCH, List.of()),
+                new MealSectionDraft(MealSlot.DINNER, List.of()),
+                new MealSectionDraft(MealSlot.BREAKFAST, List.of())
+        ));
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.upsertMyNutritionPlan("patient-1", incompleteDraft)
+        );
+
+        assertTrue(exception.getMessage().contains("Missing section for meal slot"));
+        verify(nutritionPlanRepositoryPort, never()).save(any(NutritionPlan.class));
+    }
+
+    @Test
+    void shouldRejectIngredientWhenCatalogFoodDoesNotExist() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", null);
+        NutritionPlanDraft draft = createDraft();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionCatalogPort.getFoodByBarcode("food-1")).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.upsertMyNutritionPlan("patient-1", draft)
+        );
+
+        assertEquals("Catalog food not found for barcode: food-1", exception.getMessage());
+        verify(nutritionPlanRepositoryPort, never()).save(any(NutritionPlan.class));
+    }
+
+    @Test
+    void shouldRejectNutritionistAccessWhenPatientIsLinkedToAnotherNutritionist() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-999");
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> service.getNutritionistPatientNutritionPlan("nutri-1", "patient-1")
+        );
+
+        assertEquals("Action denied: Patient is not linked to this nutritionist.", exception.getMessage());
+    }
+
     private PatientProfile createPatientProfile(String userId, String nutritionistId) {
         PatientProfile profile = new PatientProfile(
                 userId,

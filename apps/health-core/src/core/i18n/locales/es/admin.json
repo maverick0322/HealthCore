@@ -27,5 +27,20 @@
   "confirmDisable": "¿Estás seguro de que deseas deshabilitar a este usuario?",
   "confirmEnable": "¿Estás seguro de que deseas habilitar a este usuario?",
   "confirmBtn": "Confirmar",
-  "cancelBtn": "Cancelar"
-}
+  "cancelBtn": "Cancelar",
+  "createTitle": "Crear Alimento Local",
+  "createDescription": "Añade un alimento a la base de datos local. Estará disponible inmediatamente para tus planes nutricionales. (Basado en 100g/ml)",
+  "nameLabel": "Nombre del alimento *",
+  "namePlaceholder": "Ej. Tamal Ranchero",
+  "brandLabel": "Marca (Opcional)",
+  "brandPlaceholder": "Ej. Casero, Bimbo...",
+  "caloriesLabel": "Kcal / 100g *",
+  "proteinsLabel": "Proteínas (g) *",
+  "carbsLabel": "Carbohidratos (g) *",
+  "fatsLabel": "Grasas (g) *",
+
+  "saveBtn": "Guardar Alimento",
+  "saving": "Guardando...",
+  "saveError": "Error al guardar el alimento.",
+  "validationError": "Por favor completa los campos obligatorios."
+} 

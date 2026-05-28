@@ -184,7 +184,7 @@ export const DetailedMealTimeline = ({
               <Plus size={16} />
             </div>
             <Card 
-                onClick={() => navigate('/tracking/patient')}
+                onClick={() => navigate('/tracking/log-food')}
                 className="flex cursor-pointer items-center justify-between border-dashed border-border bg-muted/10 p-4 shadow-none sm:p-5">
               <div>
                 <h3 className="text-base font-bold text-muted-foreground">Registrar nuevo alimento</h3>

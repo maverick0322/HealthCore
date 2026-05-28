@@ -1,10 +1,29 @@
 package com.healthcore.clinical.infrastructure.rest;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.healthcore.clinical.domain.model.ClinicalObservation;
 import com.healthcore.clinical.domain.port.in.ManageObservationsUseCase;
+import com.healthcore.clinical.infrastructure.rest.dto.ApiErrorResponseDoc;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateObservationRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.ObservationResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.UnauthorizedErrorResponseDoc;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateObservationRequest;
+import com.healthcore.clinical.infrastructure.rest.dto.ValidationErrorResponseDoc;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -15,17 +34,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/clinical/observations")
-@Tag(name = "Clinical Observations", description = "Notas y observaciones clínicas entre nutriólogo y paciente")
+@Tag(name = "Clinical Observations", description = "Clinical notes and observations shared between nutritionists and patients")
 public class ObservationController {
 
     private final ManageObservationsUseCase manageObservationsUseCase;
@@ -36,15 +48,19 @@ public class ObservationController {
 
     @PostMapping
     @PreAuthorize("hasRole('NUTRITIONIST')")
-    @Operation(summary = "Crear observación clínica", description = "Registra una nueva observación clínica para un paciente vinculado al nutriólogo autenticado.")
+    @Operation(summary = "Create clinical observation", description = "Creates a new clinical observation for a patient linked to the authenticated nutritionist.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Observación creada exitosamente",
+            @ApiResponse(responseCode = "201", description = "Clinical observation created successfully",
                     content = @Content(schema = @Schema(implementation = ObservationResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Datos de observación inválidos"),
-            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
-            @ApiResponse(responseCode = "403", description = "El paciente no pertenece al nutriólogo autenticado"),
-            @ApiResponse(responseCode = "404", description = "Paciente o perfil clínico no encontrado")
+            @ApiResponse(responseCode = "400", description = "Invalid observation payload",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
+                    content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "403", description = "Patient does not belong to the authenticated nutritionist",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "404", description = "Patient or clinical profile not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<ObservationResponse> recordObservation(
             @Valid @RequestBody CreateObservationRequest request) {
@@ -60,18 +76,22 @@ public class ObservationController {
 
     @PutMapping("/{observationId}")
     @PreAuthorize("hasRole('NUTRITIONIST')")
-    @Operation(summary = "Actualizar observación clínica", description = "Actualiza una observación previamente registrada por el nutriólogo autenticado.")
+    @Operation(summary = "Update clinical observation", description = "Updates a clinical observation previously created by the authenticated nutritionist.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Observación actualizada exitosamente",
+            @ApiResponse(responseCode = "200", description = "Clinical observation updated successfully",
                     content = @Content(schema = @Schema(implementation = ObservationResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Datos de observación inválidos"),
-            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
-            @ApiResponse(responseCode = "403", description = "La observación no pertenece al nutriólogo autenticado"),
-            @ApiResponse(responseCode = "404", description = "Observación no encontrada")
+            @ApiResponse(responseCode = "400", description = "Invalid observation payload",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
+                    content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "403", description = "Observation does not belong to the authenticated nutritionist",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "404", description = "Observation not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<ObservationResponse> updateObservation(
-            @Parameter(description = "Identificador de la observación clínica")
+            @Parameter(description = "Identifier of the clinical observation")
             @PathVariable String observationId,
             @Valid @RequestBody UpdateObservationRequest request) {
         String nutritionistId = getCurrentUserId();
@@ -86,16 +106,19 @@ public class ObservationController {
 
     @DeleteMapping("/{observationId}")
     @PreAuthorize("hasRole('NUTRITIONIST')")
-    @Operation(summary = "Eliminar observación clínica", description = "Elimina una observación clínica registrada por el nutriólogo autenticado.")
+    @Operation(summary = "Delete clinical observation", description = "Deletes a clinical observation created by the authenticated nutritionist.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Observación eliminada exitosamente"),
-            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
-            @ApiResponse(responseCode = "403", description = "La observación no pertenece al nutriólogo autenticado"),
-            @ApiResponse(responseCode = "404", description = "Observación no encontrada")
+            @ApiResponse(responseCode = "204", description = "Clinical observation deleted successfully"),
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
+                    content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "403", description = "Observation does not belong to the authenticated nutritionist",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "404", description = "Observation not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<Void> deleteObservation(
-            @Parameter(description = "Identificador de la observación clínica")
+            @Parameter(description = "Identifier of the clinical observation")
             @PathVariable String observationId) {
         String nutritionistId = getCurrentUserId();
         manageObservationsUseCase.deleteObservation(observationId, nutritionistId);
@@ -104,17 +127,20 @@ public class ObservationController {
 
     @GetMapping("/patient/{patientId}")
     @PreAuthorize("hasRole('NUTRITIONIST')")
-    @Operation(summary = "Listar observaciones de un paciente vinculado", description = "Devuelve las observaciones clínicas de un paciente para el nutriólogo autenticado.")
+    @Operation(summary = "List linked patient observations", description = "Returns the clinical observations for a linked patient from the perspective of the authenticated nutritionist.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Observaciones obtenidas exitosamente",
+            @ApiResponse(responseCode = "200", description = "Clinical observations returned successfully",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = ObservationResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
-            @ApiResponse(responseCode = "403", description = "El paciente no pertenece al nutriólogo autenticado"),
-            @ApiResponse(responseCode = "404", description = "Paciente o perfil clínico no encontrado")
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
+                    content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "403", description = "Patient does not belong to the authenticated nutritionist",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "404", description = "Patient or clinical profile not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<List<ObservationResponse>> getPatientObservations(
-            @Parameter(description = "Identificador del paciente vinculado")
+            @Parameter(description = "Identifier of the linked patient")
             @PathVariable String patientId) {
         String nutritionistId = getCurrentUserId();
         List<ObservationResponse> observations = manageObservationsUseCase.getPatientObservations(
@@ -130,13 +156,15 @@ public class ObservationController {
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('PATIENT')")
-    @Operation(summary = "Listar mis observaciones clínicas", description = "Devuelve las observaciones clínicas visibles para el paciente autenticado.")
+    @Operation(summary = "List my clinical observations", description = "Returns the clinical observations visible to the authenticated patient.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Observaciones obtenidas exitosamente",
+            @ApiResponse(responseCode = "200", description = "Clinical observations returned successfully",
                     content = @Content(array = @ArraySchema(schema = @Schema(implementation = ObservationResponse.class)))),
-            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
-            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes")
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
+                    content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "403", description = "Patient role required",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<List<ObservationResponse>> getMyObservations() {
         String patientId = getCurrentUserId();

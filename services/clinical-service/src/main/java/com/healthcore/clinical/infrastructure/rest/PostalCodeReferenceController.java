@@ -1,8 +1,18 @@
 package com.healthcore.clinical.infrastructure.rest;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.healthcore.clinical.domain.model.PostalCodeCatalogEntry;
 import com.healthcore.clinical.domain.port.in.LookupPostalCodeUseCase;
+import com.healthcore.clinical.infrastructure.rest.dto.ApiErrorResponseDoc;
 import com.healthcore.clinical.infrastructure.rest.dto.PostalCodeLookupResponse;
+import com.healthcore.clinical.infrastructure.rest.dto.UnauthorizedErrorResponseDoc;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,16 +21,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/clinical/reference")
-@Tag(name = "Clinical Reference Data", description = "Datos de referencia clínicos y operativos usados por el servicio")
+@Tag(name = "Clinical Reference Data", description = "Operational and clinical reference data used by the service")
 public class PostalCodeReferenceController {
 
     private final LookupPostalCodeUseCase lookupPostalCodeUseCase;
@@ -31,17 +35,20 @@ public class PostalCodeReferenceController {
 
     @GetMapping("/postal-codes/{postalCode}")
     @PreAuthorize("hasAnyRole('PATIENT','NUTRITIONIST')")
-    @Operation(summary = "Consultar datos SEPOMEX por código postal", description = "Resuelve estado, ciudad, municipio y colonias para el código postal solicitado.")
+    @Operation(summary = "Lookup SEPOMEX data by postal code", description = "Resolves state, city, municipality and neighborhoods for the requested postal code.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Código postal resuelto exitosamente",
+            @ApiResponse(responseCode = "200", description = "Postal code resolved successfully",
                     content = @Content(schema = @Schema(implementation = PostalCodeLookupResponse.class))),
-            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
-            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes y nutriólogos"),
-            @ApiResponse(responseCode = "404", description = "Código postal no encontrado")
+            @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
+                    content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "403", description = "Patient or nutritionist role required",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "404", description = "Postal code not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<PostalCodeLookupResponse> lookupPostalCode(
-            @Parameter(description = "Código postal de 5 dígitos a consultar")
+            @Parameter(description = "Five-digit postal code to resolve")
             @PathVariable String postalCode) {
         return lookupPostalCodeUseCase.lookupPostalCode(postalCode)
                 .map(this::toResponse)

@@ -27,5 +27,22 @@
   "confirmDisable": "Are you sure you want to disable this user?",
   "confirmEnable": "Are you sure you want to enable this user?",
   "confirmBtn": "Confirm",
-  "cancelBtn": "Cancel"
+  "cancelBtn": "Cancel",
+  "catalog": {
+    "createTitle": "Create Local Food",
+    "createDescription": "Add a food item to the local database. It will be instantly available for your nutrition plans. (Based on 100g/ml)",
+    "nameLabel": "Food name *",
+    "namePlaceholder": "E.g. Chicken Salad",
+    "brandLabel": "Brand (Optional)",
+    "brandPlaceholder": "E.g. Homemade, Kellogg's...",
+    "caloriesLabel": "Kcal / 100g *",
+    "proteinsLabel": "Proteins (g) *",
+    "carbsLabel": "Carbs (g) *",
+    "fatsLabel": "Fats (g) *",
+    "cancelBtn": "Cancel",
+    "saveBtn": "Save Food",
+    "saving": "Saving...",
+    "saveError": "Error saving the food item.",
+    "validationError": "Please fill in the required fields."
+  }
 }

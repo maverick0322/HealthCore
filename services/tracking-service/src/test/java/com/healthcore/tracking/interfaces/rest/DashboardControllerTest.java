@@ -121,7 +121,6 @@ class DashboardControllerTest {
         Authentication auth = new UsernamePasswordAuthenticationToken("nutri-123", null,
                 List.of(new SimpleGrantedAuthority("ROLE_NUTRITIONIST")));
 
-        // FIX: Usamos any() en lugar de strings duros para evadir el nulo de @AuthenticationPrincipal en tests
         when(clinicalServiceClient.validateLink(any(), any())).thenReturn(true);
         when(dashboardUseCase.getTodaySummary(any(), eq(targetDate))).thenReturn(mockSummary);
 
@@ -151,7 +150,6 @@ class DashboardControllerTest {
         Authentication auth = new UsernamePasswordAuthenticationToken("nutri-123", null,
                 List.of(new SimpleGrantedAuthority("ROLE_NUTRITIONIST")));
 
-        // Verificamos el bloqueo explícito forzando a falso
         when(clinicalServiceClient.validateLink(any(), any())).thenReturn(false);
 
         mockMvc.perform(get("/api/v1/tracking/nutritionist/patients/patient-123/dashboard/today")
@@ -171,7 +169,6 @@ class DashboardControllerTest {
         Authentication auth = new UsernamePasswordAuthenticationToken("nutri-123", null,
                 List.of(new SimpleGrantedAuthority("ROLE_NUTRITIONIST")));
 
-        // FIX: Usamos any() aquí también
         when(clinicalServiceClient.validateLink(any(), any())).thenReturn(true);
         when(dashboardUseCase.getHistoricalMacros(any(), eq(startDate), eq(endDate))).thenReturn(List.of(summary));
 

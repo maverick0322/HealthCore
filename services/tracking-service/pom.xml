@@ -230,6 +230,8 @@
 					<exclude>**/infrastructure/persistence/entity/**</exclude>
 					<exclude>**/infrastructure/persistence/repository/**</exclude>
 					<exclude>**/com/healthcore/catalog/grpc/**</exclude>
+					<exclude>**/com/healthcore/media/infrastructure/grpc/stubs/**</exclude>
+					<exclude>**/com/healthcore/clinical/grpc/**</exclude>
 				</excludes>
 			</configuration>
 				<executions>

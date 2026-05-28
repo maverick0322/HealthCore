@@ -38,7 +38,6 @@ public class MediaGrpcClientAdapter {
             return response.getPresignedUrl();
 
         } catch (Exception e) {
-            // Manejo defensivo: Si el media-service está caído, no rompemos el dashboard.
             log.error("gRPC call to media-service failed for photoKey: {}", photoKey, e);
             return null;
         }

@@ -24,6 +24,15 @@ import com.healthcore.clinical.infrastructure.rest.dto.NutritionPlanSectionReque
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionPlanUpsertRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionPlanViewResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.ReadonlyNutritionPlanResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +50,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/clinical")
+@Tag(name = "Nutrition Plans", description = "Operaciones para planes nutricionales y consulta de alimentos del catálogo")
 public class NutritionPlanController {
 
     private static final Logger logger = LoggerFactory.getLogger(NutritionPlanController.class);
@@ -53,6 +63,15 @@ public class NutritionPlanController {
 
     @GetMapping("/nutrition-plan/me")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Consultar mi plan nutricional", description = "Devuelve el plan nutricional visible para el paciente autenticado, incluyendo su modo y contexto editable.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Plan nutricional obtenido exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionPlanViewResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Perfil clínico o plan nutricional no disponible")
+    })
     public ResponseEntity<NutritionPlanViewResponse> getMyNutritionPlan() {
         String patientId = getCurrentUserId();
         logger.info("[NutritionPlanController] GET /nutrition-plan/me patientId={}", patientId);
@@ -61,6 +80,16 @@ public class NutritionPlanController {
 
     @PutMapping("/nutrition-plan/me")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Crear o actualizar mi plan nutricional", description = "Guarda el plan nutricional autogestionado del paciente autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Plan nutricional guardado exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionPlanViewResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Plan nutricional inválido"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Perfil clínico no encontrado")
+    })
     public ResponseEntity<NutritionPlanViewResponse> upsertMyNutritionPlan(
             @Valid @RequestBody NutritionPlanUpsertRequest request
     ) {
@@ -73,7 +102,17 @@ public class NutritionPlanController {
 
     @GetMapping("/nutritionist/patients/{patientId}/nutrition-plan")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Consultar plan nutricional de un paciente vinculado", description = "Devuelve el plan nutricional del paciente para el nutriólogo autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Plan nutricional obtenido exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionPlanViewResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "El paciente no pertenece al nutriólogo autenticado"),
+            @ApiResponse(responseCode = "404", description = "Paciente o plan nutricional no encontrado")
+    })
     public ResponseEntity<NutritionPlanViewResponse> getNutritionistPatientNutritionPlan(
+            @Parameter(description = "Identificador del paciente vinculado")
             @PathVariable String patientId
     ) {
         logger.info("[NutritionPlanController] GET /nutritionist/patients/{}/nutrition-plan nutritionistId={}",
@@ -85,7 +124,18 @@ public class NutritionPlanController {
 
     @PutMapping("/nutritionist/patients/{patientId}/nutrition-plan")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Crear o actualizar plan nutricional de un paciente vinculado", description = "Guarda el plan nutricional administrado por el nutriólogo para un paciente vinculado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Plan nutricional guardado exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionPlanViewResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Plan nutricional inválido"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "El paciente no pertenece al nutriólogo autenticado"),
+            @ApiResponse(responseCode = "404", description = "Paciente o perfil clínico no encontrado")
+    })
     public ResponseEntity<NutritionPlanViewResponse> upsertNutritionistPatientNutritionPlan(
+            @Parameter(description = "Identificador del paciente vinculado")
             @PathVariable String patientId,
             @Valid @RequestBody NutritionPlanUpsertRequest request
     ) {
@@ -100,7 +150,19 @@ public class NutritionPlanController {
 
     @GetMapping("/catalog/foods/search")
     @PreAuthorize("hasAnyRole('PATIENT','NUTRITIONIST')")
-    public ResponseEntity<List<CatalogFoodResponse>> searchCatalogFoods(@RequestParam String query) {
+    @Operation(summary = "Buscar alimentos del catálogo", description = "Busca alimentos disponibles en el catálogo nutricional para construir o revisar planes.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Resultados obtenidos exitosamente",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = CatalogFoodResponse.class)))),
+            @ApiResponse(responseCode = "400", description = "Consulta de búsqueda inválida"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes y nutriólogos"),
+            @ApiResponse(responseCode = "503", description = "El catálogo nutricional no está disponible temporalmente")
+    })
+    public ResponseEntity<List<CatalogFoodResponse>> searchCatalogFoods(
+            @Parameter(description = "Texto libre para buscar alimentos del catálogo")
+            @RequestParam String query) {
         logger.info("[NutritionPlanController] GET /catalog/foods/search query='{}'", query);
         List<CatalogFoodResponse> response = manageNutritionPlanUseCase.searchCatalogFoods(query).stream()
                 .map(this::toCatalogFoodResponse)

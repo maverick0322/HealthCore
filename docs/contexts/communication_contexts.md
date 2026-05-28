@@ -1,138 +1,101 @@
-# 🗣️ HealthCore: Protocolos y Comunicación entre Microservicios
+# HealthCore: Protocolos y comunicacion entre microservicios
 
-## 1. El Paradigma de Comunicación
-En HealthCore aplicamos estrictamente el patrón **Database per Service** (una base de datos aislada por microservicio). Esto significa que un servicio **nunca** puede consultar directamente las tablas de otro. Si el `agenda-service` necesita datos del paciente, tiene que pedírselos amablemente al `clinical-service` a través de la red.
+## 1. Paradigma de comunicacion
 
-Para lograr esto sin sacrificar el rendimiento, hemos dividido nuestra comunicación en tres grandes autopistas: **Externa (REST)**, **Interna Síncrona (gRPC)** e **Interna Asíncrona (RabbitMQ)**.
+En HealthCore aplicamos estrictamente el patron **Database per Service**. Ningun servicio consulta la base de datos de otro; si necesita informacion o efectos inmediatos, debe pedirlos por red.
 
----
+La comunicacion del ecosistema se divide en tres canales:
 
-## 2. Comunicación Externa (Síncrona)
-**Tecnología:** HTTP/REST con JSON.
-**Actores:** Frontend (React/Electron) ➔ API Gateway ➔ Microservicios (Spring Boot).
-
-Esta es la capa pública. Utilizamos REST porque es el estándar universal que los navegadores y dispositivos móviles entienden nativamente. 
-* **Características:** Textual (JSON), legible para humanos, ideal para operaciones CRUD directas desde la interfaz de usuario.
-* **Regla de Oro:** Ningún microservicio se comunica con otro microservicio utilizando REST. REST es exclusivo para hablar con el mundo exterior.
+- **REST externo**
+- **gRPC interno sincrono**
+- **RabbitMQ interno asincrono**
 
 ---
 
-## 3. Comunicación Interna Síncrona (Backend a Backend)
-**Tecnología:** gRPC con Protocol Buffers (Protobuf) sobre HTTP/2.
-**Actores:** Microservicio ➔ Microservicio (Ej. Java ➔ Python).
+## 2. Comunicacion externa
 
-Cuando un microservicio necesita información de otro *inmediatamente* para poder responderle al usuario, usamos gRPC. 
-* **¿Por qué gRPC?** A diferencia de JSON, Protobuf comprime los datos en formato **binario**. Esto lo hace hasta 10 veces más rápido que REST y consume menos CPU. Además, los archivos `.proto` actúan como contratos estrictos; si un servicio cambia una variable, el código del otro servicio no compilará, evitando errores en producción.
+**Tecnologia:** HTTP/REST con JSON  
+**Actores:** Frontend -> API Gateway -> Microservicios
 
-### Mapa de Llamadas gRPC en HealthCore:
-1. **`Tracking Service` ➔ `Catalog Service` (Python):** Para consultar macronutrientes de un código de barras o búsqueda de texto en tiempo real.
-2. **`Agenda Service` ➔ `Clinical Service`:** Para verificar si un paciente tiene un vínculo activo (`ProfessionalLink`) con un nutriólogo antes de permitir agendar una cita.
-3. **`Tracking Service` ➔ `Clinical Service`:** Para solicitar la meta calórica y el peso actual del paciente y así calcular sus gráficas de progreso diario.
-4. **`Clinical Service` ➔ `Identity Service`:** Para obtener el nombre, apellido y correo del paciente (datos que solo Identity posee) al momento de armar el expediente clínico en pantalla.
-5. **`Tracking Service` ➔ `Media Service`:** Para solicitar URLs temporales pre-firmadas (GET) de lectura para las fotos asociadas a los consumos y progreso.
-6. **`Clinical Service` ➔ `Agenda Service`:** Para limpiar/cancelar citas futuras programadas entre un paciente y un nutriólogo al momento de desvincular la relación clínica.
+REST es la capa publica para operaciones de interfaz. Ningun microservicio se comunica con otro mediante REST.
 
 ---
 
-## 4. Comunicación Interna Asíncrona (Coreografía de Eventos)
-**Tecnología:** AMQP con RabbitMQ.
-**Actores:** Microservicio (Publicador) ➔ Broker de Mensajes ➔ Microservicio (Consumidor).
+## 3. Comunicacion interna sincrona
 
-Usamos RabbitMQ para acciones tipo "dispara y olvida" (*Fire-and-forget*). Cuando una acción en un servicio debe desencadenar consecuencias en otros, pero **no necesitamos esperar** a que terminen para responderle al usuario.
+**Tecnologia:** gRPC con Protocol Buffers  
+**Actores:** Microservicio -> Microservicio
 
-### Contratos de Eventos (RabbitMQ)
-**Exchange:** `healthcore.identity.events` (tipo `topic`)
+Usamos gRPC cuando un servicio necesita una respuesta inmediata de otro para completar una validacion o enriquecer su respuesta al usuario.
+
+### Mapa de llamadas gRPC actual
+
+1. **`Tracking Service` -> `Catalog Service`** para consultar macronutrientes por codigo de barras o busqueda libre.
+2. **`Agenda Service` -> `Clinical Service`** para validar que el paciente tenga un vinculo activo con un nutriologo.
+3. **`Tracking Service` -> `Clinical Service`** para solicitar peso actual y metas clinicas del paciente.
+4. **`Clinical Service` -> `Catalog Service`** para buscar alimentos y enriquecer ingredientes del plan nutricional.
+5. **`Tracking Service` -> `Media Service`** para resolver URLs prefirmadas de lectura de imagenes.
+6. **`Clinical Service` -> `Media Service`** para resolver URLs de lectura de fotos de perfil de pacientes y nutriologos.
+7. **`Clinical Service` -> `Agenda Service`** para cancelar citas futuras cuando una vinculacion clinica termina.
+
+---
+
+## 4. Comunicacion interna asincrona
+
+**Tecnologia:** AMQP con RabbitMQ  
+**Actores:** Publicador -> Broker -> Consumidor
+
+RabbitMQ se usa para disparar consecuencias en segundo plano sin bloquear la respuesta al usuario.
+
+### Contratos de eventos documentados
+
+**Exchange:** `healthcore.identity.events`
 
 1. **`UserRegisteredEvent`**
-   - **Routing key:** `identity.user.registered`
-   - **Payload:**
-     ```json
-     {
-       "userId": "UUID",
-       "email": "user@healthcore.com",
-       "role": "PATIENT",
-      "registeredAt": "2026-04-28T10:00:00Z",
-      "emailVerificationRequired": true,
-      "verificationCode": "123456",
-      "verificationExpiresAt": "2026-04-28T10:15:00Z"
-     }
-     ```
-   - **Consumidores esperados:** `clinical-service`, `agenda-service`, `notification-service`
+   - Routing key: `identity.user.registered`
+   - Consumidores esperados: `agenda-service`, `notification-service`
+   - Nota: en el estado actual del repositorio, `clinical-service` no implementa un consumidor activo para este evento.
 
 2. **`PasswordResetRequestedEvent`**
-   - **Routing key:** `identity.password.reset.requested`
-   - **Payload:**
-     ```json
-     {
-       "email": "user@healthcore.com",
-       "resetCode": "123456",
-       "expiresAt": "2026-04-28T10:15:00Z"
-     }
-     ```
-   - **Consumidores esperados:** `notification-service`
+   - Routing key: `identity.password.reset.requested`
+   - Consumidor esperado: `notification-service`
 
-**Notification Service (Resend):** Este consumidor usa el SDK oficial de Resend. Configura `RESEND_API_KEY`, `RESEND_FROM_EMAIL` y `RESEND_FROM_NAME` como variables de entorno (no se hardcodean).
-
-**Exchange:** `healthcore.agenda.events` (tipo `topic`)
+**Exchange:** `healthcore.agenda.events`
 
 1. **`AppointmentConfirmedEvent`**
-   - **Routing key:** `agenda.appointment.confirmed`
-   - **Payload:**
-     ```json
-     {
-       "appointmentId": "UUID",
-       "patientId": "UUID",
-       "nutritionistId": "UUID",
-       "startTime": "2026-04-30T10:00:00Z",
-       "endTime": "2026-04-30T10:30:00Z"
-     }
-     ```
-   - **Consumidores esperados:** `notification-service`
+   - Routing key: `agenda.appointment.confirmed`
+   - Consumidor esperado: `notification-service`
 
 2. **`AppointmentCancelledEvent`**
-   - **Routing key:** `agenda.appointment.cancelled`
-   - **Payload:**
-     ```json
-     {
-       "appointmentId": "UUID",
-       "patientId": "UUID",
-       "nutritionistId": "UUID",
-       "startTime": "2026-04-30T10:00:00Z",
-       "endTime": "2026-04-30T10:30:00Z"
-     }
-     ```
-   - **Consumidores esperados:** `notification-service`
+   - Routing key: `agenda.appointment.cancelled`
+   - Consumidor esperado: `notification-service`
 
 3. **`AppointmentReminderEvent`**
-   - **Routing key:** `agenda.appointment.reminder`
-   - **Payload:**
-     ```json
-     {
-       "appointmentId": "UUID",
-       "patientId": "UUID",
-       "nutritionistId": "UUID",
-       "startTime": "2026-04-30T10:00:00Z",
-       "endTime": "2026-04-30T10:30:00Z"
-     }
-     ```
-   - **Consumidores esperados:** `notification-service`
-   - **Regla:** El scheduler del agenda-service publica recordatorios 24 horas antes, ejecutando una vez al dia.
-
-### Casos de Uso en HealthCore:
-* **El Registro de Pacientes:** 1. El usuario se registra en `identity-service`.
-  2. `Identity` guarda las credenciales y lanza un evento a RabbitMQ: *"¡Usuario Registrado (ID: 123)!"*.
-  3. `Identity` le responde HTTP 200 OK al frontend de inmediato (el usuario ya puede usar la app).
-  4. En segundo plano, `clinical-service` escucha el mensaje en RabbitMQ y crea un expediente clínico vacío para el ID 123. `Agenda` también podría escucharlo para mandarle un correo de bienvenida.
-* **Procesamiento Multimedia (Offloading Delegado):**
-  1. El frontend (PWA) solicita al `media-service` una URL firmada de subida (PUT) mediante REST.
-  2. El frontend sube el binario (foto) directamente a Cloudflare R2 utilizando dicha URL.
-  3. El frontend envía únicamente la clave del archivo (`photoKey`) al microservicio destino (ej. `tracking-service`).
-  4. Al consultar registros, el servicio destino llama a `media-service` vía gRPC para obtener una URL pre-firmada de lectura (GET) temporal, enriqueciendo su respuesta REST.
+   - Routing key: `agenda.appointment.reminder`
+   - Consumidor esperado: `notification-service`
 
 ---
 
-## 5. Resumen de Reglas para Desarrolladores
-Si estás programando una nueva funcionalidad, hazte esta pregunta:
-1. ¿El dato lo pide el usuario desde la pantalla? ➔ **Crea un endpoint REST.**
-2. ¿Necesitas el dato de otro servicio ¡YA MISMO! para poder hacer un cálculo o validación? ➔ **Usa un cliente gRPC.**
-3. ¿Ocurrió algo importante pero el usuario no necesita esperar a ver el resultado final de los otros módulos? ➔ **Publica un evento en RabbitMQ.**
+## 5. Casos de uso representativos
+
+### Registro de usuario
+
+1. El usuario se registra en `identity-service`.
+2. `identity-service` persiste credenciales y publica un evento en RabbitMQ.
+3. La respuesta HTTP vuelve al frontend sin esperar a consumidores posteriores.
+4. Servicios consumidores como `notification-service` o `agenda-service` reaccionan en segundo plano. `clinical-service` no consume este evento en el codigo actual.
+
+### Procesamiento multimedia delegado
+
+1. El frontend solicita a `media-service` una URL firmada de subida.
+2. El binario se sube directamente a Cloudflare R2.
+3. El frontend guarda solo la `photoKey` en el microservicio destino, por ejemplo `tracking-service` o `clinical-service`.
+4. Al leer el recurso, el microservicio llama por gRPC a `media-service` para convertir esa key en una URL de lectura temporal.
+
+---
+
+## 6. Regla practica para desarrollo
+
+1. Si el dato lo necesita el usuario en pantalla, crea un endpoint REST.
+2. Si otro servicio necesita el dato de inmediato para responder, usa gRPC.
+3. Si el usuario no necesita esperar el efecto completo en otros modulos, usa eventos asincronos.

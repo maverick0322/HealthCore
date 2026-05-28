@@ -45,11 +45,20 @@ import com.healthcore.clinical.infrastructure.rest.dto.UpdateProfilePhotoRequest
 import com.healthcore.clinical.infrastructure.rest.dto.UpdatePatientMetricsRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/clinical")
+@Tag(name = "Clinical Profiles", description = "Operaciones del expediente clínico para pacientes y nutriólogos")
 public class ClinicalController {
 
     private static final Logger logger = LoggerFactory.getLogger(ClinicalController.class);
@@ -67,6 +76,15 @@ public class ClinicalController {
 
     @PostMapping("/profile")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Crear perfil clínico del paciente", description = "Crea el perfil clínico inicial del paciente autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Perfil clínico creado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos de perfil inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "409", description = "El perfil no puede crearse por el estado actual")
+    })
     public ResponseEntity<Void> createProfile(
             @Valid @RequestBody CreateProfileRequest request
     ) {
@@ -78,6 +96,16 @@ public class ClinicalController {
 
     @PutMapping("/profile/me")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Actualizar mi perfil clínico", description = "Actualiza de forma completa el perfil clínico del paciente autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Perfil actualizado exitosamente",
+                    content = @Content(schema = @Schema(implementation = PatientProfileResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Datos de perfil inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Perfil clínico no encontrado")
+    })
     public ResponseEntity<PatientProfileResponse> updateMyProfile(@Valid @RequestBody CreateProfileRequest request) {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Updating patient profile for userHash={}", logHash(userId));
@@ -87,6 +115,16 @@ public class ClinicalController {
 
     @PutMapping("/profile/me/photo")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Actualizar foto de perfil del paciente", description = "Asocia una nueva foto de perfil al paciente autenticado usando la storage key previamente subida a media-service.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Foto de perfil actualizada exitosamente",
+                    content = @Content(schema = @Schema(implementation = PatientProfileResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Storage key inválida"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Perfil clínico no encontrado")
+    })
     public ResponseEntity<PatientProfileResponse> updateMyProfilePhoto(
             @Valid @RequestBody UpdateProfilePhotoRequest request
     ) {
@@ -98,6 +136,15 @@ public class ClinicalController {
 
     @GetMapping("/goals/me")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Consultar mis metas nutricionales", description = "Devuelve las metas diarias derivadas del perfil biométrico actual del paciente autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Metas obtenidas exitosamente",
+                    content = @Content(schema = @Schema(implementation = HealthGoalResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Perfil clínico no encontrado")
+    })
     public ResponseEntity<HealthGoalResponse> getMyGoals() {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Getting goals for userHash={}", logHash(userId));
@@ -121,6 +168,16 @@ public class ClinicalController {
 
     @PostMapping("/weight")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Registrar peso del paciente", description = "Registra o reemplaza el peso del paciente autenticado para la fecha indicada y recalcula sus metas diarias.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Peso registrado y metas recalculadas",
+                    content = @Content(schema = @Schema(implementation = HealthGoalResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Peso o fecha inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Perfil clínico no encontrado")
+    })
     public ResponseEntity<HealthGoalResponse> updateWeight(
             @Valid @RequestBody UpdateWeightRequest request
     ) {
@@ -133,7 +190,18 @@ public class ClinicalController {
 
     @PutMapping("/weight/{originalDate}")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Editar registro de peso", description = "Modifica un registro de peso existente del paciente autenticado y recalcula sus metas diarias.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Registro editado exitosamente",
+                    content = @Content(schema = @Schema(implementation = HealthGoalResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Peso o fecha inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Registro de peso o perfil no encontrado")
+    })
     public ResponseEntity<HealthGoalResponse> editWeight(
+            @Parameter(description = "Fecha original del registro a editar en formato YYYY-MM-DD")
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate originalDate,
             @Valid @RequestBody UpdateWeightRequest request
     ) {
@@ -146,6 +214,17 @@ public class ClinicalController {
 
     @DeleteMapping("/weight/{date}")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Eliminar registro de peso", description = "Elimina un registro de peso del paciente autenticado y recalcula sus metas con el historial restante.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Registro eliminado exitosamente",
+                    content = @Content(schema = @Schema(implementation = HealthGoalResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Fecha inválida"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Registro de peso o perfil no encontrado"),
+            @ApiResponse(responseCode = "409", description = "La operación no puede completarse por el estado actual del expediente")
+    })
     public ResponseEntity<HealthGoalResponse> deleteWeight(
             @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
@@ -157,6 +236,15 @@ public class ClinicalController {
 
     @GetMapping("/weight/history")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Consultar historial de peso del paciente", description = "Devuelve el historial de peso del paciente autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Historial obtenido exitosamente",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = WeightRecord.class)))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Perfil clínico no encontrado")
+    })
     public ResponseEntity<List<WeightRecord>> getWeightHistory() {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Getting weight history for userHash={}", logHash(userId));
@@ -165,7 +253,18 @@ public class ClinicalController {
 
     @GetMapping("/nutritionist/patients/{patientId}/weight-history")
     @PreAuthorize("hasRole('NUTRITIONIST')")
-    public ResponseEntity<List<WeightRecord>> getNutritionistPatientWeightHistory(@PathVariable String patientId) {
+    @Operation(summary = "Consultar historial de peso de un paciente vinculado", description = "Devuelve el historial de peso de un paciente para el nutriólogo autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Historial obtenido exitosamente",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = WeightRecord.class)))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "El paciente no pertenece al nutriólogo autenticado"),
+            @ApiResponse(responseCode = "404", description = "Paciente o perfil clínico no encontrado")
+    })
+    public ResponseEntity<List<WeightRecord>> getNutritionistPatientWeightHistory(
+            @Parameter(description = "Identificador del paciente vinculado")
+            @PathVariable String patientId) {
         String nutritionistId = getCurrentUserId();
         logger.info("[ClinicalController] Getting patient weight history for nutritionistHash={} patientHash={}",
                 logHash(nutritionistId), logHash(patientId));
@@ -174,6 +273,15 @@ public class ClinicalController {
 
     @GetMapping("/profile/me")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Consultar mi perfil clínico", description = "Devuelve el expediente clínico del paciente autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Perfil obtenido exitosamente",
+                    content = @Content(schema = @Schema(implementation = PatientProfileResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "Perfil clínico no encontrado")
+    })
     public ResponseEntity<PatientProfileResponse> getMyProfile() {
         String patientId = getCurrentUserId();
         logger.info("[ClinicalController] Getting profile for patientHash={}", logHash(patientId));
@@ -184,6 +292,15 @@ public class ClinicalController {
 
     @GetMapping("/profile/me/nutritionist")
     @PreAuthorize("hasRole('PATIENT')")
+    @Operation(summary = "Consultar perfil del nutriólogo vinculado", description = "Devuelve el perfil público del nutriólogo asociado al paciente autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Perfil del nutriólogo obtenido exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionistProfileResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a pacientes"),
+            @ApiResponse(responseCode = "404", description = "No existe perfil vinculado disponible")
+    })
     public ResponseEntity<NutritionistProfileResponse> getMyLinkedNutritionistProfile() {
         String patientId = getCurrentUserId();
         logger.info("[ClinicalController] Getting linked nutritionist profile for patientHash={}", logHash(patientId));
@@ -197,6 +314,15 @@ public class ClinicalController {
 
     @PostMapping("/nutritionist/profile")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Crear perfil profesional del nutriólogo", description = "Crea el perfil profesional inicial del nutriólogo autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Perfil profesional creado exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos de perfil inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a nutriólogos"),
+            @ApiResponse(responseCode = "409", description = "El perfil no puede crearse por el estado actual")
+    })
     public ResponseEntity<Void> createNutritionistProfile(@Valid @RequestBody UpsertNutritionistProfileRequest request) {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Creating nutritionist profile for userHash={}", logHash(userId));
@@ -206,6 +332,16 @@ public class ClinicalController {
 
     @PutMapping("/nutritionist/profile/me")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Actualizar mi perfil profesional", description = "Actualiza el perfil profesional del nutriólogo autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Perfil profesional actualizado exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionistProfileResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Datos de perfil inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a nutriólogos"),
+            @ApiResponse(responseCode = "404", description = "Perfil profesional no encontrado")
+    })
     public ResponseEntity<NutritionistProfileResponse> updateMyNutritionistProfile(
             @Valid @RequestBody UpsertNutritionistProfileRequest request
     ) {
@@ -220,6 +356,16 @@ public class ClinicalController {
 
     @PutMapping("/nutritionist/profile/me/photo")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Actualizar foto de perfil del nutriólogo", description = "Asocia una nueva foto de perfil al nutriólogo autenticado usando una storage key de media-service.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Foto de perfil actualizada exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionistProfileResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Storage key inválida"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a nutriólogos"),
+            @ApiResponse(responseCode = "404", description = "Perfil profesional no encontrado")
+    })
     public ResponseEntity<NutritionistProfileResponse> updateMyNutritionistProfilePhoto(
             @Valid @RequestBody UpdateProfilePhotoRequest request
     ) {
@@ -234,6 +380,15 @@ public class ClinicalController {
 
     @GetMapping("/nutritionist/profile/me")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Consultar mi perfil profesional", description = "Devuelve el perfil profesional del nutriólogo autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Perfil obtenido exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionistProfileResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a nutriólogos"),
+            @ApiResponse(responseCode = "404", description = "Perfil profesional no encontrado")
+    })
     public ResponseEntity<NutritionistProfileResponse> getMyNutritionistProfile() {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Getting nutritionist profile for userHash={}", logHash(userId));
@@ -244,6 +399,14 @@ public class ClinicalController {
 
     @GetMapping("/nutritionist/patients")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Listar pacientes vinculados", description = "Devuelve los expedientes base de los pacientes vinculados al nutriólogo autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Pacientes obtenidos exitosamente",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = PatientProfileResponse.class)))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a nutriólogos")
+    })
     public ResponseEntity<List<PatientProfileResponse>> getNutritionistPatients() {
         String nutritionistId = getCurrentUserId();
         logger.info("[ClinicalController] Getting linked patients for nutritionistHash={}", logHash(nutritionistId));
@@ -265,7 +428,18 @@ public class ClinicalController {
 
     @GetMapping("/nutritionist/patients/{patientId}")
     @PreAuthorize("hasRole('NUTRITIONIST')")
-    public ResponseEntity<PatientProfileResponse> getNutritionistPatientProfile(@PathVariable String patientId) {
+    @Operation(summary = "Consultar expediente base de un paciente vinculado", description = "Devuelve el expediente clínico base de un paciente para el nutriólogo autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Expediente obtenido exitosamente",
+                    content = @Content(schema = @Schema(implementation = PatientProfileResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "El paciente no pertenece al nutriólogo autenticado"),
+            @ApiResponse(responseCode = "404", description = "Paciente o perfil clínico no encontrado")
+    })
+    public ResponseEntity<PatientProfileResponse> getNutritionistPatientProfile(
+            @Parameter(description = "Identificador del paciente vinculado")
+            @PathVariable String patientId) {
         String nutritionistId = getCurrentUserId();
         logger.info("[ClinicalController] Getting patient profile for nutritionistHash={} patientHash={}",
                 logHash(nutritionistId), logHash(patientId));
@@ -275,7 +449,18 @@ public class ClinicalController {
 
     @PutMapping("/nutritionist/patients/{patientId}/metrics")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Actualizar métricas clínicas del paciente", description = "Permite al nutriólogo actualizar peso y altura del paciente vinculado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Métricas actualizadas exitosamente",
+                    content = @Content(schema = @Schema(implementation = PatientProfileResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Peso o altura inválidos"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "El paciente no pertenece al nutriólogo autenticado"),
+            @ApiResponse(responseCode = "404", description = "Paciente o perfil clínico no encontrado")
+    })
     public ResponseEntity<PatientProfileResponse> updateNutritionistPatientMetrics(
+            @Parameter(description = "Identificador del paciente vinculado")
             @PathVariable String patientId,
             @Valid @RequestBody UpdatePatientMetricsRequest request
     ) {
@@ -298,8 +483,20 @@ public class ClinicalController {
 
     @GetMapping("/nutritionist/reports/weight-progress")
     @PreAuthorize("hasRole('NUTRITIONIST')")
+    @Operation(summary = "Consultar reporte de progreso de peso", description = "Devuelve el reporte consolidado de evolución de peso para los pacientes vinculados al nutriólogo autenticado.")
+    @SecurityRequirement(name = "bearerAuth")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reporte obtenido exitosamente",
+                    content = @Content(schema = @Schema(implementation = NutritionistWeightProgressReportResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Rango de fechas inválido"),
+            @ApiResponse(responseCode = "401", description = "Token JWT ausente o inválido"),
+            @ApiResponse(responseCode = "403", description = "Operación restringida a nutriólogos"),
+            @ApiResponse(responseCode = "404", description = "No se encontró información clínica para el rango solicitado")
+    })
     public ResponseEntity<NutritionistWeightProgressReportResponse> getNutritionistWeightProgressReport(
+            @Parameter(description = "Fecha inicial del reporte en formato YYYY-MM-DD")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @Parameter(description = "Fecha final del reporte en formato YYYY-MM-DD")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         if (from == null || to == null || from.isAfter(to)) {

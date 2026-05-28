@@ -12,6 +12,7 @@ import com.healthcore.agenda_service.domain.repository.TimeSlotRepository;
 import com.healthcore.agenda_service.infrastructure.clinical.ClinicalServiceClient;
 import com.healthcore.agenda_service.application.events.AppointmentCancelledEvent;
 import com.healthcore.agenda_service.application.ports.AgendaEventPublisher;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,9 @@ class PatientAppointmentServiceTest {
     private AppointmentConfirmationService appointmentConfirmationService;
     @Mock
     private AgendaEventPublisher agendaEventPublisher;
+
+    @Mock
+    private MeterRegistry meterRegistry;
 
     @InjectMocks
     private PatientAppointmentService service;

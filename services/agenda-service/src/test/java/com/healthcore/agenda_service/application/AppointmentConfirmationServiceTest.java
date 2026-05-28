@@ -5,6 +5,7 @@ import com.healthcore.agenda_service.application.ports.AgendaEventPublisher;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,9 @@ class AppointmentConfirmationServiceTest {
 
     @Mock
     private AgendaEventPublisher agendaEventPublisher;
+
+    @Mock
+    private MeterRegistry meterRegistry;
 
     @InjectMocks
     private AppointmentConfirmationService confirmationService;

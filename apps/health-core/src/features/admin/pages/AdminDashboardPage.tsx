@@ -21,6 +21,7 @@ export const AdminDashboardPage = () => {
   const [role, setRole] = useState<Role>('NUTRITIONIST');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'USERS' | 'CATALOG'>('USERS');
 
   // Dialog State
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -61,124 +62,161 @@ export const AdminDashboardPage = () => {
       <div className="container mx-auto p-6 space-y-8 pt-16 animate-in fade-in zoom-in-95 duration-500">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          
+          {/* Navegación de Pestañas (SRP Visual) */}
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button
+              onClick={() => setActiveTab('USERS')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'USERS' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Gestión de Usuarios
+            </button>
+            <button
+              onClick={() => setActiveTab('CATALOG')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'CATALOG' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Moderación de Catálogo
+            </button>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('createUserTitle')}</CardTitle>
-            <CardDescription>{t('createUserDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleCreateUser} className="space-y-4 max-w-sm">
-              {error && <div className="text-destructive text-sm font-medium p-2 bg-destructive/10 rounded">{error}</div>}
-              {success && <div className="text-green-600 text-sm font-medium p-2 bg-green-100 dark:bg-green-900/30 rounded">{success}</div>}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('email')}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  maxLength={254}
-                  required
-                  placeholder="doctor@healthcore.com"
-                />
-              </div>
+        {/* CONTENIDO CONDICIONAL BASADO EN LA PESTAÑA */}
+        {activeTab === 'USERS' ? (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('createUserTitle')}</CardTitle>
+                <CardDescription>{t('createUserDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateUser} className="space-y-4 max-w-sm">
+                  {error && <div className="text-destructive text-sm font-medium p-2 bg-destructive/10 rounded">{error}</div>}
+                  {success && <div className="text-green-600 text-sm font-medium p-2 bg-green-100 dark:bg-green-900/30 rounded">{success}</div>}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">{t('email')}</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      maxLength={254}
+                      required
+                      placeholder="doctor@healthcore.com"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('password')}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  maxLength={72}
-                  required
-                  placeholder="StrongPass123!"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">{t('password')}</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      maxLength={72}
+                      required
+                      placeholder="StrongPass123!"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="role">{t('role')}</Label>
-                <select
-                  id="role"
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as Role)}
-                >
-                  <option value="NUTRITIONIST">{t('roleNutritionist')}</option>
-                  <option value="PATIENT">{t('rolePatient')}</option>
-                </select>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">{t('role')}</Label>
+                    <select
+                      id="role"
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as Role)}
+                    >
+                      <option value="NUTRITIONIST">{t('roleNutritionist')}</option>
+                      <option value="PATIENT">{t('rolePatient')}</option>
+                    </select>
+                  </div>
 
-              <Button type="submit" disabled={createUserMutation.isPending}>
-                {createUserMutation.isPending ? t('buttonCreating') : t('buttonCreate')}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                  <Button type="submit" disabled={createUserMutation.isPending}>
+                    {createUserMutation.isPending ? t('buttonCreating') : t('buttonCreate')}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('manageTitle')}</CardTitle>
-            <CardDescription>{t('manageDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="py-8 text-center text-muted-foreground">{t('loading')}</div>
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('colEmail')}</TableHead>
-                      <TableHead>{t('colRole')}</TableHead>
-                      <TableHead>{t('colProvider')}</TableHead>
-                      <TableHead>{t('colStatus')}</TableHead>
-                      <TableHead className="text-right">{t('colActions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users?.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.email}</TableCell>
-                        <TableCell>{user.role === 'NUTRITIONIST' ? t('roleNutritionist') : user.role === 'PATIENT' ? t('rolePatient') : user.role}</TableCell>
-                        <TableCell>{user.provider}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              user.enabled ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                            }`}
-                          >
-                            {user.enabled ? t('statusActive') : t('statusDisabled')}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant={user.enabled ? 'destructive' : 'default'}
-                            size="sm"
-                            onClick={() => requestToggleStatus(user.id, user.enabled)}
-                            disabled={updateStatusMutation.isPending || user.role === 'ADMIN'}
-                          >
-                            {user.enabled ? t('btnDisable') : t('btnEnable')}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!users?.length && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
-                          {t('noUsers')}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('manageTitle')}</CardTitle>
+                <CardDescription>{t('manageDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="py-8 text-center text-muted-foreground">{t('loading')}</div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('colEmail')}</TableHead>
+                          <TableHead>{t('colRole')}</TableHead>
+                          <TableHead>{t('colProvider')}</TableHead>
+                          <TableHead>{t('colStatus')}</TableHead>
+                          <TableHead className="text-right">{t('colActions')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users?.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-medium">{user.email}</TableCell>
+                            <TableCell>{user.role === 'NUTRITIONIST' ? t('roleNutritionist') : user.role === 'PATIENT' ? t('rolePatient') : user.role}</TableCell>
+                            <TableCell>{user.provider}</TableCell>
+                            <TableCell>
+                              <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                  user.enabled ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                }`}
+                              >
+                                {user.enabled ? t('statusActive') : t('statusDisabled')}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant={user.enabled ? 'destructive' : 'default'}
+                                size="sm"
+                                onClick={() => requestToggleStatus(user.id, user.enabled)}
+                                disabled={updateStatusMutation.isPending || user.role === 'ADMIN'}
+                              >
+                                {user.enabled ? t('btnDisable') : t('btnEnable')}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {!users?.length && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="h-24 text-center">
+                              {t('noUsers')}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Moderación de Catálogo (Local)</CardTitle>
+              <CardDescription>Revisa, desactiva o actualiza los alimentos creados por los nutriólogos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="py-8 text-center text-muted-foreground border-2 border-dashed rounded-xl">
+                <p>Módulo de catálogo en construcción...</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

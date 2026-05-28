@@ -115,6 +115,7 @@ def test_search_products_with_results_returns_mapped_list(mongo_adapter, mock_co
     assert len(results) == 2
     assert isinstance(results[0], FoodItem)
     mock_collection.find.assert_called_once_with({
+        "is_active": True,
         "$or": [
             {"name": {"$regex": query, "$options": "i"}},
             {"brand": {"$regex": query, "$options": "i"}}

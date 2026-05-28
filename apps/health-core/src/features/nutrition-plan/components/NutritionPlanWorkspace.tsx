@@ -4,6 +4,7 @@ import {
   Droplets,
   Flame,
   Info,
+  Loader2,
   Pencil,
   Plus,
   Save,
@@ -105,6 +106,9 @@ interface NutritionPlanWorkspaceProps {
   isLoading?: boolean;
   onSave?: (payload: NutritionPlanUpsertRequest) => Promise<NutritionPlanViewResponse>;
   onSearchFoods?: (query: string) => Promise<CatalogFoodResponse[]>;
+  onOpenCreateLocalFood?: (initialName: string) => void;
+  onQuickTrack?: (payload: { mealSlot: MealSlot; optionName: string; ingredients: any[] }) => void;
+  isQuickTracking?: boolean;
 }
 
 const EMPTY_EDITOR_STATE: EditorState = {
@@ -142,6 +146,9 @@ export function NutritionPlanWorkspace({
   isLoading = false,
   onSave,
   onSearchFoods,
+  onOpenCreateLocalFood,
+  onQuickTrack,
+  isQuickTracking,
 }: Readonly<NutritionPlanWorkspaceProps>) {
   const { t, i18n } = useTranslation(namespace);
   const [sections, setSections] = useState<EditableSection[]>(EMPTY_SECTIONS);
@@ -320,9 +327,25 @@ export function NutritionPlanWorkspace({
 
                   <CardFooter className="justify-between gap-2">
                     {showRegisterAction ? (
-                      <Button className="w-full gap-2">
-                        <UtensilsCrossed size={14} />
-                        {t('nutritionPlan.registerDish')}
+                      <Button 
+                        className="w-full gap-2" 
+                        disabled={isQuickTracking}
+                        onClick={() => {
+                          if (onQuickTrack) {
+                            onQuickTrack({
+                              mealSlot: section.mealSlot,
+                              optionName: option.name,
+                              ingredients: option.ingredients
+                            });
+                          }
+                        }}
+                      >
+                        {isQuickTracking ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <UtensilsCrossed size={14} />
+                        )}
+                        {isQuickTracking ? 'Registrando...' : t('nutritionPlan.registerDish')}
                       </Button>
                     ) : (
                       <div className="flex w-full items-center gap-2">
@@ -681,9 +704,28 @@ export function NutritionPlanWorkspace({
                   </p>
                 ) : null}
                 {!isSearching && searchFeedbackState === 'no-results' ? (
-                  <p className="text-sm text-muted-foreground">
-                    {t('nutritionPlan.searchNoResults', { query: searchQuery.trim() })}
-                  </p>
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-6 text-center">
+                    <p className="mb-3 text-sm text-muted-foreground">
+                      {t('nutritionPlan.searchNoResults', { query: searchQuery.trim() })}
+                    </p>
+                    
+                    {/* UX Defensiva y SRP: 
+                      Solo mostramos el botón si es nutriólogo y el padre inyectó la función.
+                      Al hacer clic, delegamos la responsabilidad de abrir el modal de creación.
+                    */}
+                    {namespace === 'nutritionist' && onOpenCreateLocalFood ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => onOpenCreateLocalFood(searchQuery.trim())}
+                      >
+                        <Plus size={16} />
+                        Crear "{searchQuery.trim()}" localmente
+                      </Button>
+                    ) : null}
+                  </div>
                 ) : null}
                 {searchResults.length > 0 ? (
                   <div className="grid gap-2 rounded-2xl border border-border/60 bg-muted/20 p-3">

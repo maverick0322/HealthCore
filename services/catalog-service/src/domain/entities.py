@@ -29,6 +29,10 @@ class FoodItem(BaseModel):
     image_url: Optional[str] = Field(default=None, description="Public URL to the product packaging image")
     nutrition: NutritionalValues
 
+    is_local: bool = Field(default=False, description="True if created locally by a nutritionist or admin")
+    is_active: bool = Field(default=True, description="Soft delete flag for local moderation")
+    created_by: str = Field(default="SYSTEM", description="User ID of the creator (SYSTEM for external APIs)")
+
     def validate_macronutrients(self) -> None:
         """
         Validates cross-field rules that Field() parameters cannot handle natively.

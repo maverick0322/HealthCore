@@ -15,3 +15,24 @@ export interface AdminCreateUserRequest {
   password?: string;
   role: Role;
 }
+
+export interface CatalogItem {
+  barcode: string;
+  name: string;
+  brand: string;
+  is_local: boolean;
+  is_active: boolean;
+  nutrition: {
+    calories: number;
+    proteins: number;
+    carbohydrates: number;
+    fats: number;
+  };
+}
+
+export interface CreateLocalFoodRequest {
+  name: string;
+  brand?: string;
+  barcode?: string;
+  nutrition: CatalogItem['nutrition'];
+}

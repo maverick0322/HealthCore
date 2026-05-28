@@ -1,7 +1,8 @@
 import httpClient from '@/core/http/httpClient';
-import type { User, AdminCreateUserRequest } from '../types/admin.types';
+import type { User, AdminCreateUserRequest, CatalogItem, CreateLocalFoodRequest } from '../types/admin.types';
 
 const ADMIN_USERS_API = '/admin/users';
+const CATALOG_LOCAL_API = '/catalog/local';
 
 export const adminService = {
   getAllUsers: async (): Promise<User[]> => {
@@ -19,5 +20,19 @@ export const adminService = {
       params: { enabled }
     });
     return response.data;
+  },
+
+  createLocalFood: async (data: CreateLocalFoodRequest): Promise<CatalogItem> => {
+    const response = await httpClient.post<CatalogItem>(CATALOG_LOCAL_API, data);
+    return response.data;
+  },
+
+  updateLocalFood: async (barcode: string, data: Partial<CreateLocalFoodRequest>): Promise<CatalogItem> => {
+    const response = await httpClient.put<CatalogItem>(`${CATALOG_LOCAL_API}/${encodeURIComponent(barcode)}`, data);
+    return response.data;
+  },
+
+  deactivateLocalFood: async (barcode: string): Promise<void> => {
+    await httpClient.delete(`${CATALOG_LOCAL_API}/${encodeURIComponent(barcode)}`);
   }
 };

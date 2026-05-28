@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -63,5 +66,14 @@ class WaterTrackingControllerTest {
         mockMvc.perform(post("/api/v1/tracking/logs/water")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void removeLatestWaterLog_Success() throws Exception {
+        // Act & Assert
+        mockMvc.perform(delete("/api/v1/tracking/logs/water/latest"))
+                .andExpect(status().isNoContent());
+
+        verify(waterUseCase, times(1)).removeLatestWaterLog(any());
     }
 }

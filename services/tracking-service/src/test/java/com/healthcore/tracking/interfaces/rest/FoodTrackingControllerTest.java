@@ -216,6 +216,7 @@ class FoodTrackingControllerTest {
                 List.of(new SimpleGrantedAuthority("ROLE_PATIENT")));
 
         mockMvc.perform(get("/api/v1/tracking/nutritionist/patients/patient-123/logs/daily")
+                        .param("date", "2026-05-17")
                         .principal(auth)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(result -> assertThat(result.getResolvedException())
@@ -232,6 +233,7 @@ class FoodTrackingControllerTest {
         when(clinicalServiceClient.validateLink(any(), any())).thenReturn(false);
 
         mockMvc.perform(get("/api/v1/tracking/nutritionist/patients/patient-123/logs/daily")
+                        .param("date", "2026-05-17") 
                         .principal(auth)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(result -> assertThat(result.getResolvedException())

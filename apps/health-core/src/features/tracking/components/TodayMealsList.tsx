@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Coffee, Sun, Utensils, Loader2, AlertCircle } from "lucide-react"; // <-- Importado AlertCircle
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import type { MealLogDTO } from "../types/tracking.types";
 
 interface TodayMealsListProps {
@@ -12,7 +13,7 @@ interface TodayMealsListProps {
 
 export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading, error }) => {
   const { t } = useTranslation("tracking");
-
+  const navigate = useNavigate();
   // --- SOLUCIÓN DE ZONA HORARIA ---
   const formatSafeLocalTime = (isoString: string) => {
     if (!isoString) return '--:--';
@@ -144,7 +145,10 @@ export const TodayMealsList: React.FC<TodayMealsListProps> = ({ meals, isLoading
     <Card className="border-none shadow-sm mt-4">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
         <CardTitle className="text-lg font-bold">{t('dashboard.todayLog', 'Registro de Hoy')}</CardTitle>
-        <button className="text-sm text-primary font-medium hover:underline">
+        <button 
+          className="text-sm text-primary font-medium hover:underline"
+          onClick={() => navigate("/tracking/history")}
+        >
           {t('dashboard.viewFullHistory', 'Ver historial completo')}
         </button>
       </CardHeader>

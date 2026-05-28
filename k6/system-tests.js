@@ -8,8 +8,20 @@ const nutritionistId = __ENV.NUTRI_ID;
 const slotId = __ENV.SLOT_ID;
 const slotVersion = Number(__ENV.SLOT_VERSION);
 
-const availabilityFrom = '2026-06-01T00:00:00Z';
-const availabilityTo = '2026-06-05T23:59:59Z';
+const pickRandom = (items) => {
+  if (!items || items.length === 0) return null;
+  return items[Math.floor(Math.random() * items.length)];
+};
+
+const buildAvailabilityRange = () => {
+  const now = Date.now();
+  const from = new Date(now + 24 * 60 * 60 * 1000);
+  const to = new Date(now + 7 * 24 * 60 * 60 * 1000);
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+  };
+};
 
 const pickToken = () => {
   if (tokens.length === 0) return '';
@@ -70,6 +82,8 @@ export default function () {
   const authHeaders = {
     Authorization: `Bearer ${token}`,
   };
+  const range = buildAvailabilityRange();
+  let dynamicSlot = null;
 
   group('Validar Sesion', () => {
     const res = http.get(`${API_BASE}/auth/me`, { headers: authHeaders });
@@ -80,20 +94,46 @@ export default function () {
   });
 
   group('Consultar Disponibilidad', () => {
-    const url = `${API_BASE}/agenda/availability/${nutritionistId}?from=${availabilityFrom}&to=${availabilityTo}`;
+    const url = `${API_BASE}/agenda/availability/${nutritionistId}?from=${range.from}&to=${range.to}`;
     const res = http.get(url, { headers: authHeaders });
     check(res, {
       'availability responde 200': (r) => r.status === 200,
     });
+    if (res.status === 200) {
+      try {
+        const data = res.json();
+        const candidates = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.slots)
+            ? data.slots
+            : [];
+        const available = candidates.filter((slot) => slot && slot.id && !slot.reserved && slot.active !== false);
+        const picked = pickRandom(available);
+        if (picked) {
+          dynamicSlot = {
+            id: picked.id,
+            version: Number.isFinite(picked.version) ? picked.version : slotVersion,
+            nutritionistId: picked.nutritionistId || nutritionistId,
+          };
+        }
+      } catch (_) {
+        dynamicSlot = null;
+      }
+    }
     sleep(2);
   });
 
   group('Crear Cita (Con probabilidad)', () => {
-    if (Math.random() < 0.2 && slotId && nutritionistId && Number.isFinite(slotVersion)) {
+    const slotToUse = dynamicSlot || {
+      id: slotId,
+      nutritionistId,
+      version: slotVersion,
+    };
+    if (Math.random() < 0.2 && slotToUse.id && slotToUse.nutritionistId && Number.isFinite(slotToUse.version)) {
       const payload = JSON.stringify({
-        slotId,
-        nutritionistId,
-        slotVersion,
+        slotId: slotToUse.id,
+        nutritionistId: slotToUse.nutritionistId,
+        slotVersion: slotToUse.version,
         locale: 'es-MX',
       });
 

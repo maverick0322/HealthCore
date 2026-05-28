@@ -32,8 +32,33 @@ public class IdentityGrpcService extends IdentityDirectoryGrpc.IdentityDirectory
                 .distinct()
                 .toList();
 
-        Map<String, String> emailByUserId = userRepository.findByIdIn(userIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getEmail));
+        java.util.Map<String, String> emailByUserId = new java.util.HashMap<>();
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        java.util.List<String> emails = new java.util.ArrayList<>();
+
+        for (String userId : userIds) {
+            if (userId.contains("@")) {
+                emails.add(userId);
+            } else {
+                ids.add(userId);
+            }
+        }
+
+        if (!ids.isEmpty()) {
+            userRepository.findByIdIn(ids).forEach(user -> {
+                if (user.getId() != null && user.getEmail() != null) {
+                    emailByUserId.put(user.getId(), user.getEmail());
+                }
+            });
+        }
+
+        for (String email : emails) {
+            userRepository.findByEmail(email).ifPresent(user -> {
+                if (user.getEmail() != null) {
+                    emailByUserId.put(email, user.getEmail());
+                }
+            });
+        }
 
         List<UserContact> contacts = userIds.stream()
                 .map(id -> UserContact.newBuilder()

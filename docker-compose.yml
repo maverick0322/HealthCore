@@ -25,7 +25,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-healthcore}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
       interval: 10s
       timeout: 5s
       retries: 30
@@ -80,7 +80,7 @@ services:
       - FATSECRET_CLIENT_SECRET=${FATSECRET_CLIENT_SECRET}
       - GRPC_PORT=50051
     restart: unless-stopped
-  
+
   identity-service:
     build: ./services/identity-service
     container_name: healthcore-identity-service
@@ -153,6 +153,7 @@ services:
       - GRPC_IDENTITY_TARGET=identity-service:9090
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
       - TRACING_SAMPLING_PROBABILITY=${TRACING_SAMPLING_PROBABILITY:-1.0}
+      - LOGGING_LEVEL_COM_HEALTHCORE=DEBUG
     ports:
       - "${SERVER_PORT_NOTIFICATION:-8086}:8086"
     restart: unless-stopped
@@ -164,7 +165,7 @@ services:
       - "6379:6379"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -195,7 +196,6 @@ services:
       - GRPC_CLIENT_MEDIA-SERVICE_ADDRESS=static://media-service:9091
       - GRPC_CLIENT_MEDIA-SERVICE_NEGOTIATION_TYPE=plaintext
 
-  
   agenda-mongodb:
     image: mongo:7.0
     container_name: healthcore-agenda-mongodb
@@ -248,6 +248,7 @@ services:
       AGENDA_DEV_TOOLS_ENABLED: ${AGENDA_DEV_TOOLS_ENABLED:-false}
       MANAGEMENT_OTLP_TRACING_ENDPOINT: ${MANAGEMENT_OTLP_TRACING_ENDPOINT:-http://tempo:4318/v1/traces}
       TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY:-1.0}
+      LOGGING_LEVEL_COM_HEALTHCORE: DEBUG
     ports:
       - "${AGENDA_SERVICE_PORT:-8083}:8080"
 
@@ -273,7 +274,7 @@ services:
     container_name: healthcore-clinical-mongo-express
     restart: unless-stopped
     ports:
-      - "8085:8081" 
+      - "8085:8081"
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://clinical-mongodb:27017/
       ME_CONFIG_BASICAUTH: false

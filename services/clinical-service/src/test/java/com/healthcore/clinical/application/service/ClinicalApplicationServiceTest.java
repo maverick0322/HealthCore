@@ -48,12 +48,20 @@ class ClinicalApplicationServiceTest {
 
     @BeforeEach
     void setUp() {
+        PatientProfileAccessService patientProfileAccessService = new PatientProfileAccessService(repositoryPort);
+        ProfilePhotoKeyValidator profilePhotoKeyValidator = new ProfilePhotoKeyValidator();
         service = new ClinicalApplicationService(
-                repositoryPort,
-                nutritionistRepositoryPort,
-                new ClinicAddressCatalogValidator(postalCodeCatalogPort),
-                new ProfilePhotoKeyValidator(),
-                new NutritionistWeightProgressReportFactory()
+                new PatientProfileApplicationService(patientProfileAccessService, profilePhotoKeyValidator),
+                new PatientWeightApplicationService(patientProfileAccessService),
+                new NutritionistProfileApplicationService(
+                        nutritionistRepositoryPort,
+                        new ClinicAddressCatalogValidator(postalCodeCatalogPort),
+                        profilePhotoKeyValidator
+                ),
+                new NutritionistWeightProgressApplicationService(
+                        patientProfileAccessService,
+                        new NutritionistWeightProgressReportFactory()
+                )
         );
     }
 

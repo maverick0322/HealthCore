@@ -5,6 +5,7 @@ import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type { ClinicAddressPayload, NutritionistProfileResponse } from '@/features/clinical/types/clinical.types';
 import { formatNutritionistSpecializationLabel } from '@/features/onboarding/utils/profilePresentation';
+import { useProfilePhotoUpload } from '@/shared/hooks/useProfilePhotoUpload';
 
 export const formatAddress = (address?: ClinicAddressPayload | null) => {
   if (!address) {
@@ -53,6 +54,22 @@ export const useNutritionistProfile = () => {
     navigate('/login', { replace: true });
   };
 
+  const profilePhotoUpload = useProfilePhotoUpload({
+    invalidTypeMessage: t('profile.photoInvalidType'),
+    invalidSizeMessage: t('profile.photoInvalidSize'),
+    persistErrorMessage: t('profile.photoPersistError'),
+    uploadErrorMessages: {
+      validation: t('profile.photoUploadValidationError'),
+      rateLimit: t('profile.photoUploadRateLimitError'),
+      network: t('profile.photoUploadNetworkError'),
+      generic: t('profile.photoUploadGenericError'),
+    },
+    onUploadComplete: async (storageKey) => {
+      const updatedProfile = await clinicalApi.updateMyNutritionistProfilePhoto(storageKey);
+      setProfile(updatedProfile);
+    },
+  });
+
   const specializationSummary = useMemo(() => {
     if (!profile?.specializations.length) {
       return t('profile.pendingProfile');
@@ -69,5 +86,6 @@ export const useNutritionistProfile = () => {
     navigate,
     handleLogout,
     specializationSummary,
+    profilePhotoUpload,
   };
 };

@@ -29,13 +29,11 @@ import {
 } from '@/features/onboarding/utils/profilePresentation';
 import { ConfirmModal } from '@/shared/components/ConfirmModal';
 import { ProfileAvatar } from '@/shared/components/ProfileAvatar';
-import { useProfilePhotoUpload } from '@/shared/hooks/useProfilePhotoUpload';
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import { usePatientProfile } from '../hooks/usePatientProfile';
-import { clinicalApi } from '@/features/clinical/services/clinicalService';
 
 function bmiColor(category: string) {
   switch (category) {
@@ -58,7 +56,6 @@ export const PatientProfilePage = () => {
   
   const {
     profile,
-    setProfile,
     isLoadingProfile,
     showUnlinkDialog,
     setShowUnlinkDialog,
@@ -73,28 +70,8 @@ export const PatientProfilePage = () => {
     allergyDisplay,
     user,
     navigate,
+    profilePhotoUpload,
   } = usePatientProfile();
-
-  const {
-    accept: profilePhotoAccept,
-    error: profilePhotoError,
-    handleFileSelected,
-    isUploading: isUploadingProfilePhoto,
-  } = useProfilePhotoUpload({
-    invalidTypeMessage: t('profile.photoInvalidType'),
-    invalidSizeMessage: t('profile.photoInvalidSize'),
-    persistErrorMessage: t('profile.photoPersistError'),
-    uploadErrorMessages: {
-      validation: t('profile.photoUploadValidationError'),
-      rateLimit: t('profile.photoUploadRateLimitError'),
-      network: t('profile.photoUploadNetworkError'),
-      generic: t('profile.photoUploadGenericError'),
-    },
-    onUploadComplete: async (storageKey) => {
-      const updatedProfile = await clinicalApi.updateMyProfilePhoto(storageKey);
-      setProfile(updatedProfile);
-    },
-  });
 
   if (isLoadingProfile) {
     return (
@@ -134,12 +111,12 @@ export const PatientProfilePage = () => {
                 photoUrl={profile?.profilePhotoUrl}
                 size="lg"
                 editable
-                accept={profilePhotoAccept}
+                accept={profilePhotoUpload.accept}
                 onFileSelected={(file) => {
-                  void handleFileSelected(file);
+                  void profilePhotoUpload.handleFileSelected(file);
                 }}
-                isUploading={isUploadingProfilePhoto}
-                error={profilePhotoError}
+                isUploading={profilePhotoUpload.isUploading}
+                error={profilePhotoUpload.error}
                 cameraLabel={t('profile.changePhoto')}
                 className="flex-shrink-0"
               />

@@ -49,6 +49,7 @@ import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePrese
 import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
 import { exportNutritionistPatientFilePdf } from "@/features/nutritionist/services/patientFilePdfService";
 import { useNutritionistPatientClinicalData } from "@/features/nutritionist/hooks/useNutritionistPatientClinicalData";
+import { useNutritionistPatientTrackingData } from "@/features/nutritionist/hooks/useNutritionistPatientTrackingData";
 import { useNutritionistPatientWeightHistory } from "@/features/nutritionist/hooks/useNutritionistPatientWeightHistory";
 import {
   calculateBmi,
@@ -60,7 +61,6 @@ import {
 import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 import { trackingService } from "@/features/tracking/services/trackingService";
-import type { DailyMacroSummary, MealLogDTO, TodayDashboardSummary } from "@/features/tracking/types/tracking.types";
 import { buildHistoricalMacroRange, summarizeHistoricalMacros } from "@/features/tracking/hooks/useHistoricalMacros";
 
 const OBSERVATION_NOTE_MAX_LENGTH = 500;
@@ -96,17 +96,6 @@ export const NutritionistPatientFilePage = () => {
   const [suggestedFoodName, setSuggestedFoodName] = useState("");
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [pageFeedback, setPageFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const todayIso = new Date().toISOString().split("T")[0];
-  const [historyDate, setHistoryDate] = useState(todayIso);
-  const [patientTrackingSummary, setPatientTrackingSummary] = useState<TodayDashboardSummary | null>(null);
-  const [isLoadingPatientTrackingSummary, setIsLoadingPatientTrackingSummary] = useState(false);
-  const [patientTrackingSummaryError, setPatientTrackingSummaryError] = useState<string | null>(null);
-  const [patientHistoricalMacroLogs, setPatientHistoricalMacroLogs] = useState<DailyMacroSummary[]>([]);
-  const [isLoadingPatientHistoricalMacros, setIsLoadingPatientHistoricalMacros] = useState(false);
-  const [patientHistoricalMacrosError, setPatientHistoricalMacrosError] = useState<string | null>(null);
-  const [patientDailyTrackingLogs, setPatientDailyTrackingLogs] = useState<MealLogDTO[]>([]);
-  const [isLoadingPatientDailyTrackingLogs, setIsLoadingPatientDailyTrackingLogs] = useState(false);
-  const [patientDailyTrackingLogsError, setPatientDailyTrackingLogsError] = useState<string | null>(null);
   const {
     patient,
     setPatient,
@@ -126,81 +115,33 @@ export const NutritionistPatientFilePage = () => {
     activeTab,
   });
   const {
+    todayIso,
+    historyDate,
+    historyDateLabel,
+    patientTrackingSummary,
+    isLoadingPatientTrackingSummary,
+    patientTrackingSummaryError,
+    patientHistoricalMacroLogs,
+    patientHistoricalMacros,
+    isLoadingPatientHistoricalMacros,
+    patientHistoricalMacrosError,
+    patientDailyTrackingLogs,
+    isLoadingPatientDailyTrackingLogs,
+    patientDailyTrackingLogsError,
+    loadHistoricalMacros,
+    goToPreviousHistoryDate,
+    goToNextHistoryDate,
+    disableNextHistoryDate,
+  } = useNutritionistPatientTrackingData({
+    patientId,
+    activeTab,
+  });
+  const {
     data: weightHistory,
     isLoading: isLoadingWeightHistory,
     isError: isWeightHistoryError,
     refetch: refetchWeightHistory,
   } = useNutritionistPatientWeightHistory(patientId, { enabled: activeTab === "history" });
-
-  useEffect(() => {
-    if (!patientId || activeTab !== "history") {
-      return;
-    }
-
-    const { startDate, endDate } = buildHistoricalMacroRange();
-
-    const loadTrackingSummary = async () => {
-      try {
-        setIsLoadingPatientTrackingSummary(true);
-        setPatientTrackingSummaryError(null);
-        const summary = await trackingService.getNutritionistPatientTodaySummary(patientId);
-        setPatientTrackingSummary(summary);
-      } catch (error: any) {
-        setPatientTrackingSummary(null);
-        setPatientTrackingSummaryError(
-          error?.response?.data?.message ?? t("history.weightErrorMessage", { ns: "patient" })
-        );
-      } finally {
-        setIsLoadingPatientTrackingSummary(false);
-      }
-    };
-
-    const loadHistoricalMacros = async () => {
-      try {
-        setIsLoadingPatientHistoricalMacros(true);
-        setPatientHistoricalMacrosError(null);
-        const response = await trackingService.getNutritionistPatientHistoricalMacros(
-          patientId,
-          startDate,
-          endDate
-        );
-        setPatientHistoricalMacroLogs(response);
-      } catch (error: any) {
-        setPatientHistoricalMacroLogs([]);
-        setPatientHistoricalMacrosError(
-          error?.response?.data?.message ?? t("history.pdf.noTrackingData", { ns: "patient" })
-        );
-      } finally {
-        setIsLoadingPatientHistoricalMacros(false);
-      }
-    };
-
-    void Promise.all([loadTrackingSummary(), loadHistoricalMacros()]);
-  }, [activeTab, patientId, t]);
-
-  useEffect(() => {
-    if (!patientId || activeTab !== "history") {
-      return;
-    }
-
-    const loadDailyTrackingLogs = async () => {
-      try {
-        setIsLoadingPatientDailyTrackingLogs(true);
-        setPatientDailyTrackingLogsError(null);
-        const response = await trackingService.getNutritionistPatientDailyLogs(patientId, historyDate);
-        setPatientDailyTrackingLogs(response ?? []);
-      } catch (error: any) {
-        setPatientDailyTrackingLogs([]);
-        setPatientDailyTrackingLogsError(
-          error?.response?.data?.message ?? t("history.todayLogsEmpty", { ns: "patient" })
-        );
-      } finally {
-        setIsLoadingPatientDailyTrackingLogs(false);
-      }
-    };
-
-    void loadDailyTrackingLogs();
-  }, [activeTab, historyDate, patientId, t]);
 
   useEffect(() => {
     const handleWindowRefresh = () => {
@@ -329,12 +270,6 @@ export const NutritionistPatientFilePage = () => {
   const patientDietLabel = patient
     ? t(`onboarding:options.diets.${patient.dietType}.label`)
     : "--";
-  const { last7Days } = useMemo(() => buildHistoricalMacroRange(), []);
-  const patientHistoricalMacros = useMemo(
-    () => summarizeHistoricalMacros(patientHistoricalMacroLogs, last7Days),
-    [last7Days, patientHistoricalMacroLogs]
-  );
-  const historyDateLabel = historyDate === todayIso ? t("history.today", { ns: "patient" }) : historyDate;
 
   const resetMetricsDialog = () => {
     setEditMetricsOpen(false);
@@ -730,40 +665,19 @@ export const NutritionistPatientFilePage = () => {
             error: patientHistoricalMacrosError,
           }}
           onRetryHistoricalMacros={async () => {
-            const { startDate, endDate } = buildHistoricalMacroRange();
-            try {
-              setIsLoadingPatientHistoricalMacros(true);
-              setPatientHistoricalMacrosError(null);
-              const response = await trackingService.getNutritionistPatientHistoricalMacros(
-                patientId,
-                startDate,
-                endDate
-              );
-              setPatientHistoricalMacroLogs(response);
-            } catch (error: any) {
-              setPatientHistoricalMacroLogs([]);
-              setPatientHistoricalMacrosError(
-                error?.response?.data?.message ?? t("history.pdf.noTrackingData", { ns: "patient" })
-              );
-            } finally {
-              setIsLoadingPatientHistoricalMacros(false);
-            }
+            await loadHistoricalMacros();
           }}
           logs={patientDailyTrackingLogs}
           isLogsLoading={isLoadingPatientDailyTrackingLogs}
           logsError={patientDailyTrackingLogsError}
           selectedDateLabel={historyDateLabel}
           onPreviousDay={() => {
-            const nextDate = new Date(`${historyDate}T12:00:00`);
-            nextDate.setDate(nextDate.getDate() - 1);
-            setHistoryDate(nextDate.toISOString().split("T")[0]);
+            goToPreviousHistoryDate();
           }}
           onNextDay={() => {
-            const nextDate = new Date(`${historyDate}T12:00:00`);
-            nextDate.setDate(nextDate.getDate() + 1);
-            setHistoryDate(nextDate.toISOString().split("T")[0]);
+            goToNextHistoryDate();
           }}
-          disableNextDay={historyDate === todayIso}
+          disableNextDay={disableNextHistoryDate}
           showTrackingInsights
           showMealTimeline
           showLogRegistrationCard={false}

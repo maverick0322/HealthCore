@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import axios from "axios";
 import { Search, ChevronRight, User, QrCode, AlertCircle } from "lucide-react";
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
@@ -10,123 +8,19 @@ import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import { Card } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
-import { clinicalApi } from "@/features/clinical/services/clinicalService";
-import type { NutritionistPatientProfileResponse } from "@/features/clinical/types/clinical.types";
-import { nutritionistAgendaService } from "@/features/nutritionist/services/nutritionistAgendaService";
-import type { AppointmentResponse } from "@/features/nutritionist/types/agenda.types";
-import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
-
-interface NutritionistPatientCardViewModel {
-  id: string;
-  name: string;
-  profilePhotoUrl: string | null;
-  lastVisit: string;
-  goal: string;
-  futureAppointments: number;
-  nextAppointmentAt: string | null;
-}
-
-const getDisplayIdentity = (userId: string): string => {
-  const normalized = userId.trim();
-  if (!normalized) {
-    return "Paciente";
-  }
-  return normalized;
-};
-
-const toPatientCardViewModel = (
-  patient: NutritionistPatientProfileResponse,
-  futureAppointments: AppointmentResponse[],
-  goalLabel: string,
-  lastVisitPlaceholder: string
-): NutritionistPatientCardViewModel => ({
-  id: patient.userId,
-  name: patient.fullName?.trim() || getDisplayIdentity(patient.userId),
-  profilePhotoUrl: patient.profilePhotoUrl,
-  lastVisit: futureAppointments[0]?.startTime ?? lastVisitPlaceholder,
-  goal: goalLabel,
-  futureAppointments: futureAppointments.length,
-  nextAppointmentAt: futureAppointments[0]?.startTime ?? null,
-});
+import { useNutritionistPatientsPage } from "@/features/nutritionist/hooks/useNutritionistPatientsPage";
 
 export const NutritionistPatientsPage = () => {
   const { t } = useTranslation(["nutritionist", "onboarding"]);
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [patients, setPatients] = useState<NutritionistPatientProfileResponse[]>([]);
-  const [futureAppointments, setFutureAppointments] = useState<AppointmentResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadPatients = async () => {
-      try {
-        setIsLoading(true);
-        setLoadError(null);
-        const now = new Date();
-        const to = new Date(now);
-        to.setDate(to.getDate() + 90);
-        const patientResponse = await clinicalApi.getNutritionistPatients();
-
-        let appointmentResponse: AppointmentResponse[] = [];
-        try {
-          appointmentResponse = await nutritionistAgendaService.getMyAppointments(
-            now.toISOString(),
-            to.toISOString()
-          );
-        } catch (error) {
-          if (!(axios.isAxiosError(error) && error.response?.status === 404)) {
-            console.error("Error loading nutritionist appointments:", error);
-          }
-        }
-
-        setPatients(patientResponse);
-        setFutureAppointments(
-          appointmentResponse
-            .filter((appointment) =>
-              appointment.status !== "CANCELLED" &&
-              appointment.status !== "ATTENDED" &&
-              new Date(appointment.startTime).getTime() > now.getTime()
-            )
-            .sort((left, right) => new Date(left.startTime).getTime() - new Date(right.startTime).getTime())
-        );
-      } catch (error) {
-        console.error("Error loading nutritionist patients:", error);
-        setLoadError(t("patients.error"));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void loadPatients();
-  }, [t]);
-
-  const patientCards = useMemo(
-    () => {
-      const appointmentsByPatient = new Map<string, AppointmentResponse[]>();
-      futureAppointments.forEach((appointment) => {
-        const current = appointmentsByPatient.get(appointment.patientId) ?? [];
-        current.push(appointment);
-        appointmentsByPatient.set(appointment.patientId, current);
-      });
-
-      return patients.map((patient) =>
-        toPatientCardViewModel(
-          patient,
-          appointmentsByPatient.get(patient.userId) ?? [],
-          formatPatientGoalLabel(t, patient.goal),
-          t("patients.lastVisitPlaceholder")
-        )
-      );
-    },
-    [futureAppointments, patients, t]
-  );
-
-  const filteredPatients = useMemo(() => {
-    return patientCards.filter((patient) => {
-      return patient.name.toLowerCase().includes(searchTerm.toLowerCase());
-    });
-  }, [patientCards, searchTerm]);
+  const {
+    searchTerm,
+    setSearchTerm,
+    patientCards,
+    filteredPatients,
+    isLoading,
+    loadError,
+  } = useNutritionistPatientsPage();
 
   const renderBody = () => {
     if (isLoading) {

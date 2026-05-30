@@ -1,5 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type {
+  NutritionPlanViewResponse,
+  NutritionistPatientProfileResponse,
+} from '@/features/clinical/types/clinical.types';
 
 const {
   mockUpdateNutritionistPatientMetrics,
@@ -28,7 +32,7 @@ vi.mock('react-i18next', () => ({
 import { useNutritionistPatientMetrics } from './useNutritionistPatientMetrics';
 
 describe('useNutritionistPatientMetrics', () => {
-  const patient = {
+  const patient: NutritionistPatientProfileResponse = {
     userId: 'patient-1',
     firstName: 'Ana',
     paternalLastName: 'Lopez',
@@ -115,7 +119,7 @@ describe('useNutritionistPatientMetrics', () => {
           },
           sections: [],
           contextSelfManagedPlan: null,
-        },
+        } satisfies NutritionPlanViewResponse,
         setPatient,
         loadNutritionPlan,
         refetchWeightHistory,

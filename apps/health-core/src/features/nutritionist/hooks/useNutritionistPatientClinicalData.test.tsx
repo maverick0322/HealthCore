@@ -94,14 +94,19 @@ describe('useNutritionistPatientClinicalData', () => {
   });
 
   it('loads the nutrition plan when the plan tab becomes active', async () => {
+    type HookProps = {
+      activeTab: 'overview' | 'plan' | 'history' | 'observations';
+    };
+    const initialProps: HookProps = { activeTab: 'overview' };
+
     const { result, rerender } = renderHook(
-      ({ activeTab }) =>
+      ({ activeTab }: HookProps) =>
         useNutritionistPatientClinicalData({
           patientId: 'patient-1',
           activeTab,
         }),
       {
-        initialProps: { activeTab: 'overview' as const },
+        initialProps,
       }
     );
 

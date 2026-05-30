@@ -35,20 +35,15 @@ import {
 import {
   clinicalApi,
 } from "../../clinical/services/clinicalService";
-import type {
-  NutritionistPatientProfileResponse,
-  ObservationResponse,
-} from "../../clinical/types/clinical.types";
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
 import { CreateLocalFoodModal } from "@/features/admin/components/CreateLocalFoodModal";
-import { logClientError, logClientInfo } from "@/core/utils/logger";
-import { getNutritionistUnlinkErrorMessage } from "@/features/clinical/utils/linkingErrorMessages";
 import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
 import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
-import { exportNutritionistPatientFilePdf } from "@/features/nutritionist/services/patientFilePdfService";
+import { useNutritionistPatientFilePdfExport } from "@/features/nutritionist/hooks/useNutritionistPatientFilePdfExport";
 import { useNutritionistPatientClinicalData } from "@/features/nutritionist/hooks/useNutritionistPatientClinicalData";
+import { useNutritionistPatientNutritionPlan } from "@/features/nutritionist/hooks/useNutritionistPatientNutritionPlan";
 import { useNutritionistPatientMetrics } from "@/features/nutritionist/hooks/useNutritionistPatientMetrics";
 import { useNutritionistPatientObservations } from "@/features/nutritionist/hooks/useNutritionistPatientObservations";
 import { useNutritionistPatientTrackingData } from "@/features/nutritionist/hooks/useNutritionistPatientTrackingData";
@@ -63,8 +58,6 @@ import {
 } from "@/features/nutritionist/utils/patientFilePresentation";
 import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
-import { trackingService } from "@/features/tracking/services/trackingService";
-import { buildHistoricalMacroRange, summarizeHistoricalMacros } from "@/features/tracking/hooks/useHistoricalMacros";
 
 const OBSERVATION_NOTE_MAX_LENGTH = 500;
 const WEIGHT_INPUT_MAX_LENGTH = 5;
@@ -73,7 +66,6 @@ const HEIGHT_INPUT_MAX_LENGTH = 3;
 export const NutritionistPatientFilePage = () => {
   const { id: patientIdParam } = useParams<{ id: string }>();
   const patientId = patientIdParam ? decodeURIComponent(patientIdParam) : "";
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation(["nutritionist", "onboarding", "patient"]);
 
@@ -101,7 +93,6 @@ export const NutritionistPatientFilePage = () => {
     activeTab,
   });
   const {
-    todayIso,
     historyDate,
     historyDateLabel,
     patientTrackingSummary,
@@ -133,7 +124,6 @@ export const NutritionistPatientFilePage = () => {
     setNewNote,
     isSavingNote,
     editingObservation,
-    setEditingObservation,
     editingObservationNote,
     setEditingObservationNote,
     isUpdatingObservation,
@@ -216,159 +206,31 @@ export const NutritionistPatientFilePage = () => {
   const patientDietLabel = patient
     ? t(`onboarding:options.diets.${patient.dietType}.label`)
     : "--";
-
-  const handleSaveNutritionPlan = async (
-    payload: Parameters<typeof clinicalApi.upsertNutritionistPatientNutritionPlan>[1]
-  ) => {
-    try {
-      logClientInfo("NutritionistPatientFilePage.plan.save.start", {
-        patientId,
-        sections: payload.sections.length,
-      });
-      const response = await clinicalApi.upsertNutritionistPatientNutritionPlan(patientId, payload);
-      setNutritionPlanView(response);
-      setNutritionPlanLoadError(null);
-      logClientInfo("NutritionistPatientFilePage.plan.save.success", {
-        patientId,
-        mode: response.mode,
-        canEdit: response.canEdit,
-      });
-      return response;
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.plan.save.error", error, {
-        patientId,
-        sections: payload.sections.length,
-      });
-      throw error;
-    }
-  };
-
-  const retryNutritionPlanLoad = async () => {
-    if (!patientId) {
-      return;
-    }
-
-    logClientInfo("NutritionistPatientFilePage.plan.retry.start", { patientId });
-    await loadNutritionPlan();
-  };
-
-  const handleExportPatientFilePdf = async () => {
-    if (!patient) {
-      return;
-    }
-
-    setIsExportingPdf(true);
-    setPageFeedback(null);
-
-    try {
-      const resolvedPlan = nutritionPlanView ?? (await loadNutritionPlan());
-      const resolvedWeightHistory =
-        activeTab === "history"
-          ? (await refetchWeightHistory()).data ?? weightHistory
-          : await clinicalApi.getNutritionistPatientWeightHistory(patientId);
-      const { startDate, endDate, last7Days } = buildHistoricalMacroRange();
-      const resolvedTrackingSummary =
-        patientTrackingSummary ?? await trackingService.getNutritionistPatientTodaySummary(patientId);
-      const resolvedHistoricalMacroLogs =
-        patientHistoricalMacroLogs.length > 0
-          ? patientHistoricalMacroLogs
-          : await trackingService.getNutritionistPatientHistoricalMacros(patientId, startDate, endDate);
-      const resolvedHistoricalMacros = summarizeHistoricalMacros(resolvedHistoricalMacroLogs, last7Days);
-      const resolvedDailyTrackingLogs =
-        activeTab === "history" && patientDailyTrackingLogs.length > 0
-          ? patientDailyTrackingLogs
-          : await trackingService.getNutritionistPatientDailyLogs(patientId, historyDate);
-      const sanitizedPatientName = (patient.fullName ?? patient.userId).replace(/[^\w-]+/g, "-").toLowerCase();
-
-      await exportNutritionistPatientFilePdf({
-        patient,
-        nutritionPlan: resolvedPlan,
-        observations,
-        weightHistory: resolvedWeightHistory,
-        trackingSummary: resolvedTrackingSummary,
-        historicalMacros: {
-          caloriesHistory: resolvedHistoricalMacros.caloriesHistory,
-          caloriesAvg: resolvedHistoricalMacros.caloriesAvg,
-          calorieGoal: resolvedPlan?.dailyGoals.targetCalories ?? null,
-          macrosAvg: resolvedHistoricalMacros.macrosAvg,
-        },
-        dailyTrackingLogs: resolvedDailyTrackingLogs,
-        selectedTrackingDateLabel: historyDateLabel,
-        locale: i18n.resolvedLanguage?.startsWith("en") ? "en-US" : "es-MX",
-        goalLabel: patientGoalLabel,
-        activityLabel: patientActivityLabel,
-        dietLabel: patientDietLabel,
-        fileName: `expediente-${sanitizedPatientName}.pdf`,
-        labels: {
-          title: t("patients.file.pdf.title"),
-          generatedOn: t("patients.file.pdf.generatedOn"),
-          sections: {
-            overview: t("patients.file.tabOverview"),
-            weightHistory: t("patients.file.tabHistory"),
-            calorieTrend: t("history.calorieTrend", { ns: "patient" }),
-            macroBreakdown: t("history.macroBreakdown", { ns: "patient" }),
-            mealTimeline: t("history.mealLog", { ns: "patient" }),
-            nutritionPlan: t("patients.file.tabPlan"),
-            observations: t("patients.file.tabObservations"),
-          },
-          fields: {
-            patient: t("patients.file.pdf.patient"),
-            age: t("patients.file.age"),
-            weight: t("patients.file.weight"),
-            height: t("patients.file.height"),
-            goal: t("patients.file.objective"),
-            activity: t("patients.file.pdf.activity"),
-            dietType: t("patients.file.pdf.dietType"),
-            allergies: t("patients.file.pdf.allergies"),
-            excludedFoods: t("patients.file.pdf.excludedFoods"),
-            latestRecord: t("patients.file.pdf.latestRecord"),
-            date: t("history.table.date", { ns: "patient" }),
-            change: t("history.table.variation", { ns: "patient" }),
-            mealSlot: t("patients.file.pdf.mealSlot"),
-            dishCount: t("patients.file.pdf.dishCount"),
-            dailyGoals: t("patients.file.pdf.dailyGoals"),
-            currentWeight: t("history.currentWeight", { ns: "patient" }),
-            periodChange: t("history.periodChange", { ns: "patient" }),
-            caloriesAverage: t("history.calorieAvg", { ns: "patient" }),
-            calorieGoal: t("history.calorieGoal", { ns: "patient" }),
-            protein: t("history.protein", { ns: "patient" }),
-            carbs: t("history.carbs", { ns: "patient" }),
-            fat: t("history.fat", { ns: "patient" }),
-            mealType: t("history.pdf.mealType", { ns: "patient" }),
-            time: t("history.pdf.time", { ns: "patient" }),
-            foods: t("history.pdf.foods", { ns: "patient" }),
-            calories: t("history.calories", { ns: "patient" }),
-            selectedDate: t("history.date", { ns: "patient" }),
-            streak: t("history.streak", { ns: "patient" }),
-            bestStreak: t("history.bestStreak", { ns: "patient" }),
-          },
-          empty: {
-            weightHistory: t("patients.file.pdf.noWeightHistory"),
-            observations: t("patients.file.noObservations"),
-            nutritionPlan: t("patients.file.pdf.noNutritionPlan"),
-            none: t("patients.file.pdf.none"),
-            tracking: t("history.pdf.noTrackingData", { ns: "patient" }),
-            mealTimeline: t("history.todayLogsEmpty", { ns: "patient" }),
-            noFoods: t("history.pdf.noFoods", { ns: "patient" }),
-          },
-          mealSlots: {
-            BREAKFAST: t("nutritionPlan.mealSlots.BREAKFAST"),
-            LUNCH: t("nutritionPlan.mealSlots.LUNCH"),
-            DINNER: t("nutritionPlan.mealSlots.DINNER"),
-            SNACK: t("nutritionPlan.mealSlots.SNACK"),
-          },
-        },
-      });
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.pdf.export.error", error, { patientId });
-      setPageFeedback({
-        type: "error",
-        message: t("patients.file.pdf.error"),
-      });
-    } finally {
-      setIsExportingPdf(false);
-    }
-  };
+  const { handleSaveNutritionPlan, retryNutritionPlanLoad } = useNutritionistPatientNutritionPlan({
+    patientId,
+    loadNutritionPlan,
+    setNutritionPlanView,
+    setNutritionPlanLoadError,
+  });
+  const { isExportingPdf, handleExportPatientFilePdf } = useNutritionistPatientFilePdfExport({
+    patientId,
+    patient,
+    activeTab,
+    historyDate,
+    historyDateLabel,
+    observations,
+    nutritionPlanView,
+    loadNutritionPlan,
+    weightHistory,
+    refetchWeightHistory,
+    patientTrackingSummary,
+    patientHistoricalMacroLogs,
+    patientDailyTrackingLogs,
+    patientGoalLabel,
+    patientActivityLabel,
+    patientDietLabel,
+    setPageFeedback,
+  });
 
   const renderMainContent = () => {
     if (isLoadingPatient) {

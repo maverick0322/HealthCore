@@ -2,19 +2,14 @@ import { useMemo, useState, type ComponentType, type InputHTMLAttributes, type R
 import { useTranslation } from 'react-i18next';
 import { FileText, Phone, ShieldCheck, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { TFunction } from 'i18next';
 
-import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import type {
-  ClinicAddressPayload,
-  ConsultationType,
   NutritionistProfilePayload,
-  NutritionistSpecialization,
-  PostalCodeLookupResponse,
 } from '@/features/clinical/types/clinical.types';
 import { OnboardingLayout } from '@/features/onboarding/layouts/OnboardingLayout';
 import { useNutritionistOnboardingBootstrap } from '@/features/onboarding/hooks/useNutritionistOnboardingBootstrap';
 import { useNutritionistPostalCodeLookup } from '@/features/onboarding/hooks/useNutritionistPostalCodeLookup';
+import { useNutritionistOnboardingSubmit } from '@/features/onboarding/hooks/useNutritionistOnboardingSubmit';
 import { useNutritionistOnboardingStore } from '@/features/onboarding/store/useNutritionistOnboardingStore';
 import {
   consultationTypeOptions,
@@ -23,7 +18,11 @@ import {
   getOptionLabel,
   nutritionistSpecializationOptions,
 } from '@/features/onboarding/utils/profilePresentation';
-import { normalizeText, validateOptionalName, validateRequiredName } from '@/features/onboarding/utils/profileValidation';
+import {
+  buildNutritionistProfilePayload,
+  formatManualAddress,
+  getNutritionistOnboardingStepErrors,
+} from '@/features/onboarding/utils/nutritionistOnboarding';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
@@ -57,8 +56,6 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
   const hydrateFromProfile = useNutritionistOnboardingStore((state) => state.hydrateFromProfile);
   const setHasExistingProfile = useNutritionistOnboardingStore((state) => state.setHasExistingProfile);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const { isLoadingProfile } = useNutritionistOnboardingBootstrap({
     hydrateFromProfile,
@@ -76,31 +73,37 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
       useNutritionistOnboardingStore.getState().contact.clinicAddress.neighborhood.trim(),
     setClinicAddress,
   });
+  const { isSubmitting, submitError, handleSubmit: submitNutritionistOnboarding } =
+    useNutritionistOnboardingSubmit({
+      mode,
+      hasExistingProfile,
+    });
 
   const payload = useMemo<NutritionistProfilePayload>(
-    () => ({
-      firstName: identity.firstName.trim(),
-      paternalLastName: identity.paternalLastName.trim(),
-      maternalLastName: identity.maternalLastName.trim(),
-      specializations: professional.specializations,
-      customSpecialization: professional.customSpecialization.trim(),
-      professionalLicense: professional.professionalLicense.trim(),
-      consultationTypes,
-      phone: contact.phone.trim(),
-      clinicAddress: hasAnyAddressValue(contact.clinicAddress) ? sanitizeAddress(contact.clinicAddress) : null,
-      bio: bio.trim(),
-    }),
+    () =>
+      buildNutritionistProfilePayload({
+        identity,
+        professional,
+        consultationTypes,
+        contact,
+        bio,
+      }),
     [bio, consultationTypes, contact, identity, professional]
   );
 
   const handleStepNext = () => {
-    const nextErrors = getStepErrors(t, step, {
-      identity,
-      professional,
-      consultationTypes,
-      contact,
-      bio,
-    }, postalLookup);
+    const nextErrors = getNutritionistOnboardingStepErrors(
+      t,
+      step,
+      {
+        identity,
+        professional,
+        consultationTypes,
+        contact,
+        bio,
+      },
+      postalLookup,
+    );
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) {
       return;
@@ -109,39 +112,24 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
   };
 
   const handleSubmit = async () => {
-    const nextErrors = getStepErrors(t, 5, {
-      identity,
-      professional,
-      consultationTypes,
-      contact,
-      bio,
-    }, postalLookup);
+    const nextErrors = getNutritionistOnboardingStepErrors(
+      t,
+      5,
+      {
+        identity,
+        professional,
+        consultationTypes,
+        contact,
+        bio,
+      },
+      postalLookup,
+    );
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) {
       return;
     }
 
-    setSubmitError(null);
-    setIsSubmitting(true);
-
-    try {
-      if (hasExistingProfile) {
-        await clinicalApi.updateMyNutritionistProfile(payload);
-      } else {
-        await clinicalApi.createNutritionistProfile(payload);
-      }
-
-      navigate(mode === 'edit' ? '/profile/nutritionist' : '/dashboard/nutritionist', {
-        replace: true,
-      });
-    } catch (error) {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        t('nutritionist.common.saveError');
-      setSubmitError(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    await submitNutritionistOnboarding(payload);
   };
 
   if (isLoadingProfile) {
@@ -630,127 +618,3 @@ const SummaryRow = ({
   </div>
 );
 
-const hasAnyAddressValue = (address: ClinicAddressPayload): boolean =>
-  Object.values(address).some((value) => Boolean(value?.trim()));
-
-const sanitizeAddress = (address: ClinicAddressPayload): ClinicAddressPayload => ({
-  postalCode: address.postalCode.trim(),
-  state: normalizeText(address.state),
-  city: normalizeText(address.city),
-  municipality: normalizeText(address.municipality),
-  neighborhood: normalizeText(address.neighborhood),
-  street: normalizeText(address.street),
-  exteriorNumber: normalizeText(address.exteriorNumber),
-  interiorNumber: address.interiorNumber?.trim() ? normalizeText(address.interiorNumber) : '',
-});
-
-const formatManualAddress = (address: ClinicAddressPayload): string | undefined => {
-  const parts = [
-    address.street?.trim(),
-    address.exteriorNumber?.trim(),
-    address.interiorNumber?.trim() ? `Int. ${address.interiorNumber.trim()}` : null,
-    address.neighborhood?.trim(),
-    address.municipality?.trim(),
-    address.city?.trim() && address.city?.trim() !== address.municipality?.trim() ? address.city.trim() : null,
-    address.state?.trim(),
-    address.postalCode?.trim(),
-  ].filter(Boolean);
-
-  return parts.length > 0 ? parts.join(', ') : undefined;
-};
-
-const getStepErrors = (
-  t: TFunction,
-  step: number,
-  data: {
-    identity: {
-      firstName: string;
-      paternalLastName: string;
-      maternalLastName: string;
-    };
-    professional: {
-      specializations: NutritionistSpecialization[];
-      customSpecialization: string;
-      professionalLicense: string;
-    };
-    consultationTypes: ConsultationType[];
-    contact: {
-      phone: string;
-      clinicAddress: ClinicAddressPayload;
-    };
-    bio: string;
-  },
-  postalLookup: PostalCodeLookupResponse | null
-): Record<string, string | null> => {
-  if (step === 1) {
-    return {
-      firstName: validateRequiredName(data.identity.firstName, t('nutritionist.identity.fields.firstName'), t),
-      paternalLastName: validateRequiredName(
-        data.identity.paternalLastName,
-        t('nutritionist.identity.fields.paternalLastName'),
-        t
-      ),
-      maternalLastName: validateOptionalName(
-        data.identity.maternalLastName,
-        t('nutritionist.identity.fields.maternalLastName'),
-        t
-      ),
-    };
-  }
-
-  if (step === 2) {
-    return {
-      specializations:
-        data.professional.specializations.length === 0
-          ? t('nutritionist.validation.specializationsRequired')
-          : data.professional.specializations.length > 3
-            ? t('nutritionist.validation.specializationsMax')
-            : null,
-      customSpecialization:
-        data.professional.specializations.includes('OTHER') && !data.professional.customSpecialization.trim()
-          ? t('nutritionist.validation.customSpecializationRequired')
-          : null,
-      professionalLicense: /^\d{7,10}$/.test(data.professional.professionalLicense.trim())
-        ? null
-        : t('nutritionist.validation.professionalLicense'),
-    };
-  }
-
-  if (step === 3) {
-    return {
-      consultationTypes:
-        data.consultationTypes.length === 0 ? t('nutritionist.validation.consultationTypesRequired') : null,
-    };
-  }
-
-  if (step === 4) {
-    const address = data.contact.clinicAddress;
-    const hasAddress = hasAnyAddressValue(address);
-    const requiresCatalogNeighborhood =
-      postalLookup?.postalCode === address.postalCode.trim() && postalLookup.colonies.length > 0;
-    return {
-      phone:
-        data.contact.phone.trim() && !/^\d{10}$/.test(data.contact.phone.trim())
-          ? t('nutritionist.validation.phone')
-          : null,
-      postalCode:
-        hasAddress && !/^\d{5}$/.test(address.postalCode.trim()) ? t('nutritionist.validation.postalCode') : null,
-      state: hasAddress && !address.state.trim() ? t('nutritionist.validation.state') : null,
-      city: hasAddress && !address.city.trim() ? t('nutritionist.validation.city') : null,
-      municipality: hasAddress && !address.municipality.trim() ? t('nutritionist.validation.municipality') : null,
-      neighborhood:
-        hasAddress && !address.neighborhood.trim()
-          ? t('nutritionist.validation.neighborhood')
-          : requiresCatalogNeighborhood && !postalLookup.colonies.includes(address.neighborhood.trim())
-            ? t('nutritionist.validation.neighborhoodSelection')
-            : null,
-      street: hasAddress && !address.street.trim() ? t('nutritionist.validation.street') : null,
-      exteriorNumber: hasAddress && !address.exteriorNumber.trim() ? t('nutritionist.validation.exteriorNumber') : null,
-      interiorNumber: null,
-    };
-  }
-
-  return {
-    bio: data.bio.trim() ? null : t('nutritionist.validation.bio'),
-  };
-};

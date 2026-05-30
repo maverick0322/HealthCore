@@ -2,10 +2,10 @@ package com.healthcore.clinical.infrastructure.persistence.mongodb;
 
 import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,8 +25,12 @@ class MongoNutritionistProfileRepositoryAdapterTest {
     @Mock
     private SpringDataMongoNutritionistProfileRepository repository;
 
-    @InjectMocks
     private MongoNutritionistProfileRepositoryAdapter adapter;
+
+    @BeforeEach
+    void setUp() {
+        adapter = new MongoNutritionistProfileRepositoryAdapter(repository, new NutritionistProfileMongoMapper());
+    }
 
     @Test
     void shouldMapNutritionistProfileToDocumentWhenSaving() {

@@ -6,9 +6,9 @@ import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,8 +29,12 @@ class MongoClinicalRepositoryAdapterTest {
     @Mock
     private SpringDataMongoPatientProfileRepository patientRepository;
 
-    @InjectMocks
     private MongoClinicalRepositoryAdapter repositoryAdapter;
+
+    @BeforeEach
+    void setUp() {
+        repositoryAdapter = new MongoClinicalRepositoryAdapter(patientRepository, new PatientProfileMongoMapper());
+    }
 
     @Test
     void shouldMapPatientProfileToMongoDocumentWhenSaving() {

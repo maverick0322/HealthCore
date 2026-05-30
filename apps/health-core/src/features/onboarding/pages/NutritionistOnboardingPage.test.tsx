@@ -53,7 +53,7 @@ describe('NutritionistOnboardingPage', () => {
       useNutritionistOnboardingStore.getState().setStep(4);
     });
 
-    const postalCodeInput = screen.getByLabelText('Postal code');
+    const postalCodeInput = await waitFor(() => screen.getByLabelText(/Postal code/i));
     fireEvent.change(postalCodeInput, { target: { value: '03100' } });
 
     await waitFor(() => {
@@ -84,7 +84,7 @@ describe('NutritionistOnboardingPage', () => {
       useNutritionistOnboardingStore.getState().setStep(4);
     });
 
-    fireEvent.change(screen.getByLabelText('Postal code'), { target: { value: '99999' } });
+    fireEvent.change(await waitFor(() => screen.getByLabelText(/Postal code/i)), { target: { value: '99999' } });
 
     await waitFor(() => {
       expect(

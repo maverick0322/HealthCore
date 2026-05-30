@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useMemo, useState, type ComponentType, type InputHTMLAttributes, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText, Phone, ShieldCheck, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +13,8 @@ import type {
   PostalCodeLookupResponse,
 } from '@/features/clinical/types/clinical.types';
 import { OnboardingLayout } from '@/features/onboarding/layouts/OnboardingLayout';
+import { useNutritionistOnboardingBootstrap } from '@/features/onboarding/hooks/useNutritionistOnboardingBootstrap';
+import { useNutritionistPostalCodeLookup } from '@/features/onboarding/hooks/useNutritionistPostalCodeLookup';
 import { useNutritionistOnboardingStore } from '@/features/onboarding/store/useNutritionistOnboardingStore';
 import {
   consultationTypeOptions,
@@ -55,97 +57,25 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
   const hydrateFromProfile = useNutritionistOnboardingStore((state) => state.hydrateFromProfile);
   const setHasExistingProfile = useNutritionistOnboardingStore((state) => state.setHasExistingProfile);
 
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
-  const [postalLookup, setPostalLookup] = useState<PostalCodeLookupResponse | null>(null);
-  const [isPostalLookupLoading, setIsPostalLookupLoading] = useState(false);
-  const [postalLookupMessage, setPostalLookupMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const profile = await clinicalApi.getMyNutritionistProfile();
-        const payload: NutritionistProfilePayload = {
-          firstName: profile.firstName,
-          paternalLastName: profile.paternalLastName,
-          maternalLastName: profile.maternalLastName ?? '',
-          specializations: profile.specializations,
-          customSpecialization: profile.customSpecialization ?? '',
-          professionalLicense: profile.professionalLicense,
-          consultationTypes: profile.consultationTypes,
-          phone: profile.phone ?? '',
-          clinicAddress: profile.clinicAddress ?? null,
-          bio: profile.bio,
-        };
-        hydrateFromProfile(payload, true);
-      } catch {
-        setHasExistingProfile(false);
-        reset();
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-
-    void loadProfile();
-  }, [hydrateFromProfile, reset, setHasExistingProfile]);
-
-  useEffect(() => {
-    const postalCode = contact.clinicAddress.postalCode.trim();
-
-    if (postalCode.length !== 5) {
-      setPostalLookup(null);
-      setPostalLookupMessage(null);
-      setIsPostalLookupLoading(false);
-      return;
-    }
-
-    let isActive = true;
-    setIsPostalLookupLoading(true);
-    setPostalLookupMessage(null);
-
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        const lookupResult = await clinicalApi.lookupPostalCode(postalCode);
-        if (!isActive) {
-          return;
-        }
-
-        const currentNeighborhood = useNutritionistOnboardingStore.getState().contact.clinicAddress.neighborhood.trim();
-        const normalizedNeighborhood = lookupResult.colonies.includes(currentNeighborhood) ? currentNeighborhood : '';
-
-        setPostalLookup(lookupResult);
-        setClinicAddress({
-          postalCode: lookupResult.postalCode,
-          state: lookupResult.state,
-          city: lookupResult.city,
-          municipality: lookupResult.municipality,
-          neighborhood: normalizedNeighborhood,
-        });
-        setPostalLookupMessage(t('nutritionist.contact.lookup.match'));
-      } catch (error) {
-        if (!isActive) {
-          return;
-        }
-
-        setPostalLookup(null);
-        const status = (error as { response?: { status?: number } })?.response?.status;
-        setPostalLookupMessage(
-          status === 404 ? t('nutritionist.contact.lookup.manualFallback') : t('nutritionist.contact.lookup.error')
-        );
-      } finally {
-        if (isActive) {
-          setIsPostalLookupLoading(false);
-        }
-      }
-    }, 350);
-
-    return () => {
-      isActive = false;
-      window.clearTimeout(timeoutId);
-    };
-  }, [contact.clinicAddress.postalCode, setClinicAddress, t]);
+  const { isLoadingProfile } = useNutritionistOnboardingBootstrap({
+    hydrateFromProfile,
+    setHasExistingProfile,
+    reset,
+  });
+  const {
+    postalLookup,
+    isPostalLookupLoading,
+    postalLookupMessage,
+    handlePostalCodeChange,
+  } = useNutritionistPostalCodeLookup({
+    postalCode: contact.clinicAddress.postalCode,
+    getCurrentNeighborhood: () =>
+      useNutritionistOnboardingStore.getState().contact.clinicAddress.neighborhood.trim(),
+    setClinicAddress,
+  });
 
   const payload = useMemo<NutritionistProfilePayload>(
     () => ({
@@ -224,26 +154,6 @@ export const NutritionistOnboardingPage = ({ mode = 'create' }: NutritionistOnbo
 
   const isCatalogPostalCode =
     postalLookup?.postalCode === contact.clinicAddress.postalCode.trim() && postalLookup.colonies.length > 0;
-
-  const handlePostalCodeChange = (value: string) => {
-    const sanitizedValue = value.replace(/\D/g, '').slice(0, 5);
-    const currentPostalCode = contact.clinicAddress.postalCode;
-
-    if (sanitizedValue === currentPostalCode) {
-      setClinicAddress({ postalCode: sanitizedValue });
-      return;
-    }
-
-    setPostalLookup(null);
-    setPostalLookupMessage(null);
-    setClinicAddress({
-      postalCode: sanitizedValue,
-      state: '',
-      city: '',
-      municipality: '',
-      neighborhood: '',
-    });
-  };
 
   return (
     <OnboardingLayout currentStep={step} totalSteps={5}>

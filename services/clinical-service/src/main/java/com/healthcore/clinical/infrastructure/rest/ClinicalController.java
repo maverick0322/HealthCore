@@ -2,7 +2,6 @@ package com.healthcore.clinical.infrastructure.rest;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -22,25 +21,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.healthcore.clinical.domain.model.ActivityLevel;
-import com.healthcore.clinical.domain.model.ClinicAddress;
-import com.healthcore.clinical.domain.model.Gender;
 import com.healthcore.clinical.domain.model.HealthGoal;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
 import com.healthcore.clinical.domain.model.NutritionistWeightProgressReport;
-import com.healthcore.clinical.domain.model.NutritionistWeightProgressRow;
 import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
-import com.healthcore.clinical.infrastructure.grpc.MediaGrpcClientAdapter;
 import com.healthcore.clinical.infrastructure.rest.dto.ApiErrorResponseDoc;
-import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressRequest;
-import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.HealthGoalResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistProfileResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressReportResponse;
-import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressRowResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.PatientProfileResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.UnauthorizedErrorResponseDoc;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdatePatientMetricsRequest;
@@ -48,6 +39,8 @@ import com.healthcore.clinical.infrastructure.rest.dto.UpdateProfilePhotoRequest
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateWeightRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.ValidationErrorResponseDoc;
+import com.healthcore.clinical.infrastructure.rest.mapper.ClinicalProfileRestMapper;
+import com.healthcore.clinical.infrastructure.rest.support.ProfilePhotoUrlResolver;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -68,14 +61,17 @@ public class ClinicalController {
     private static final Logger logger = LoggerFactory.getLogger(ClinicalController.class);
 
     private final ManageProfileUseCase manageProfileUseCase;
-    private final MediaGrpcClientAdapter mediaGrpcClientAdapter;
+    private final ClinicalProfileRestMapper clinicalProfileRestMapper;
+    private final ProfilePhotoUrlResolver profilePhotoUrlResolver;
 
     public ClinicalController(
             ManageProfileUseCase manageProfileUseCase,
-            MediaGrpcClientAdapter mediaGrpcClientAdapter
+            ClinicalProfileRestMapper clinicalProfileRestMapper,
+            ProfilePhotoUrlResolver profilePhotoUrlResolver
     ) {
         this.manageProfileUseCase = manageProfileUseCase;
-        this.mediaGrpcClientAdapter = mediaGrpcClientAdapter;
+        this.clinicalProfileRestMapper = clinicalProfileRestMapper;
+        this.profilePhotoUrlResolver = profilePhotoUrlResolver;
     }
 
     @PostMapping("/profile")
@@ -98,7 +94,7 @@ public class ClinicalController {
     ) {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Creating patient profile for userHash={}", logHash(userId));
-        manageProfileUseCase.createProfile(toPatientProfile(userId, request));
+        manageProfileUseCase.createProfile(clinicalProfileRestMapper.toPatientProfile(userId, request));
         return ResponseEntity.ok().build();
     }
 
@@ -121,7 +117,10 @@ public class ClinicalController {
     public ResponseEntity<PatientProfileResponse> updateMyProfile(@Valid @RequestBody CreateProfileRequest request) {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Updating patient profile for userHash={}", logHash(userId));
-        PatientProfile updatedProfile = manageProfileUseCase.updateProfile(userId, toPatientProfile(userId, request));
+        PatientProfile updatedProfile = manageProfileUseCase.updateProfile(
+                userId,
+                clinicalProfileRestMapper.toPatientProfile(userId, request)
+        );
         return ResponseEntity.ok(toPatientProfileResponse(updatedProfile));
     }
 
@@ -175,14 +174,7 @@ public class ClinicalController {
         }
 
         HealthGoal goal = profileOpt.get().generateHealthGoals();
-        HealthGoalResponse response = new HealthGoalResponse(
-                goal.targetCalories(),
-                goal.targetProtein(),
-                goal.targetCarbs(),
-                goal.targetFat(),
-                goal.targetWaterGlasses()
-        );
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(clinicalProfileRestMapper.toHealthGoalResponse(goal));
     }
 
     @PostMapping("/weight")
@@ -208,7 +200,7 @@ public class ClinicalController {
         logger.info("[ClinicalController] Updating weight for userHash={} weightKg={} date={}",
                 logHash(userId), request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.updateWeight(userId, request.weightKg(), request.date());
-        return ResponseEntity.ok(toHealthGoalResponse(newGoal));
+        return ResponseEntity.ok(clinicalProfileRestMapper.toHealthGoalResponse(newGoal));
     }
 
     @PutMapping("/weight/{originalDate}")
@@ -236,7 +228,7 @@ public class ClinicalController {
         logger.info("[ClinicalController] Editing weight for userHash={} originalDate={} weightKg={} date={}",
                 logHash(userId), originalDate, request.weightKg(), request.date());
         HealthGoal newGoal = manageProfileUseCase.editWeight(userId, originalDate, request.weightKg(), request.date());
-        return ResponseEntity.ok(toHealthGoalResponse(newGoal));
+        return ResponseEntity.ok(clinicalProfileRestMapper.toHealthGoalResponse(newGoal));
     }
 
     @DeleteMapping("/weight/{date}")
@@ -263,7 +255,7 @@ public class ClinicalController {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Deleting weight for userHash={} date={}", logHash(userId), date);
         HealthGoal newGoal = manageProfileUseCase.deleteWeight(userId, date);
-        return ResponseEntity.ok(toHealthGoalResponse(newGoal));
+        return ResponseEntity.ok(clinicalProfileRestMapper.toHealthGoalResponse(newGoal));
     }
 
     @GetMapping("/weight/history")
@@ -374,7 +366,9 @@ public class ClinicalController {
     public ResponseEntity<Void> createNutritionistProfile(@Valid @RequestBody UpsertNutritionistProfileRequest request) {
         String userId = getCurrentUserId();
         logger.info("[ClinicalController] Creating nutritionist profile for userHash={}", logHash(userId));
-        manageProfileUseCase.createNutritionistProfile(toNutritionistProfile(userId, request));
+        manageProfileUseCase.createNutritionistProfile(
+                clinicalProfileRestMapper.toNutritionistProfile(userId, request)
+        );
         return ResponseEntity.ok().build();
     }
 
@@ -401,7 +395,7 @@ public class ClinicalController {
         logger.info("[ClinicalController] Updating nutritionist profile for userHash={}", logHash(userId));
         NutritionistProfile updatedProfile = manageProfileUseCase.updateNutritionistProfile(
                 userId,
-                toNutritionistProfile(userId, request)
+                clinicalProfileRestMapper.toNutritionistProfile(userId, request)
         );
         return ResponseEntity.ok(toNutritionistProfileResponse(updatedProfile));
     }
@@ -472,7 +466,7 @@ public class ClinicalController {
         String nutritionistId = getCurrentUserId();
         logger.info("[ClinicalController] Getting linked patients for nutritionistHash={}", logHash(nutritionistId));
         List<PatientProfile> linkedProfiles = manageProfileUseCase.getProfilesByNutritionistId(nutritionistId);
-        Map<String, String> profilePhotoUrls = resolveProfilePhotoUrls(
+        var profilePhotoUrls = profilePhotoUrlResolver.resolveBatchUrls(
                 linkedProfiles.stream()
                         .map(PatientProfile::getProfilePhotoKey)
                         .toList()
@@ -481,7 +475,7 @@ public class ClinicalController {
                 .stream()
                 .map(profile -> toPatientProfileResponse(
                         profile,
-                        resolveProfilePhotoUrl(profilePhotoUrls, profile.getProfilePhotoKey())
+                        profilePhotoUrlResolver.resolveResolvedUrl(profilePhotoUrls, profile.getProfilePhotoKey())
                 ))
                 .toList();
         return ResponseEntity.ok(patients);
@@ -584,154 +578,24 @@ public class ClinicalController {
                 from,
                 to
         );
-        return ResponseEntity.ok(toNutritionistWeightProgressReportResponse(report));
-    }
-
-    private PatientProfile toPatientProfile(String userId, CreateProfileRequest request) {
-        return new PatientProfile(
-                userId,
-                request.firstName(),
-                request.paternalLastName(),
-                request.maternalLastName(),
-                request.weightKg(),
-                request.heightCm(),
-                request.birthDate(),
-                Gender.valueOf(request.gender().toUpperCase()),
-                ActivityLevel.valueOf(request.activityLevel().toUpperCase()),
-                request.goal(),
-                request.dietType(),
-                request.allergies(),
-                request.excludedFoods()
-        );
-    }
-
-    private NutritionistProfile toNutritionistProfile(String userId, UpsertNutritionistProfileRequest request) {
-        return new NutritionistProfile(
-                userId,
-                request.firstName(),
-                request.paternalLastName(),
-                request.maternalLastName(),
-                request.specializations(),
-                request.customSpecialization(),
-                request.professionalLicense(),
-                request.consultationTypes(),
-                request.phone(),
-                toClinicAddress(request.clinicAddress()),
-                request.bio(),
-                null
-        );
-    }
-
-    private ClinicAddress toClinicAddress(ClinicAddressRequest request) {
-        if (request == null) {
-            return null;
-        }
-        return ClinicAddress.rehydrate(
-                request.postalCode(),
-                request.state(),
-                request.city(),
-                request.municipality(),
-                request.neighborhood(),
-                request.street(),
-                request.exteriorNumber(),
-                request.interiorNumber()
-        );
+        return ResponseEntity.ok(clinicalProfileRestMapper.toNutritionistWeightProgressReportResponse(report));
     }
 
     private PatientProfileResponse toPatientProfileResponse(PatientProfile profile) {
-        return toPatientProfileResponse(profile, resolveProfilePhotoUrl(profile.getProfilePhotoKey()));
+        return toPatientProfileResponse(
+                profile,
+                profilePhotoUrlResolver.resolveSingleUrl(profile.getProfilePhotoKey())
+        );
     }
 
     private PatientProfileResponse toPatientProfileResponse(PatientProfile profile, String profilePhotoUrl) {
-        return new PatientProfileResponse(
-                profile.getUserId(),
-                profile.getFirstName(),
-                profile.getPaternalLastName(),
-                profile.getMaternalLastName(),
-                profile.getFullName(),
-                profile.getWeightKg(),
-                profile.getHeightCm(),
-                profile.getBirthDate(),
-                profile.getGender() != null ? profile.getGender().name() : null,
-                profile.getActivityLevel() != null ? profile.getActivityLevel().name() : null,
-                profile.getGoal(),
-                profile.getDietType(),
-                profile.getAllergies() != null ? profile.getAllergies() : List.of(),
-                profile.getExcludedFoods() != null ? profile.getExcludedFoods() : List.of(),
-                profile.getNutritionistId(),
-                profilePhotoUrl,
-                profile.isProfileCompleted()
-        );
-    }
-
-    private HealthGoalResponse toHealthGoalResponse(HealthGoal goal) {
-        return new HealthGoalResponse(
-                goal.targetCalories(),
-                goal.targetProtein(),
-                goal.targetCarbs(),
-                goal.targetFat(),
-                goal.targetWaterGlasses()
-        );
+        return clinicalProfileRestMapper.toPatientProfileResponse(profile, profilePhotoUrl);
     }
 
     private NutritionistProfileResponse toNutritionistProfileResponse(NutritionistProfile profile) {
-        return new NutritionistProfileResponse(
-                profile.getUserId(),
-                profile.getFirstName(),
-                profile.getPaternalLastName(),
-                profile.getMaternalLastName(),
-                profile.getFullName(),
-                profile.getSpecializations() != null ? profile.getSpecializations() : List.of(),
-                profile.getCustomSpecialization(),
-                profile.getProfessionalLicense(),
-                profile.getConsultationTypes() != null ? profile.getConsultationTypes() : List.of(),
-                profile.getPhone(),
-                toClinicAddressResponse(profile.getClinicAddress()),
-                profile.getBio(),
-                resolveProfilePhotoUrl(profile.getProfilePhotoKey()),
-                profile.isProfileCompleted()
-        );
-    }
-
-    private NutritionistWeightProgressReportResponse toNutritionistWeightProgressReportResponse(
-            NutritionistWeightProgressReport report
-    ) {
-        return new NutritionistWeightProgressReportResponse(
-                report.activePatients(),
-                report.patientsWithoutWeightInRange(),
-                report.rows().stream()
-                        .map(this::toNutritionistWeightProgressRowResponse)
-                        .toList()
-        );
-    }
-
-    private NutritionistWeightProgressRowResponse toNutritionistWeightProgressRowResponse(
-            NutritionistWeightProgressRow row
-    ) {
-        return new NutritionistWeightProgressRowResponse(
-                row.patientId(),
-                row.fullName(),
-                row.latestRecordDateInRange(),
-                row.startWeightKg(),
-                row.currentWeightKg(),
-                row.netChangeKg(),
-                row.hasRecordsInRange()
-        );
-    }
-
-    private ClinicAddressResponse toClinicAddressResponse(ClinicAddress address) {
-        if (address == null) {
-            return null;
-        }
-        return new ClinicAddressResponse(
-                address.getPostalCode(),
-                address.getState(),
-                address.getCity(),
-                address.getMunicipality(),
-                address.getNeighborhood(),
-                address.getStreet(),
-                address.getExteriorNumber(),
-                address.getInteriorNumber()
+        return clinicalProfileRestMapper.toNutritionistProfileResponse(
+                profile,
+                profilePhotoUrlResolver.resolveSingleUrl(profile.getProfilePhotoKey())
         );
     }
 
@@ -739,21 +603,6 @@ public class ClinicalController {
         return org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
-    }
-
-    private String resolveProfilePhotoUrl(String profilePhotoKey) {
-        return mediaGrpcClientAdapter.getPresignedReadUrl(profilePhotoKey);
-    }
-
-    private String resolveProfilePhotoUrl(Map<String, String> profilePhotoUrls, String profilePhotoKey) {
-        if (profilePhotoKey == null || profilePhotoKey.isBlank()) {
-            return null;
-        }
-        return profilePhotoUrls.get(profilePhotoKey);
-    }
-
-    private Map<String, String> resolveProfilePhotoUrls(List<String> profilePhotoKeys) {
-        return mediaGrpcClientAdapter.getPresignedReadUrls(profilePhotoKeys);
     }
 
     private String logHash(String value) {

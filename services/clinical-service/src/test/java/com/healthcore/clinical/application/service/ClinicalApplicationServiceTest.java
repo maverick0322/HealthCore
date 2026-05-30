@@ -1,5 +1,8 @@
 package com.healthcore.clinical.application.service;
 
+import com.healthcore.clinical.application.service.support.ClinicAddressCatalogValidator;
+import com.healthcore.clinical.application.service.support.NutritionistWeightProgressReportFactory;
+import com.healthcore.clinical.application.service.support.ProfilePhotoKeyValidator;
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.ActivityLevel;
 import com.healthcore.clinical.domain.model.ClinicalTime;
@@ -16,7 +19,7 @@ import com.healthcore.clinical.domain.port.out.NutritionistProfileRepositoryPort
 import com.healthcore.clinical.domain.port.out.PostalCodeCatalogPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
@@ -41,8 +44,18 @@ class ClinicalApplicationServiceTest {
     @Mock
     private PostalCodeCatalogPort postalCodeCatalogPort;
 
-    @InjectMocks
     private ClinicalApplicationService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new ClinicalApplicationService(
+                repositoryPort,
+                nutritionistRepositoryPort,
+                new ClinicAddressCatalogValidator(postalCodeCatalogPort),
+                new ProfilePhotoKeyValidator(),
+                new NutritionistWeightProgressReportFactory()
+        );
+    }
 
     @Test
     void shouldCreateProfile() {

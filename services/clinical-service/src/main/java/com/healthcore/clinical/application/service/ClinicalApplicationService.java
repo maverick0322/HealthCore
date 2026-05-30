@@ -1,48 +1,45 @@
 package com.healthcore.clinical.application.service;
 
+import com.healthcore.clinical.application.service.support.ClinicAddressCatalogValidator;
+import com.healthcore.clinical.application.service.support.NutritionistWeightProgressReportFactory;
+import com.healthcore.clinical.application.service.support.ProfilePhotoKeyValidator;
 import com.healthcore.clinical.domain.exception.ProfileNotFoundException;
 import com.healthcore.clinical.domain.model.HealthGoal;
-import com.healthcore.clinical.domain.model.ClinicAddress;
 import com.healthcore.clinical.domain.model.NutritionistProfile;
 import com.healthcore.clinical.domain.model.NutritionistWeightProgressReport;
-import com.healthcore.clinical.domain.model.NutritionistWeightProgressRow;
 import com.healthcore.clinical.domain.model.PatientProfile;
-import com.healthcore.clinical.domain.model.PostalCodeCatalogEntry;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
 import com.healthcore.clinical.domain.port.out.ClinicalRepositoryPort;
 import com.healthcore.clinical.domain.port.out.NutritionistProfileRepositoryPort;
-import com.healthcore.clinical.domain.port.out.PostalCodeCatalogPort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
 
 @Service
 public class ClinicalApplicationService implements ManageProfileUseCase {
 
-    private static final Pattern PROFILE_PHOTO_SEGMENT_PATTERN = Pattern.compile(
-            "^[A-Za-z0-9-]+-[A-Za-z0-9._-]+\\.(?i:jpg|jpeg|png|webp)$"
-    );
-    private static final Set<String> ALLOWED_PROFILE_PHOTO_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
-
     private final ClinicalRepositoryPort patientRepositoryPort;
     private final NutritionistProfileRepositoryPort nutritionistRepositoryPort;
-    private final PostalCodeCatalogPort postalCodeCatalogPort;
+    private final ClinicAddressCatalogValidator clinicAddressCatalogValidator;
+    private final ProfilePhotoKeyValidator profilePhotoKeyValidator;
+    private final NutritionistWeightProgressReportFactory nutritionistWeightProgressReportFactory;
 
     public ClinicalApplicationService(
             ClinicalRepositoryPort patientRepositoryPort,
             NutritionistProfileRepositoryPort nutritionistRepositoryPort,
-            PostalCodeCatalogPort postalCodeCatalogPort
+            ClinicAddressCatalogValidator clinicAddressCatalogValidator,
+            ProfilePhotoKeyValidator profilePhotoKeyValidator,
+            NutritionistWeightProgressReportFactory nutritionistWeightProgressReportFactory
     ) {
         this.patientRepositoryPort = patientRepositoryPort;
         this.nutritionistRepositoryPort = nutritionistRepositoryPort;
-        this.postalCodeCatalogPort = postalCodeCatalogPort;
+        this.clinicAddressCatalogValidator = clinicAddressCatalogValidator;
+        this.profilePhotoKeyValidator = profilePhotoKeyValidator;
+        this.nutritionistWeightProgressReportFactory = nutritionistWeightProgressReportFactory;
     }
 
     @Override
@@ -127,7 +124,7 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
         PatientProfile profile = patientRepositoryPort.findByUserId(userId)
                 .orElseThrow(() -> new ProfileNotFoundException("Profile not found for user: " + userId));
 
-        profile.updateProfilePhoto(validateProfilePhotoKeyOwnership(userId, profilePhotoKey));
+        profile.updateProfilePhoto(profilePhotoKeyValidator.validateOwnership(userId, profilePhotoKey));
         return patientRepositoryPort.save(profile);
     }
 
@@ -141,25 +138,10 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
             throw new IllegalArgumentException("Invalid report range.");
         }
 
-        List<NutritionistWeightProgressRow> rows = patientRepositoryPort.findAllByNutritionistId(nutritionistId)
-                .stream()
-                .sorted(Comparator.comparing(profile -> {
-                    String fullName = profile.getFullName();
-                    return fullName == null || fullName.isBlank()
-                            ? profile.getUserId()
-                            : fullName;
-                }, String.CASE_INSENSITIVE_ORDER))
-                .map(profile -> toWeightProgressRow(profile, from, to))
-                .toList();
-
-        long patientsWithoutWeightInRange = rows.stream()
-                .filter(row -> !row.hasRecordsInRange())
-                .count();
-
-        return new NutritionistWeightProgressReport(
-                rows.size(),
-                (int) patientsWithoutWeightInRange,
-                rows
+        return nutritionistWeightProgressReportFactory.create(
+                patientRepositoryPort.findAllByNutritionistId(nutritionistId),
+                from,
+                to
         );
     }
 
@@ -207,7 +189,7 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
 
     @Override
     public NutritionistProfile createNutritionistProfile(NutritionistProfile profile) {
-        validateClinicAddress(profile.getClinicAddress());
+        clinicAddressCatalogValidator.validate(profile.getClinicAddress());
         return nutritionistRepositoryPort.save(profile);
     }
 
@@ -229,7 +211,7 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
                 profile.getBio()
         );
 
-        validateClinicAddress(existingProfile.getClinicAddress());
+        clinicAddressCatalogValidator.validate(existingProfile.getClinicAddress());
         return nutritionistRepositoryPort.save(existingProfile);
     }
 
@@ -238,101 +220,12 @@ public class ClinicalApplicationService implements ManageProfileUseCase {
         NutritionistProfile profile = nutritionistRepositoryPort.findByUserId(userId)
                 .orElseThrow(() -> new ProfileNotFoundException("Nutritionist profile not found for user: " + userId));
 
-        profile.updateProfilePhoto(validateProfilePhotoKeyOwnership(userId, profilePhotoKey));
+        profile.updateProfilePhoto(profilePhotoKeyValidator.validateOwnership(userId, profilePhotoKey));
         return nutritionistRepositoryPort.save(profile);
     }
 
     @Override
     public Optional<NutritionistProfile> getNutritionistProfileByUserId(String userId) {
         return nutritionistRepositoryPort.findByUserId(userId);
-    }
-
-    private NutritionistWeightProgressRow toWeightProgressRow(
-            PatientProfile profile,
-            LocalDate from,
-            LocalDate to
-    ) {
-        String fullName = profile.getFullName();
-        String resolvedName = fullName == null || fullName.isBlank()
-                ? profile.getUserId()
-                : fullName;
-
-        List<WeightRecord> recordsInRange = profile.getWeightHistory()
-                .stream()
-                .filter(record -> !record.date().isBefore(from) && !record.date().isAfter(to))
-                .sorted(Comparator.comparing(WeightRecord::date))
-                .toList();
-
-        if (recordsInRange.isEmpty()) {
-            return new NutritionistWeightProgressRow(
-                    profile.getUserId(),
-                    resolvedName,
-                    null,
-                    null,
-                    null,
-                    null,
-                    false
-            );
-        }
-
-        WeightRecord firstRecord = recordsInRange.get(0);
-        WeightRecord latestRecord = recordsInRange.get(recordsInRange.size() - 1);
-
-        return new NutritionistWeightProgressRow(
-                profile.getUserId(),
-                resolvedName,
-                latestRecord.date(),
-                firstRecord.weightKg(),
-                latestRecord.weightKg(),
-                latestRecord.weightKg() - firstRecord.weightKg(),
-                true
-        );
-    }
-
-    private void validateClinicAddress(ClinicAddress clinicAddress) {
-        if (clinicAddress == null) {
-            return;
-        }
-
-        if (!clinicAddress.isComplete()) {
-            throw new IllegalArgumentException("Clinic address must be complete when provided.");
-        }
-
-        Optional<PostalCodeCatalogEntry> catalogEntry = postalCodeCatalogPort.findByPostalCode(clinicAddress.getPostalCode());
-        if (catalogEntry.isPresent() && !catalogEntry.get().matches(clinicAddress)) {
-            throw new IllegalArgumentException("Clinic address does not match the postal code catalog.");
-        }
-    }
-
-    private String validateProfilePhotoKeyOwnership(String userId, String profilePhotoKey) {
-        if (profilePhotoKey == null || profilePhotoKey.isBlank()) {
-            throw new IllegalArgumentException("Profile photo key is required.");
-        }
-
-        String expectedPrefix = userId + "/";
-        if (!profilePhotoKey.startsWith(expectedPrefix)) {
-            throw new AccessDeniedException("Profile photo key does not belong to the authenticated user.");
-        }
-
-        String relativeKey = profilePhotoKey.substring(expectedPrefix.length());
-        if (relativeKey.isBlank() || relativeKey.contains("/")) {
-            throw new IllegalArgumentException("Profile photo key format is invalid.");
-        }
-
-        if (!PROFILE_PHOTO_SEGMENT_PATTERN.matcher(relativeKey).matches()) {
-            throw new IllegalArgumentException("Profile photo key format is invalid.");
-        }
-
-        int extensionIndex = relativeKey.lastIndexOf('.');
-        if (extensionIndex < 0) {
-            throw new IllegalArgumentException("Profile photo key format is invalid.");
-        }
-
-        String extension = relativeKey.substring(extensionIndex + 1).toLowerCase();
-        if (!ALLOWED_PROFILE_PHOTO_EXTENSIONS.contains(extension)) {
-            throw new IllegalArgumentException("Profile photo key format is invalid.");
-        }
-
-        return profilePhotoKey;
     }
 }

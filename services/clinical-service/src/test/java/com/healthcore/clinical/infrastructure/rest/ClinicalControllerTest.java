@@ -11,7 +11,12 @@ import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
 import com.healthcore.clinical.infrastructure.grpc.MediaGrpcClientAdapter;
+import com.healthcore.clinical.infrastructure.rest.mapper.ClinicAddressRestMapper;
 import com.healthcore.clinical.infrastructure.rest.mapper.ClinicalProfileRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.HealthGoalRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.NutritionistProfileRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.NutritionistWeightProgressRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.PatientProfileRestMapper;
 import com.healthcore.clinical.infrastructure.rest.support.ProfilePhotoUrlResolver;
 import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
@@ -58,7 +63,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         excludeAutoConfiguration = {SecurityAutoConfiguration.class}
 )
 @AutoConfigureMockMvc(addFilters = false)
-@Import({ClinicalProfileRestMapper.class, ProfilePhotoUrlResolver.class})
+@Import({
+        ClinicalProfileRestMapper.class,
+        PatientProfileRestMapper.class,
+        NutritionistProfileRestMapper.class,
+        NutritionistWeightProgressRestMapper.class,
+        ClinicAddressRestMapper.class,
+        HealthGoalRestMapper.class,
+        ProfilePhotoUrlResolver.class
+})
 class ClinicalControllerTest {
 
     @Autowired

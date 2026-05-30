@@ -16,7 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ClinicalProfileRestMapperTest {
 
-    private final ClinicalProfileRestMapper mapper = new ClinicalProfileRestMapper();
+    private final ClinicalProfileRestMapper mapper = new ClinicalProfileRestMapper(
+            new PatientProfileRestMapper(),
+            new NutritionistProfileRestMapper(new ClinicAddressRestMapper()),
+            new HealthGoalRestMapper(),
+            new NutritionistWeightProgressRestMapper()
+    );
 
     @Test
     void shouldMapCreateProfileRequestToPatientProfile() {

@@ -1,101 +1,41 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
-import QRCodeLib from "react-qr-code";
-import { Button } from '@/shared/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/ui/card';
-import { clinicalApi } from '@/features/clinical/services/clinicalService';
-import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+import { AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
+import QRCodeLib from 'react-qr-code';
+
+import { useNutritionistGenerateQrPage } from '@/features/nutritionist/hooks/useNutritionistGenerateQrPage';
 import { ConfirmModal } from '@/shared/components/ConfirmModal';
+import { Button } from '@/shared/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
+import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
+
+const formatTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const remainderSeconds = (seconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${remainderSeconds}`;
+};
 
 export const NutritionistGenerateQrPage = () => {
   const { t } = useTranslation('nutritionist');
-  const navigate = useNavigate();
-  const [code, setCode] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<number | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isExpired, setIsExpired] = useState(false);
-  const [showExpiredDialog, setShowExpiredDialog] = useState(false);
+  const {
+    code,
+    timeLeft,
+    isLoading,
+    isExpired,
+    showExpiredDialog,
+    setShowExpiredDialog,
+    generateNewCode,
+    handleBackToPatients,
+  } = useNutritionistGenerateQrPage();
 
-  const QRCode = (QRCodeLib as any).default ? (QRCodeLib as any).default : QRCodeLib;
-
-  const applyLinkingCodeState = (nextCode: string, expiresInSeconds: number) => {
-    const safeSeconds = Math.max(expiresInSeconds, 0);
-    setCode(nextCode);
-    setExpiresAt(Date.now() + safeSeconds * 1000);
-    setTimeLeft(safeSeconds);
-    setIsExpired(false);
-  };
-
-  const loadOrGenerateCode = async () => {
-    try {
-      setIsLoading(true);
-      const currentData = await clinicalApi.getCurrentLinkingCode();
-
-      if (currentData && currentData.expiresInSeconds > 0) {
-        applyLinkingCodeState(currentData.code, currentData.expiresInSeconds);
-      } else {
-        await generateNewCode();
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const generateNewCode = async () => {
-    try {
-      setIsLoading(true);
-      setShowExpiredDialog(false);
-      setIsExpired(false);
-      const data = await clinicalApi.generateLinkingCode();
-      applyLinkingCodeState(data.code, data.expiresInSeconds);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadOrGenerateCode();
-  }, []);
-
-  useEffect(() => {
-    if (!expiresAt) {
-      return;
-    }
-
-    const updateTimeLeft = () => {
-      const nextTimeLeft = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
-      setTimeLeft(nextTimeLeft);
-
-      if (nextTimeLeft === 0) {
-        setExpiresAt(null);
-        setCode(null);
-        setIsExpired(true);
-        setShowExpiredDialog(true);
-      }
-    };
-
-    updateTimeLeft();
-    const timer = window.setInterval(updateTimeLeft, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [expiresAt]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  };
+  const QRCode = (QRCodeLib as { default?: typeof QRCodeLib }).default ?? QRCodeLib;
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6">
-      <Button variant="ghost" onClick={() => navigate('/patients/nutritionist')} className="mb-2 text-muted-foreground hover:text-foreground">
+      <Button
+        variant="ghost"
+        onClick={handleBackToPatients}
+        className="mb-2 text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft size={16} className="mr-2" />
         {t('common.backToPatients')}
       </Button>
@@ -103,9 +43,7 @@ export const NutritionistGenerateQrPage = () => {
       <Card className="max-w-md mx-auto text-center border-2 border-primary/10 shadow-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">{t('linking.title')}</CardTitle>
-          <CardDescription>
-            {t('linking.description')}
-          </CardDescription>
+          <CardDescription>{t('linking.description')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 pb-8">
           {isLoading ? (
@@ -117,7 +55,12 @@ export const NutritionistGenerateQrPage = () => {
                 <p className="text-foreground font-semibold">{t('linking.expiredTitle')}</p>
                 <p className="text-sm text-muted-foreground">{t('linking.expiredDesc')}</p>
               </div>
-              <Button onClick={generateNewCode} className="mt-4 shadow-sm">
+              <Button
+                onClick={() => {
+                  void generateNewCode();
+                }}
+                className="mt-4 shadow-sm"
+              >
                 <RefreshCw size={16} className="mr-2" />
                 {t('linking.generateNewBtn')}
               </Button>
@@ -125,11 +68,13 @@ export const NutritionistGenerateQrPage = () => {
           ) : (
             <div className="animate-in fade-in zoom-in duration-500 flex flex-col items-center w-full">
               <div className="bg-white p-4 rounded-xl shadow-sm border mb-8">
-                {code && <QRCode value={code} size={220} level="H" />}
+                {code ? <QRCode value={code} size={220} level="H" /> : null}
               </div>
-              
+
               <div className="space-y-2 w-full mb-8">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] font-bold">{t('linking.manualCodeLabel')}</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-[0.2em] font-bold">
+                  {t('linking.manualCodeLabel')}
+                </p>
                 <div className="flex justify-center">
                   <p className="text-4xl font-black tracking-[0.25em] text-primary bg-primary/5 py-3 px-8 rounded-xl border-2 border-primary/20 select-all">
                     {code}
@@ -139,10 +84,11 @@ export const NutritionistGenerateQrPage = () => {
 
               <div className="bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400 px-5 py-2.5 rounded-full font-medium text-sm flex items-center gap-2.5 shadow-sm border border-orange-200 dark:border-orange-500/20">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500" />
                 </span>
-                {t('linking.expiresIn')} <span className="font-bold tabular-nums w-10 text-left">{formatTime(timeLeft || 0)}</span>
+                {t('linking.expiresIn')}
+                <span className="font-bold tabular-nums w-10 text-left">{formatTime(timeLeft || 0)}</span>
               </div>
             </div>
           )}

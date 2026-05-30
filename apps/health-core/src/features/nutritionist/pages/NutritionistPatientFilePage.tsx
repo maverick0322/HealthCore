@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useCallback } from "react";
-import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
@@ -38,14 +36,9 @@ import {
   clinicalApi,
   createObservation,
   deleteObservation,
-  getPatientObservations,
   updateObservation,
 } from "../../clinical/services/clinicalService";
-import type {
-  ObservationResponse,
-  NutritionistPatientProfileResponse,
-  NutritionPlanViewResponse,
-} from "../../clinical/types/clinical.types";
+import type { ObservationResponse } from "../../clinical/types/clinical.types";
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
@@ -55,7 +48,15 @@ import { getNutritionistUnlinkErrorMessage } from "@/features/clinical/utils/lin
 import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
 import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
 import { exportNutritionistPatientFilePdf } from "@/features/nutritionist/services/patientFilePdfService";
+import { useNutritionistPatientClinicalData } from "@/features/nutritionist/hooks/useNutritionistPatientClinicalData";
 import { useNutritionistPatientWeightHistory } from "@/features/nutritionist/hooks/useNutritionistPatientWeightHistory";
+import {
+  calculateBmi,
+  formatHeightInMeters,
+  formatObservationDateTime,
+  getAgeFromBirthDate,
+  getDisplayIdentity,
+} from "@/features/nutritionist/utils/patientFilePresentation";
 import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 import { trackingService } from "@/features/tracking/services/trackingService";
@@ -66,68 +67,12 @@ const OBSERVATION_NOTE_MAX_LENGTH = 500;
 const WEIGHT_INPUT_MAX_LENGTH = 5;
 const HEIGHT_INPUT_MAX_LENGTH = 3;
 
-const getDisplayIdentity = (userId: string): string => {
-  const normalized = userId.trim();
-  return normalized || "Paciente";
-};
-
-const getAgeFromBirthDate = (birthDate: string): number | null => {
-  if (!birthDate) {
-    return null;
-  }
-
-  const today = new Date();
-  const parsedBirthDate = new Date(birthDate);
-  if (Number.isNaN(parsedBirthDate.getTime())) {
-    return null;
-  }
-
-  let age = today.getFullYear() - parsedBirthDate.getFullYear();
-  const monthDiff = today.getMonth() - parsedBirthDate.getMonth();
-  const dayDiff = today.getDate() - parsedBirthDate.getDate();
-  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-    age -= 1;
-  }
-
-  return age;
-};
-
-const formatHeightInMeters = (heightCm: number): string => {
-  return `${(heightCm / 100).toFixed(2)} m`;
-};
-
-const calculateBmi = (weightKg: number, heightCm: number): string => {
-  return (weightKg / Math.pow(heightCm / 100, 2)).toFixed(1);
-};
-
-const formatObservationDateTime = (value: string, locale: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString(locale, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
 export const NutritionistPatientFilePage = () => {
   const { id: patientIdParam } = useParams<{ id: string }>();
   const patientId = useMemo(
     () => (patientIdParam ? decodeURIComponent(patientIdParam) : ""),
     [patientIdParam]
   );
-  const [patient, setPatient] = useState<NutritionistPatientProfileResponse | null>(null);
-  const [isLoadingPatient, setIsLoadingPatient] = useState(true);
-  const [patientLoadError, setPatientLoadError] = useState<string | null>(null);
-  const [observations, setObservations] = useState<ObservationResponse[]>([]);
-  const [nutritionPlanView, setNutritionPlanView] = useState<NutritionPlanViewResponse | null>(null);
-  const [isLoadingNutritionPlan, setIsLoadingNutritionPlan] = useState(false);
-  const [nutritionPlanLoadError, setNutritionPlanLoadError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [editingObservation, setEditingObservation] = useState<ObservationResponse | null>(null);
@@ -162,67 +107,30 @@ export const NutritionistPatientFilePage = () => {
   const [patientDailyTrackingLogs, setPatientDailyTrackingLogs] = useState<MealLogDTO[]>([]);
   const [isLoadingPatientDailyTrackingLogs, setIsLoadingPatientDailyTrackingLogs] = useState(false);
   const [patientDailyTrackingLogsError, setPatientDailyTrackingLogsError] = useState<string | null>(null);
-  const hasHydratedOverviewRef = useRef(false);
+  const {
+    patient,
+    setPatient,
+    isLoadingPatient,
+    patientLoadError,
+    observations,
+    nutritionPlanView,
+    setNutritionPlanView,
+    isLoadingNutritionPlan,
+    nutritionPlanLoadError,
+    setNutritionPlanLoadError,
+    loadPatient,
+    loadObservations,
+    loadNutritionPlan,
+  } = useNutritionistPatientClinicalData({
+    patientId,
+    activeTab,
+  });
   const {
     data: weightHistory,
     isLoading: isLoadingWeightHistory,
     isError: isWeightHistoryError,
     refetch: refetchWeightHistory,
   } = useNutritionistPatientWeightHistory(patientId, { enabled: activeTab === "history" });
-
-  const loadPatient = useCallback(
-    async ({ showLoading = true }: { showLoading?: boolean } = {}) => {
-      if (!patientId) {
-        setPatientLoadError(t("patients.file.error"));
-        setIsLoadingPatient(false);
-        return null;
-      }
-
-      try {
-        if (showLoading) {
-          setIsLoadingPatient(true);
-        }
-        setPatientLoadError(null);
-        logClientInfo("NutritionistPatientFilePage.patient.load.start", { patientId });
-        const response = await clinicalApi.getNutritionistPatientProfile(patientId);
-        setPatient(response);
-        logClientInfo("NutritionistPatientFilePage.patient.load.success", {
-          patientId,
-          patientUserId: response.userId,
-        });
-        return response;
-      } catch (error) {
-        logClientError("NutritionistPatientFilePage.patient.load.error", error, { patientId });
-        setPatientLoadError(t("patients.file.error"));
-        return null;
-      } finally {
-        if (showLoading) {
-          setIsLoadingPatient(false);
-        }
-      }
-    },
-    [patientId, t]
-  );
-
-  useEffect(() => {
-    void loadPatient();
-  }, [loadPatient]);
-
-  useEffect(() => {
-    if (!patientId) {
-      return;
-    }
-
-    void loadObservations();
-  }, [patientId]);
-
-  useEffect(() => {
-    if (!patientId || activeTab !== "plan") {
-      return;
-    }
-
-    void loadNutritionPlan();
-  }, [activeTab, patientId]);
 
   useEffect(() => {
     if (!patientId || activeTab !== "history") {
@@ -295,23 +203,6 @@ export const NutritionistPatientFilePage = () => {
   }, [activeTab, historyDate, patientId, t]);
 
   useEffect(() => {
-    hasHydratedOverviewRef.current = false;
-  }, [patientId]);
-
-  useEffect(() => {
-    if (!patientId || activeTab !== "overview") {
-      return;
-    }
-
-    if (!hasHydratedOverviewRef.current) {
-      hasHydratedOverviewRef.current = true;
-      return;
-    }
-
-    void loadPatient({ showLoading: false });
-  }, [activeTab, loadPatient, patientId]);
-
-  useEffect(() => {
     const handleWindowRefresh = () => {
       if (document.visibilityState !== "visible" || !patientId) {
         return;
@@ -336,43 +227,6 @@ export const NutritionistPatientFilePage = () => {
       document.removeEventListener("visibilitychange", handleWindowRefresh);
     };
   }, [activeTab, loadPatient, patientId, refetchWeightHistory]);
-
-  const loadNutritionPlan = async () => {
-    if (!patientId) {
-      return null;
-    }
-
-    try {
-      setIsLoadingNutritionPlan(true);
-      setNutritionPlanLoadError(null);
-      logClientInfo("NutritionistPatientFilePage.plan.load.start", { patientId });
-      const response = await clinicalApi.getNutritionistPatientNutritionPlan(patientId);
-      setNutritionPlanView(response);
-      logClientInfo("NutritionistPatientFilePage.plan.load.success", {
-        patientId,
-        mode: response.mode,
-        canEdit: response.canEdit,
-        sections: response.sections.length,
-      });
-      return response;
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.plan.load.error", error, { patientId });
-      setNutritionPlanView(null);
-      setNutritionPlanLoadError(t("nutritionPlan.loadError"));
-      return null;
-    } finally {
-      setIsLoadingNutritionPlan(false);
-    }
-  };
-
-  const loadObservations = async () => {
-    try {
-      const data = await getPatientObservations(patientId);
-      setObservations(data);
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.observations.load.error", error, { patientId });
-    }
-  };
 
   const confirmUnlinkPatient = async () => {
     if (!patientId) {

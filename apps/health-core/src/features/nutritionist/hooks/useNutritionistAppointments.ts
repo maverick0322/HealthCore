@@ -17,11 +17,13 @@ export const useNutritionistAppointments = () => {
       const data = await nutritionistAgendaService.getMyAppointments(from, to);
       setAppointments(data);
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setError(t('availability.errorLoadAppointments'));
-      } else {
-        setError(t('availability.errorLoadAppointments'));
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        setAppointments([]);
+        setError(null);
+        return;
       }
+
+      setError(t('availability.errorLoadAppointments'));
       setAppointments([]);
     } finally {
       setIsLoading(false);

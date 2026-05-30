@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import axios from "axios";
 import { Search, ChevronRight, User, QrCode, AlertCircle } from "lucide-react";
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
@@ -65,10 +66,20 @@ export const NutritionistPatientsPage = () => {
         const now = new Date();
         const to = new Date(now);
         to.setDate(to.getDate() + 90);
-        const [patientResponse, appointmentResponse] = await Promise.all([
-          clinicalApi.getNutritionistPatients(),
-          nutritionistAgendaService.getMyAppointments(now.toISOString(), to.toISOString()),
-        ]);
+        const patientResponse = await clinicalApi.getNutritionistPatients();
+
+        let appointmentResponse: AppointmentResponse[] = [];
+        try {
+          appointmentResponse = await nutritionistAgendaService.getMyAppointments(
+            now.toISOString(),
+            to.toISOString()
+          );
+        } catch (error) {
+          if (!(axios.isAxiosError(error) && error.response?.status === 404)) {
+            console.error("Error loading nutritionist appointments:", error);
+          }
+        }
+
         setPatients(patientResponse);
         setFutureAppointments(
           appointmentResponse
@@ -135,11 +146,28 @@ export const NutritionistPatientsPage = () => {
       );
     }
 
-    if (filteredPatients.length === 0) {
+    if (patientCards.length === 0) {
       return (
         <div className="py-12 text-center text-muted-foreground border border-dashed rounded-xl border-border">
           <User size={32} className="mx-auto mb-3 opacity-20" />
-          <p>{t("patients.empty")}</p>
+          <p>{t("patients.emptyLinked")}</p>
+          <p className="mt-2 text-sm">{t("patients.emptyLinkedHelp")}</p>
+          <Button
+            onClick={() => navigate("/qr/nutritionist")}
+            className="mt-4 inline-flex items-center gap-2"
+          >
+            <QrCode size={16} />
+            {t("patients.addPatient")}
+          </Button>
+        </div>
+      );
+    }
+
+    if (filteredPatients.length === 0) {
+      return (
+        <div className="py-12 text-center text-muted-foreground border border-dashed rounded-xl border-border">
+          <Search size={32} className="mx-auto mb-3 opacity-20" />
+          <p>{t("patients.emptySearch")}</p>
         </div>
       );
     }

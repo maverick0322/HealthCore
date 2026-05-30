@@ -40,6 +40,9 @@
     "loading": "Cargando pacientes vinculados...",
     "error": "No se pudieron cargar los pacientes vinculados",
     "empty": "No se encontraron pacientes vinculados",
+    "emptyLinked": "No tienes pacientes vinculados todavía",
+    "emptyLinkedHelp": "Agrega a tu primer paciente para comenzar a dar seguimiento clínico",
+    "emptySearch": "No se encontraron pacientes con ese criterio de búsqueda",
     "lastVisitPlaceholder": "Nuevo",
     "objectivePlaceholder": "Objetivo principal",
     "filters": {

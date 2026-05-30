@@ -41,6 +41,9 @@
     "loading": "Loading linked patients...",
     "error": "Unable to load linked patients.",
     "empty": "No linked patients were found.",
+    "emptyLinked": "You do not have linked patients yet.",
+    "emptyLinkedHelp": "Add your first patient to start your clinical follow-up.",
+    "emptySearch": "No patients matched your search.",
     "lastVisitPlaceholder": "New",
     "objectivePlaceholder": "Clinical profile",
     "filters": {
@@ -54,6 +57,7 @@
     "nextAppointment": "Next appointment: {{date}}",
     "futureAppointments": "{{count}} future appointment",
     "futureAppointments_other": "{{count}} future appointments",
+    "searchLabel": "Search patients by name:",
     "file": {
       "back": "Back to Patients",
       "tabOverview": "Overview",

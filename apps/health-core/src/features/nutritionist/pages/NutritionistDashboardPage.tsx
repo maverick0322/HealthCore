@@ -354,6 +354,14 @@ export const NutritionistDashboardPage = () => {
                 <div className="p-8 text-center text-muted-foreground">
                   <Users size={32} className="mx-auto mb-3 opacity-20" />
                   <p className="text-sm">{t("dashboard.noPatients")}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => navigate("/qr/nutritionist")}
+                  >
+                    {t("patients.addPatient")}
+                  </Button>
                 </div>
               )}
             </CardContent>

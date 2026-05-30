@@ -10,10 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -52,8 +52,28 @@ class NutritionPlanApplicationServiceTest {
     @Mock
     private NutritionCatalogPort nutritionCatalogPort;
 
-    @InjectMocks
     private NutritionPlanApplicationService service;
+
+    @BeforeEach
+    void setUp() {
+        NutritionPlanProfileContextService nutritionPlanProfileContextService =
+                new NutritionPlanProfileContextService(clinicalRepositoryPort);
+        NutritionPlanDraftCalculator nutritionPlanDraftCalculator =
+                new NutritionPlanDraftCalculator(nutritionCatalogPort);
+        service = new NutritionPlanApplicationService(
+                new PatientNutritionPlanApplicationService(
+                        nutritionPlanProfileContextService,
+                        nutritionPlanRepositoryPort,
+                        nutritionPlanDraftCalculator
+                ),
+                new NutritionistNutritionPlanApplicationService(
+                        nutritionPlanProfileContextService,
+                        nutritionPlanRepositoryPort,
+                        nutritionPlanDraftCalculator
+                ),
+                nutritionCatalogPort
+        );
+    }
 
     @Test
     void shouldSaveSelfManagedPlanEvenWhenMealExceedsDailyGoals() {

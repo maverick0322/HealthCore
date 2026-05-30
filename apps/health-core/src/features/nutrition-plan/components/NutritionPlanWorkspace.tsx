@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Droplets,
@@ -13,18 +12,23 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 
-import { logClientWarn } from '@/core/utils/logger';
 import type {
-  CatalogFoodResponse,
-  MealSlot,
-  NutritionPlanIngredientRequest,
-  NutritionPlanSectionRequest,
-  NutritionPlanUpsertRequest,
-  NutritionPlanViewResponse,
-  ObservationResponse,
   PlanIngredientUnit,
   ReadonlyNutritionPlanResponse,
 } from '@/features/clinical/types/clinical.types';
+import { useNutritionPlanEditor } from '@/features/nutrition-plan/hooks/useNutritionPlanEditor';
+import { useNutritionPlanFoodSearch } from '@/features/nutrition-plan/hooks/useNutritionPlanFoodSearch';
+import type {
+  Namespace,
+  NutritionPlanWorkspaceProps,
+} from '@/features/nutrition-plan/types/nutritionPlanWorkspace.types';
+import {
+  DISH_NAME_MAX_LENGTH,
+  formatAmount,
+  formatObservationDate,
+  INSTRUCTIONS_MAX_LENGTH,
+  NOTES_MAX_LENGTH,
+} from '@/features/nutrition-plan/utils/nutritionPlanWorkspace';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/ui/accordion';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/shared/ui/card';
@@ -39,96 +43,6 @@ import {
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { Textarea } from '@/shared/ui/textarea';
-
-type Namespace = 'patient' | 'nutritionist';
-
-interface EditableIngredient {
-  barcode: string;
-  name: string;
-  brand: string;
-  imageUrl: string;
-  unit: PlanIngredientUnit;
-  quantityAmount: number | null;
-  calories: number;
-  proteinGrams: number;
-  carbsGrams: number;
-  fatGrams: number;
-  baseCaloriesPer100Units: number;
-  baseProteinPer100Units: number;
-  baseCarbsPer100Units: number;
-  baseFatPer100Units: number;
-}
-
-interface EditableMealOption {
-  id: string;
-  name: string;
-  instructions: string;
-  notes: string;
-  ingredients: EditableIngredient[];
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-}
-
-interface EditableSection {
-  mealSlot: MealSlot;
-  options: EditableMealOption[];
-}
-
-interface EditorState {
-  name: string;
-  instructions: string;
-  notes: string;
-  ingredients: EditableIngredient[];
-}
-
-interface PendingDeletionState {
-  mealSlot: MealSlot;
-  optionId: string;
-  optionName: string;
-}
-
-interface EditorValidationErrors {
-  name?: string;
-  ingredients?: string;
-  instructions?: string;
-  notes?: string;
-}
-
-type SearchFeedbackState = 'idle' | 'no-results' | 'service-unavailable';
-
-interface NutritionPlanWorkspaceProps {
-  namespace: Namespace;
-  view: NutritionPlanViewResponse | null;
-  observations?: ObservationResponse[];
-  showObservations?: boolean;
-  isLoading?: boolean;
-  onSave?: (payload: NutritionPlanUpsertRequest) => Promise<NutritionPlanViewResponse>;
-  onSearchFoods?: (query: string) => Promise<CatalogFoodResponse[]>;
-  onOpenCreateLocalFood?: (initialName: string) => void;
-  onQuickTrack?: (payload: { mealSlot: MealSlot; optionName: string; ingredients: any[] }) => void;
-  isQuickTracking?: boolean;
-}
-
-const EMPTY_EDITOR_STATE: EditorState = {
-  name: '',
-  instructions: '',
-  notes: '',
-  ingredients: [],
-};
-
-const EMPTY_EDITOR_ERRORS: EditorValidationErrors = {};
-const DISH_NAME_MAX_LENGTH = 120;
-const INSTRUCTIONS_MAX_LENGTH = 1200;
-const NOTES_MAX_LENGTH = 600;
-
-const EMPTY_SECTIONS: EditableSection[] = [
-  { mealSlot: 'BREAKFAST', options: [] },
-  { mealSlot: 'LUNCH', options: [] },
-  { mealSlot: 'DINNER', options: [] },
-  { mealSlot: 'SNACK', options: [] },
-];
 
 function MacroBadge({ value }: Readonly<{ value: string }>) {
   return (
@@ -151,58 +65,45 @@ export function NutritionPlanWorkspace({
   isQuickTracking,
 }: Readonly<NutritionPlanWorkspaceProps>) {
   const { t, i18n } = useTranslation(namespace);
-  const [sections, setSections] = useState<EditableSection[]>(EMPTY_SECTIONS);
-  const [isDirty, setIsDirty] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editorSection, setEditorSection] = useState<MealSlot>('BREAKFAST');
-  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
-  const [editorState, setEditorState] = useState<EditorState>(EMPTY_EDITOR_STATE);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<CatalogFoodResponse[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchFeedbackState, setSearchFeedbackState] = useState<SearchFeedbackState>('idle');
-  const [editorErrors, setEditorErrors] = useState<EditorValidationErrors>(EMPTY_EDITOR_ERRORS);
-  const [pendingDeletion, setPendingDeletion] = useState<PendingDeletionState | null>(null);
-
-  useEffect(() => {
-    if (!view) {
-      setSections(EMPTY_SECTIONS);
-      return;
-    }
-
-    setSections(toEditableSections(view.sections));
-    setIsDirty(false);
-  }, [view]);
-
-  useEffect(() => {
-    if (!editorOpen || !onSearchFoods || searchQuery.trim().length < 3) {
-      setSearchResults([]);
-      setSearchFeedbackState('idle');
-      return;
-    }
-
-    const handle = window.setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const results = await onSearchFoods(searchQuery.trim());
-        setSearchResults(results);
-        setSearchFeedbackState(results.length === 0 ? 'no-results' : 'idle');
-      } catch (error) {
-        logClientWarn('NutritionPlanWorkspace.search.error', {
-          namespace,
-          query: searchQuery.trim(),
-          error,
-        });
-        setSearchResults([]);
-        setSearchFeedbackState('service-unavailable');
-      } finally {
-        setIsSearching(false);
-      }
-    }, 250);
-
-    return () => window.clearTimeout(handle);
-  }, [editorOpen, onSearchFoods, searchQuery]);
+  const {
+    sections,
+    isDirty,
+    isSaving,
+    editorOpen,
+    setEditorOpen,
+    editorSection,
+    editingOptionId,
+    editorState,
+    setEditorState,
+    editorErrors,
+    setEditorErrors,
+    pendingDeletion,
+    setPendingDeletion,
+    saveDraft,
+    openCreateDialog,
+    openEditDialog,
+    confirmRemoveOption,
+    addSearchResult,
+    updateEditorIngredient,
+    removeEditorIngredient,
+    saveEditorOption,
+  } = useNutritionPlanEditor({
+    view,
+    onSave,
+    t,
+  });
+  const {
+    searchQuery,
+    searchResults,
+    isSearching,
+    searchFeedbackState,
+    handleSearchQueryChange,
+    resetSearch,
+  } = useNutritionPlanFoodSearch({
+    editorOpen,
+    namespace,
+    onSearchFoods,
+  });
 
   const goals = view?.dailyGoals;
   const canEdit = Boolean(view?.canEdit);
@@ -240,7 +141,10 @@ export function NutritionPlanWorkspace({
                 size="sm"
                 variant="outline"
                 className="gap-2"
-                onClick={() => openCreateDialog(section.mealSlot)}
+                onClick={() => {
+                  resetSearch();
+                  openCreateDialog(section.mealSlot);
+                }}
               >
                 <Plus size={14} />
                 {t('nutritionPlan.addDish')}
@@ -328,7 +232,7 @@ export function NutritionPlanWorkspace({
                   <CardFooter className="justify-between gap-2">
                     {showRegisterAction ? (
                       <Button 
-                        className="w-full gap-2" 
+                    className="w-full gap-2" 
                         disabled={isQuickTracking}
                         onClick={() => {
                           if (onQuickTrack) {
@@ -352,7 +256,10 @@ export function NutritionPlanWorkspace({
                         <Button
                           variant="outline"
                           className="flex-1 gap-2"
-                          onClick={() => openEditDialog(section.mealSlot, option.id)}
+                          onClick={() => {
+                            resetSearch();
+                            openEditDialog(section.mealSlot, option.id);
+                          }}
                         >
                           <Pencil size={14} />
                           {t('nutritionPlan.edit')}
@@ -413,151 +320,6 @@ export function NutritionPlanWorkspace({
         </CardContent>
       </Card>
     );
-  }
-
-  async function saveDraft() {
-    if (!onSave) {
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const response = await onSave({
-        sections: sections.map<NutritionPlanSectionRequest>((section) => ({
-          mealSlot: section.mealSlot,
-            options: section.options.map((option) => ({
-              name: option.name,
-              instructions: option.instructions,
-              notes: option.notes,
-              ingredients: option.ingredients.map<NutritionPlanIngredientRequest>((ingredient) => ({
-                barcode: ingredient.barcode,
-                unit: ingredient.unit,
-                quantityAmount: ingredient.quantityAmount ?? 0,
-              })),
-            })),
-          })),
-      });
-      setSections(toEditableSections(response.sections));
-      setIsDirty(false);
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  function openCreateDialog(mealSlot: MealSlot) {
-    setEditorSection(mealSlot);
-    setEditingOptionId(null);
-    setEditorState(EMPTY_EDITOR_STATE);
-    setEditorErrors(EMPTY_EDITOR_ERRORS);
-    setSearchQuery('');
-    setSearchResults([]);
-    setSearchFeedbackState('idle');
-    setEditorOpen(true);
-  }
-
-  function openEditDialog(mealSlot: MealSlot, optionId: string) {
-    const section = sections.find((item) => item.mealSlot === mealSlot);
-    const option = section?.options.find((item) => item.id === optionId);
-    if (!option) {
-      return;
-    }
-
-    setEditorSection(mealSlot);
-    setEditingOptionId(optionId);
-    setEditorState({
-      name: option.name,
-      instructions: option.instructions,
-      notes: option.notes,
-      ingredients: option.ingredients,
-    });
-    setEditorErrors(EMPTY_EDITOR_ERRORS);
-    setSearchQuery('');
-    setSearchResults([]);
-    setSearchFeedbackState('idle');
-    setEditorOpen(true);
-  }
-
-  function removeOption(mealSlot: MealSlot, optionId: string) {
-    setSections((current) =>
-      current.map((section) =>
-        section.mealSlot === mealSlot
-          ? { ...section, options: section.options.filter((option) => option.id !== optionId) }
-          : section
-      )
-    );
-    setIsDirty(true);
-  }
-
-  function confirmRemoveOption() {
-    if (!pendingDeletion) {
-      return;
-    }
-
-    removeOption(pendingDeletion.mealSlot, pendingDeletion.optionId);
-    setPendingDeletion(null);
-  }
-
-  function addSearchResult(food: CatalogFoodResponse) {
-    const nextIngredient = toEditableIngredient(food, 100, 'GRAMS');
-    setEditorState((current) => ({
-      ...current,
-      ingredients: [...current.ingredients, nextIngredient],
-    }));
-    setEditorErrors((current) => ({ ...current, ingredients: undefined }));
-    setSearchQuery('');
-    setSearchResults([]);
-    setSearchFeedbackState('idle');
-  }
-
-  function updateEditorIngredient(index: number, nextQuantity: number | null, nextUnit: PlanIngredientUnit) {
-    setEditorState((current) => ({
-      ...current,
-      ingredients: current.ingredients.map((ingredient, ingredientIndex) =>
-        ingredientIndex === index ? recalculateIngredient(ingredient, nextQuantity, nextUnit) : ingredient
-      ),
-    }));
-  }
-
-  function removeEditorIngredient(index: number) {
-    setEditorState((current) => ({
-      ...current,
-      ingredients: current.ingredients.filter((_, ingredientIndex) => ingredientIndex !== index),
-    }));
-  }
-
-  function saveEditorOption() {
-    const validationErrors = validateEditorState(editorState, t);
-    if (hasValidationErrors(validationErrors)) {
-      setEditorErrors(validationErrors);
-      return;
-    }
-
-    const normalized = normalizeOption(editorState, editingOptionId);
-    if (!normalized) {
-      return;
-    }
-
-    setSections((current) =>
-      current.map((section) => {
-        if (section.mealSlot !== editorSection) {
-          return section;
-        }
-
-        if (editingOptionId) {
-          return {
-            ...section,
-            options: section.options.map((option) => (option.id === editingOptionId ? normalized : option)),
-          };
-        }
-
-        return { ...section, options: [...section.options, normalized] };
-      })
-    );
-    setEditorOpen(false);
-    setEditorState(EMPTY_EDITOR_STATE);
-    setEditorErrors(EMPTY_EDITOR_ERRORS);
-    setEditingOptionId(null);
-    setIsDirty(true);
   }
 
   return (
@@ -657,7 +419,7 @@ export function NutritionPlanWorkspace({
 
           <div className="max-h-[70vh] space-y-5 overflow-y-auto px-6 pb-6">
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-medium">{t('nutritionPlan.dishName')}</label>
                 <Input
                   value={editorState.name}
@@ -684,13 +446,7 @@ export function NutritionPlanWorkspace({
                   <Input
                     className="pl-9"
                     value={searchQuery}
-                    onChange={(event) => {
-                      const val = event.target.value;
-                      if (val.length <= 100) {
-                        setSearchQuery(val);
-                        setSearchFeedbackState('idle');
-                      }
-                    }}
+                    onChange={(event) => handleSearchQueryChange(event.target.value)}
                     maxLength={100}
                     placeholder={t('nutritionPlan.searchFoodPlaceholder')}
                   />
@@ -734,7 +490,10 @@ export function NutritionPlanWorkspace({
                         key={food.barcode}
                         type="button"
                         className="flex items-center justify-between rounded-xl bg-background px-3 py-2 text-left ring-1 ring-border/60 transition hover:ring-primary/50"
-                        onClick={() => addSearchResult(food)}
+                        onClick={() => {
+                          addSearchResult(food);
+                          resetSearch();
+                        }}
                       >
                         <div>
                           <p className="font-semibold text-foreground">{food.name}</p>
@@ -933,168 +692,4 @@ function ReadOnlyContextCard({
       </CardContent>
     </Card>
   );
-}
-
-function toEditableSections(sections: NutritionPlanViewResponse['sections']): EditableSection[] {
-  return sections.map((section) => ({
-    mealSlot: section.mealSlot,
-    options: section.options.map((option) => ({
-      id: option.id,
-      name: option.name,
-      instructions: option.instructions,
-      notes: option.notes,
-      ingredients: option.ingredients.map((ingredient) => ({
-        ...ingredient,
-        baseCaloriesPer100Units: deriveBaseMacro(ingredient.calories, ingredient.quantityAmount),
-        baseProteinPer100Units: deriveBaseMacro(ingredient.proteinGrams, ingredient.quantityAmount),
-        baseCarbsPer100Units: deriveBaseMacro(ingredient.carbsGrams, ingredient.quantityAmount),
-        baseFatPer100Units: deriveBaseMacro(ingredient.fatGrams, ingredient.quantityAmount),
-      })),
-      totalCalories: option.totalCalories,
-      totalProtein: option.totalProtein,
-      totalCarbs: option.totalCarbs,
-      totalFat: option.totalFat,
-    })),
-  }));
-}
-
-function deriveBaseMacro(total: number, quantityAmount: number): number {
-  if (!quantityAmount) {
-    return 0;
-  }
-  return (total / quantityAmount) * 100;
-}
-
-function toEditableIngredient(
-  food: CatalogFoodResponse,
-  quantityAmount: number,
-  unit: PlanIngredientUnit
-): EditableIngredient {
-  return {
-    barcode: food.barcode,
-    name: food.name,
-    brand: food.brand,
-    imageUrl: food.imageUrl,
-    unit,
-    quantityAmount,
-    calories: Math.round((food.caloriesPer100Units * quantityAmount) / 100),
-    proteinGrams: Math.round((food.proteinPer100Units * quantityAmount) / 100),
-    carbsGrams: Math.round((food.carbsPer100Units * quantityAmount) / 100),
-    fatGrams: Math.round((food.fatPer100Units * quantityAmount) / 100),
-    baseCaloriesPer100Units: food.caloriesPer100Units,
-    baseProteinPer100Units: food.proteinPer100Units,
-    baseCarbsPer100Units: food.carbsPer100Units,
-    baseFatPer100Units: food.fatPer100Units,
-  };
-}
-
-function recalculateIngredient(
-  ingredient: EditableIngredient,
-  quantityAmount: number | null,
-  unit: PlanIngredientUnit
-): EditableIngredient {
-  const safeQuantityAmount = quantityAmount ?? 0;
-
-  return {
-    ...ingredient,
-    unit,
-    quantityAmount,
-    calories: Math.round((ingredient.baseCaloriesPer100Units * safeQuantityAmount) / 100),
-    proteinGrams: Math.round((ingredient.baseProteinPer100Units * safeQuantityAmount) / 100),
-    carbsGrams: Math.round((ingredient.baseCarbsPer100Units * safeQuantityAmount) / 100),
-    fatGrams: Math.round((ingredient.baseFatPer100Units * safeQuantityAmount) / 100),
-  };
-}
-
-function normalizeOption(editorState: EditorState, editingOptionId: string | null): EditableMealOption | null {
-  const trimmedName = editorState.name.trim();
-  if (
-    !trimmedName ||
-    editorState.ingredients.length === 0 ||
-    editorState.ingredients.some((ingredient) => ingredient.quantityAmount == null || ingredient.quantityAmount <= 0)
-  ) {
-    return null;
-  }
-
-  const totalCalories = editorState.ingredients.reduce((sum, ingredient) => sum + ingredient.calories, 0);
-  const totalProtein = editorState.ingredients.reduce((sum, ingredient) => sum + ingredient.proteinGrams, 0);
-  const totalCarbs = editorState.ingredients.reduce((sum, ingredient) => sum + ingredient.carbsGrams, 0);
-  const totalFat = editorState.ingredients.reduce((sum, ingredient) => sum + ingredient.fatGrams, 0);
-
-  return {
-    id: editingOptionId ?? `meal-${crypto.randomUUID()}`,
-    name: trimmedName,
-    instructions: editorState.instructions.trim(),
-    notes: editorState.notes.trim(),
-    ingredients: editorState.ingredients.map((ingredient) => ({
-      ...ingredient,
-      quantityAmount: ingredient.quantityAmount ?? 0,
-    })),
-    totalCalories,
-    totalProtein,
-    totalCarbs,
-    totalFat,
-  };
-}
-
-function formatAmount(value: number | null): string {
-  if (value == null) {
-    return '--';
-  }
-
-  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
-}
-
-function formatObservationDate(value: string, locale: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-}
-
-function validateEditorState(
-  editorState: EditorState,
-  t: (key: string, options?: Record<string, unknown>) => string
-): EditorValidationErrors {
-  const errors: EditorValidationErrors = {};
-
-  if (!editorState.name.trim()) {
-    errors.name = t('nutritionPlan.validation.nameRequired');
-  } else if (editorState.name.trim().length > DISH_NAME_MAX_LENGTH) {
-    errors.name = t('nutritionPlan.validation.nameTooLong', { max: DISH_NAME_MAX_LENGTH });
-  }
-
-  if (editorState.ingredients.length === 0) {
-    errors.ingredients = t('nutritionPlan.validation.ingredientsRequired');
-  } else if (
-    editorState.ingredients.some(
-      (ingredient) => ingredient.quantityAmount == null || !Number.isFinite(ingredient.quantityAmount) || ingredient.quantityAmount <= 0
-    )
-  ) {
-    errors.ingredients = t('nutritionPlan.validation.quantityInvalid');
-  }
-
-  if (editorState.instructions.trim().length > INSTRUCTIONS_MAX_LENGTH) {
-    errors.instructions = t('nutritionPlan.validation.instructionsTooLong', {
-      max: INSTRUCTIONS_MAX_LENGTH,
-    });
-  }
-
-  if (editorState.notes.trim().length > NOTES_MAX_LENGTH) {
-    errors.notes = t('nutritionPlan.validation.notesTooLong', { max: NOTES_MAX_LENGTH });
-  }
-
-  return errors;
-}
-
-function hasValidationErrors(errors: EditorValidationErrors): boolean {
-  return Object.values(errors).some(Boolean);
 }

@@ -5,7 +5,7 @@ import type { LogFoodRequest } from '@/features/tracking/types/tracking.types';
 
 interface QuickTrackIngredient {
   barcode?: string;
-  name: string;
+  name?: string;
   baseCaloriesPer100Units?: number;
   calories?: number;
   quantityAmount?: number;
@@ -14,7 +14,7 @@ interface QuickTrackIngredient {
 interface QuickTrackPayload {
   mealSlot: string;
   optionName: string;
-  ingredients: QuickTrackIngredient[];
+  ingredients: unknown[];
 }
 
 export const usePatientPlanQuickTrack = () => {
@@ -71,12 +71,16 @@ export const usePatientPlanQuickTrack = () => {
   }, [logError]);
 
   const handleQuickTrack = async (payload: QuickTrackPayload) => {
-    const foods = payload.ingredients.map((ingredient) => ({
-      barcode: ingredient.barcode ?? '',
-      name: ingredient.name,
-      baseCalories: ingredient.baseCaloriesPer100Units || ingredient.calories,
-      grams: ingredient.quantityAmount ?? 0,
-    }));
+    const foods = payload.ingredients.map((item) => {
+      const ingredient = item as QuickTrackIngredient;
+
+      return {
+        barcode: ingredient.barcode ?? '',
+        name: ingredient.name ?? '',
+        baseCalories: ingredient.baseCaloriesPer100Units || ingredient.calories,
+        grams: ingredient.quantityAmount ?? 0,
+      };
+    });
 
     await logFood({
       mealName: payload.optionName,

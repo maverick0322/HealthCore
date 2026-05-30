@@ -3,26 +3,18 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
-  User,
-  Ruler,
-  Weight,
-  Flame,
-  UtensilsCrossed,
-  CalendarDays,
-  FileText,
   CheckCircle2,
   Loader2,
   UserMinus,
   AlertCircle,
   FileDown,
-  Pencil,
   SquarePen,
   Trash2,
 } from "lucide-react";
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
 import { SettingsBar } from "@/shared/components/SettingsBar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Card, CardContent } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
 import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import {
@@ -32,15 +24,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/ui/dialog";
-import {
-  clinicalApi,
-} from "../../clinical/services/clinicalService";
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
-import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
 import { CreateLocalFoodModal } from "@/features/admin/components/CreateLocalFoodModal";
 import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
-import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
 import { useNutritionistPatientFilePdfExport } from "@/features/nutritionist/hooks/useNutritionistPatientFilePdfExport";
 import { useNutritionistPatientClinicalData } from "@/features/nutritionist/hooks/useNutritionistPatientClinicalData";
 import { useNutritionistPatientNutritionPlan } from "@/features/nutritionist/hooks/useNutritionistPatientNutritionPlan";
@@ -50,12 +37,13 @@ import { useNutritionistPatientTrackingData } from "@/features/nutritionist/hook
 import { useNutritionistPatientUnlink } from "@/features/nutritionist/hooks/useNutritionistPatientUnlink";
 import { useNutritionistPatientWeightHistory } from "@/features/nutritionist/hooks/useNutritionistPatientWeightHistory";
 import {
-  calculateBmi,
-  formatHeightInMeters,
-  formatObservationDateTime,
   getAgeFromBirthDate,
   getDisplayIdentity,
 } from "@/features/nutritionist/utils/patientFilePresentation";
+import { NutritionistPatientOverviewTab } from "@/features/nutritionist/components/NutritionistPatientOverviewTab";
+import { NutritionistPatientPlanTab } from "@/features/nutritionist/components/NutritionistPatientPlanTab";
+import { NutritionistPatientHistoryTab } from "@/features/nutritionist/components/NutritionistPatientHistoryTab";
+import { NutritionistPatientObservationsTab } from "@/features/nutritionist/components/NutritionistPatientObservationsTab";
 import { Input } from "@/shared/ui/input";
 import { Textarea } from "@/shared/ui/textarea";
 
@@ -254,242 +242,70 @@ export const NutritionistPatientFilePage = () => {
 
     if (activeTab === "overview") {
       return (
-        <div className="grid grid-cols-1 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3 border-b border-border/50">
-              <CardTitle className="text-base flex items-center gap-2">
-                <User size={18} className="text-primary" /> {t("patients.file.tabOverview")}
-              </CardTitle>
-              <Button type="button" size="sm" variant="outline" className="gap-2" onClick={openEditMetricsDialog}>
-                <SquarePen size={14} />
-                {t("patients.file.metrics.button")}
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-5">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-muted/30 p-3 rounded-xl border border-border/50 text-center">
-                  <CalendarDays size={18} className="mx-auto text-muted-foreground mb-1" />
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">
-                    {t("patients.file.age")}
-                  </p>
-                  <p className="text-lg font-bold">
-                    {patientAge !== null ? `${patientAge} ${t("patients.file.years")}` : "--"}
-                  </p>
-                </div>
-                <div className="bg-muted/30 p-3 rounded-xl border border-border/50 text-center">
-                  <Weight size={18} className="mx-auto text-muted-foreground mb-1" />
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">
-                    {t("patients.file.weight")}
-                  </p>
-                  <p className="text-lg font-bold">{patient.weightKg} kg</p>
-                </div>
-                <div className="bg-muted/30 p-3 rounded-xl border border-border/50 text-center">
-                  <Ruler size={18} className="mx-auto text-muted-foreground mb-1" />
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">
-                    {t("patients.file.height")}
-                  </p>
-                  <p className="text-lg font-bold">{formatHeightInMeters(patient.heightCm)}</p>
-                </div>
-                <div className="bg-muted/30 p-3 rounded-xl border border-border/50 text-center flex flex-col justify-center">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground">IMC</p>
-                  <p className="text-xl font-bold text-primary">
-                    {calculateBmi(patient.weightKg, patient.heightCm)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 bg-amber-500/10 p-4 rounded-xl border border-amber-500/20 flex items-start gap-3">
-                <Flame size={20} className="text-amber-500 flex-shrink-0" />
-                <div>
-                  <h4 className="font-bold text-amber-700 dark:text-amber-400 text-sm mb-1">
-                    {t("patients.file.objective")}
-                  </h4>
-                  <p className="text-amber-600/90 dark:text-amber-400/90 text-sm">
-                    {formatPatientGoalLabel(t, patient.goal)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <NutritionistPatientOverviewTab
+          patient={patient}
+          patientAge={patientAge}
+          onOpenEditMetrics={openEditMetricsDialog}
+        />
       );
     }
 
     if (activeTab === "plan") {
       return (
-        <Card>
-          <CardHeader className="pb-3 border-b border-border/50">
-            <CardTitle className="text-base flex items-center gap-2">
-              <UtensilsCrossed size={18} className="text-primary" /> {t("patients.file.tabPlan")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {nutritionPlanLoadError && !isLoadingNutritionPlan ? (
-              <Card className="mb-6 border-destructive/20">
-                <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
-                  <AlertCircle className="size-8 text-destructive" />
-                  <div className="space-y-1">
-                    <p className="font-semibold">{nutritionPlanLoadError}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {t("nutritionPlan.loadErrorHelp")}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => void retryNutritionPlanLoad()}
-                  >
-                    {t("nutritionPlan.retry")}
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : null}
-            <NutritionPlanWorkspace
-              namespace="nutritionist"
-              view={nutritionPlanView}
-              isLoading={isLoadingNutritionPlan}
-              onSave={handleSaveNutritionPlan}
-              onSearchFoods={clinicalApi.searchCatalogFoods}
-              onOpenCreateLocalFood={(name) => {
-                setSuggestedFoodName(name);
-                setIsCreateFoodModalOpen(true);
-              }}
-            />
-          </CardContent>
-        </Card>
+        <NutritionistPatientPlanTab
+          nutritionPlanView={nutritionPlanView}
+          isLoadingNutritionPlan={isLoadingNutritionPlan}
+          nutritionPlanLoadError={nutritionPlanLoadError}
+          onRetryNutritionPlanLoad={retryNutritionPlanLoad}
+          onSaveNutritionPlan={handleSaveNutritionPlan}
+          onOpenCreateLocalFood={(name) => {
+            setSuggestedFoodName(name);
+            setIsCreateFoodModalOpen(true);
+          }}
+        />
       );
     }
 
     if (activeTab === "history") {
       return (
-        <PatientHistoryOverviewSection
-          streakSummary={{
-            currentStreak: patientTrackingSummary?.currentStreak ?? 0,
-            bestStreak: patientTrackingSummary?.bestStreak ?? 0,
-            isLoading: isLoadingPatientTrackingSummary,
-            error: patientTrackingSummaryError,
-          }}
-          weightRecords={weightHistory}
-          isWeightLoading={isLoadingWeightHistory}
-          isWeightError={isWeightHistoryError}
-          onRetryWeight={() => {
+        <NutritionistPatientHistoryTab
+          patientTrackingSummary={patientTrackingSummary}
+          isLoadingPatientTrackingSummary={isLoadingPatientTrackingSummary}
+          patientTrackingSummaryError={patientTrackingSummaryError}
+          weightHistory={weightHistory}
+          isLoadingWeightHistory={isLoadingWeightHistory}
+          isWeightHistoryError={isWeightHistoryError}
+          onRetryWeightHistory={() => {
             void refetchWeightHistory();
           }}
-          readOnlyWeightHistory
-          historicalMacros={{
-            caloriesHistory: patientHistoricalMacros.caloriesHistory,
-            caloriesAvg: patientHistoricalMacros.caloriesAvg,
-            macrosAvg: patientHistoricalMacros.macrosAvg,
-            calorieGoal: nutritionPlanView?.dailyGoals.targetCalories ?? null,
-            isLoading: isLoadingPatientHistoricalMacros,
-            error: patientHistoricalMacrosError,
-          }}
-          onRetryHistoricalMacros={async () => {
-            await loadHistoricalMacros();
-          }}
-          logs={patientDailyTrackingLogs}
-          isLogsLoading={isLoadingPatientDailyTrackingLogs}
-          logsError={patientDailyTrackingLogsError}
-          selectedDateLabel={historyDateLabel}
-          onPreviousDay={() => {
-            goToPreviousHistoryDate();
-          }}
-          onNextDay={() => {
-            goToNextHistoryDate();
-          }}
-          disableNextDay={disableNextHistoryDate}
-          showTrackingInsights
-          showMealTimeline
-          showLogRegistrationCard={false}
-          emptyLogsMessage={t("history.todayLogsEmpty", { ns: "patient" })}
+          patientHistoricalMacros={patientHistoricalMacros}
+          isLoadingPatientHistoricalMacros={isLoadingPatientHistoricalMacros}
+          patientHistoricalMacrosError={patientHistoricalMacrosError}
+          onRetryHistoricalMacros={loadHistoricalMacros}
+          patientDailyTrackingLogs={patientDailyTrackingLogs}
+          isLoadingPatientDailyTrackingLogs={isLoadingPatientDailyTrackingLogs}
+          patientDailyTrackingLogsError={patientDailyTrackingLogsError}
+          historyDateLabel={historyDateLabel}
+          onPreviousHistoryDate={goToPreviousHistoryDate}
+          onNextHistoryDate={goToNextHistoryDate}
+          disableNextHistoryDate={disableNextHistoryDate}
+          calorieGoal={nutritionPlanView?.dailyGoals.targetCalories ?? null}
         />
       );
     }
 
     return (
-      <Card>
-        <CardHeader className="pb-3 border-b border-border/50">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FileText size={18} className="text-primary" /> {t("patients.file.tabObservations")}
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="pt-5 space-y-8">
-          <div className="bg-muted/10 p-4 rounded-xl border border-border/50 space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-medium text-foreground">{t("patients.file.newNote")}</p>
-              <span className="text-xs text-muted-foreground">
-                {newNote.length}/{OBSERVATION_NOTE_MAX_LENGTH}
-              </span>
-            </div>
-            <Textarea
-              value={newNote}
-              onChange={(event) => setNewNote(event.target.value)}
-              disabled={isSavingNote}
-              placeholder={t("patients.file.newNotePlaceholder")}
-              maxLength={OBSERVATION_NOTE_MAX_LENGTH}
-              className="min-h-[80px] resize-y bg-background"
-            />
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                onClick={handleSaveObservation}
-                disabled={isSavingNote || !newNote.trim()}
-                className="flex items-center gap-2"
-              >
-                {isSavingNote && <Loader2 className="w-4 h-4 animate-spin" />}
-                {t("patients.file.saveObservation")}
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative border-l-2 border-border/50 ml-3 space-y-6">
-            {observations.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic pl-4">
-                {t("patients.file.noObservations")}
-              </p>
-            ) : (
-              observations.map((observation) => (
-                <div key={observation.id} className="relative pl-6">
-                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-background border-2 border-primary" />
-
-                  <p className="text-xs font-bold text-muted-foreground mb-1">
-                    {formatObservationDateTime(observation.createdAt, i18n.language)}
-                  </p>
-
-                  <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <p className="flex-1 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
-                        {observation.note}
-                      </p>
-                      <div className="flex shrink-0 gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleStartEditObservation(observation)}
-                        >
-                          <Pencil size={14} />
-                          {t("patients.file.editObservation")}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setObservationToDelete(observation)}
-                        >
-                          <Trash2 size={14} />
-                          {t("patients.file.deleteObservation")}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <NutritionistPatientObservationsTab
+        newNote={newNote}
+        onChangeNewNote={setNewNote}
+        isSavingNote={isSavingNote}
+        onSaveObservation={handleSaveObservation}
+        observations={observations}
+        onEditObservation={handleStartEditObservation}
+        onDeleteObservation={setObservationToDelete}
+        locale={i18n.language}
+        maxNoteLength={OBSERVATION_NOTE_MAX_LENGTH}
+      />
     );
   };
 

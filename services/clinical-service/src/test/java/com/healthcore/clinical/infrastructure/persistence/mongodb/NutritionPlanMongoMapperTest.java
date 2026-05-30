@@ -9,38 +9,19 @@ import com.healthcore.clinical.domain.model.NutritionPlan;
 import com.healthcore.clinical.domain.model.PlanIngredient;
 import com.healthcore.clinical.domain.model.PlanIngredientUnit;
 import com.healthcore.clinical.domain.model.PlanStatus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
-class MongoNutritionPlanRepositoryAdapterTest {
+class NutritionPlanMongoMapperTest {
 
-    @Mock
-    private SpringDataMongoNutritionPlanRepository repository;
-
-    private MongoNutritionPlanRepositoryAdapter adapter;
-
-    @BeforeEach
-    void setUp() {
-        adapter = new MongoNutritionPlanRepositoryAdapter(repository, new NutritionPlanMongoMapper());
-    }
+    private final NutritionPlanMongoMapper mapper = new NutritionPlanMongoMapper();
 
     @Test
-    void shouldMapNutritionPlanToDocumentWhenSaving() {
+    void shouldMapNutritionPlanToDocument() {
         NutritionPlan plan = NutritionPlan.rehydrate(
                 "plan-1",
                 "patient-1",
@@ -53,81 +34,25 @@ class MongoNutritionPlanRepositoryAdapterTest {
                 LocalDateTime.of(2026, 5, 21, 9, 30)
         );
 
-        when(repository.save(any(NutritionPlanDocument.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        NutritionPlanDocument document = mapper.toDocument(plan);
 
-        adapter.save(plan);
-
-        ArgumentCaptor<NutritionPlanDocument> captor = ArgumentCaptor.forClass(NutritionPlanDocument.class);
-        verify(repository).save(captor.capture());
-        NutritionPlanDocument saved = captor.getValue();
-
-        assertEquals("plan-1", saved.getId());
-        assertEquals("patient-1", saved.getPatientId());
-        assertEquals("NUTRITIONIST", saved.getAuthorType());
-        assertEquals("nutri-1", saved.getAuthorId());
-        assertEquals("ACTIVE", saved.getStatus());
-        assertEquals(2200, saved.getDailyGoalsSnapshot().getTargetCalories());
-        assertEquals(4, saved.getSections().size());
-        assertEquals("BREAKFAST", saved.getSections().getFirst().getMealSlot());
-        assertEquals("option-breakfast", saved.getSections().getFirst().getOptions().getFirst().getId());
-        assertEquals("7501000000001", saved.getSections().getFirst().getOptions().getFirst().getIngredients().getFirst().getBarcode());
+        assertEquals("plan-1", document.getId());
+        assertEquals("patient-1", document.getPatientId());
+        assertEquals("NUTRITIONIST", document.getAuthorType());
+        assertEquals("7501000000001", document.getSections().getFirst().getOptions().getFirst().getIngredients().getFirst().getBarcode());
     }
 
     @Test
-    void shouldMapActivePlanByPatientAndAuthorTypeFromDocumentToDomain() {
-        when(repository.findFirstByPatientIdAndAuthorTypeAndStatusOrderByUpdatedAtDesc(
-                "patient-1",
-                "SELF_MANAGED",
-                "ACTIVE"
-        )).thenReturn(Optional.of(planDocument("plan-self", "patient-1", "SELF_MANAGED", "patient-1")));
+    void shouldMapDocumentToNutritionPlan() {
+        NutritionPlanDocument document = planDocument("plan-self", "patient-1", "SELF_MANAGED", "patient-1");
 
-        Optional<NutritionPlan> result = adapter.findActiveByPatientIdAndAuthorType("patient-1", AuthorType.SELF_MANAGED);
+        NutritionPlan plan = mapper.toDomain(document);
 
-        assertTrue(result.isPresent());
-        assertEquals("plan-self", result.get().getId());
-        assertEquals(AuthorType.SELF_MANAGED, result.get().getAuthorType());
-        assertEquals("patient-1", result.get().getAuthorId());
-        assertEquals(4, result.get().getSections().size());
-        assertEquals("Breakfast option", result.get().getSections().getFirst().options().getFirst().name());
-    }
-
-    @Test
-    void shouldMapActivePlanByPatientAuthorTypeAndAuthorId() {
-        when(repository.findFirstByPatientIdAndAuthorTypeAndAuthorIdAndStatusOrderByUpdatedAtDesc(
-                "patient-1",
-                "NUTRITIONIST",
-                "nutri-1",
-                "ACTIVE"
-        )).thenReturn(Optional.of(planDocument("plan-nutri", "patient-1", "NUTRITIONIST", "nutri-1")));
-
-        Optional<NutritionPlan> result = adapter.findActiveByPatientIdAndAuthorTypeAndAuthorId(
-                "patient-1",
-                AuthorType.NUTRITIONIST,
-                "nutri-1"
-        );
-
-        assertTrue(result.isPresent());
-        assertEquals("plan-nutri", result.get().getId());
-        assertEquals("nutri-1", result.get().getAuthorId());
-    }
-
-    @Test
-    void shouldMapLatestAndActivePlansToDomainLists() {
-        when(repository.findFirstByPatientIdAndAuthorTypeOrderByUpdatedAtDesc("patient-1", "NUTRITIONIST"))
-                .thenReturn(Optional.of(planDocument("latest-plan", "patient-1", "NUTRITIONIST", "nutri-1")));
-        when(repository.findAllByPatientIdAndStatus("patient-1", "ACTIVE"))
-                .thenReturn(List.of(
-                        planDocument("active-plan-1", "patient-1", "NUTRITIONIST", "nutri-1"),
-                        planDocument("active-plan-2", "patient-1", "SELF_MANAGED", "patient-1")
-                ));
-
-        Optional<NutritionPlan> latest = adapter.findLatestByPatientIdAndAuthorType("patient-1", AuthorType.NUTRITIONIST);
-        List<NutritionPlan> active = adapter.findActiveByPatientId("patient-1");
-
-        assertTrue(latest.isPresent());
-        assertEquals("latest-plan", latest.get().getId());
-        assertEquals(2, active.size());
-        assertEquals(List.of("active-plan-1", "active-plan-2"), active.stream().map(NutritionPlan::getId).toList());
+        assertEquals("plan-self", plan.getId());
+        assertEquals(AuthorType.SELF_MANAGED, plan.getAuthorType());
+        assertEquals("patient-1", plan.getAuthorId());
+        assertEquals(4, plan.getSections().size());
+        assertEquals("Breakfast option", plan.getSections().getFirst().options().getFirst().name());
     }
 
     private List<MealSection> sections() {

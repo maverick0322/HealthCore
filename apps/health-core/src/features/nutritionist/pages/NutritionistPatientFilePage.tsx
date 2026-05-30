@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -34,11 +34,11 @@ import {
 } from "@/shared/ui/dialog";
 import {
   clinicalApi,
-  createObservation,
-  deleteObservation,
-  updateObservation,
 } from "../../clinical/services/clinicalService";
-import type { ObservationResponse } from "../../clinical/types/clinical.types";
+import type {
+  NutritionistPatientProfileResponse,
+  ObservationResponse,
+} from "../../clinical/types/clinical.types";
 import { ConfirmModal } from "@/shared/components/ConfirmModal";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import { NutritionPlanWorkspace } from "@/features/nutrition-plan/components/NutritionPlanWorkspace";
@@ -49,7 +49,10 @@ import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePrese
 import { PatientHistoryOverviewSection } from "@/features/patient/components/PatientHistoryOverviewSection";
 import { exportNutritionistPatientFilePdf } from "@/features/nutritionist/services/patientFilePdfService";
 import { useNutritionistPatientClinicalData } from "@/features/nutritionist/hooks/useNutritionistPatientClinicalData";
+import { useNutritionistPatientMetrics } from "@/features/nutritionist/hooks/useNutritionistPatientMetrics";
+import { useNutritionistPatientObservations } from "@/features/nutritionist/hooks/useNutritionistPatientObservations";
 import { useNutritionistPatientTrackingData } from "@/features/nutritionist/hooks/useNutritionistPatientTrackingData";
+import { useNutritionistPatientUnlink } from "@/features/nutritionist/hooks/useNutritionistPatientUnlink";
 import { useNutritionistPatientWeightHistory } from "@/features/nutritionist/hooks/useNutritionistPatientWeightHistory";
 import {
   calculateBmi,
@@ -69,24 +72,8 @@ const HEIGHT_INPUT_MAX_LENGTH = 3;
 
 export const NutritionistPatientFilePage = () => {
   const { id: patientIdParam } = useParams<{ id: string }>();
-  const patientId = useMemo(
-    () => (patientIdParam ? decodeURIComponent(patientIdParam) : ""),
-    [patientIdParam]
-  );
-  const [newNote, setNewNote] = useState("");
-  const [isSavingNote, setIsSavingNote] = useState(false);
-  const [editingObservation, setEditingObservation] = useState<ObservationResponse | null>(null);
-  const [editingObservationNote, setEditingObservationNote] = useState("");
-  const [isUpdatingObservation, setIsUpdatingObservation] = useState(false);
-  const [observationToDelete, setObservationToDelete] = useState<ObservationResponse | null>(null);
-  const [isDeletingObservation, setIsDeletingObservation] = useState(false);
+  const patientId = patientIdParam ? decodeURIComponent(patientIdParam) : "";
   const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [editMetricsOpen, setEditMetricsOpen] = useState(false);
-  const [confirmEditMetricsOpen, setConfirmEditMetricsOpen] = useState(false);
-  const [metricsWeightInput, setMetricsWeightInput] = useState("");
-  const [metricsHeightInput, setMetricsHeightInput] = useState("");
-  const [metricsErrors, setMetricsErrors] = useState<{ weightKg?: string; heightCm?: string }>({});
-  const [isUpdatingMetrics, setIsUpdatingMetrics] = useState(false);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation(["nutritionist", "onboarding", "patient"]);
 
@@ -94,7 +81,6 @@ export const NutritionistPatientFilePage = () => {
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [isCreateFoodModalOpen, setIsCreateFoodModalOpen] = useState(false);
   const [suggestedFoodName, setSuggestedFoodName] = useState("");
-  const [isUnlinking, setIsUnlinking] = useState(false);
   const [pageFeedback, setPageFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const {
     patient,
@@ -142,6 +128,58 @@ export const NutritionistPatientFilePage = () => {
     isError: isWeightHistoryError,
     refetch: refetchWeightHistory,
   } = useNutritionistPatientWeightHistory(patientId, { enabled: activeTab === "history" });
+  const {
+    newNote,
+    setNewNote,
+    isSavingNote,
+    editingObservation,
+    setEditingObservation,
+    editingObservationNote,
+    setEditingObservationNote,
+    isUpdatingObservation,
+    observationToDelete,
+    setObservationToDelete,
+    isDeletingObservation,
+    handleSaveObservation,
+    handleStartEditObservation,
+    resetEditingObservation,
+    handleUpdateObservation,
+    handleDeleteObservation,
+  } = useNutritionistPatientObservations({
+    patientId,
+    loadObservations,
+    setPageFeedback,
+  });
+  const {
+    editMetricsOpen,
+    setEditMetricsOpen,
+    confirmEditMetricsOpen,
+    setConfirmEditMetricsOpen,
+    metricsWeightInput,
+    setMetricsWeightInput,
+    metricsHeightInput,
+    setMetricsHeightInput,
+    metricsErrors,
+    isUpdatingMetrics,
+    openEditMetricsDialog,
+    resetMetricsDialog,
+    handleReviewMetricsUpdate,
+    handleConfirmMetricsUpdate,
+  } = useNutritionistPatientMetrics({
+    patientId,
+    patient,
+    nutritionPlanView,
+    setPatient,
+    loadNutritionPlan,
+    refetchWeightHistory,
+    setPageFeedback,
+  });
+  const { isUnlinking, confirmUnlinkPatient } = useNutritionistPatientUnlink({
+    patientId,
+    navigate,
+    setPageFeedback,
+    closeUnlinkModal: () => setShowUnlinkModal(false),
+  });
 
   useEffect(() => {
     const handleWindowRefresh = () => {
@@ -169,98 +207,6 @@ export const NutritionistPatientFilePage = () => {
     };
   }, [activeTab, loadPatient, patientId, refetchWeightHistory]);
 
-  const confirmUnlinkPatient = async () => {
-    if (!patientId) {
-      return;
-    }
-
-    setIsUnlinking(true);
-    setPageFeedback(null);
-    try {
-      await clinicalApi.unlinkNutritionist(patientId);
-      navigate("/patients/nutritionist");
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.unlink.error", error, { patientId });
-      setPageFeedback({
-        type: "error",
-        message: getNutritionistUnlinkErrorMessage(error, t),
-      });
-      setIsUnlinking(false);
-      setShowUnlinkModal(false);
-    }
-  };
-
-  const handleSaveObservation = async () => {
-    if (!newNote.trim() || !patientId) {
-      return;
-    }
-
-    setIsSavingNote(true);
-    try {
-      await createObservation({ patientId, note: newNote.trim() });
-      setNewNote("");
-      await loadObservations();
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.observation.save.error", error, { patientId });
-    } finally {
-      setIsSavingNote(false);
-    }
-  };
-
-  const handleStartEditObservation = (observation: ObservationResponse) => {
-    setEditingObservation(observation);
-    setEditingObservationNote(observation.note);
-  };
-
-  const handleUpdateObservation = async () => {
-    if (!editingObservation || !editingObservationNote.trim()) {
-      return;
-    }
-
-    setIsUpdatingObservation(true);
-    try {
-      await updateObservation(editingObservation.id, { note: editingObservationNote.trim() });
-      setEditingObservation(null);
-      setEditingObservationNote("");
-      await loadObservations();
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.observation.update.error", error, {
-        patientId,
-        observationId: editingObservation.id,
-      });
-      setPageFeedback({
-        type: "error",
-        message: t("patients.file.observationUpdateError"),
-      });
-    } finally {
-      setIsUpdatingObservation(false);
-    }
-  };
-
-  const handleDeleteObservation = async () => {
-    if (!observationToDelete) {
-      return;
-    }
-
-    setIsDeletingObservation(true);
-    try {
-      await deleteObservation(observationToDelete.id);
-      setObservationToDelete(null);
-      await loadObservations();
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.observation.delete.error", error, {
-        patientId,
-        observationId: observationToDelete.id,
-      });
-      setPageFeedback({
-        type: "error",
-        message: t("patients.file.observationDeleteError"),
-      });
-    } finally {
-      setIsDeletingObservation(false);
-    }
-  };
-
   const patientIdentity = patient ? patient.fullName?.trim() || getDisplayIdentity(patient.userId) : "";
   const patientAge = patient ? getAgeFromBirthDate(patient.birthDate) : null;
   const patientGoalLabel = patient ? formatPatientGoalLabel(t, patient.goal) : "--";
@@ -270,94 +216,6 @@ export const NutritionistPatientFilePage = () => {
   const patientDietLabel = patient
     ? t(`onboarding:options.diets.${patient.dietType}.label`)
     : "--";
-
-  const resetMetricsDialog = () => {
-    setEditMetricsOpen(false);
-    setConfirmEditMetricsOpen(false);
-    setMetricsErrors({});
-    setMetricsWeightInput(patient?.weightKg?.toFixed(1) ?? "");
-    setMetricsHeightInput(patient?.heightCm?.toFixed(0) ?? "");
-  };
-
-  const openEditMetricsDialog = () => {
-    setMetricsWeightInput(patient?.weightKg?.toFixed(1) ?? "");
-    setMetricsHeightInput(patient?.heightCm?.toFixed(0) ?? "");
-    setMetricsErrors({});
-    setConfirmEditMetricsOpen(false);
-    setEditMetricsOpen(true);
-  };
-
-  const validateMetrics = () => {
-    const nextErrors: { weightKg?: string; heightCm?: string } = {};
-    const normalizedWeight = metricsWeightInput.trim();
-    const normalizedHeight = metricsHeightInput.trim();
-
-    if (!normalizedWeight) {
-      nextErrors.weightKg = t("patients.file.metrics.validation.weightRequired");
-    } else if (!/^\d{1,3}(?:\.\d)?$/.test(normalizedWeight)) {
-      nextErrors.weightKg = t("patients.file.metrics.validation.weightInvalid");
-    } else {
-      const parsedWeight = Number(normalizedWeight);
-      if (Number.isNaN(parsedWeight) || parsedWeight < 40 || parsedWeight > 200) {
-        nextErrors.weightKg = t("patients.file.metrics.validation.weightRange");
-      }
-    }
-
-    if (!normalizedHeight) {
-      nextErrors.heightCm = t("patients.file.metrics.validation.heightRequired");
-    } else if (!/^\d{3}$/.test(normalizedHeight)) {
-      nextErrors.heightCm = t("patients.file.metrics.validation.heightInvalid");
-    } else {
-      const parsedHeight = Number(normalizedHeight);
-      if (Number.isNaN(parsedHeight) || parsedHeight < 100 || parsedHeight > 250) {
-        nextErrors.heightCm = t("patients.file.metrics.validation.heightRange");
-      }
-    }
-
-    setMetricsErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  };
-
-  const handleReviewMetricsUpdate = () => {
-    if (!validateMetrics()) {
-      return;
-    }
-
-    setEditMetricsOpen(false);
-    setConfirmEditMetricsOpen(true);
-  };
-
-  const handleConfirmMetricsUpdate = async () => {
-    if (!patientId) {
-      return;
-    }
-
-    setIsUpdatingMetrics(true);
-    setPageFeedback(null);
-    try {
-      const updatedPatient = await clinicalApi.updateNutritionistPatientMetrics(patientId, {
-        weightKg: Number(metricsWeightInput),
-        heightCm: Number(metricsHeightInput),
-      });
-      setPatient(updatedPatient);
-      await refetchWeightHistory();
-      if (nutritionPlanView) {
-        await loadNutritionPlan();
-      }
-      setConfirmEditMetricsOpen(false);
-      setEditMetricsOpen(false);
-    } catch (error) {
-      logClientError("NutritionistPatientFilePage.metrics.update.error", error, { patientId });
-      setPageFeedback({
-        type: "error",
-        message: t("patients.file.metrics.updateError"),
-      });
-      setConfirmEditMetricsOpen(false);
-      setEditMetricsOpen(true);
-    } finally {
-      setIsUpdatingMetrics(false);
-    }
-  };
 
   const handleSaveNutritionPlan = async (
     payload: Parameters<typeof clinicalApi.upsertNutritionistPatientNutritionPlan>[1]
@@ -1040,8 +898,7 @@ export const NutritionistPatientFilePage = () => {
         open={Boolean(editingObservation)}
         onOpenChange={(open) => {
           if (!open) {
-            setEditingObservation(null);
-            setEditingObservationNote("");
+            resetEditingObservation();
           }
         }}
       >
@@ -1070,10 +927,7 @@ export const NutritionistPatientFilePage = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                setEditingObservation(null);
-                setEditingObservationNote("");
-              }}
+              onClick={resetEditingObservation}
               disabled={isUpdatingObservation}
             >
               {t("common.cancel")}

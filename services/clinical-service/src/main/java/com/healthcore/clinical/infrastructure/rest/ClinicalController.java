@@ -481,7 +481,7 @@ public class ClinicalController {
                 .stream()
                 .map(profile -> toPatientProfileResponse(
                         profile,
-                        profilePhotoUrls.get(profile.getProfilePhotoKey())
+                        resolveProfilePhotoUrl(profilePhotoUrls, profile.getProfilePhotoKey())
                 ))
                 .toList();
         return ResponseEntity.ok(patients);
@@ -743,6 +743,13 @@ public class ClinicalController {
 
     private String resolveProfilePhotoUrl(String profilePhotoKey) {
         return mediaGrpcClientAdapter.getPresignedReadUrl(profilePhotoKey);
+    }
+
+    private String resolveProfilePhotoUrl(Map<String, String> profilePhotoUrls, String profilePhotoKey) {
+        if (profilePhotoKey == null || profilePhotoKey.isBlank()) {
+            return null;
+        }
+        return profilePhotoUrls.get(profilePhotoKey);
     }
 
     private Map<String, String> resolveProfilePhotoUrls(List<String> profilePhotoKeys) {

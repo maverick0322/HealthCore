@@ -60,4 +60,33 @@ describe('NutritionistDashboardPage', () => {
 
     expect(screen.getByText('Add Patient')).toBeInTheDocument();
   });
+
+  it('shows the patients error without mixing it with the empty-state CTA', async () => {
+    vi.mocked(clinicalApi.getMyNutritionistProfile).mockResolvedValue({
+      userId: 'nutri-1',
+      firstName: 'Laura',
+      paternalLastName: 'Mendez',
+      maternalLastName: '',
+      fullName: 'Laura Mendez',
+      specializations: ['CLINICAL'],
+      customSpecialization: '',
+      professionalLicense: '1234567',
+      consultationTypes: ['ONLINE'],
+      phone: '',
+      clinicAddress: null,
+      bio: 'Profile',
+      profilePhotoUrl: null,
+      profileCompleted: true,
+    });
+    vi.mocked(clinicalApi.getNutritionistPatients).mockRejectedValue(new Error('boom'));
+
+    render(<NutritionistDashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Unable to load linked patients.')).toHaveLength(2);
+    });
+
+    expect(screen.queryByText('You do not have assigned patients yet.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Add Patient')).not.toBeInTheDocument();
+  });
 });

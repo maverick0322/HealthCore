@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -398,6 +399,35 @@ class ClinicalControllerTest {
                 .andExpect(jsonPath("$[0].fullName").value("Carlos Gomez"))
                 .andExpect(jsonPath("$[0].profilePhotoUrl").value("https://cdn.example.com/patient-one/avatar.webp"))
                 .andExpect(jsonPath("$[1].fullName").value("Maria Lopez"))
+                .andExpect(jsonPath("$[1].profilePhotoUrl").value("https://cdn.example.com/patient-two/avatar.webp"));
+    }
+
+    @Test
+    void shouldReturnLinkedPatientsWithoutFailingWhenPatientHasNoProfilePhoto() throws Exception {
+        String nutritionistId = "nutri-123";
+        setSecurityContext(nutritionistId, "NUTRITIONIST");
+
+        PatientProfile patientWithoutPhoto = createPatientProfile("patient-one@example.com");
+        patientWithoutPhoto.assignNutritionist(nutritionistId);
+
+        PatientProfile patientWithPhoto = createPatientProfile("patient-two@example.com");
+        patientWithPhoto.assignNutritionist(nutritionistId);
+        patientWithPhoto.updateProfilePhoto("patient-two@example.com/avatar.webp");
+
+        when(manageProfileUseCase.getProfilesByNutritionistId(nutritionistId))
+                .thenReturn(List.of(patientWithoutPhoto, patientWithPhoto));
+        when(mediaGrpcClientAdapter.getPresignedReadUrls(anyList())).thenReturn(
+                java.util.Map.of(
+                        "patient-two@example.com/avatar.webp", "https://cdn.example.com/patient-two/avatar.webp"
+                )
+        );
+
+        mockMvc.perform(get("/api/v1/clinical/nutritionist/patients"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].fullName").value("Carlos Gomez"))
+                .andExpect(jsonPath("$[0].profilePhotoUrl").value(nullValue()))
+                .andExpect(jsonPath("$[1].fullName").value("Carlos Gomez"))
                 .andExpect(jsonPath("$[1].profilePhotoUrl").value("https://cdn.example.com/patient-two/avatar.webp"));
     }
 

@@ -321,6 +321,11 @@ export const NutritionistDashboardPage = () => {
                   <Loader2 size={18} className="animate-spin" />
                   {t("dashboard.loadingPatients")}
                 </div>
+              ) : patientsError ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <AlertCircle size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">{patientsError}</p>
+                </div>
               ) : patientPreview.length > 0 ? (
                 <div className="divide-y divide-border/50">
                   {patientPreview.map((patient) => {

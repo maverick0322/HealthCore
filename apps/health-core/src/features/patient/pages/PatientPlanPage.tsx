@@ -1,15 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle, FileDown, RefreshCcw, CheckCircle2 } from 'lucide-react';
 
 import { clinicalApi } from '@/features/clinical/services/clinicalService';
-import type {
-  NutritionPlanViewResponse,
-  ObservationResponse,
-  PatientProfileResponse,
-} from '@/features/clinical/types/clinical.types';
 import { NutritionPlanWorkspace } from '@/features/nutrition-plan/components/NutritionPlanWorkspace';
 import { PatientNav } from '@/features/patient/components/PatientNav';
+import { usePatientPlanData } from '@/features/patient/hooks/usePatientPlanData';
 import { exportPatientNutritionPlanPdf } from '@/features/patient/services/patientNutritionPlanPdfService';
 import { useLogFood } from '@/features/tracking/hooks/useLogFood';
 import { logClientError, logClientInfo } from '@/core/utils/logger';
@@ -19,13 +15,18 @@ import { Card, CardContent } from '@/shared/ui/card';
 
 export const PatientPlanPage = () => {
   const { t, i18n } = useTranslation('patient');
-  const [view, setView] = useState<NutritionPlanViewResponse | null>(null);
-  const [observations, setObservations] = useState<ObservationResponse[]>([]);
-  const [profile, setProfile] = useState<PatientProfileResponse | null>(null);
-  const [hasLinkedNutritionist, setHasLinkedNutritionist] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const {
+    view,
+    setView,
+    observations,
+    profile,
+    hasLinkedNutritionist,
+    isLoading,
+    loadError,
+    setLoadError,
+    retryLoad,
+  } = usePatientPlanData();
 
   // --- ESTADOS DE QUICK TRACK ---
   const { logFood, isLoading: isLoggingFood, error: logError, isSuccess: logSuccess } = useLogFood();
@@ -45,79 +46,6 @@ export const PatientPlanPage = () => {
       setTimeout(() => setQuickTrackFeedback(null), 5000);
     }
   }, [logError]);
-
-  const loadPlan = useCallback(
-    async ({
-      showLoading = true,
-      source = 'load',
-    }: {
-      showLoading?: boolean;
-      source?: 'load' | 'retry' | 'focus';
-    } = {}) => {
-      if (showLoading) {
-        setIsLoading(true);
-      }
-
-      try {
-        logClientInfo(`PatientPlanPage.${source}.start`);
-        setLoadError(null);
-        const [response, profile] = await Promise.all([
-          clinicalApi.getMyNutritionPlan(),
-          clinicalApi.getMyProfile().catch(() => null),
-        ]);
-        const linkedNutritionist = Boolean(profile?.nutritionistId);
-        let observationResponse: ObservationResponse[] = [];
-        if (linkedNutritionist) {
-          try {
-            observationResponse = await clinicalApi.getMyObservations();
-          } catch (error) {
-            logClientError(`PatientPlanPage.observations.${source}.error`, error);
-          }
-        }
-
-        setHasLinkedNutritionist(linkedNutritionist);
-        setProfile(profile);
-        setView(response);
-        setObservations(observationResponse);
-
-        logClientInfo(`PatientPlanPage.${source}.success`, {
-          mode: response.mode,
-          canEdit: response.canEdit,
-          sections: response.sections.length,
-          observations: observationResponse.length,
-          linkedNutritionist,
-        });
-      } catch (error) {
-        logClientError(`PatientPlanPage.${source}.error`, error);
-        setLoadError(t('nutritionPlan.loadError'));
-      } finally {
-        if (showLoading) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [t]
-  );
-
-  useEffect(() => {
-    void loadPlan();
-  }, [loadPlan]);
-
-  useEffect(() => {
-    const handleWindowRefresh = () => {
-      if (document.visibilityState === 'visible') {
-        void loadPlan({ showLoading: false, source: 'focus' });
-      }
-    };
-
-    window.addEventListener('focus', handleWindowRefresh);
-    document.addEventListener('visibilitychange', handleWindowRefresh);
-
-    return () => {
-      window.removeEventListener('focus', handleWindowRefresh);
-      document.removeEventListener('visibilitychange', handleWindowRefresh);
-    };
-  }, [loadPlan]);
 
   const handleSave = async (payload: Parameters<typeof clinicalApi.upsertMyNutritionPlan>[0]) => {
     try {
@@ -215,10 +143,6 @@ export const PatientPlanPage = () => {
     } finally {
       setIsExportingPdf(false);
     }
-  };
-
-  const retryLoad = async () => {
-    await loadPlan({ showLoading: true, source: 'retry' });
   };
 
   return (

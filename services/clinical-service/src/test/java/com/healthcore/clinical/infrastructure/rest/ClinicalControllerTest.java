@@ -53,7 +53,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = ClinicalController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+@WebMvcTest(
+        controllers = {PatientClinicalController.class, NutritionistClinicalController.class},
+        excludeAutoConfiguration = {SecurityAutoConfiguration.class}
+)
 @AutoConfigureMockMvc(addFilters = false)
 @Import({ClinicalProfileRestMapper.class, ProfilePhotoUrlResolver.class})
 class ClinicalControllerTest {

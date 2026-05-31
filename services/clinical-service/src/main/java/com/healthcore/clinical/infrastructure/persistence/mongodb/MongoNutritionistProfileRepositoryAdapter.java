@@ -1,11 +1,11 @@
 package com.healthcore.clinical.infrastructure.persistence.mongodb;
 
-import com.healthcore.clinical.domain.model.ClinicAddress;
-import com.healthcore.clinical.domain.model.NutritionistProfile;
-import com.healthcore.clinical.domain.port.out.NutritionistProfileRepositoryPort;
+import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import com.healthcore.clinical.domain.model.NutritionistProfile;
+import com.healthcore.clinical.domain.port.out.NutritionistProfileRepositoryPort;
 
 @Component
 public class MongoNutritionistProfileRepositoryAdapter implements NutritionistProfileRepositoryPort {

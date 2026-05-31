@@ -12,6 +12,7 @@ import {
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
 import { useNutritionistDashboardData } from "@/features/nutritionist/hooks/useNutritionistDashboardData";
@@ -244,16 +245,19 @@ export const NutritionistDashboardPage = () => {
                         }
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-                            {name.charAt(0).toUpperCase()}
-                          </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{name}</p>
-                  <p className="text-xs text-muted-foreground">
+                          <ProfileAvatar
+                            name={name}
+                            photoUrl={patient.profilePhotoUrl}
+                            size="sm"
+                            className="shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold">{name}</p>
+                            <p className="text-xs text-muted-foreground">
                               {formatPatientGoalLabel(t, patient.goal)}
-                  </p>
-                </div>
-              </div>
+                            </p>
+                          </div>
+                        </div>
                       </button>
                     );
                   })}

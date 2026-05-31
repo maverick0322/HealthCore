@@ -14,15 +14,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.healthcore.clinical.domain.model.CatalogFoodItem;
 import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
-import com.healthcore.clinical.infrastructure.rest.mapper.NutritionPlanRestMapper;
 import com.healthcore.clinical.infrastructure.rest.dto.ApiErrorResponseDoc;
 import com.healthcore.clinical.infrastructure.rest.dto.CatalogFoodResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionPlanUpsertRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionPlanViewResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.UnauthorizedErrorResponseDoc;
 import com.healthcore.clinical.infrastructure.rest.dto.ValidationErrorResponseDoc;
+import com.healthcore.clinical.infrastructure.rest.mapper.NutritionPlanRestMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -64,7 +63,9 @@ public class NutritionPlanController {
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "Clinical profile or nutrition plan not available",
+            @ApiResponse(responseCode = "404", description = "Clinical profile not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "409", description = "Nutrition plan view cannot be derived because the clinical profile is incomplete",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<NutritionPlanViewResponse> getMyNutritionPlan() {
@@ -83,12 +84,16 @@ public class NutritionPlanController {
             @ApiResponse(responseCode = "200", description = "Nutrition plan saved successfully",
                     content = @Content(schema = @Schema(implementation = NutritionPlanViewResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid nutrition plan payload",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+                    content = @Content(schema = @Schema(
+                            oneOf = {ValidationErrorResponseDoc.class, ApiErrorResponseDoc.class}
+                    ))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
             @ApiResponse(responseCode = "404", description = "Clinical profile not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "409", description = "Nutrition plan cannot be saved in the current clinical profile state",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<NutritionPlanViewResponse> upsertMyNutritionPlan(
@@ -116,7 +121,9 @@ public class NutritionPlanController {
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient does not belong to the authenticated nutritionist",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "Patient or nutrition plan not found",
+            @ApiResponse(responseCode = "404", description = "Patient clinical profile not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "409", description = "Nutrition plan view cannot be derived because the clinical profile is incomplete",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<NutritionPlanViewResponse> getNutritionistPatientNutritionPlan(
@@ -138,12 +145,16 @@ public class NutritionPlanController {
             @ApiResponse(responseCode = "200", description = "Nutrition plan saved successfully",
                     content = @Content(schema = @Schema(implementation = NutritionPlanViewResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid nutrition plan payload",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+                    content = @Content(schema = @Schema(
+                            oneOf = {ValidationErrorResponseDoc.class, ApiErrorResponseDoc.class}
+                    ))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient does not belong to the authenticated nutritionist",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "Patient or clinical profile not found",
+            @ApiResponse(responseCode = "404", description = "Patient clinical profile not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "409", description = "Nutrition plan cannot be saved in the current clinical profile state",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<NutritionPlanViewResponse> upsertNutritionistPatientNutritionPlan(
@@ -174,7 +185,7 @@ public class NutritionPlanController {
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient or nutritionist role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "503", description = "Nutrition catalog is temporarily unavailable",
+            @ApiResponse(responseCode = "409", description = "Nutrition catalog is temporarily unavailable",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<List<CatalogFoodResponse>> searchCatalogFoods(

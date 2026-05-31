@@ -44,8 +44,7 @@ public class PostalCodeReferenceController {
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient or nutritionist role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "Postal code not found",
-                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
+            @ApiResponse(responseCode = "404", description = "Postal code not found", content = @Content)
     })
     public ResponseEntity<PostalCodeLookupResponse> lookupPostalCode(
             @Parameter(description = "Five-digit postal code to resolve")

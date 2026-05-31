@@ -40,6 +40,7 @@ export function NutritionPlanSectionCards({
   onQuickTrack,
 }: Readonly<NutritionPlanSectionCardsProps>) {
   const { t } = useTranslation(namespace);
+  const shouldShowQuickTrackAction = namespace === 'patient' && Boolean(onQuickTrack);
 
   return sections.map((section) => (
     <section key={section.mealSlot} className="space-y-3">
@@ -148,53 +149,57 @@ export function NutritionPlanSectionCards({
               </CardContent>
 
               <CardFooter className="justify-between gap-2">
-                {showRegisterAction ? (
-                  <Button
-                    className="w-full gap-2"
-                    disabled={isQuickTracking}
-                    onClick={() => {
-                      if (onQuickTrack) {
-                        onQuickTrack({
-                          mealSlot: section.mealSlot,
-                          optionName: option.name,
-                          ingredients: option.ingredients,
-                        });
-                      }
-                    }}
-                  >
-                    {isQuickTracking ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <UtensilsCrossed size={14} />
-                    )}
-                    {isQuickTracking ? 'Registrando...' : t('nutritionPlan.registerDish')}
-                  </Button>
-                ) : (
-                  <div className="flex w-full items-center gap-2">
+                <div className="w-full space-y-2">
+                  {shouldShowQuickTrackAction ? (
                     <Button
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => onOpenEditDialog(section.mealSlot, option.id)}
+                      className="w-full gap-2"
+                      disabled={isQuickTracking}
+                      onClick={() => {
+                        if (onQuickTrack) {
+                          onQuickTrack({
+                            mealSlot: section.mealSlot,
+                            optionName: option.name,
+                            ingredients: option.ingredients,
+                          });
+                        }
+                      }}
                     >
-                      <Pencil size={14} />
-                      {t('nutritionPlan.edit')}
+                      {isQuickTracking ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <UtensilsCrossed size={14} />
+                      )}
+                      {isQuickTracking ? 'Registrando...' : t('nutritionPlan.registerDish')}
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="gap-2 text-destructive hover:text-destructive"
-                      onClick={() =>
-                        onRequestDelete({
-                          mealSlot: section.mealSlot,
-                          optionId: option.id,
-                          optionName: option.name,
-                        })
-                      }
-                    >
-                      <Trash2 size={14} />
-                      {t('nutritionPlan.delete')}
-                    </Button>
-                  </div>
-                )}
+                  ) : null}
+
+                  {!showRegisterAction ? (
+                    <div className="flex w-full items-center gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-2"
+                        onClick={() => onOpenEditDialog(section.mealSlot, option.id)}
+                      >
+                        <Pencil size={14} />
+                        {t('nutritionPlan.edit')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="gap-2 text-destructive hover:text-destructive"
+                        onClick={() =>
+                          onRequestDelete({
+                            mealSlot: section.mealSlot,
+                            optionId: option.id,
+                            optionName: option.name,
+                          })
+                        }
+                      >
+                        <Trash2 size={14} />
+                        {t('nutritionPlan.delete')}
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
               </CardFooter>
             </Card>
           ))}

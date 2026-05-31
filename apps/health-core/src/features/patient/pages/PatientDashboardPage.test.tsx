@@ -15,6 +15,21 @@ vi.mock('@/features/tracking/hooks/useTodaySummary', () => ({
   }),
 }));
 
+vi.mock('@/features/patient/hooks/useHealthGoals', () => ({
+  useHealthGoals: () => ({
+    data: {
+      targetCalories: 2000,
+      targetProtein: 120,
+      targetCarbs: 220,
+      targetFat: 65,
+      targetWaterGlasses: 10,
+    },
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
+
 vi.mock('@/features/tracking/hooks/useTodayMeals', () => ({
   useTodayMeals: () => ({
     meals: [],
@@ -40,7 +55,9 @@ vi.mock('@/features/patient/components/HealthGoalsCard', () => ({
 }));
 
 vi.mock('@/features/tracking/components/WaterTrackerCard', () => ({
-  WaterTrackerCard: () => <div data-testid="water-card" />,
+  WaterTrackerCard: ({ goalMl }: { goalMl?: number }) => (
+    <div data-testid="water-card">{goalMl}</div>
+  ),
 }));
 
 vi.mock('@/features/tracking/components/TodayMealsList', () => ({
@@ -89,6 +106,7 @@ describe('PatientDashboardPage', () => {
 
     expect(screen.getByText('You do not have an assigned nutritionist yet')).toBeInTheDocument();
     expect(screen.getByText('Link nutritionist')).toBeInTheDocument();
+    expect(screen.getByTestId('water-card')).toHaveTextContent('2500');
   });
 
   it('shows the next appointment information when it is available', () => {

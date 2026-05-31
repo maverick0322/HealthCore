@@ -69,12 +69,12 @@ public class PatientClinicalController extends ClinicalControllerSupport {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Clinical profile created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid profile payload",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+                    content = @Content(schema = @Schema(
+                            oneOf = {ValidationErrorResponseDoc.class, ApiErrorResponseDoc.class}
+                    ))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
-                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "409", description = "Profile cannot be created in the current state",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<Void> createProfile(@Valid @RequestBody CreateProfileRequest request) {
@@ -92,7 +92,9 @@ public class PatientClinicalController extends ClinicalControllerSupport {
             @ApiResponse(responseCode = "200", description = "Profile updated successfully",
                     content = @Content(schema = @Schema(implementation = PatientProfileResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid profile payload",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+                    content = @Content(schema = @Schema(
+                            oneOf = {ValidationErrorResponseDoc.class, ApiErrorResponseDoc.class}
+                    ))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
@@ -118,10 +120,12 @@ public class PatientClinicalController extends ClinicalControllerSupport {
             @ApiResponse(responseCode = "200", description = "Profile photo updated successfully",
                     content = @Content(schema = @Schema(implementation = PatientProfileResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid storage key payload",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+                    content = @Content(schema = @Schema(
+                            oneOf = {ValidationErrorResponseDoc.class, ApiErrorResponseDoc.class}
+                    ))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "403", description = "Patient role required",
+            @ApiResponse(responseCode = "403", description = "Patient role required or profile photo key does not belong to the authenticated patient",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
             @ApiResponse(responseCode = "404", description = "Clinical profile not found",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
@@ -146,7 +150,8 @@ public class PatientClinicalController extends ClinicalControllerSupport {
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "Clinical profile not found",
+            @ApiResponse(responseCode = "404", description = "Clinical profile not found", content = @Content),
+            @ApiResponse(responseCode = "409", description = "Goals cannot be derived because the profile is incomplete",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<HealthGoalResponse> getMyGoals() {
@@ -171,12 +176,16 @@ public class PatientClinicalController extends ClinicalControllerSupport {
             @ApiResponse(responseCode = "200", description = "Weight saved and goals recalculated successfully",
                     content = @Content(schema = @Schema(implementation = HealthGoalResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid weight payload or date",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+                    content = @Content(schema = @Schema(
+                            oneOf = {ValidationErrorResponseDoc.class, ApiErrorResponseDoc.class}
+                    ))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
             @ApiResponse(responseCode = "404", description = "Clinical profile not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "409", description = "Goals cannot be recalculated in the current clinical record state",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<HealthGoalResponse> updateWeight(@Valid @RequestBody UpdateWeightRequest request) {
@@ -195,12 +204,16 @@ public class PatientClinicalController extends ClinicalControllerSupport {
             @ApiResponse(responseCode = "200", description = "Weight record updated successfully",
                     content = @Content(schema = @Schema(implementation = HealthGoalResponse.class))),
             @ApiResponse(responseCode = "400", description = "Invalid weight payload or date",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+                    content = @Content(schema = @Schema(
+                            oneOf = {ValidationErrorResponseDoc.class, ApiErrorResponseDoc.class}
+                    ))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "Weight record or clinical profile not found",
+            @ApiResponse(responseCode = "404", description = "Clinical profile not found",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "409", description = "Goals cannot be recalculated in the current clinical record state",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<HealthGoalResponse> editWeight(
@@ -228,7 +241,7 @@ public class PatientClinicalController extends ClinicalControllerSupport {
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "Weight record or clinical profile not found",
+            @ApiResponse(responseCode = "404", description = "Clinical profile not found",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
             @ApiResponse(responseCode = "409", description = "Operation cannot be completed in the current clinical record state",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
@@ -273,8 +286,7 @@ public class PatientClinicalController extends ClinicalControllerSupport {
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "Clinical profile not found",
-                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
+            @ApiResponse(responseCode = "404", description = "Clinical profile not found", content = @Content)
     })
     public ResponseEntity<PatientProfileResponse> getMyProfile() {
         String patientId = getCurrentUserId();
@@ -295,8 +307,7 @@ public class PatientClinicalController extends ClinicalControllerSupport {
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "No linked nutritionist profile is available",
-                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
+            @ApiResponse(responseCode = "404", description = "No linked nutritionist profile is available", content = @Content)
     })
     public ResponseEntity<NutritionistProfileResponse> getMyLinkedNutritionistProfile() {
         String patientId = getCurrentUserId();

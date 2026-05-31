@@ -5,6 +5,7 @@ import { AlertCircle, CalendarDays, Loader2, Plus, Stethoscope } from "lucide-re
 import { PatientNav } from "@/features/patient/components/PatientNav";
 import { DashboardWeightCard } from "@/features/patient/components/DashboardWeightCard";
 import { HealthGoalsCard } from "@/features/patient/components/HealthGoalsCard";
+import { useHealthGoals } from "@/features/patient/hooks/useHealthGoals";
 import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -26,6 +27,7 @@ export const PatientDashboardPage = () => {
 
   const { summary, addWater, removeWater, isLoading: isSummaryLoading, error: summaryError } = useTodaySummary();
   const { meals, isLoading: isMealsLoading, error: mealsError } = useTodayMeals();
+  const { data: healthGoals } = useHealthGoals();
   const {
     profile,
     nutritionistProfile,
@@ -144,6 +146,7 @@ export const PatientDashboardPage = () => {
                 totalWaterMl={summary?.totalWaterMl ?? 0} 
                 onAddWater={addWater}
                 onRemoveWater={removeWater}
+                goalMl={(healthGoals?.targetWaterGlasses ?? 8) * 250}
                 isLoading={isSummaryLoading}
                 error={summaryError}
               />

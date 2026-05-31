@@ -12,7 +12,6 @@ import com.healthcore.clinical.infrastructure.rest.dto.NutritionistProfileRespon
 import com.healthcore.clinical.infrastructure.rest.dto.NutritionistWeightProgressReportResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.PatientProfileResponse;
 import com.healthcore.clinical.infrastructure.rest.dto.UpsertNutritionistProfileRequest;
-import org.springframework.stereotype.Component;
 
 @Component
 public class ClinicalProfileRestMapper {

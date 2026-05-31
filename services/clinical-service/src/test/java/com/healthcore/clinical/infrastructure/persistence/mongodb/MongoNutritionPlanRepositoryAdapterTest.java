@@ -9,10 +9,10 @@ import com.healthcore.clinical.domain.model.NutritionPlan;
 import com.healthcore.clinical.domain.model.PlanIngredient;
 import com.healthcore.clinical.domain.model.PlanIngredientUnit;
 import com.healthcore.clinical.domain.model.PlanStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -32,8 +32,12 @@ class MongoNutritionPlanRepositoryAdapterTest {
     @Mock
     private SpringDataMongoNutritionPlanRepository repository;
 
-    @InjectMocks
     private MongoNutritionPlanRepositoryAdapter adapter;
+
+    @BeforeEach
+    void setUp() {
+        adapter = new MongoNutritionPlanRepositoryAdapter(repository, new NutritionPlanMongoMapper());
+    }
 
     @Test
     void shouldMapNutritionPlanToDocumentWhenSaving() {
@@ -140,7 +144,7 @@ class MongoNutritionPlanRepositoryAdapterTest {
                 slot,
                 List.of(new MealOption(
                         optionId,
-                        slot.name() + " option".replace('_', ' '),
+                        slot.name().replace('_', ' ') + " option",
                         "Serve chilled",
                         "Optional note",
                         List.of(new PlanIngredient(

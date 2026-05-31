@@ -58,6 +58,8 @@ public class LinkingController {
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Nutritionist role required",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "409", description = "A unique linking code could not be generated",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
     })
     public ResponseEntity<GenerateCodeResponse> generateCode() {
@@ -101,10 +103,14 @@ public class LinkingController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Patient linked successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid or expired linking code",
-                    content = @Content(schema = @Schema(implementation = ValidationErrorResponseDoc.class))),
+                    content = @Content(schema = @Schema(
+                            oneOf = {ValidationErrorResponseDoc.class, ApiErrorResponseDoc.class}
+                    ))),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "404", description = "Patient clinical profile not found",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
             @ApiResponse(responseCode = "409", description = "Patient is already linked to another nutritionist",
                     content = @Content(schema = @Schema(implementation = AlreadyLinkedErrorResponseDoc.class)))
@@ -122,12 +128,12 @@ public class LinkingController {
     @Operation(summary = "Unlink my nutritionist", description = "Removes the clinical relationship between the authenticated patient and the current nutritionist and triggers the related cleanup.")
     @SecurityRequirement(name = "bearerAuth")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Patient unlinked successfully"),
+            @ApiResponse(responseCode = "200", description = "Link removed successfully or no active link existed"),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
             @ApiResponse(responseCode = "403", description = "Patient role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "There is no active link to remove",
+            @ApiResponse(responseCode = "404", description = "Patient clinical profile not found",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
             @ApiResponse(responseCode = "503", description = "Remote cleanup with agenda-service could not be completed",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))
@@ -148,9 +154,11 @@ public class LinkingController {
             @ApiResponse(responseCode = "200", description = "Patient unlinked successfully"),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token",
                     content = @Content(schema = @Schema(implementation = UnauthorizedErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "403", description = "Patient does not belong to the authenticated nutritionist",
+            @ApiResponse(responseCode = "403", description = "Nutritionist role required",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
-            @ApiResponse(responseCode = "404", description = "There is no active link for the requested patient",
+            @ApiResponse(responseCode = "404", description = "There is no active link for the requested patient profile",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
+            @ApiResponse(responseCode = "409", description = "Patient does not belong to the authenticated nutritionist",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class))),
             @ApiResponse(responseCode = "503", description = "Remote cleanup with agenda-service could not be completed",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponseDoc.class)))

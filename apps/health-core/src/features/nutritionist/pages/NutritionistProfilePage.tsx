@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Award, FileText, LogOut, Mail, MapPin, Pencil, Phone, User } from 'lucide-react';
 
 import { NutritionistNav } from '@/features/nutritionist/components/NutritionistNav';
-import { clinicalApi } from '@/features/clinical/services/clinicalService';
 import {
   consultationTypeOptions,
   formatConsultationTypeLabel,
@@ -13,7 +12,6 @@ import {
 } from '@/features/onboarding/utils/profilePresentation';
 import { ProfileAvatar } from '@/shared/components/ProfileAvatar';
 import { SettingsBar } from '@/shared/components/SettingsBar';
-import { useProfilePhotoUpload } from '@/shared/hooks/useProfilePhotoUpload';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
@@ -24,34 +22,13 @@ export const NutritionistProfilePage = () => {
 
   const {
     profile,
-    setProfile,
     isLoadingProfile,
     user,
     navigate,
     handleLogout,
     specializationSummary,
+    profilePhotoUpload,
   } = useNutritionistProfile();
-
-  const {
-    accept: profilePhotoAccept,
-    error: profilePhotoError,
-    handleFileSelected,
-    isUploading: isUploadingProfilePhoto,
-  } = useProfilePhotoUpload({
-    invalidTypeMessage: t('profile.photoInvalidType'),
-    invalidSizeMessage: t('profile.photoInvalidSize'),
-    persistErrorMessage: t('profile.photoPersistError'),
-    uploadErrorMessages: {
-      validation: t('profile.photoUploadValidationError'),
-      rateLimit: t('profile.photoUploadRateLimitError'),
-      network: t('profile.photoUploadNetworkError'),
-      generic: t('profile.photoUploadGenericError'),
-    },
-    onUploadComplete: async (storageKey) => {
-      const updatedProfile = await clinicalApi.updateMyNutritionistProfilePhoto(storageKey);
-      setProfile(updatedProfile);
-    },
-  });
 
   if (isLoadingProfile) {
     return (
@@ -96,12 +73,12 @@ export const NutritionistProfilePage = () => {
                 photoUrl={profile?.profilePhotoUrl}
                 size="xl"
                 editable
-                accept={profilePhotoAccept}
+                accept={profilePhotoUpload.accept}
                 onFileSelected={(file) => {
-                  void handleFileSelected(file);
+                  void profilePhotoUpload.handleFileSelected(file);
                 }}
-                isUploading={isUploadingProfilePhoto}
-                error={profilePhotoError}
+                isUploading={profilePhotoUpload.isUploading}
+                error={profilePhotoUpload.error}
                 cameraLabel={t('profile.changePhoto')}
               />
             </div>

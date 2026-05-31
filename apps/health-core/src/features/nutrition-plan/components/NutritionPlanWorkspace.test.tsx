@@ -63,11 +63,13 @@ describe('NutritionPlanWorkspace', () => {
         view={baseView}
         onSave={vi.fn().mockResolvedValue(baseView)}
         onSearchFoods={vi.fn().mockResolvedValue([])}
+        onQuickTrack={vi.fn()}
       />
     );
 
     expect(screen.getByText('Daily goals')).toBeInTheDocument();
     expect(screen.getAllByText('Add dish').length).toBeGreaterThan(0);
+    expect(screen.getByText('Log this dish today')).toBeInTheDocument();
     expect(screen.getByText('7:00 - 9:00')).toBeInTheDocument();
 
     await user.click(screen.getAllByText('Add dish')[0]);
@@ -142,6 +144,7 @@ describe('NutritionPlanWorkspace', () => {
       <NutritionPlanWorkspace
         namespace="patient"
         view={{ ...baseView, mode: 'READ_ONLY', canEdit: false, authorType: 'NUTRITIONIST' }}
+        onQuickTrack={vi.fn()}
       />
     );
 

@@ -11,6 +11,13 @@ import com.healthcore.clinical.domain.model.PatientProfile;
 import com.healthcore.clinical.domain.model.WeightRecord;
 import com.healthcore.clinical.domain.port.in.ManageProfileUseCase;
 import com.healthcore.clinical.infrastructure.grpc.MediaGrpcClientAdapter;
+import com.healthcore.clinical.infrastructure.rest.mapper.ClinicAddressRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.ClinicalProfileRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.HealthGoalRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.NutritionistProfileRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.NutritionistWeightProgressRestMapper;
+import com.healthcore.clinical.infrastructure.rest.mapper.PatientProfileRestMapper;
+import com.healthcore.clinical.infrastructure.rest.support.ProfilePhotoUrlResolver;
 import com.healthcore.clinical.infrastructure.rest.dto.ClinicAddressRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.CreateProfileRequest;
 import com.healthcore.clinical.infrastructure.rest.dto.UpdateProfilePhotoRequest;
@@ -25,6 +32,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +45,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -49,8 +58,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = ClinicalController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class})
+@WebMvcTest(
+        controllers = {PatientClinicalController.class, NutritionistClinicalController.class},
+        excludeAutoConfiguration = {SecurityAutoConfiguration.class}
+)
 @AutoConfigureMockMvc(addFilters = false)
+@Import({
+        ClinicalProfileRestMapper.class,
+        PatientProfileRestMapper.class,
+        NutritionistProfileRestMapper.class,
+        NutritionistWeightProgressRestMapper.class,
+        ClinicAddressRestMapper.class,
+        HealthGoalRestMapper.class,
+        ProfilePhotoUrlResolver.class
+})
 class ClinicalControllerTest {
 
     @Autowired
@@ -398,6 +419,35 @@ class ClinicalControllerTest {
                 .andExpect(jsonPath("$[0].fullName").value("Carlos Gomez"))
                 .andExpect(jsonPath("$[0].profilePhotoUrl").value("https://cdn.example.com/patient-one/avatar.webp"))
                 .andExpect(jsonPath("$[1].fullName").value("Maria Lopez"))
+                .andExpect(jsonPath("$[1].profilePhotoUrl").value("https://cdn.example.com/patient-two/avatar.webp"));
+    }
+
+    @Test
+    void shouldReturnLinkedPatientsWithoutFailingWhenPatientHasNoProfilePhoto() throws Exception {
+        String nutritionistId = "nutri-123";
+        setSecurityContext(nutritionistId, "NUTRITIONIST");
+
+        PatientProfile patientWithoutPhoto = createPatientProfile("patient-one@example.com");
+        patientWithoutPhoto.assignNutritionist(nutritionistId);
+
+        PatientProfile patientWithPhoto = createPatientProfile("patient-two@example.com");
+        patientWithPhoto.assignNutritionist(nutritionistId);
+        patientWithPhoto.updateProfilePhoto("patient-two@example.com/avatar.webp");
+
+        when(manageProfileUseCase.getProfilesByNutritionistId(nutritionistId))
+                .thenReturn(List.of(patientWithoutPhoto, patientWithPhoto));
+        when(mediaGrpcClientAdapter.getPresignedReadUrls(anyList())).thenReturn(
+                java.util.Map.of(
+                        "patient-two@example.com/avatar.webp", "https://cdn.example.com/patient-two/avatar.webp"
+                )
+        );
+
+        mockMvc.perform(get("/api/v1/clinical/nutritionist/patients"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].fullName").value("Carlos Gomez"))
+                .andExpect(jsonPath("$[0].profilePhotoUrl").value(nullValue()))
+                .andExpect(jsonPath("$[1].fullName").value("Carlos Gomez"))
                 .andExpect(jsonPath("$[1].profilePhotoUrl").value("https://cdn.example.com/patient-two/avatar.webp"));
     }
 

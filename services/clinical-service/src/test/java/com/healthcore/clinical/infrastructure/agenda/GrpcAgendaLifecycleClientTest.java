@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +50,7 @@ class GrpcAgendaLifecycleClientTest {
         assertEquals("nutri-1", request.getNutritionistId());
         assertEquals("patient-1", request.getActor());
         assertEquals("PATIENT_UNLINKED", request.getReason());
+        verify(agendaStub).withDeadlineAfter(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -85,5 +87,30 @@ class GrpcAgendaLifecycleClientTest {
 
         assertInstanceOf(AgendaServiceUnavailableException.class, exception);
         assertEquals(unexpectedFailure, exception.getCause());
+    }
+
+    @Test
+    void shouldWrapFailuresWhileConfiguringDeadlineAsAgendaServiceUnavailableException() {
+        GrpcAgendaLifecycleClient client = new GrpcAgendaLifecycleClient(agendaStub);
+        RuntimeException deadlineFailure = new RuntimeException("deadline failed");
+
+        when(agendaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenThrow(deadlineFailure);
+
+        AgendaServiceUnavailableException exception = assertThrows(
+                AgendaServiceUnavailableException.class,
+                () -> client.cancelFutureAppointmentsForUnlink("patient-1", "nutri-1", "patient-1", "PATIENT_UNLINKED")
+        );
+
+        assertEquals("No fue posible cancelar las citas futuras antes de desvincular", exception.getMessage());
+        assertEquals(deadlineFailure, exception.getCause());
+    }
+
+    @Test
+    void shouldAllowShutdownWithoutManagedChannel() {
+        GrpcAgendaLifecycleClient client = new GrpcAgendaLifecycleClient(agendaStub);
+
+        client.shutdown();
+
+        verify(agendaStub, never()).withDeadlineAfter(any(Long.class), any(TimeUnit.class));
     }
 }

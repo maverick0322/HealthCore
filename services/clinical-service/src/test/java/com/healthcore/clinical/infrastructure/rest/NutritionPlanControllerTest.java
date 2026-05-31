@@ -12,12 +12,14 @@ import com.healthcore.clinical.domain.model.NutritionPlanView;
 import com.healthcore.clinical.domain.model.PlanIngredient;
 import com.healthcore.clinical.domain.model.PlanIngredientUnit;
 import com.healthcore.clinical.domain.port.in.ManageNutritionPlanUseCase;
+import com.healthcore.clinical.infrastructure.rest.mapper.NutritionPlanRestMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -40,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = NutritionPlanController.class, excludeAutoConfiguration = {SecurityAutoConfiguration.class})
 @AutoConfigureMockMvc(addFilters = false)
+@Import(NutritionPlanRestMapper.class)
 class NutritionPlanControllerTest {
 
     @Autowired

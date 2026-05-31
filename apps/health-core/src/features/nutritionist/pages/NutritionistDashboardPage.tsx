@@ -1,4 +1,3 @@
-import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -13,23 +12,15 @@ import {
 
 import { NutritionistNav } from "@/features/nutritionist/components/NutritionistNav";
 import { SettingsBar } from "@/shared/components/SettingsBar";
+import { ProfileAvatar } from "@/shared/components/ProfileAvatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
-import { clinicalApi } from "@/features/clinical/services/clinicalService";
-import type { NutritionistPatientProfileResponse } from "@/features/clinical/types/clinical.types";
-import { useNutritionistAppointments } from "@/features/nutritionist/hooks/useNutritionistAppointments";
+import { useNutritionistDashboardData } from "@/features/nutritionist/hooks/useNutritionistDashboardData";
 import { formatPatientGoalLabel } from "@/features/onboarding/utils/profilePresentation";
 import {
-  addDays,
   formatLocalDate,
   formatLocalTime,
-  getDateRangeForDateKeys,
-  localDateKeyFromIso,
-  todayDateKey,
 } from "@/features/agenda/utils/agendaDateUtils";
-
-const getFirstName = (name: string | null | undefined) =>
-  name?.trim().split(/\s+/)[0] ?? null;
 
 const statusClass = (status: string) => {
   switch (status) {
@@ -46,107 +37,20 @@ const statusClass = (status: string) => {
 export const NutritionistDashboardPage = () => {
   const { t } = useTranslation(["nutritionist", "onboarding"]);
   const navigate = useNavigate();
-
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [displayName, setDisplayName] = useState<string | null>(null);
-  const [patients, setPatients] = useState<NutritionistPatientProfileResponse[]>([]);
-  const [patientsLoading, setPatientsLoading] = useState(true);
-  const [patientsError, setPatientsError] = useState<string | null>(null);
-
   const {
-    appointments,
-    isLoading: appointmentsLoading,
-    error: appointmentsError,
-    fetchAppointments,
-  } = useNutritionistAppointments();
-
-  useEffect(() => {
-    let ignore = false;
-
-    const loadProfile = async () => {
-      setProfileLoading(true);
-      try {
-        const profile = await clinicalApi.getMyNutritionistProfile();
-        if (!ignore) {
-          setDisplayName(getFirstName(profile.fullName));
-        }
-      } catch {
-        if (!ignore) {
-          setDisplayName(null);
-        }
-      } finally {
-        if (!ignore) {
-          setProfileLoading(false);
-        }
-      }
-    };
-
-    const loadPatients = async () => {
-      setPatientsLoading(true);
-      setPatientsError(null);
-      try {
-        const linkedPatients = await clinicalApi.getNutritionistPatients();
-        if (!ignore) {
-          setPatients(linkedPatients);
-        }
-      } catch {
-        if (!ignore) {
-          setPatients([]);
-          setPatientsError(t("patients.error"));
-        }
-      } finally {
-        if (!ignore) {
-          setPatientsLoading(false);
-        }
-      }
-    };
-
-    void loadProfile();
-    void loadPatients();
-
-    return () => {
-      ignore = true;
-    };
-  }, [t]);
-
-  useEffect(() => {
-    const today = todayDateKey();
-    const range = getDateRangeForDateKeys(today, addDays(today, 14));
-    void fetchAppointments(range.from, range.to);
-  }, [fetchAppointments]);
-
-  const patientNameById = useMemo(
-    () =>
-      new Map(
-        patients.map((patient) => [
-          patient.userId,
-          patient.fullName?.trim() || t("dashboard.unknownPatient"),
-        ]),
-      ),
-    [patients, t],
-  );
-
-  const upcomingAppointments = useMemo(() => {
-    const now = Date.now();
-    return appointments
-      .filter((appointment) => appointment.status !== "CANCELLED")
-      .filter((appointment) => new Date(appointment.endTime).getTime() >= now)
-      .sort(
-        (left, right) =>
-          new Date(left.startTime).getTime() - new Date(right.startTime).getTime(),
-      );
-  }, [appointments]);
-
-  const today = todayDateKey();
-  const appointmentsToday = appointments.filter(
-    (appointment) =>
-      appointment.status !== "CANCELLED" &&
-      localDateKeyFromIso(appointment.startTime) === today,
-  ).length;
-  const pendingAppointments = appointments.filter(
-    (appointment) => appointment.status === "PENDING",
-  ).length;
-  const patientPreview = patients.slice(0, 5);
+    profileLoading,
+    displayName,
+    patients,
+    patientsLoading,
+    patientsError,
+    appointmentsLoading,
+    appointmentsError,
+    patientNameById,
+    upcomingAppointments,
+    appointmentsToday,
+    pendingAppointments,
+    patientPreview,
+  } = useNutritionistDashboardData();
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
@@ -321,6 +225,11 @@ export const NutritionistDashboardPage = () => {
                   <Loader2 size={18} className="animate-spin" />
                   {t("dashboard.loadingPatients")}
                 </div>
+              ) : patientsError ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <AlertCircle size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">{patientsError}</p>
+                </div>
               ) : patientPreview.length > 0 ? (
                 <div className="divide-y divide-border/50">
                   {patientPreview.map((patient) => {
@@ -336,16 +245,19 @@ export const NutritionistDashboardPage = () => {
                         }
                       >
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full border border-primary/20 bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-                            {name.charAt(0).toUpperCase()}
-                          </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{name}</p>
-                  <p className="text-xs text-muted-foreground">
+                          <ProfileAvatar
+                            name={name}
+                            photoUrl={patient.profilePhotoUrl}
+                            size="sm"
+                            className="shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold">{name}</p>
+                            <p className="text-xs text-muted-foreground">
                               {formatPatientGoalLabel(t, patient.goal)}
-                  </p>
-                </div>
-              </div>
+                            </p>
+                          </div>
+                        </div>
                       </button>
                     );
                   })}
@@ -354,6 +266,14 @@ export const NutritionistDashboardPage = () => {
                 <div className="p-8 text-center text-muted-foreground">
                   <Users size={32} className="mx-auto mb-3 opacity-20" />
                   <p className="text-sm">{t("dashboard.noPatients")}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => navigate("/qr/nutritionist")}
+                  >
+                    {t("patients.addPatient")}
+                  </Button>
                 </div>
               )}
             </CardContent>

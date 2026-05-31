@@ -7,6 +7,7 @@ import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { formatAllergyLabel } from '@/features/onboarding/utils/profilePresentation';
 import { calculateAgeFromBirthDate } from '@/features/onboarding/utils/profileValidation';
 import { getPatientLinkingErrorMessage } from '@/features/clinical/utils/linkingErrorMessages';
+import { useProfilePhotoUpload } from '@/shared/hooks/useProfilePhotoUpload';
 
 function getBmi(weightKg: number, heightCm: number) {
   const bmi = weightKg / Math.pow(heightCm / 100, 2);
@@ -73,6 +74,22 @@ export const usePatientProfile = () => {
     navigate("/forgot-password", { state: { email: user?.email } });
   };
 
+  const profilePhotoUpload = useProfilePhotoUpload({
+    invalidTypeMessage: t('profile.photoInvalidType'),
+    invalidSizeMessage: t('profile.photoInvalidSize'),
+    persistErrorMessage: t('profile.photoPersistError'),
+    uploadErrorMessages: {
+      validation: t('profile.photoUploadValidationError'),
+      rateLimit: t('profile.photoUploadRateLimitError'),
+      network: t('profile.photoUploadNetworkError'),
+      generic: t('profile.photoUploadGenericError'),
+    },
+    onUploadComplete: async (storageKey) => {
+      const updatedProfile = await clinicalApi.updateMyProfilePhoto(storageKey);
+      setProfile(updatedProfile);
+    },
+  });
+
   const bmi = useMemo(
     () => (profile ? getBmi(profile.weightKg, profile.heightCm) : null),
     [profile]
@@ -103,5 +120,6 @@ export const usePatientProfile = () => {
     allergyDisplay,
     user,
     navigate,
+    profilePhotoUpload,
   };
 };

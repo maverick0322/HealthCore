@@ -46,4 +46,41 @@ class ProfilePhotoKeyValidatorTest {
 
         assertEquals("Profile photo key format is invalid.", exception.getMessage());
     }
+
+    @Test
+    void shouldAcceptUppercaseSupportedExtension() {
+        String key = validator.validateOwnership("user-123", "user-123/avatar-photo.PNG");
+
+        assertEquals("user-123/avatar-photo.PNG", key);
+    }
+
+    @Test
+    void shouldRejectProfilePhotoKeyWithoutExtension() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> validator.validateOwnership("user-123", "user-123/avatar-photo")
+        );
+
+        assertEquals("Profile photo key format is invalid.", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectProfilePhotoKeyWithUnsupportedExtension() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> validator.validateOwnership("user-123", "user-123/avatar-photo.gif")
+        );
+
+        assertEquals("Profile photo key format is invalid.", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectProfilePhotoKeyWithInvalidCharacters() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> validator.validateOwnership("user-123", "user-123/avatar photo.webp")
+        );
+
+        assertEquals("Profile photo key format is invalid.", exception.getMessage());
+    }
 }

@@ -90,6 +90,22 @@ class GrpcAgendaLifecycleClientTest {
     }
 
     @Test
+    void shouldWrapFailuresWhileConfiguringDeadlineAsAgendaServiceUnavailableException() {
+        GrpcAgendaLifecycleClient client = new GrpcAgendaLifecycleClient(agendaStub);
+        RuntimeException deadlineFailure = new RuntimeException("deadline failed");
+
+        when(agendaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenThrow(deadlineFailure);
+
+        AgendaServiceUnavailableException exception = assertThrows(
+                AgendaServiceUnavailableException.class,
+                () -> client.cancelFutureAppointmentsForUnlink("patient-1", "nutri-1", "patient-1", "PATIENT_UNLINKED")
+        );
+
+        assertEquals("No fue posible cancelar las citas futuras antes de desvincular", exception.getMessage());
+        assertEquals(deadlineFailure, exception.getCause());
+    }
+
+    @Test
     void shouldAllowShutdownWithoutManagedChannel() {
         GrpcAgendaLifecycleClient client = new GrpcAgendaLifecycleClient(agendaStub);
 

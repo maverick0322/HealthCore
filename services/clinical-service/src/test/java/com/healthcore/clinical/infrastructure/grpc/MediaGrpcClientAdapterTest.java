@@ -9,6 +9,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -42,6 +44,14 @@ class MediaGrpcClientAdapterTest {
     }
 
     @Test
+    void shouldReturnNullWhenProfilePhotoKeyIsNull() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+
+        assertNull(adapter.getPresignedReadUrl(null));
+        verify(mediaStub, never()).withDeadlineAfter(any(Long.class), any(TimeUnit.class));
+    }
+
+    @Test
     void shouldResolvePresignedReadUrlWithDeadline() {
         MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
         PresignedReadUrlResponse response = PresignedReadUrlResponse.newBuilder()
@@ -55,6 +65,24 @@ class MediaGrpcClientAdapterTest {
 
         assertEquals("https://cdn.example/avatar.webp", result);
         verify(mediaStub).withDeadlineAfter(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void shouldSendOriginalStorageKeyWhenResolvingSingleUrl() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+        PresignedReadUrlResponse response = PresignedReadUrlResponse.newBuilder()
+                .setPresignedUrl("https://cdn.example/avatar.webp")
+                .build();
+
+        when(mediaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenReturn(deadlineStub);
+        when(deadlineStub.getPresignedReadUrl(any(PresignedReadUrlRequest.class))).thenReturn(response);
+
+        adapter.getPresignedReadUrl("user-123/avatar.webp");
+
+        ArgumentCaptor<PresignedReadUrlRequest> requestCaptor =
+                ArgumentCaptor.forClass(PresignedReadUrlRequest.class);
+        verify(deadlineStub).getPresignedReadUrl(requestCaptor.capture());
+        assertEquals("user-123/avatar.webp", requestCaptor.getValue().getStorageKey());
     }
 
     @Test
@@ -83,6 +111,17 @@ class MediaGrpcClientAdapterTest {
     }
 
     @Test
+    void shouldReturnNullWhenMediaServiceThrowsUnexpectedException() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+
+        when(mediaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenReturn(deadlineStub);
+        when(deadlineStub.getPresignedReadUrl(any(PresignedReadUrlRequest.class)))
+                .thenThrow(new IllegalStateException("boom"));
+
+        assertNull(adapter.getPresignedReadUrl("user-123/avatar.webp"));
+    }
+
+    @Test
     void shouldResolveBatchPresignedReadUrls() {
         MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
         BatchPresignedReadUrlsResponse response = BatchPresignedReadUrlsResponse.newBuilder()
@@ -108,6 +147,27 @@ class MediaGrpcClientAdapterTest {
         assertEquals(1, result.size());
         assertEquals("https://cdn.example.com/user-1/avatar.webp", result.get("user-1/avatar.webp"));
         verify(mediaStub).withDeadlineAfter(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void shouldNormalizeBatchKeysBeforeSendingRequest() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+        BatchPresignedReadUrlsResponse response = BatchPresignedReadUrlsResponse.newBuilder().build();
+
+        when(mediaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenReturn(deadlineStub);
+        when(deadlineStub.getPresignedReadUrls(any())).thenReturn(response);
+
+        adapter.getPresignedReadUrls(List.of(
+                "user-1/avatar.webp",
+                " ",
+                "user-2/avatar.webp",
+                "user-1/avatar.webp"
+        ));
+
+        ArgumentCaptor<com.healthcore.media.infrastructure.grpc.stubs.BatchPresignedReadUrlsRequest> requestCaptor =
+                ArgumentCaptor.forClass(com.healthcore.media.infrastructure.grpc.stubs.BatchPresignedReadUrlsRequest.class);
+        verify(deadlineStub).getPresignedReadUrls(requestCaptor.capture());
+        assertEquals(List.of("user-1/avatar.webp", "user-2/avatar.webp"), requestCaptor.getValue().getStorageKeysList());
     }
 
     @Test
@@ -157,5 +217,18 @@ class MediaGrpcClientAdapterTest {
         Map<String, String> result = adapter.getPresignedReadUrls(List.of("user-1/avatar.webp"));
 
         assertEquals(Map.of(), result);
+    }
+
+    @Test
+    void shouldReturnEmptyMapWhenBatchRequestThrowsUnexpectedException() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+
+        when(mediaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenReturn(deadlineStub);
+        when(deadlineStub.getPresignedReadUrls(any()))
+                .thenThrow(new IllegalStateException("boom"));
+
+        Map<String, String> result = adapter.getPresignedReadUrls(List.of("user-1/avatar.webp"));
+
+        assertTrue(result.isEmpty());
     }
 }

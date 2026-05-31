@@ -23,11 +23,12 @@ class PlanIngredientTest {
         );
 
         assertEquals("7501234567890", ingredient.barcode());
+        assertEquals("Avena", ingredient.name());
         assertEquals(100.0, ingredient.quantityAmount());
     }
 
     @Test
-    void shouldRejectPlanIngredientWithoutRequiredValues() {
+    void shouldRejectPlanIngredientWithoutBarcode() {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> new PlanIngredient(
@@ -48,10 +49,84 @@ class PlanIngredientTest {
     }
 
     @Test
-    void shouldRejectPlanIngredientDraftWithZeroQuantity() {
+    void shouldRejectPlanIngredientWithoutName() {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> new PlanIngredientDraft("7501234567890", PlanIngredientUnit.GRAMS, 0)
+                () -> new PlanIngredient(
+                        "7501234567890",
+                        " ",
+                        null,
+                        null,
+                        PlanIngredientUnit.GRAMS,
+                        100.0,
+                        380,
+                        12,
+                        60,
+                        7
+                )
+        );
+
+        assertEquals("Ingredient name is required.", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectPlanIngredientWithoutUnit() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> new PlanIngredient(
+                        "7501234567890",
+                        "Avena",
+                        null,
+                        null,
+                        null,
+                        100.0,
+                        380,
+                        12,
+                        60,
+                        7
+                )
+        );
+
+        assertEquals("Ingredient unit is required.", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectPlanIngredientWithZeroQuantity() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> new PlanIngredient(
+                        "7501234567890",
+                        "Avena",
+                        null,
+                        null,
+                        PlanIngredientUnit.GRAMS,
+                        0,
+                        380,
+                        12,
+                        60,
+                        7
+                )
+        );
+
+        assertEquals("Ingredient quantity must be greater than zero.", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectPlanIngredientWithNegativeQuantity() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> new PlanIngredient(
+                        "7501234567890",
+                        "Avena",
+                        null,
+                        null,
+                        PlanIngredientUnit.GRAMS,
+                        -5.0,
+                        380,
+                        12,
+                        60,
+                        7
+                )
         );
 
         assertEquals("Ingredient quantity must be greater than zero.", exception.getMessage());

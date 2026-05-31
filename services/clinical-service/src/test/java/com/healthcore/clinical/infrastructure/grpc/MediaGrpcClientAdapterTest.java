@@ -111,6 +111,42 @@ class MediaGrpcClientAdapterTest {
     }
 
     @Test
+    void shouldReturnEmptyMapWhenBatchKeysAreBlankOrNull() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+
+        Map<String, String> result = adapter.getPresignedReadUrls(List.of(" ", "", "\t"));
+
+        assertEquals(Map.of(), result);
+        verify(mediaStub, never()).withDeadlineAfter(any(Long.class), any(TimeUnit.class));
+    }
+
+    @Test
+    void shouldIgnoreBatchResultsWithBlankStorageKeyOrUrl() {
+        MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
+        BatchPresignedReadUrlsResponse response = BatchPresignedReadUrlsResponse.newBuilder()
+                .addResults(PresignedReadUrlResult.newBuilder()
+                        .setStorageKey("user-1/avatar.webp")
+                        .setPresignedUrl("https://cdn.example.com/user-1/avatar.webp")
+                        .build())
+                .addResults(PresignedReadUrlResult.newBuilder()
+                        .setStorageKey("")
+                        .setPresignedUrl("https://cdn.example.com/invalid.webp")
+                        .build())
+                .addResults(PresignedReadUrlResult.newBuilder()
+                        .setStorageKey("user-2/avatar.webp")
+                        .setPresignedUrl("")
+                        .build())
+                .build();
+
+        when(mediaStub.withDeadlineAfter(5, TimeUnit.SECONDS)).thenReturn(deadlineStub);
+        when(deadlineStub.getPresignedReadUrls(any())).thenReturn(response);
+
+        Map<String, String> result = adapter.getPresignedReadUrls(List.of("user-1/avatar.webp", "user-2/avatar.webp"));
+
+        assertEquals(Map.of("user-1/avatar.webp", "https://cdn.example.com/user-1/avatar.webp"), result);
+    }
+
+    @Test
     void shouldReturnEmptyMapWhenBatchRequestFails() {
         MediaGrpcClientAdapter adapter = new MediaGrpcClientAdapter(mediaStub);
 

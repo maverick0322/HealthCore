@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +50,7 @@ class GrpcAgendaLifecycleClientTest {
         assertEquals("nutri-1", request.getNutritionistId());
         assertEquals("patient-1", request.getActor());
         assertEquals("PATIENT_UNLINKED", request.getReason());
+        verify(agendaStub).withDeadlineAfter(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -85,5 +87,14 @@ class GrpcAgendaLifecycleClientTest {
 
         assertInstanceOf(AgendaServiceUnavailableException.class, exception);
         assertEquals(unexpectedFailure, exception.getCause());
+    }
+
+    @Test
+    void shouldAllowShutdownWithoutManagedChannel() {
+        GrpcAgendaLifecycleClient client = new GrpcAgendaLifecycleClient(agendaStub);
+
+        client.shutdown();
+
+        verify(agendaStub, never()).withDeadlineAfter(any(Long.class), any(TimeUnit.class));
     }
 }

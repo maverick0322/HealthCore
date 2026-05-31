@@ -17,7 +17,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +54,77 @@ class PatientProfileAccessServiceTest {
         );
 
         assertEquals("Action denied: Patient is not linked to this nutritionist.", exception.getMessage());
+    }
+
+    @Test
+    void shouldReturnExistingPatientWhenRequiredByUserId() {
+        PatientProfileAccessService service = new PatientProfileAccessService(repositoryPort);
+        PatientProfile profile = createPatientProfile("patient-123");
+        when(repositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+
+        PatientProfile result = service.requireByUserId("patient-123");
+
+        assertSame(profile, result);
+    }
+
+    @Test
+    void shouldReturnPatientWhenLinkedToRequestedNutritionist() {
+        PatientProfileAccessService service = new PatientProfileAccessService(repositoryPort);
+        PatientProfile profile = createPatientProfile("patient-123");
+        profile.assignNutritionist("nutri-123");
+        when(repositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+
+        PatientProfile result = service.requireForNutritionist("nutri-123", "patient-123");
+
+        assertSame(profile, result);
+    }
+
+    @Test
+    void shouldRejectPatientWithoutLinkedNutritionist() {
+        PatientProfileAccessService service = new PatientProfileAccessService(repositoryPort);
+        PatientProfile profile = createPatientProfile("patient-123");
+        when(repositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> service.requireForNutritionist("nutri-123", "patient-123")
+        );
+
+        assertEquals("Action denied: Patient is not linked to this nutritionist.", exception.getMessage());
+    }
+
+    @Test
+    void shouldDelegateFindByUserId() {
+        PatientProfileAccessService service = new PatientProfileAccessService(repositoryPort);
+        PatientProfile profile = createPatientProfile("patient-123");
+        when(repositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(profile));
+
+        Optional<PatientProfile> result = service.findByUserId("patient-123");
+
+        assertEquals(Optional.of(profile), result);
+    }
+
+    @Test
+    void shouldDelegateFindAllByNutritionistId() {
+        PatientProfileAccessService service = new PatientProfileAccessService(repositoryPort);
+        List<PatientProfile> profiles = List.of(createPatientProfile("patient-123"));
+        when(repositoryPort.findAllByNutritionistId("nutri-123")).thenReturn(profiles);
+
+        List<PatientProfile> result = service.findAllByNutritionistId("nutri-123");
+
+        assertEquals(profiles, result);
+    }
+
+    @Test
+    void shouldDelegateSave() {
+        PatientProfileAccessService service = new PatientProfileAccessService(repositoryPort);
+        PatientProfile profile = createPatientProfile("patient-123");
+        when(repositoryPort.save(profile)).thenReturn(profile);
+
+        PatientProfile result = service.save(profile);
+
+        assertSame(profile, result);
+        verify(repositoryPort).save(profile);
     }
 
     private PatientProfile createPatientProfile(String userId) {

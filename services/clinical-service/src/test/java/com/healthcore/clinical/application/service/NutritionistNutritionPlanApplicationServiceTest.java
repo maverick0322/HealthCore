@@ -112,6 +112,124 @@ class NutritionistNutritionPlanApplicationServiceTest {
         verify(nutritionPlanRepositoryPort, times(2)).save(any(NutritionPlan.class));
     }
 
+    @Test
+    void shouldReturnNutritionistViewWithContextSelfManagedPlanWhenNutritionistPlanExists() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        NutritionPlan nutritionistPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.NUTRITIONIST,
+                "nutri-1",
+                new DailyGoalsSnapshot(2000, 100, 200, 60, 10),
+                emptySections()
+        );
+        NutritionPlan selfManagedPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.SELF_MANAGED,
+                "patient-1",
+                new DailyGoalsSnapshot(1800, 90, 180, 55, 9),
+                emptySections()
+        );
+        NutritionistNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
+        )).thenReturn(Optional.of(nutritionistPlan));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.SELF_MANAGED, "patient-1"
+        )).thenReturn(Optional.of(selfManagedPlan));
+        when(nutritionPlanRepositoryPort.findLatestByPatientIdAndAuthorType(
+                "patient-1", AuthorType.SELF_MANAGED
+        )).thenReturn(Optional.of(selfManagedPlan));
+
+        NutritionPlanView view = service.getNutritionistPatientNutritionPlan("nutri-1", "patient-1");
+
+        assertEquals("NUTRITIONIST", view.mode());
+        assertEquals(AuthorType.NUTRITIONIST, view.authorType());
+        assertNotNull(view.contextSelfManagedPlan());
+        assertEquals(AuthorType.SELF_MANAGED, view.contextSelfManagedPlan().getAuthorType());
+    }
+
+    @Test
+    void shouldFallbackToActiveSelfManagedPlanWhenNutritionistPlanDoesNotExist() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        NutritionPlan selfManagedPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.SELF_MANAGED,
+                "patient-1",
+                new DailyGoalsSnapshot(1800, 90, 180, 55, 9),
+                emptySections()
+        );
+        NutritionistNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
+        )).thenReturn(Optional.empty());
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.SELF_MANAGED, "patient-1"
+        )).thenReturn(Optional.of(selfManagedPlan));
+
+        NutritionPlanView view = service.getNutritionistPatientNutritionPlan("nutri-1", "patient-1");
+
+        assertEquals("NUTRITIONIST", view.mode());
+        assertEquals(AuthorType.SELF_MANAGED, view.authorType());
+        assertEquals(null, view.contextSelfManagedPlan());
+    }
+
+    @Test
+    void shouldReturnEmptyNutritionistViewWhenPatientHasNoPlans() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        NutritionistNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
+        )).thenReturn(Optional.empty());
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.SELF_MANAGED, "patient-1"
+        )).thenReturn(Optional.empty());
+
+        NutritionPlanView view = service.getNutritionistPatientNutritionPlan("nutri-1", "patient-1");
+
+        assertEquals("NUTRITIONIST", view.mode());
+        assertEquals(null, view.authorType());
+        assertEquals(4, view.sections().size());
+        assertEquals(null, view.contextSelfManagedPlan());
+    }
+
+    @Test
+    void shouldUpdateExistingNutritionistPlan() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        NutritionPlan existingPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.NUTRITIONIST,
+                "nutri-1",
+                new DailyGoalsSnapshot(1800, 90, 180, 55, 9),
+                emptySections()
+        );
+        NutritionistNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.SELF_MANAGED, "patient-1"
+        )).thenReturn(Optional.empty());
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
+        )).thenReturn(Optional.of(existingPlan));
+        when(nutritionPlanRepositoryPort.findLatestByPatientIdAndAuthorType(
+                "patient-1", AuthorType.SELF_MANAGED
+        )).thenReturn(Optional.empty());
+        when(nutritionCatalogPort.getFoodByBarcode("food-1")).thenReturn(Optional.of(createCatalogItem()));
+        when(nutritionPlanRepositoryPort.save(any(NutritionPlan.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NutritionPlanView view = service.upsertNutritionistPatientNutritionPlan("nutri-1", "patient-1", createDraft());
+
+        assertEquals(AuthorType.NUTRITIONIST, view.authorType());
+        assertEquals(1, existingPlan.getSections().get(0).options().size());
+        verify(nutritionPlanRepositoryPort).save(existingPlan);
+    }
+
     private NutritionistNutritionPlanApplicationService createService() {
         NutritionPlanProfileContextService contextService = new NutritionPlanProfileContextService(clinicalRepositoryPort);
         NutritionPlanDraftCalculator draftCalculator = new NutritionPlanDraftCalculator(nutritionCatalogPort);

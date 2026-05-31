@@ -21,14 +21,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,6 +91,106 @@ class PatientNutritionPlanApplicationServiceTest {
         assertEquals("SELF_MANAGED", view.mode());
         assertEquals(1, view.sections().get(0).options().size());
         assertTrue(view.sections().get(0).options().get(0).totalCalories() > view.dailyGoals().targetCalories());
+    }
+
+    @Test
+    void shouldReturnReadOnlyViewWhenLinkedPatientHasNutritionistPlan() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        NutritionPlan nutritionistPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.NUTRITIONIST,
+                "nutri-1",
+                new DailyGoalsSnapshot(1800, 90, 180, 55, 9),
+                emptySections()
+        );
+        PatientNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
+        )).thenReturn(Optional.of(nutritionistPlan));
+
+        NutritionPlanView view = service.getMyNutritionPlan("patient-1");
+
+        assertEquals("READ_ONLY", view.mode());
+        assertFalse(view.canEdit());
+        assertEquals(AuthorType.NUTRITIONIST, view.authorType());
+        assertEquals(4, view.sections().size());
+    }
+
+    @Test
+    void shouldReturnEmptyReadOnlyViewWhenLinkedPatientHasNoNutritionistPlan() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        PatientNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.NUTRITIONIST, "nutri-1"
+        )).thenReturn(Optional.empty());
+
+        NutritionPlanView view = service.getMyNutritionPlan("patient-1");
+
+        assertEquals("READ_ONLY", view.mode());
+        assertFalse(view.canEdit());
+        assertEquals(null, view.authorType());
+        assertEquals(4, view.sections().size());
+    }
+
+    @Test
+    void shouldReturnEmptySelfManagedViewWhenPatientHasNoPlan() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", null);
+        PatientNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.SELF_MANAGED, "patient-1"
+        )).thenReturn(Optional.empty());
+
+        NutritionPlanView view = service.getMyNutritionPlan("patient-1");
+
+        assertEquals("SELF_MANAGED", view.mode());
+        assertTrue(view.canEdit());
+        assertEquals(null, view.authorType());
+        assertEquals(4, view.sections().size());
+    }
+
+    @Test
+    void shouldRejectSelfManagedPlanUpdateWhenPatientIsLinked() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", "nutri-1");
+        PatientNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+
+        assertThrows(AccessDeniedException.class, () -> service.upsertMyNutritionPlan("patient-1", createDraft()));
+
+        verify(nutritionPlanRepositoryPort, never()).save(any(NutritionPlan.class));
+    }
+
+    @Test
+    void shouldUpdateExistingSelfManagedPlan() {
+        PatientProfile patientProfile = createPatientProfile("patient-1", null);
+        NutritionPlan existingPlan = NutritionPlan.createActive(
+                "patient-1",
+                AuthorType.SELF_MANAGED,
+                "patient-1",
+                new DailyGoalsSnapshot(1800, 90, 180, 55, 9),
+                emptySections()
+        );
+        PatientNutritionPlanApplicationService service = createService();
+
+        when(clinicalRepositoryPort.findByUserId("patient-1")).thenReturn(Optional.of(patientProfile));
+        when(nutritionPlanRepositoryPort.findActiveByPatientIdAndAuthorTypeAndAuthorId(
+                "patient-1", AuthorType.SELF_MANAGED, "patient-1"
+        )).thenReturn(Optional.of(existingPlan));
+        when(nutritionCatalogPort.getFoodByBarcode("food-1")).thenReturn(Optional.of(createCatalogItem()));
+        when(nutritionPlanRepositoryPort.save(any(NutritionPlan.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        NutritionPlanView view = service.upsertMyNutritionPlan("patient-1", createDraft());
+
+        assertNotNull(view.authorType());
+        assertEquals(AuthorType.SELF_MANAGED, view.authorType());
+        assertEquals(1, existingPlan.getSections().get(0).options().size());
+        verify(nutritionPlanRepositoryPort).save(existingPlan);
     }
 
     private PatientNutritionPlanApplicationService createService() {

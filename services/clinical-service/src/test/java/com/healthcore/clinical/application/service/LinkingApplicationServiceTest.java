@@ -101,6 +101,34 @@ class LinkingApplicationServiceTest {
     }
 
     @Test
+    void generateLinkingCode_Retries_WhenGeneratedCandidateAlreadyExists() {
+        String nutriId = "nutri-456";
+        when(linkingCodeRepositoryPort.findByCode(anyString()))
+                .thenReturn(Optional.of(new LinkingCode("EXISTS1", nutriId, LocalDateTime.now())))
+                .thenReturn(Optional.of(new LinkingCode("EXISTS2", nutriId, LocalDateTime.now())))
+                .thenReturn(Optional.empty());
+        when(linkingCodeRepositoryPort.save(any(LinkingCode.class))).thenAnswer(i -> i.getArgument(0));
+
+        LinkingCode result = service.generateLinkingCode(nutriId);
+
+        assertNotNull(result);
+        verify(linkingCodeRepositoryPort, times(3)).findByCode(anyString());
+        verify(linkingCodeRepositoryPort).save(any(LinkingCode.class));
+    }
+
+    @Test
+    void generateLinkingCode_ThrowsWhenAllSaveAttemptsCollide() {
+        String nutriId = "nutri-456";
+        when(linkingCodeRepositoryPort.findByCode(anyString())).thenReturn(Optional.empty());
+        when(linkingCodeRepositoryPort.save(any(LinkingCode.class)))
+                .thenThrow(new DuplicateKeyException("duplicate"));
+
+        assertThrows(DuplicateKeyException.class, () -> service.generateLinkingCode(nutriId));
+
+        verify(linkingCodeRepositoryPort, times(10)).save(any(LinkingCode.class));
+    }
+
+    @Test
     void linkPatient_Success() {
         String code = "A1B2C3";
         LinkingCode linkingCode = new LinkingCode(code, "nutri-456", LocalDateTime.now());
@@ -112,6 +140,19 @@ class LinkingApplicationServiceTest {
 
         assertEquals("nutri-456", testProfile.getNutritionistId());
         verify(clinicalRepositoryPort, times(1)).save(testProfile);
+    }
+
+    @Test
+    void linkPatient_UsesUppercaseCodeLookup() {
+        LinkingCode linkingCode = new LinkingCode("A1B2C3", "nutri-456", LocalDateTime.now());
+
+        when(linkingCodeRepositoryPort.findByCode("A1B2C3")).thenReturn(Optional.of(linkingCode));
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(testProfile));
+
+        service.linkPatient("patient-123", "a1b2c3");
+
+        verify(linkingCodeRepositoryPort).findByCode("A1B2C3");
+        verify(clinicalRepositoryPort).save(testProfile);
     }
 
     @Test
@@ -203,6 +244,19 @@ class LinkingApplicationServiceTest {
     }
 
     @Test
+    void unlinkPatient_SavesProfileWithoutCleanupWhenNoNutritionistIsAssigned() {
+        when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(testProfile));
+
+        service.unlinkPatient("patient-123");
+
+        assertNull(testProfile.getNutritionistId());
+        verify(agendaLifecyclePort, never()).cancelFutureAppointmentsForUnlink(anyString(), anyString(), anyString(), anyString());
+        verify(clinicalRepositoryPort).save(testProfile);
+        verify(manageNutritionPlanUseCase, never()).archivePlansAfterUnlink(anyString(), anyString());
+        verify(clinicalObservationRepositoryPort, never()).deleteAllByPatientId(anyString());
+    }
+
+    @Test
     void unlinkNutritionist_ArchivesPlansAfterSuccessfulUnlink() {
         testProfile.assignNutritionist("nutri-777");
         when(clinicalRepositoryPort.findByUserId("patient-123")).thenReturn(Optional.of(testProfile));
@@ -250,6 +304,36 @@ class LinkingApplicationServiceTest {
         verify(clinicalRepositoryPort, never()).save(any());
         verify(manageNutritionPlanUseCase, never()).archivePlansAfterUnlink(anyString(), anyString());
         verify(clinicalObservationRepositoryPort, never()).deleteAllByPatientId(anyString());
+    }
+
+    @Test
+    void unlinkPatient_ThrowsException_WhenProfileNotFound() {
+        when(clinicalRepositoryPort.findByUserId("ghost-user")).thenReturn(Optional.empty());
+
+        assertThrows(ProfileNotFoundException.class, () -> service.unlinkPatient("ghost-user"));
+
+        verify(clinicalRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void unlinkNutritionist_ThrowsException_WhenProfileNotFound() {
+        when(clinicalRepositoryPort.findByUserId("ghost-user")).thenReturn(Optional.empty());
+
+        assertThrows(ProfileNotFoundException.class, () -> service.unlinkNutritionist("nutri-777", "ghost-user"));
+
+        verify(clinicalRepositoryPort, never()).save(any());
+    }
+
+    @Test
+    void getCurrentLinkingCode_ReturnsActiveCode() {
+        LinkingCode activeCode = new LinkingCode("A1B2C3", "nutri-456", LocalDateTime.now().minusMinutes(5));
+        when(linkingCodeRepositoryPort.findByNutritionistId("nutri-456")).thenReturn(Optional.of(activeCode));
+
+        LinkingCode result = service.getCurrentLinkingCode("nutri-456");
+
+        assertNotNull(result);
+        assertEquals("A1B2C3", result.getCode());
+        verify(linkingCodeRepositoryPort, never()).deleteByCode(anyString());
     }
 
     @Test

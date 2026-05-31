@@ -146,6 +146,106 @@ class PatientProfileTest {
         );
     }
 
+    @Test
+    void shouldAssignNutritionistWhenProfileIsUnlinked() {
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+
+        profile.assignNutritionist("nutri-123");
+
+        assertEquals("nutri-123", profile.getNutritionistId());
+    }
+
+    @Test
+    void shouldRejectAssigningAnotherNutritionistWhenAlreadyLinked() {
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+        profile.assignNutritionist("nutri-123");
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> profile.assignNutritionist("nutri-456")
+        );
+
+        assertEquals("El paciente ya tiene un nutriologo asignado.", exception.getMessage());
+    }
+
+    @Test
+    void shouldRemoveAssignedNutritionist() {
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+        profile.assignNutritionist("nutri-123");
+
+        profile.removeNutritionist();
+
+        assertNull(profile.getNutritionistId());
+    }
+
+    @Test
+    void shouldNormalizeProfilePhotoKeyOnUpdate() {
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+
+        profile.updateProfilePhoto("  patient-photos/user-123/avatar.png  ");
+
+        assertEquals("patient-photos/user-123/avatar.png", profile.getProfilePhotoKey());
+    }
+
+    @Test
+    void shouldClearProfilePhotoKeyWhenBlankValueIsProvided() {
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+        profile.updateProfilePhoto("patient-photos/user-123/avatar.png");
+
+        profile.updateProfilePhoto("   ");
+
+        assertNull(profile.getProfilePhotoKey());
+    }
+
+    @Test
+    void shouldBuildFullNameWithoutMaternalLastName() {
+        PatientProfile profile = PatientProfile.rehydrate(
+                "user-123",
+                "Carlos",
+                "Gomez",
+                null,
+                70.0,
+                175.0,
+                ClinicalTime.today().minusYears(25),
+                Gender.MALE,
+                ActivityLevel.SEDENTARY,
+                "weight-loss",
+                "omnivore",
+                List.of(),
+                List.of(),
+                List.of(new WeightRecord(70.0, ClinicalTime.today().minusDays(7))),
+                null,
+                null
+        );
+
+        assertEquals("Carlos Gomez", profile.getFullName());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenEditingUnknownWeightRecord() {
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> profile.editWeightRecord(ClinicalTime.today().minusDays(30), 68.0, ClinicalTime.today().minusDays(30))
+        );
+
+        assertEquals("Weight record not found for the provided date.", exception.getMessage());
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDeletingUnknownWeightRecordWithMultipleEntries() {
+        PatientProfile profile = createPatientProfile("user-123", ClinicalTime.today().minusYears(25));
+        profile.registerWeight(72.0, ClinicalTime.today());
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> profile.deleteWeightRecord(ClinicalTime.today().minusDays(30))
+        );
+
+        assertEquals("Weight record not found for the provided date.", exception.getMessage());
+    }
+
     private PatientProfile createPatientProfile(String userId, LocalDate birthDate) {
         return PatientProfile.rehydrate(
                 userId,

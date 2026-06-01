@@ -1,7 +1,7 @@
 {
   "name": "health-core-desktop",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "HealthCore Desktop Application (Electron wrapper)",
   "repository": {
     "type": "git",

@@ -27,18 +27,19 @@ identity_active_users_last_day
 > Nota: Micrometer exporta los puntos en Prometheus con guiones bajos. Por eso `identity.active_users.last_day` se consulta como `identity_active_users_last_day`.
 
 ### Reservas de citas
-- Metrica: `agenda.appointments.created`
-- Metrica: `agenda.appointments.create.failed`
-- Metrica: `agenda.appointments.confirmed`
+- Metrica en Java: `agenda.appointments.created` -> En Prometheus: `agenda_appointments_total`
+- Metrica en Java: `agenda.appointments.create.failed` -> En Prometheus: `agenda_appointments_create_failed_total`
+- Metrica en Java: `agenda.appointments.confirmed` -> En Prometheus: `agenda_appointments_confirmed_total`
 - Tipo: counter
 - Fuente: agenda-service
 
 Consultas PromQL recomendadas (tasa por minuto):
 ```
-rate(agenda_appointments_created[1m])
-rate(agenda_appointments_create_failed[1m])
-rate(agenda_appointments_confirmed[1m])
+rate(agenda_appointments_total[1m])
+rate(agenda_appointments_create_failed_total[1m])
+rate(agenda_appointments_confirmed_total[1m])
 ```
+
 
 ## Crear paneles en Grafana
 1. En Grafana, ir a **Dashboards** -> **New** -> **New dashboard**.

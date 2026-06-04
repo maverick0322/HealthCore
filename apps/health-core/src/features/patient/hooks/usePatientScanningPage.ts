@@ -47,7 +47,7 @@ export const usePatientScanningPage = () => {
       setShowUnlinkDialog(false);
       setFeedback({ type: 'success', message: t('linking.unlinkSuccess') });
 
-      window.setTimeout(() => {
+      globalThis.setTimeout(() => {
         navigate('/profile');
       }, 2000);
     } catch (error) {
@@ -74,7 +74,7 @@ export const usePatientScanningPage = () => {
       await clinicalApi.linkPatient({ code: codeToLink.toUpperCase() });
       setFeedback({ type: 'success', message: t('linking.success') });
 
-      window.setTimeout(() => {
+      globalThis.setTimeout(() => {
         navigate('/profile');
       }, 2000);
     } catch (error: unknown) {

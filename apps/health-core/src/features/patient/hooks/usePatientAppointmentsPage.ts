@@ -131,8 +131,8 @@ export const usePatientAppointmentsPage = () => {
   // ── Toast auto-dismiss ────────────────────────────────────────────────────
   useEffect(() => {
     if (!toast) return;
-    const id = window.setTimeout(() => setToast(null), 4000);
-    return () => window.clearTimeout(id);
+    const id = globalThis.setTimeout(() => setToast(null), 4000);
+    return () => globalThis.clearTimeout(id);
   }, [toast]);
 
   // ── Fetch appointments on mount ───────────────────────────────────────────

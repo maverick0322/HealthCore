@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 
 interface QrScannerProps {
-  onScan: (data: string) => void;
-  isScanning: boolean;
+  readonly onScan: (data: string) => void;
+  readonly isScanning: boolean;
 }
 
 const SCAN_INTERVAL_MS = 300;
@@ -14,6 +14,9 @@ interface ScanResultLike {
   getText?: () => string;
   text?: string;
 }
+
+const isScanResultLike = (result: unknown): result is ScanResultLike =>
+  typeof result === 'object' && result !== null;
 
 interface BrowserMultiFormatReaderLike {
   timeBetweenDecodingAttempts: number;
@@ -40,7 +43,7 @@ const normalizeLinkingCode = (rawValue: string): string | null => {
   return embeddedMatch ? embeddedMatch[0] : null;
 };
 
-export const QrScanner = ({ onScan, isScanning }: QrScannerProps) => {
+export const QrScanner = ({ onScan, isScanning }: Readonly<QrScannerProps>) => {
   const { t } = useTranslation('patient');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -50,18 +53,17 @@ export const QrScanner = ({ onScan, isScanning }: QrScannerProps) => {
   const hasScannedRef = useRef(false);
 
   const extractScannerText = (result: unknown): string | null => {
-    if (!result || typeof result !== 'object') {
+    if (!isScanResultLike(result)) {
       return null;
     }
 
-    const resultWithText = result as ScanResultLike;
-    if (typeof resultWithText.getText === 'function') {
-      const text = resultWithText.getText();
+    if (typeof result.getText === 'function') {
+      const text = result.getText();
       return typeof text === 'string' ? text : null;
     }
 
-    if (typeof resultWithText.text === 'string') {
-      return resultWithText.text;
+    if (typeof result.text === 'string') {
+      return result.text;
     }
 
     return null;

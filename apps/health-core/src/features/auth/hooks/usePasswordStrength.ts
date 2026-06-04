@@ -8,6 +8,13 @@ export type PasswordStrength = {
 
 export function usePasswordStrength(password: string): PasswordStrength {
   return useMemo(() => {
+    const clampPasswordScore = (value: number): PasswordStrength["score"] => {
+      if (value <= 0) return 0;
+      if (value === 1) return 1;
+      if (value === 2) return 2;
+      return 3;
+    };
+
     let score = 0;
     
     const isValidLength = password.length >= 8 && password.length <= 15;
@@ -18,7 +25,7 @@ export function usePasswordStrength(password: string): PasswordStrength {
       if (/[^A-Za-z0-9]/.test(password)) score += 1;
     }
 
-    const finalScore = Math.min(Math.max(score, 0), 3) as 0 | 1 | 2 | 3;
+    const finalScore = clampPasswordScore(Math.min(Math.max(score, 0), 3));
     
     const labels: Record<number, PasswordStrength["labelKey"]> = {
       0: "securityLow",

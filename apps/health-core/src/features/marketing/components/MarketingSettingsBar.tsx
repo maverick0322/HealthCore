@@ -10,13 +10,13 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 
-export const MarketingSettingsBar = ({ className }: { className?: string }) => {
+export const MarketingSettingsBar = ({ className }: Readonly<{ className?: string }>) => {
   const { theme, setTheme, language, setLanguage } = useSettingsStore();
 
   const isDark =
     theme === "dark" ||
     (theme === "system" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
+      globalThis.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const toggleTheme = () => {
     setTheme(isDark ? "light" : "dark");

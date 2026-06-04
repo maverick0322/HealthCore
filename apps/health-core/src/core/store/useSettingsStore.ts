@@ -36,7 +36,7 @@ export const useSettingsStore = create<SettingsState>()(
 // Helper function to apply dark mode class
 export const applyTheme = (theme: Theme) => {
   const root = document.documentElement;
-  const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isSystemDark = globalThis.matchMedia('(prefers-color-scheme: dark)').matches;
   
   root.classList.remove('dark');
   if (theme === 'dark' || (theme === 'system' && isSystemDark)) {

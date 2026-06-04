@@ -19,9 +19,14 @@ interface LocationState {
   email?: string;
 }
 
+const isLocationState = (state: unknown): state is LocationState =>
+  typeof state === "object" &&
+  state !== null &&
+  (!("email" in state) || typeof state.email === "string");
+
 export const SignUpPage = () => {
   const location = useLocation();
-  const state = (location.state as LocationState) || {};
+  const state = isLocationState(location.state) ? location.state : {};
 
   const [email, setEmail] = useState(state.email ?? "");
   const [password, setPassword] = useState("");
@@ -39,7 +44,7 @@ export const SignUpPage = () => {
     nutriologo: "NUTRITIONIST",
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     await handleRegister({
       email,
@@ -112,7 +117,7 @@ export const SignUpPage = () => {
               variant="outline"
               className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
               onClick={() => {
-                window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0?ui_locales=${i18n.language}`;
+                globalThis.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0?ui_locales=${i18n.language}`;
               }}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

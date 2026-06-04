@@ -5,7 +5,7 @@ import { LoadingSpinner } from '@/shared/ui/LoadingSpinner';
 import type { UserRole } from '@/features/auth/types/auth.types';
 
 interface ProtectedRouteProps {
-  allowedRoles?: UserRole[];
+  readonly allowedRoles?: UserRole[];
 }
 
 /**
@@ -13,7 +13,7 @@ interface ProtectedRouteProps {
  * If allowedRoles is provided, it verifies the user's role.
  * Renders child routes via <Outlet /> when authenticated and authorized
  */
-export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ allowedRoles }: Readonly<ProtectedRouteProps>) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const fetchCurrentUser = useAuthStore((s) => s.fetchCurrentUser);

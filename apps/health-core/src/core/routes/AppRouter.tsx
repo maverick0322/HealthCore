@@ -39,8 +39,8 @@ import {NutritionistGenerateQrPage} from "@/features/nutritionist/pages/Nutritio
 import { OnboardingEntryRedirect } from "@/core/routes/OnboardingEntryRedirect";
 
 const isElectron =
-  window.navigator.userAgent.toLowerCase().includes("electron") ||
-  window.location.protocol === "file:";
+  globalThis.navigator.userAgent.toLowerCase().includes("electron") ||
+  globalThis.location.protocol === "file:";
 
 const routerFactory = isElectron ? createHashRouter : createBrowserRouter;
 

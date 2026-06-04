@@ -9,13 +9,13 @@ import { adminService } from '@/features/admin/services/adminService';
 import type { CreateLocalFoodRequest } from '@/features/admin/types/admin.types';
 
 interface CreateLocalFoodModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  initialName?: string;
-  onSuccess?: () => void;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly initialName?: string;
+  readonly onSuccess?: () => void;
 }
 
-export const CreateLocalFoodModal: React.FC<CreateLocalFoodModalProps> = ({ 
+export const CreateLocalFoodModal: React.FC<Readonly<CreateLocalFoodModalProps>> = ({ 
   isOpen, 
   onClose, 
   initialName = "",
@@ -46,7 +46,7 @@ export const CreateLocalFoodModal: React.FC<CreateLocalFoodModalProps> = ({
     }
   }, [isOpen, initialName]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 

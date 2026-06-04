@@ -1,15 +1,15 @@
 import { AlertCircle } from 'lucide-react';
 
 interface FieldErrorProps {
-  message?: string | null;
-  id?: string;
+  readonly message?: string | null;
+  readonly id?: string;
 }
 
 /**
  * Renders an inline validation error below a form field.
  * Returns null when `message` is falsy — safe to render unconditionally.
  */
-export const FieldError = ({ message, id }: FieldErrorProps) => {
+export const FieldError = ({ message, id }: Readonly<FieldErrorProps>) => {
   if (!message) return null;
 
   return (

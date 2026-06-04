@@ -13,15 +13,20 @@ interface LocationState {
   email?: string;
 }
 
+const isLocationState = (state: unknown): state is LocationState =>
+  typeof state === "object" &&
+  state !== null &&
+  (!("email" in state) || typeof state.email === "string");
+
 export const ForgotPasswordPage = () => {
   const { t } = useTranslation("auth");
   const location = useLocation();
-  const state = (location.state as LocationState) || {};
+  const state = isLocationState(location.state) ? location.state : {};
 
   const [email, setEmail] = useState(state.email ?? "");
   const { handleForgotPassword, isLoading, error, fieldErrors } = useForgotPassword();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     await handleForgotPassword(email);
   };

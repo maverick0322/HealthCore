@@ -17,10 +17,18 @@ interface LocationState {
   flow?: 'email-verification' | 'password-reset';
 }
 
+const isLocationState = (state: unknown): state is LocationState =>
+  typeof state === "object" &&
+  state !== null &&
+  (!("email" in state) || typeof state.email === "string") &&
+  (!("flow" in state) ||
+    state.flow === 'email-verification' ||
+    state.flow === 'password-reset');
+
 export const VerifyCodePage = () => {
   const { t } = useTranslation("auth");
   const location = useLocation();
-  const state = (location.state as LocationState) || {};
+  const state = isLocationState(location.state) ? location.state : {};
   const email = state.email || '';
   const flow = state.flow || 'email-verification';
 
@@ -46,7 +54,7 @@ export const VerifyCodePage = () => {
     setTimeLeft(60);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     await handleVerifyCode(email, code, flow);
   };

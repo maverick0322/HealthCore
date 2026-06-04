@@ -68,8 +68,8 @@ export const useNutritionistAgendaPage = () => {
 
   useEffect(() => {
     if (!toast) return;
-    const timeoutId = window.setTimeout(() => setToast(null), 4000);
-    return () => window.clearTimeout(timeoutId);
+    const timeoutId = globalThis.setTimeout(() => setToast(null), 4000);
+    return () => globalThis.clearTimeout(timeoutId);
   }, [toast]);
 
   const fetchWeek = (targetWeek = weekStart) => {
@@ -235,7 +235,7 @@ export const useNutritionistAgendaPage = () => {
         slotId: bookingTarget.id,
         slotVersion: bookingTarget.version,
         patientId: selectedPatientId,
-        locale: window.navigator.language || 'es-MX',
+        locale: globalThis.navigator.language || 'es-MX',
       });
       setBookingTarget(null);
       setToast({ msg: t('agenda.booked'), type: 'success' });

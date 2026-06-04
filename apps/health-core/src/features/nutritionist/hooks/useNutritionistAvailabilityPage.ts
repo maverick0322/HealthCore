@@ -101,8 +101,8 @@ export const useNutritionistAvailabilityPage = () => {
 
   useEffect(() => {
     if (!toast) return;
-    const id = window.setTimeout(() => setToast(null), 4000);
-    return () => window.clearTimeout(id);
+    const id = globalThis.setTimeout(() => setToast(null), 4000);
+    return () => globalThis.clearTimeout(id);
   }, [toast]);
 
   useEffect(() => {

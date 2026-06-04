@@ -234,11 +234,11 @@ const SliderWithButtons = ({
 
   const clearHold = () => {
     if (holdTimeoutRef.current !== null) {
-      window.clearTimeout(holdTimeoutRef.current);
+      globalThis.clearTimeout(holdTimeoutRef.current);
       holdTimeoutRef.current = null;
     }
     if (holdIntervalRef.current !== null) {
-      window.clearInterval(holdIntervalRef.current);
+      globalThis.clearInterval(holdIntervalRef.current);
       holdIntervalRef.current = null;
     }
   };
@@ -249,8 +249,8 @@ const SliderWithButtons = ({
     skipClickRef.current = true;
     action();
     clearHold();
-    holdTimeoutRef.current = window.setTimeout(() => {
-      holdIntervalRef.current = window.setInterval(action, 90);
+    holdTimeoutRef.current = globalThis.setTimeout(() => {
+      holdIntervalRef.current = globalThis.setInterval(action, 90);
     }, 350);
   };
 

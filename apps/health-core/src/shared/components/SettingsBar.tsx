@@ -14,8 +14,8 @@ import {
 } from "@/shared/ui/dropdown-menu";
 
 interface SettingsBarProps {
-  className?: string;
-  showAccountMenu?: boolean;
+  readonly className?: string;
+  readonly showAccountMenu?: boolean;
 }
 
 export const SettingsBar = ({
@@ -29,7 +29,7 @@ export const SettingsBar = ({
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
-  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const isDark = theme === "dark" || (theme === "system" && globalThis.matchMedia("(prefers-color-scheme: dark)").matches);
 
   const toggleTheme = () => {
     setTheme(isDark ? "light" : "dark");

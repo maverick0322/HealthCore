@@ -18,7 +18,7 @@ export const LoginPage = () => {
   const { t, i18n } = useTranslation("auth");
   const { handleLogin, isLoading, error, fieldErrors } = useLogin();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     await handleLogin({ email, password });
   };
@@ -55,7 +55,7 @@ export const LoginPage = () => {
               variant="outline"
               className="w-full flex items-center justify-center gap-3 h-11 sm:h-10 text-sm bg-background hover:bg-muted border-border transition-colors font-medium"
               onClick={() => {
-                window.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0?ui_locales=${i18n.language}`;
+                globalThis.location.href = `${ENV.IDENTITY_SERVICE_URL}/oauth2/authorization/auth0?ui_locales=${i18n.language}`;
               }}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">

@@ -45,7 +45,7 @@ export const useNutritionistPostalCodeLookup = ({
     setIsPostalLookupLoading(true);
     setPostalLookupMessage(null);
 
-    const timeoutId = window.setTimeout(async () => {
+    const timeoutId = globalThis.setTimeout(async () => {
       try {
         const lookupResult = await clinicalApi.lookupPostalCode(trimmedPostalCode);
         if (!isActive) {
@@ -87,7 +87,7 @@ export const useNutritionistPostalCodeLookup = ({
 
     return () => {
       isActive = false;
-      window.clearTimeout(timeoutId);
+      globalThis.clearTimeout(timeoutId);
     };
   }, [postalCode, setClinicAddress, t]);
 

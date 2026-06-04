@@ -2,10 +2,10 @@ import { useTranslation } from "react-i18next";
 import type { PasswordStrength } from "../hooks/usePasswordStrength";
 
 interface Props {
-  strength: PasswordStrength;
+  readonly strength: PasswordStrength;
 }
 
-export function PasswordStrengthIndicator({ strength }: Props) {
+export function PasswordStrengthIndicator({ strength }: Readonly<Props>) {
   const { t } = useTranslation("auth");
   const { score, labelKey } = strength;
 

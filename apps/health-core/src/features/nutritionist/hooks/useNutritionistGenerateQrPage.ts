@@ -75,9 +75,9 @@ export const useNutritionistGenerateQrPage = () => {
     };
 
     updateTimeLeft();
-    const timer = window.setInterval(updateTimeLeft, 1000);
+    const timer = globalThis.setInterval(updateTimeLeft, 1000);
 
-    return () => window.clearInterval(timer);
+    return () => globalThis.clearInterval(timer);
   }, [expiresAt]);
 
   const handleBackToPatients = () => {

@@ -16,11 +16,17 @@ interface LocationState {
   code?: string;
 }
 
+const isLocationState = (state: unknown): state is LocationState =>
+  typeof state === "object" &&
+  state !== null &&
+  (!("email" in state) || typeof state.email === "string") &&
+  (!("code" in state) || typeof state.code === "string");
+
 export const ResetPasswordPage = () => {
   const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const location = useLocation();
-  const state = (location.state as LocationState) || {};
+  const state = isLocationState(location.state) ? location.state : {};
   const email = state.email || '';
   const code = state.code || '';
 
@@ -32,7 +38,7 @@ export const ResetPasswordPage = () => {
   const strength = usePasswordStrength(password);
   const { handleResetPassword, isLoading, error, isSuccess, fieldErrors } = useResetPassword();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     await handleResetPassword(email, code, password, confirmPassword);
   };
@@ -174,7 +180,7 @@ export const ResetPasswordPage = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          window.location.href = "mailto:support@healthcore.com";
+                          globalThis.location.href = "mailto:support@healthcore.com";
                         }}
                         className="hover:text-primary transition-colors hover:underline"
                       >

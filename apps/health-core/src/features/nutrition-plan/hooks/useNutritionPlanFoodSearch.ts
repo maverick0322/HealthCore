@@ -27,7 +27,7 @@ export const useNutritionPlanFoodSearch = ({
       return;
     }
 
-    const handle = window.setTimeout(async () => {
+    const handle = globalThis.setTimeout(async () => {
       setIsSearching(true);
       try {
         const results = await onSearchFoods(searchQuery.trim());
@@ -46,7 +46,7 @@ export const useNutritionPlanFoodSearch = ({
       }
     }, 250);
 
-    return () => window.clearTimeout(handle);
+    return () => globalThis.clearTimeout(handle);
   }, [editorOpen, namespace, onSearchFoods, searchQuery]);
 
   const resetSearch = () => {

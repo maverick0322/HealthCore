@@ -28,7 +28,7 @@ export const usePatientPlanQuickTrack = () => {
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
-        window.clearTimeout(timeoutRef.current);
+        globalThis.clearTimeout(timeoutRef.current);
       }
     };
   }, []);
@@ -44,10 +44,10 @@ export const usePatientPlanQuickTrack = () => {
     });
 
     if (timeoutRef.current) {
-      window.clearTimeout(timeoutRef.current);
+      globalThis.clearTimeout(timeoutRef.current);
     }
 
-    timeoutRef.current = window.setTimeout(() => {
+    timeoutRef.current = globalThis.setTimeout(() => {
       setQuickTrackFeedback(null);
       timeoutRef.current = null;
     }, 5000);
@@ -61,10 +61,10 @@ export const usePatientPlanQuickTrack = () => {
     setQuickTrackFeedback({ type: 'error', message: logError });
 
     if (timeoutRef.current) {
-      window.clearTimeout(timeoutRef.current);
+      globalThis.clearTimeout(timeoutRef.current);
     }
 
-    timeoutRef.current = window.setTimeout(() => {
+    timeoutRef.current = globalThis.setTimeout(() => {
       setQuickTrackFeedback(null);
       timeoutRef.current = null;
     }, 5000);

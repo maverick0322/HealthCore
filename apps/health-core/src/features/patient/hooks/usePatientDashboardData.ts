@@ -95,11 +95,11 @@ export const usePatientDashboardData = () => {
       }
     };
 
-    window.addEventListener('focus', handleWindowRefresh);
+    globalThis.addEventListener('focus', handleWindowRefresh);
     document.addEventListener('visibilitychange', handleWindowRefresh);
 
     return () => {
-      window.removeEventListener('focus', handleWindowRefresh);
+      globalThis.removeEventListener('focus', handleWindowRefresh);
       document.removeEventListener('visibilitychange', handleWindowRefresh);
     };
   }, [loadProfile]);

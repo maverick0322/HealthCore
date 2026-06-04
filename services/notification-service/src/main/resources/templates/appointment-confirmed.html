@@ -5,10 +5,10 @@
     <title>HealthCore</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f7f7; color: #333333;">
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;" role="presentation">
         <tr>
             <td align="center" style="padding: 40px 0;">
-                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e0e0e0;">
+                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e0e0e0;" role="presentation">
                     <!-- Header -->
                     <tr>
                         <td align="center" style="padding: 40px 0; background-color: #8AA382;">
@@ -24,6 +24,13 @@
 
                             <div style="margin: 30px 0; padding: 25px; background-color: #f9fbf9; border-radius: 8px;">
                                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" style="padding: 0 0 10px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: #8AA382; text-align: left;">Detalle</th>
+                                            <th scope="col" style="padding: 0 0 10px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: #8AA382; text-align: left;">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                                     <tr>
                                         <th scope="row" style="padding: 5px 0; font-weight: bold; color: #666666; text-align: left;" width="30%" th:text="#{appointment.confirmed.details.start}">Inicio:</th>
                                         <td style="padding: 5px 0; color: #333333;" th:text="${startTime}">...</td>
@@ -32,6 +39,7 @@
                                         <th scope="row" style="padding: 5px 0; font-weight: bold; color: #666666; text-align: left;" th:text="#{appointment.confirmed.details.end}">Fin:</th>
                                         <td style="padding: 5px 0; color: #333333;" th:text="${endTime}">...</td>
                                     </tr>
+                                    </tbody>
                                 </table>
                             </div>
 

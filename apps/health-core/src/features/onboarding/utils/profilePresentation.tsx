@@ -261,7 +261,7 @@ export const formatIsoDateToDisplay = (isoDate: string | null | undefined): stri
 
 export const normalizeDateInput = (value: string): string =>
   value
-    .replace(/\D/g, '')
+    .replaceAll(/\D/g, '')
     .slice(0, 8)
     .replace(/(\d{2})(\d{0,2})(\d{0,4})/, (_, day, month, year) =>
       [day, month, year].filter(Boolean).join('/')

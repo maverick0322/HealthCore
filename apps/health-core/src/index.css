@@ -55,10 +55,25 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
+  html,
+  body,
+  #root {
+    min-height: 100%;
   }
   html {
     @apply font-sans;
+    scrollbar-width: none;
+    overscroll-behavior: none;
+  }
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+  body::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -171,9 +171,15 @@ export const ResetPasswordPage = () => {
                   
                   <div className="pt-6 border-t border-border">
                     <p className="text-xs text-muted-foreground/80">
-                      <a href="#" className="hover:text-primary transition-colors hover:underline">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.location.href = "mailto:support@healthcore.com";
+                        }}
+                        className="hover:text-primary transition-colors hover:underline"
+                      >
                         {t("contactSupport")}
-                      </a>
+                      </button>
                     </p>
                   </div>
                 </div>

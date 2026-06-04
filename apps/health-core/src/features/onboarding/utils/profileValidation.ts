@@ -28,7 +28,7 @@ const getValidationMessage = (
 };
 
 export const validateRequiredName = (value: string, label: string, t?: TFunction): string | null => {
-  const normalized = value.trim().replace(/\s+/g, ' ');
+  const normalized = value.trim().replaceAll(/\s+/g, ' ');
 
   if (!normalized) {
     return getValidationMessage(t, 'required', { label });
@@ -53,7 +53,7 @@ export const validateOptionalName = (value: string, label: string, t?: TFunction
   return validateRequiredName(value, label, t);
 };
 
-export const normalizeText = (value: string): string => value.trim().replace(/\s+/g, ' ');
+export const normalizeText = (value: string): string => value.trim().replaceAll(/\s+/g, ' ');
 
 export const calculateAgeFromBirthDate = (birthDate: string): number | null => {
   if (!birthDate) {

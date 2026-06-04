@@ -116,11 +116,10 @@ export const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ onClose, onSel
                 return (
                   <div
                     key={item.barcode}
-                    onClick={() => !isAdded && handleSelect(item)}
                     className={`group flex items-center justify-between gap-4 rounded-xl p-3 shadow-sm ring-1 transition-all ${
                       isAdded 
                         ? 'bg-emerald-50 dark:bg-emerald-900/10 ring-emerald-200 dark:ring-emerald-800 cursor-default' 
-                        : 'bg-white dark:bg-slate-800/50 ring-slate-200 dark:ring-slate-700 hover:ring-2 hover:ring-primary/50 cursor-pointer'
+                        : 'bg-white dark:bg-slate-800/50 ring-slate-200 dark:ring-slate-700 hover:ring-2 hover:ring-primary/50'
                     }`}
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -139,7 +138,9 @@ export const FoodSearchModal: React.FC<FoodSearchModalProps> = ({ onClose, onSel
                       </div>
                     </div>
                     
-                    <button 
+                    <button
+                      type="button"
+                      onClick={() => !isAdded && handleSelect(item)}
                       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all ${
                         isAdded 
                           ? 'bg-emerald-500 text-white' 

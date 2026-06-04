@@ -253,7 +253,7 @@ export const NutritionistAvailabilityPage = () => {
                 ) : (
                   <>
                     <div className="space-y-4">
-                      {[...selectedDays].sort().map((dateKey) => (
+                      {[...selectedDays].sort((left, right) => left.localeCompare(right)).map((dateKey) => (
                         <DayBlockEditor
                           key={dateKey}
                           dateKey={dateKey}

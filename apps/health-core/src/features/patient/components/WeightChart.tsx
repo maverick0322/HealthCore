@@ -46,7 +46,7 @@ export const WeightChart = () => {
         </CardHeader>
         <CardContent>
           <div className="flex items-end gap-1.5 h-16 mb-4">
-            {[...Array(7)].map((_, i) => (
+            {[...new Array(7)].map((_, i) => (
               <div
                 key={i}
                 className="flex-1 rounded-t-sm bg-muted animate-pulse"

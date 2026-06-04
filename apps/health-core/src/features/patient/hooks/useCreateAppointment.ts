@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { agendaService } from '../services/agendaService';
 import type { AppointmentResponse, CreateAppointmentRequest } from '../types/agenda.types';
+import { isWeeklyAppointmentLimitConflict } from './appointmentErrorUtils';
 
 /**
  * Hook to create (book) an appointment on a specific slot.
@@ -27,7 +28,11 @@ export const useCreateAppointment = () => {
         if (status === 503) {
           setError(t('appointments.errorServiceUnavailable'));
         } else if (status === 409) {
-          setError(t('appointments.errorBookSlotTaken'));
+          setError(
+            isWeeklyAppointmentLimitConflict(err)
+              ? t('appointments.errorBookWeeklyLimit')
+              : t('appointments.errorBookSlotTaken'),
+          );
         } else if (status === 404) {
           setError(t('appointments.errorBookSlotNotFound'));
         } else if (status === 403) {

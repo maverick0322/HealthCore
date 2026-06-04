@@ -2,6 +2,7 @@ import httpClient from '@/core/http/httpClient';
 import type {
   AvailabilitySlotResponse,
   AppointmentResponse,
+  CreateNutritionistAppointmentRequest,
   GenerateSlotsRequest,
 } from '../types/agenda.types';
 
@@ -37,6 +38,27 @@ export const nutritionistAgendaService = {
   /** Deactivate (disable) a single slot. */
   deactivateSlot: async (slotId: string): Promise<void> => {
     await httpClient.patch(`/agenda/nutritionist/slots/${slotId}/deactivate`);
+  },
+
+  /** Reactivate a single future inactive slot. */
+  activateSlot: async (slotId: string): Promise<void> => {
+    await httpClient.patch(`/agenda/nutritionist/slots/${slotId}/activate`);
+  },
+
+  /** Book a slot for a linked patient as the authenticated nutritionist. */
+  createAppointmentForPatient: async (
+    payload: CreateNutritionistAppointmentRequest,
+  ): Promise<AppointmentResponse> => {
+    const { data } = await httpClient.post<AppointmentResponse>(
+      '/agenda/nutritionist/appointments',
+      payload,
+    );
+    return data;
+  },
+
+  /** Cancel a future appointment without deactivating its slot. */
+  cancelAppointment: async (appointmentId: string): Promise<void> => {
+    await httpClient.patch(`/agenda/nutritionist/appointments/${appointmentId}/cancel`);
   },
 
   /** List appointments booked with the authenticated nutritionist. */

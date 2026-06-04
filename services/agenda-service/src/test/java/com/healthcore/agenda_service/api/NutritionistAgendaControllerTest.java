@@ -1,8 +1,10 @@
 package com.healthcore.agenda_service.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.healthcore.agenda_service.application.CreateAppointmentCommand;
 import com.healthcore.agenda_service.application.GenerateSlotsCommand;
 import com.healthcore.agenda_service.application.NutritionistAvailabilityService;
+import com.healthcore.agenda_service.application.PatientAppointmentService;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.TimeSlot;
@@ -47,6 +49,9 @@ class NutritionistAgendaControllerTest {
 
     @MockitoBean
     private NutritionistAvailabilityService nutritionistAvailabilityService;
+
+    @MockitoBean
+    private PatientAppointmentService patientAppointmentService;
 
     @MockitoBean
     private com.healthcore.agenda_service.domain.repository.AppointmentRepository appointmentRepository;
@@ -156,6 +161,50 @@ class NutritionistAgendaControllerTest {
             .andExpect(status().isNoContent());
 
         verify(nutritionistAvailabilityService).deactivateTimeSlot("nutri-1", "slot-1");
+    }
+
+    @Test
+    @WithMockUser(username = "nutri-1")
+    void activateSlot_shouldReturnNoContent() throws Exception {
+        mockMvc.perform(patch("/api/v1/agenda/nutritionist/slots/slot-1/activate")
+                .with(csrf()))
+            .andExpect(status().isNoContent());
+
+        verify(nutritionistAvailabilityService).activateTimeSlot("nutri-1", "slot-1");
+    }
+
+    @Test
+    @WithMockUser(username = "nutri-1")
+    void createAppointmentForPatient_shouldReturnCreatedAppointment() throws Exception {
+        Appointment created = appointment.toBuilder()
+            .status(AppointmentStatus.PENDING)
+            .build();
+
+        when(patientAppointmentService.createAppointmentForPatient(
+            eq("nutri-1"),
+            eq("patient-1"),
+            eq(new CreateAppointmentCommand("slot-1", 1L, "es-MX"))
+        )).thenReturn(created);
+
+        mockMvc.perform(post("/api/v1/agenda/nutritionist/appointments")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"slotId":"slot-1","slotVersion":1,"patientId":"patient-1","locale":"es-MX"}
+                    """))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value("app-1"))
+            .andExpect(jsonPath("$.patientId").value("patient-1"));
+    }
+
+    @Test
+    @WithMockUser(username = "nutri-1")
+    void cancelAppointment_shouldReturnNoContent() throws Exception {
+        mockMvc.perform(patch("/api/v1/agenda/nutritionist/appointments/app-1/cancel")
+                .with(csrf()))
+            .andExpect(status().isNoContent());
+
+        verify(patientAppointmentService).cancelAppointmentAsNutritionist("nutri-1", "app-1");
     }
 
     @Test

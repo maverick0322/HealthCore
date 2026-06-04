@@ -21,6 +21,7 @@ import { useAvailability } from './useAvailability';
 import { useCreateAppointment } from './useCreateAppointment';
 import { useCancelAppointment } from './useCancelAppointment';
 import { useRescheduleAppointment } from './useRescheduleAppointment';
+import { isWeeklyAppointmentLimitConflict } from './appointmentErrorUtils';
 import { agendaService } from '../services/agendaService';
 import type { AppointmentResponse, AvailabilitySlotResponse } from '../types/agenda.types';
 
@@ -60,7 +61,11 @@ const getAppointmentActionMessage = (
   }
 
   if (action === 'book') {
-    if (status === 409) return t('appointments.errorBookSlotTaken');
+    if (status === 409) {
+      return isWeeklyAppointmentLimitConflict(error)
+        ? t('appointments.errorBookWeeklyLimit')
+        : t('appointments.errorBookSlotTaken');
+    }
     if (status === 404) return t('appointments.errorBookSlotNotFound');
     if (status === 403) return t('appointments.errorBookForbidden');
     if (status === 400) return t('appointments.errorBookInvalid');
@@ -73,7 +78,11 @@ const getAppointmentActionMessage = (
     return t('appointments.errorCancelUnexpected');
   }
 
-  if (status === 409) return t('appointments.errorRescheduleSlotTaken');
+  if (status === 409) {
+    return isWeeklyAppointmentLimitConflict(error)
+      ? t('appointments.errorRescheduleWeeklyLimit')
+      : t('appointments.errorRescheduleSlotTaken');
+  }
   if (status === 404) return t('appointments.errorRescheduleNotFound');
   if (status === 403) return t('appointments.errorRescheduleForbidden');
   if (status === 400) return t('appointments.errorRescheduleInvalid');

@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +28,7 @@ public class PatientAppointmentService {
         AppointmentStatus.PENDING,
         AppointmentStatus.CONFIRMED
     );
+    private static final Duration WEEKLY_APPOINTMENT_WINDOW = Duration.ofDays(7);
 
     private final TimeSlotRepository timeSlotRepository;
     private final AppointmentRepository appointmentRepository;
@@ -46,45 +48,29 @@ public class PatientAppointmentService {
 
     public Appointment createAppointment(String patientId, CreateAppointmentCommand command) {
         try {
-            TimeSlot slot = timeSlotRepository.findById(command.slotId())
-                .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
-
-            if (!slot.isActive() || slot.isReserved()) {
-                throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
-            }
-            if (!Objects.equals(slot.getVersion(), command.slotVersion())) {
-                throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
-            }
-            if (!slot.getStartTime().isAfter(Instant.now())) {
-                throw new ConflictException("No puedes agendar una cita en un horario que ya pasó");
-            }
+            TimeSlot slot = findBookableSlot(command);
             if (!clinicalServiceClient.validateLink(patientId, slot.getNutritionistId())) {
                 throw new ForbiddenOperationException("No existe vinculo activo con el nutriologo");
             }
+            ensureWeeklyBookingWindowAvailable(patientId, slot.getStartTime(), null);
+            return reserveSlotAndCreateAppointment(slot, patientId, command.locale());
+        } catch (RuntimeException ex) {
+            meterRegistry.counter("agenda.appointments.create.failed").increment();
+            throw ex;
+        }
+    }
 
-            try {
-                slot.setReserved(true);
-                slot.setReservedByPatientId(patientId);
-                timeSlotRepository.save(slot);
-            } catch (OptimisticLockingFailureException ex) {
-                throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
+    public Appointment createAppointmentForPatient(String nutritionistId, String patientId, CreateAppointmentCommand command) {
+        try {
+            TimeSlot slot = findBookableSlot(command);
+            if (!nutritionistId.equals(slot.getNutritionistId())) {
+                throw new ForbiddenOperationException("No puedes agendar una cita en un horario de otro nutriologo");
             }
-
-            Appointment created = appointmentRepository.save(Appointment.builder()
-                .slotId(slot.getId())
-                .nutritionistId(slot.getNutritionistId())
-                .patientId(patientId)
-                .startTime(slot.getStartTime())
-                .endTime(slot.getEndTime())
-                .status(AppointmentStatus.PENDING)
-                .locale(command.locale())
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build());
-
-            meterRegistry.counter("agenda.appointments.created").increment();
-            appointmentConfirmationService.confirmAppointmentAsync(created.getId());
-            return created;
+            if (!clinicalServiceClient.validateLink(patientId, nutritionistId)) {
+                throw new ForbiddenOperationException("No existe vinculo activo con el paciente");
+            }
+            ensureWeeklyBookingWindowAvailable(patientId, slot.getStartTime(), null);
+            return reserveSlotAndCreateAppointment(slot, patientId, command.locale());
         } catch (RuntimeException ex) {
             meterRegistry.counter("agenda.appointments.create.failed").increment();
             throw ex;
@@ -102,17 +88,8 @@ public class PatientAppointmentService {
             return;
         }
 
-        TimeSlot slot = timeSlotRepository.findById(appointment.getSlotId())
-            .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
-
-        try {
-            slot.setReserved(false);
-            slot.setReservedByPatientId(null);
-            timeSlotRepository.save(slot);
-        } catch (OptimisticLockingFailureException ex) {
-            throw new ConflictException("No fue posible liberar el horario, intenta nuevamente");
-        }
-
+        TimeSlot slot = loadAppointmentSlot(appointment.getSlotId());
+        releaseSlotReservation(slot, "No fue posible liberar el horario, intenta nuevamente");
         markCancelled(appointment, patientId, "PATIENT_CANCELLED", Instant.now());
         Appointment saved = appointmentRepository.save(appointment);
 
@@ -181,6 +158,38 @@ public class PatientAppointmentService {
         return new CancelFutureAppointmentsResult(appointments.size(), releasedSlots);
     }
 
+    public void cancelAppointmentAsNutritionist(String nutritionistId, String appointmentId) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+            .orElseThrow(() -> new NotFoundException("Cita no encontrada"));
+
+        if (!nutritionistId.equals(appointment.getNutritionistId())) {
+            throw new ForbiddenOperationException("No puedes cancelar una cita de otro nutriologo");
+        }
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED) {
+            return;
+        }
+        if (!appointment.getStartTime().isAfter(Instant.now())) {
+            throw new ConflictException("No puedes cancelar una cita que ya comenzo");
+        }
+
+        TimeSlot slot = loadAppointmentSlot(appointment.getSlotId());
+        if (!nutritionistId.equals(slot.getNutritionistId())) {
+            throw new ForbiddenOperationException("No puedes cancelar una cita asociada a un horario de otro nutriologo");
+        }
+
+        releaseSlotReservation(slot, "No fue posible liberar el horario, intenta nuevamente");
+        markCancelled(appointment, nutritionistId, "NUTRITIONIST_CANCELLED", Instant.now());
+        Appointment saved = appointmentRepository.save(appointment);
+
+        agendaEventPublisher.publishAppointmentCancelled(new AppointmentCancelledEvent(
+            saved.getId(),
+            saved.getPatientId(),
+            saved.getNutritionistId(),
+            saved.getStartTime().toString(),
+            saved.getLocale()
+        ));
+    }
+
     public Appointment rescheduleAppointment(String patientId, String appointmentId, CreateAppointmentCommand command) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
             .orElseThrow(() -> new NotFoundException("Cita no encontrada"));
@@ -211,6 +220,7 @@ public class PatientAppointmentService {
         if (!sameNutritionist && !clinicalServiceClient.validateLink(patientId, newSlot.getNutritionistId())) {
             throw new ForbiddenOperationException("No existe vinculo activo con el nutriologo");
         }
+        ensureWeeklyBookingWindowAvailable(patientId, newSlot.getStartTime(), appointmentId);
 
         try {
             oldSlot.setReserved(false);
@@ -236,6 +246,86 @@ public class PatientAppointmentService {
         appointmentConfirmationService.confirmAppointmentAsync(updated.getId());
         
         return updated;
+    }
+
+    private TimeSlot findBookableSlot(CreateAppointmentCommand command) {
+        TimeSlot slot = timeSlotRepository.findById(command.slotId())
+            .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
+
+        if (!slot.isActive() || slot.isReserved()) {
+            throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
+        }
+        if (!Objects.equals(slot.getVersion(), command.slotVersion())) {
+            throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
+        }
+        if (!slot.getStartTime().isAfter(Instant.now())) {
+            throw new ConflictException("No puedes agendar una cita en un horario que ya pasó");
+        }
+        return slot;
+    }
+
+    private Appointment reserveSlotAndCreateAppointment(TimeSlot slot, String patientId, String locale) {
+        try {
+            slot.setReserved(true);
+            slot.setReservedByPatientId(patientId);
+            timeSlotRepository.save(slot);
+        } catch (OptimisticLockingFailureException ex) {
+            throw new ConflictException("El horario acaba de ser ocupado, por favor elige otro");
+        }
+
+        Instant now = Instant.now();
+        Appointment created = appointmentRepository.save(Appointment.builder()
+            .slotId(slot.getId())
+            .nutritionistId(slot.getNutritionistId())
+            .patientId(patientId)
+            .startTime(slot.getStartTime())
+            .endTime(slot.getEndTime())
+            .status(AppointmentStatus.PENDING)
+            .locale(locale)
+            .createdAt(now)
+            .updatedAt(now)
+            .build());
+
+        meterRegistry.counter("agenda.appointments.created").increment();
+        appointmentConfirmationService.confirmAppointmentAsync(created.getId());
+        return created;
+    }
+
+    private TimeSlot loadAppointmentSlot(String slotId) {
+        return timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
+    }
+
+    private void releaseSlotReservation(TimeSlot slot, String conflictMessage) {
+        try {
+            slot.setReserved(false);
+            slot.setReservedByPatientId(null);
+            timeSlotRepository.save(slot);
+        } catch (OptimisticLockingFailureException ex) {
+            throw new ConflictException(conflictMessage);
+        }
+    }
+
+    private void ensureWeeklyBookingWindowAvailable(String patientId, Instant targetStartTime, String excludedAppointmentId) {
+        Instant now = Instant.now();
+        List<Appointment> nearbyAppointments = appointmentRepository
+            .findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+                patientId,
+                targetStartTime.minus(WEEKLY_APPOINTMENT_WINDOW),
+                targetStartTime.plus(WEEKLY_APPOINTMENT_WINDOW),
+                ACTIVE_STATUSES
+            );
+
+        boolean hasConflict = nearbyAppointments.stream()
+            .filter(appointment -> excludedAppointmentId == null || !excludedAppointmentId.equals(appointment.getId()))
+            .filter(appointment -> appointment.getStartTime().isAfter(now))
+            .anyMatch(appointment ->
+                Duration.between(appointment.getStartTime(), targetStartTime).abs().compareTo(WEEKLY_APPOINTMENT_WINDOW) < 0
+            );
+
+        if (hasConflict) {
+            throw new ConflictException("El paciente ya tiene una cita activa dentro de los proximos 7 dias");
+        }
     }
 
     private void markCancelled(Appointment appointment, String actor, String reason, Instant timestamp) {

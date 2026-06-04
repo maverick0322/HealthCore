@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import {
   addDays,
@@ -10,6 +11,7 @@ import {
 import { useGenerateSlots } from './useGenerateSlots';
 import { useNutritionistSlots } from './useNutritionistSlots';
 import { useDeactivateSlot } from './useDeactivateSlot';
+import { useActivateSlot } from './useActivateSlot';
 import type { AvailabilitySlotResponse, GenerateSlotsTimeBlock } from '../types/agenda.types';
 import {
   validateDuration,
@@ -89,11 +91,13 @@ export const useNutritionistAvailabilityPage = () => {
   const [dayBlocks, setDayBlocks] = useState<DayBlocksByDate>(initialSchedule.dayBlocks);
   const [duration, setDuration] = useState(45);
   const [deactivateTarget, setDeactivateTarget] = useState<AvailabilitySlotResponse | null>(null);
+  const [activateTarget, setActivateTarget] = useState<AvailabilitySlotResponse | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
 
   const { generateSlots, isLoading: generating, error: genError, isSuccess: genSuccess, slots: generatedSlots } = useGenerateSlots();
   const { slots, isLoading: loadingSlots, error: slotError, fetchSlots } = useNutritionistSlots();
   const { deactivateSlot, isLoading: deactivating } = useDeactivateSlot();
+  const { activateSlot, isLoading: activating } = useActivateSlot();
 
   useEffect(() => {
     if (!toast) return;
@@ -243,9 +247,60 @@ export const useNutritionistAvailabilityPage = () => {
       setToast({ msg: t('availability.deactivated'), type: 'success' });
       setDeactivateTarget(null);
       handleFetchSlots();
-    } catch {
-      setToast({ msg: t('availability.errorGeneric'), type: 'error' });
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 409) {
+          setToast({ msg: t('availability.errorDeactivateSlotTooLate'), type: 'error' });
+          return;
+        }
+        if (status === 403) {
+          setToast({ msg: t('availability.errorDeactivateSlotForbidden'), type: 'error' });
+          return;
+        }
+        if (status === 404) {
+          setToast({ msg: t('availability.errorDeactivateSlotNotFound'), type: 'error' });
+          return;
+        }
+      }
+      setToast({ msg: t('availability.errorDeactivateSlotUnexpected'), type: 'error' });
     }
+  };
+
+  const handleActivate = async () => {
+    if (!activateTarget) return;
+    try {
+      await activateSlot(activateTarget.id);
+      setToast({ msg: t('availability.activated'), type: 'success' });
+      setActivateTarget(null);
+      handleFetchSlots();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 403 || status === 409) {
+          setToast({ msg: t('availability.errorActivateSlotForbidden'), type: 'error' });
+          return;
+        }
+        if (status === 404) {
+          setToast({ msg: t('availability.errorActivateSlotNotFound'), type: 'error' });
+          return;
+        }
+      }
+      setToast({ msg: t('availability.errorActivateSlotUnexpected'), type: 'error' });
+    }
+  };
+
+  const handleSlotCalendarItemClick = (slot: AvailabilitySlotResponse | undefined) => {
+    if (!slot) return;
+    if (slot.reserved) {
+      setToast({ msg: t('availability.slotReservedManageInAgenda'), type: 'error' });
+      return;
+    }
+    if (slot.active) {
+      setDeactivateTarget(slot);
+      return;
+    }
+    setActivateTarget(slot);
   };
 
   return {
@@ -257,6 +312,8 @@ export const useNutritionistAvailabilityPage = () => {
     setDuration,
     deactivateTarget,
     setDeactivateTarget,
+    activateTarget,
+    setActivateTarget,
     toast,
     browserTimeZone,
     slots,
@@ -267,6 +324,7 @@ export const useNutritionistAvailabilityPage = () => {
     genError,
     genSuccess,
     deactivating,
+    activating,
     handleFetchSlots,
     goToWeek,
     toggleSelectedDay,
@@ -276,6 +334,8 @@ export const useNutritionistAvailabilityPage = () => {
     removeDayBlock,
     handleGenerate,
     handleDeactivate,
+    handleActivate,
+    handleSlotCalendarItemClick,
     EARLIEST_SLOT_TIME,
     LATEST_SLOT_TIME,
   };

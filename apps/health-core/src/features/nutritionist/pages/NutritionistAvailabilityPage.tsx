@@ -25,7 +25,12 @@ import {
   todayDateKey,
 } from '@/features/agenda/utils/agendaDateUtils';
 import { useNutritionistAvailabilityPage } from '../hooks/useNutritionistAvailabilityPage';
-import { DayBlockEditor, DaySelector, DeactivateSlotDialog } from '../components/NutritionistAvailabilityComponents';
+import {
+  ActivateSlotDialog,
+  DayBlockEditor,
+  DaySelector,
+  DeactivateSlotDialog,
+} from '../components/NutritionistAvailabilityComponents';
 import { useMemo } from 'react';
 
 export const NutritionistAvailabilityPage = () => {
@@ -41,6 +46,8 @@ export const NutritionistAvailabilityPage = () => {
     setDuration,
     deactivateTarget,
     setDeactivateTarget,
+    activateTarget,
+    setActivateTarget,
     toast,
     browserTimeZone,
     slots,
@@ -51,6 +58,7 @@ export const NutritionistAvailabilityPage = () => {
     genError,
     genSuccess,
     deactivating,
+    activating,
     handleFetchSlots,
     goToWeek,
     toggleSelectedDay,
@@ -60,6 +68,8 @@ export const NutritionistAvailabilityPage = () => {
     removeDayBlock,
     handleGenerate,
     handleDeactivate,
+    handleActivate,
+    handleSlotCalendarItemClick,
     EARLIEST_SLOT_TIME,
     LATEST_SLOT_TIME,
   } = useNutritionistAvailabilityPage();
@@ -88,7 +98,6 @@ export const NutritionistAvailabilityPage = () => {
           : t('availability.inactive'),
         subtitle: `${formatLocalTime(slot.startTime)} - ${formatLocalTime(slot.endTime)}`,
         kind: slot.active ? slot.reserved ? 'reserved' : 'available' : 'inactive',
-        disabled: !slot.active,
       })),
     [slots, t],
   );
@@ -333,8 +342,7 @@ export const NutritionistAvailabilityPage = () => {
               onNextWeek={() => goToWeek(addDays(weekStart, 7))}
               onToday={() => goToWeek(startOfWeek(todayDateKey()))}
               onItemClick={(item) => {
-                const slot = slots.find((candidate) => candidate.id === item.id);
-                if (slot) setDeactivateTarget(slot);
+                handleSlotCalendarItemClick(slots.find((candidate) => candidate.id === item.id));
               }}
             />
           </>
@@ -346,6 +354,12 @@ export const NutritionistAvailabilityPage = () => {
         deactivating={deactivating}
         onClose={() => setDeactivateTarget(null)}
         onConfirm={handleDeactivate}
+      />
+      <ActivateSlotDialog
+        target={activateTarget}
+        activating={activating}
+        onClose={() => setActivateTarget(null)}
+        onConfirm={handleActivate}
       />
     </div>
   );

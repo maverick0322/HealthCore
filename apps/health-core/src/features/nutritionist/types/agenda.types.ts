@@ -27,3 +27,10 @@ export interface GenerateSlotsRequest {
   startTime?: string;   // HH:mm
   endTime?: string;     // HH:mm
 }
+
+export interface CreateNutritionistAppointmentRequest {
+  slotId: string;
+  slotVersion: number;
+  patientId: string;
+  locale?: string;
+}

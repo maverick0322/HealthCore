@@ -65,6 +65,54 @@ export const DeactivateSlotDialog = ({
   );
 };
 
+interface ActivateSlotDialogProps {
+  target: AvailabilitySlotResponse | null;
+  activating: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+export const ActivateSlotDialog = ({
+  target,
+  activating,
+  onClose,
+  onConfirm,
+}: ActivateSlotDialogProps) => {
+  const { t } = useTranslation('nutritionist');
+
+  return (
+    <Dialog open={!!target} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('availability.activateTitle')}</DialogTitle>
+          <DialogDescription>{t('availability.activateConfirm')}</DialogDescription>
+        </DialogHeader>
+        {target && (
+          <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
+            <p className="font-medium">{formatLocalDate(target.startTime)}</p>
+            <p className="text-muted-foreground">
+              {formatLocalTime(target.startTime)} - {formatLocalTime(target.endTime)}
+            </p>
+          </div>
+        )}
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>{t('availability.close')}</Button>
+          <Button onClick={onConfirm} disabled={activating}>
+            {activating ? (
+              <>
+                <Loader2 size={14} className="animate-spin mr-2" />
+                {t('availability.activating')}
+              </>
+            ) : (
+              t('availability.activateBtn')
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // ── DayBlockEditor ───────────────────────────────────────────────────────────
 
 interface DayBlockEditorProps {

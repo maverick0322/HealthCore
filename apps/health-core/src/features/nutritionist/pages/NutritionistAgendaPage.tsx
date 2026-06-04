@@ -6,6 +6,10 @@ import { NutritionistNav } from '@/features/nutritionist/components/Nutritionist
 import { SettingsBar } from '@/shared/components/SettingsBar';
 import { Button } from '@/shared/ui/button';
 import { WeeklyCalendar } from '@/features/agenda/components/WeeklyCalendar';
+import {
+  BookAppointmentDialog,
+  CancelAppointmentDialog,
+} from '../components/NutritionistAgendaComponents';
 import { useNutritionistAgendaPage } from '../hooks/useNutritionistAgendaPage';
 
 export const NutritionistAgendaPage = () => {
@@ -17,11 +21,24 @@ export const NutritionistAgendaPage = () => {
     isLoading,
     error,
     calendarItems,
+    patients,
+    bookingTarget,
+    cancelTarget,
+    selectedPatientId,
+    booking,
+    cancelling,
+    toast,
     fetchWeek,
     goToWeek,
     addDays,
     todayDateKey,
     startOfWeek,
+    setBookingTarget,
+    setCancelTarget,
+    setSelectedPatientId,
+    handleCalendarItemClick,
+    handleBookAppointment,
+    handleCancelAppointment,
   } = useNutritionistAgendaPage();
 
   const calendarLabels = {
@@ -31,6 +48,10 @@ export const NutritionistAgendaPage = () => {
     empty: t('agenda.noSlotsOrAppointments'),
     loading: t('agenda.loading'),
   };
+
+  const cancelTargetPatientName = cancelTarget
+    ? patients.find((patient) => patient.userId === cancelTarget.patientId)?.fullName?.trim() || null
+    : null;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans transition-colors duration-500 ease-in-out">
@@ -53,6 +74,17 @@ export const NutritionistAgendaPage = () => {
       </div>
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 md:pl-56 space-y-4">
+        {toast && (
+          <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+            toast.type === 'success'
+              ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700'
+              : 'border-destructive/25 bg-destructive/10 text-destructive'
+          }`}>
+            <AlertCircle size={16} />
+            {toast.msg}
+          </div>
+        )}
+
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold tracking-tight flex items-center gap-2">
@@ -89,8 +121,25 @@ export const NutritionistAgendaPage = () => {
           onPreviousWeek={() => goToWeek(addDays(weekStart, -7))}
           onNextWeek={() => goToWeek(addDays(weekStart, 7))}
           onToday={() => goToWeek(startOfWeek(todayDateKey()))}
+          onItemClick={handleCalendarItemClick}
         />
       </main>
+      <BookAppointmentDialog
+        target={bookingTarget}
+        patients={patients}
+        selectedPatientId={selectedPatientId}
+        booking={booking}
+        onSelectPatient={setSelectedPatientId}
+        onClose={() => setBookingTarget(null)}
+        onConfirm={handleBookAppointment}
+      />
+      <CancelAppointmentDialog
+        target={cancelTarget}
+        patientDisplayName={cancelTargetPatientName}
+        cancelling={cancelling}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancelAppointment}
+      />
     </div>
   );
 };

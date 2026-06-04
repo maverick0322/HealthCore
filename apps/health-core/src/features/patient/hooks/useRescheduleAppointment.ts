@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { agendaService } from '../services/agendaService';
 import type { AppointmentResponse, RescheduleAppointmentRequest } from '../types/agenda.types';
+import { isWeeklyAppointmentLimitConflict } from './appointmentErrorUtils';
 
 /**
  * Hook to reschedule an existing appointment to a new slot.
@@ -30,7 +31,11 @@ export const useRescheduleAppointment = () => {
         if (status === 503) {
           setError(t('appointments.errorServiceUnavailable'));
         } else if (status === 409) {
-          setError(t('appointments.errorRescheduleSlotTaken'));
+          setError(
+            isWeeklyAppointmentLimitConflict(err)
+              ? t('appointments.errorRescheduleWeeklyLimit')
+              : t('appointments.errorRescheduleSlotTaken'),
+          );
         } else if (status === 404) {
           setError(t('appointments.errorRescheduleNotFound'));
         } else if (status === 403) {

@@ -160,6 +160,37 @@ public class NutritionistAvailabilityService {
         }
     }
 
+    public void activateTimeSlot(String nutritionistId, String slotId) {
+        log.info("Activating slotHash={} for nutritionistHash={}", logHash(slotId), logHash(nutritionistId));
+        TimeSlot slot = timeSlotRepository.findById(slotId)
+            .orElseThrow(() -> new NotFoundException("Slot no encontrado"));
+
+        if (!slot.getNutritionistId().equals(nutritionistId)) {
+            throw new ConflictException("No tienes permisos para activar este slot");
+        }
+        if (slot.isActive()) {
+            return;
+        }
+        if (slot.isReserved()) {
+            throw new ConflictException("No puedes activar un slot reservado");
+        }
+        if (!slot.getStartTime().isAfter(Instant.now())) {
+            throw new ConflictException("No puedes activar un slot que ya comenzo o paso");
+        }
+
+        slot.setActive(true);
+        slot.setDeactivatedAt(null);
+        slot.setDeactivatedBy(null);
+        slot.setDeactivationReason(null);
+        try {
+            timeSlotRepository.save(slot);
+            log.info("Slot successfully activated. slotHash={}", logHash(slotId));
+        } catch (OptimisticLockingFailureException ex) {
+            log.error("Optimistic locking failure while activating slotHash={}", logHash(slotId));
+            throw new ConflictException("El horario fue modificado por otra transaccion, por favor intenta de nuevo");
+        }
+    }
+
     public List<TimeSlot> getNutritionistSlots(String nutritionistId, Instant from, Instant to) {
         log.debug("Fetching slots for nutritionistHash={} between {} and {}", logHash(nutritionistId), from, to);
         return timeSlotRepository.findByNutritionistIdAndStartTimeBetweenOrderByStartTime(nutritionistId, from, to);

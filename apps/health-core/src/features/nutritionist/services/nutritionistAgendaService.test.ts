@@ -37,12 +37,21 @@ describe('nutritionistAgendaService', () => {
 
   it('fetches slots and appointments by range and deactivates slots', async () => {
     (httpClient.get as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] });
+    (httpClient.post as ReturnType<typeof vi.fn>).mockResolvedValue({ data: { id: 'app-1' } });
 
     await nutritionistAgendaService.getMySlots('from', 'to');
     await nutritionistAgendaService.getMyAppointments('from', 'to');
     await nutritionistAgendaService.getAppointmentReport('from', 'to', ['PENDING', 'ATTENDED'], 'patient-1');
     await nutritionistAgendaService.getSlotReport('from', 'to', 'inactive');
+    await nutritionistAgendaService.createAppointmentForPatient({
+      slotId: 'slot-1',
+      slotVersion: 1,
+      patientId: 'patient-1',
+      locale: 'es-MX',
+    });
     await nutritionistAgendaService.deactivateSlot('slot-1');
+    await nutritionistAgendaService.activateSlot('slot-1');
+    await nutritionistAgendaService.cancelAppointment('app-1');
 
     expect(httpClient.get).toHaveBeenCalledWith('/agenda/nutritionist/slots', {
       params: { from: 'from', to: 'to' },
@@ -56,6 +65,14 @@ describe('nutritionistAgendaService', () => {
     expect(httpClient.get).toHaveBeenCalledWith('/agenda/nutritionist/reports/slots', {
       params: { from: 'from', to: 'to', state: 'inactive' },
     });
+    expect(httpClient.post).toHaveBeenCalledWith('/agenda/nutritionist/appointments', {
+      slotId: 'slot-1',
+      slotVersion: 1,
+      patientId: 'patient-1',
+      locale: 'es-MX',
+    });
     expect(httpClient.patch).toHaveBeenCalledWith('/agenda/nutritionist/slots/slot-1/deactivate');
+    expect(httpClient.patch).toHaveBeenCalledWith('/agenda/nutritionist/slots/slot-1/activate');
+    expect(httpClient.patch).toHaveBeenCalledWith('/agenda/nutritionist/appointments/app-1/cancel');
   });
 });

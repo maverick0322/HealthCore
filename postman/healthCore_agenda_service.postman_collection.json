@@ -6,6 +6,45 @@
     "_exporter_id": "54134624",
     "_collection_link": "https://go.postman.co/collection/54134624-b6e8cb17-52ce-4e94-a396-bff76afc1d39?source=collection_link"
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          "const formatDate = (date) => {",
+          "    const year = date.getUTCFullYear();",
+          "    const month = String(date.getUTCMonth() + 1).padStart(2, '0');",
+          "    const day = String(date.getUTCDate()).padStart(2, '0');",
+          "    return `${year}-${month}-${day}`;",
+          "};",
+          "",
+          "const addDays = (date, amount) => {",
+          "    const copy = new Date(date);",
+          "    copy.setUTCDate(copy.getUTCDate() + amount);",
+          "    return copy;",
+          "};",
+          "",
+          "const agendaStart = addDays(new Date(), 2);",
+          "const agendaEnd = addDays(agendaStart, 4);",
+          "const reportEnd = addDays(agendaStart, 29);",
+          "",
+          "const agendaStartDate = formatDate(agendaStart);",
+          "const agendaEndDate = formatDate(agendaEnd);",
+          "const agendaReportEndDate = formatDate(reportEnd);",
+          "",
+          "pm.collectionVariables.set('agendaStartDate', agendaStartDate);",
+          "pm.collectionVariables.set('agendaEndDate', agendaEndDate);",
+          "pm.collectionVariables.set('agendaSlotsFrom', `${agendaStartDate}T00:00:00Z`);",
+          "pm.collectionVariables.set('agendaSlotsTo', `${agendaEndDate}T23:59:59Z`);",
+          "pm.collectionVariables.set('agendaReportFrom', `${agendaStartDate}T00:00:00Z`);",
+          "pm.collectionVariables.set('agendaReportTo', `${agendaReportEndDate}T23:59:59Z`);"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "0. Setup & Auth",
@@ -566,7 +605,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"timeZone\": \"America/Mexico_City\",\r\n  \"durationMinutes\": 30,\r\n  \"startDate\": \"2026-06-01\",\r\n  \"endDate\": \"2026-06-05\",\r\n  \"startTime\": \"09:00\",\r\n  \"endTime\": \"13:00\",\r\n  \"days\": [\r\n    {\r\n      \"date\": \"2026-06-01\",\r\n      \"blocks\": [{\"startTime\": \"09:00\", \"endTime\": \"13:00\"}]\r\n    }\r\n  ]\r\n}",
+              "raw": "{\r\n  \"timeZone\": \"America/Mexico_City\",\r\n  \"durationMinutes\": 30,\r\n  \"startDate\": \"{{agendaStartDate}}\",\r\n  \"endDate\": \"{{agendaEndDate}}\",\r\n  \"startTime\": \"09:00\",\r\n  \"endTime\": \"13:00\",\r\n  \"days\": [\r\n    {\r\n      \"date\": \"{{agendaStartDate}}\",\r\n      \"blocks\": [{\"startTime\": \"09:00\", \"endTime\": \"13:00\"}]\r\n    }\r\n  ]\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -624,7 +663,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/slots?from=2026-06-01T00:00:00Z&to=2026-06-05T23:59:59Z",
+              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/slots?from={{agendaSlotsFrom}}&to={{agendaSlotsTo}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -638,11 +677,11 @@
               "query": [
                 {
                   "key": "from",
-                  "value": "2026-06-01T00:00:00Z"
+                  "value": "{{agendaSlotsFrom}}"
                 },
                 {
                   "key": "to",
-                  "value": "2026-06-05T23:59:59Z"
+                  "value": "{{agendaSlotsTo}}"
                 }
               ]
             }
@@ -741,7 +780,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/agenda/availability/{{nutritionistId}}?from=2026-06-01T00:00:00Z&to=2026-06-05T23:59:59Z",
+              "raw": "{{baseUrl}}/api/v1/agenda/availability/{{nutritionistId}}?from={{agendaSlotsFrom}}&to={{agendaSlotsTo}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -755,11 +794,11 @@
               "query": [
                 {
                   "key": "from",
-                  "value": "2026-06-01T00:00:00Z"
+                  "value": "{{agendaSlotsFrom}}"
                 },
                 {
                   "key": "to",
-                  "value": "2026-06-05T23:59:59Z"
+                  "value": "{{agendaSlotsTo}}"
                 }
               ]
             }
@@ -932,6 +971,60 @@
           "response": []
         },
         {
+          "name": "Create appointment Weekly Limit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 409 Conflict\", function () {\r",
+                  "    pm.response.to.have.status(409);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{patientToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"slotId\": \"{{newSlotId}}\",\r\n  \"nutritionistId\": \"{{nutritionistId}}\",\r\n  \"slotVersion\": {{newSlotVersion}},\r\n  \"locale\": \"es-MX\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/agenda/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "agenda",
+                "appointments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get pending appointments",
           "event": [
             {
@@ -1015,7 +1108,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/agenda/appointments/history?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z&statuses=PENDING,CONFIRMED,CANCELLED,ATTENDED",
+              "raw": "{{baseUrl}}/api/v1/agenda/appointments/history?from={{agendaReportFrom}}&to={{agendaReportTo}}&statuses=PENDING,CONFIRMED,CANCELLED,ATTENDED",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1029,11 +1122,11 @@
               "query": [
                 {
                   "key": "from",
-                  "value": "2026-06-01T00:00:00Z"
+                  "value": "{{agendaReportFrom}}"
                 },
                 {
                   "key": "to",
-                  "value": "2026-06-30T23:59:59Z"
+                  "value": "{{agendaReportTo}}"
                 },
                 {
                   "key": "statuses",
@@ -1335,7 +1428,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/reports/appointments?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z&statuses=PENDING,CONFIRMED,CANCELLED,ATTENDED",
+              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/reports/appointments?from={{agendaReportFrom}}&to={{agendaReportTo}}&statuses=PENDING,CONFIRMED,CANCELLED,ATTENDED",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1350,11 +1443,11 @@
               "query": [
                 {
                   "key": "from",
-                  "value": "2026-06-01T00:00:00Z"
+                  "value": "{{agendaReportFrom}}"
                 },
                 {
                   "key": "to",
-                  "value": "2026-06-30T23:59:59Z"
+                  "value": "{{agendaReportTo}}"
                 },
                 {
                   "key": "statuses",
@@ -1405,7 +1498,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/reports/slots?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z&state=inactive",
+              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/reports/slots?from={{agendaReportFrom}}&to={{agendaReportTo}}&state=inactive",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1420,11 +1513,11 @@
               "query": [
                 {
                   "key": "from",
-                  "value": "2026-06-01T00:00:00Z"
+                  "value": "{{agendaReportFrom}}"
                 },
                 {
                   "key": "to",
-                  "value": "2026-06-30T23:59:59Z"
+                  "value": "{{agendaReportTo}}"
                 },
                 {
                   "key": "state",
@@ -1482,7 +1575,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/slots?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z",
+              "raw": "{{baseUrl}}/api/v1/agenda/nutritionist/slots?from={{agendaReportFrom}}&to={{agendaReportTo}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1496,11 +1589,11 @@
               "query": [
                 {
                   "key": "from",
-                  "value": "2026-06-01T00:00:00Z"
+                  "value": "{{agendaReportFrom}}"
                 },
                 {
                   "key": "to",
-                  "value": "2026-06-30T23:59:59Z"
+                  "value": "{{agendaReportTo}}"
                 }
               ]
             }
@@ -1651,7 +1744,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/agenda/appointments/history?from=2026-06-01T00:00:00Z&to=2026-06-30T23:59:59Z&statuses=CANCELLED",
+              "raw": "{{baseUrl}}/api/v1/agenda/appointments/history?from={{agendaReportFrom}}&to={{agendaReportTo}}&statuses=CANCELLED",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1665,11 +1758,11 @@
               "query": [
                 {
                   "key": "from",
-                  "value": "2026-06-01T00:00:00Z"
+                  "value": "{{agendaReportFrom}}"
                 },
                 {
                   "key": "to",
-                  "value": "2026-06-30T23:59:59Z"
+                  "value": "{{agendaReportTo}}"
                 },
                 {
                   "key": "statuses",

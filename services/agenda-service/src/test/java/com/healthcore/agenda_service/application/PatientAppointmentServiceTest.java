@@ -7,6 +7,7 @@ import com.healthcore.agenda_service.domain.TimeSlotOrigin;
 import com.healthcore.agenda_service.domain.exception.ClinicalServiceUnavailableException;
 import com.healthcore.agenda_service.domain.exception.ConflictException;
 import com.healthcore.agenda_service.domain.exception.ForbiddenOperationException;
+import com.healthcore.agenda_service.domain.exception.NotFoundException;
 import com.healthcore.agenda_service.domain.repository.AppointmentRepository;
 import com.healthcore.agenda_service.domain.repository.TimeSlotRepository;
 import com.healthcore.agenda_service.infrastructure.clinical.ClinicalServiceClient;
@@ -24,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -87,6 +89,9 @@ class PatientAppointmentServiceTest {
 
         when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
         when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(true);
+        when(appointmentRepository.findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            eq("patient-1"), any(Instant.class), any(Instant.class), eq(List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED))
+        )).thenReturn(List.of());
         when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
             Appointment appointment = invocation.getArgument(0);
@@ -128,6 +133,9 @@ class PatientAppointmentServiceTest {
     void createAppointment_shouldFailWithFriendlyConflictWhenSlotVersionChanged() {
         when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
         when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(true);
+        when(appointmentRepository.findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            eq("patient-1"), any(Instant.class), any(Instant.class), eq(List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED))
+        )).thenReturn(List.of());
         doThrow(new OptimisticLockingFailureException("stale version")).when(timeSlotRepository).save(any(TimeSlot.class));
 
         assertThatThrownBy(() -> service.createAppointment("patient-1", new CreateAppointmentCommand("slot-1", 1L, "es")))
@@ -264,6 +272,30 @@ class PatientAppointmentServiceTest {
     }
 
     @Test
+    void createAppointment_shouldRejectWhenAnotherFutureAppointmentExistsWithinSevenDays() {
+        Instant nearbyStart = slot.getStartTime().plusSeconds(3600);
+        Appointment nearbyAppointment = Appointment.builder()
+            .id("app-existing")
+            .patientId("patient-1")
+            .nutritionistId("nutri-2")
+            .slotId("slot-x")
+            .startTime(nearbyStart)
+            .endTime(nearbyStart.plusSeconds(1800))
+            .status(AppointmentStatus.CONFIRMED)
+            .build();
+
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+        when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(true);
+        when(appointmentRepository.findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            eq("patient-1"), any(Instant.class), any(Instant.class), eq(List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED))
+        )).thenReturn(List.of(nearbyAppointment));
+
+        assertThatThrownBy(() -> service.createAppointment("patient-1", new CreateAppointmentCommand("slot-1", 1L, "es")))
+            .isInstanceOf(ConflictException.class)
+            .hasMessageContaining("7 dias");
+    }
+
+    @Test
     void rescheduleAppointment_shouldUpdateAppointmentSlotAndStatus() {
         Appointment appointment = Appointment.builder()
             .id("app-1")
@@ -293,6 +325,9 @@ class PatientAppointmentServiceTest {
         when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
         when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
         when(timeSlotRepository.findById("slot-2")).thenReturn(Optional.of(newSlot));
+        when(appointmentRepository.findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            eq("patient-1"), any(Instant.class), any(Instant.class), eq(List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED))
+        )).thenReturn(List.of(appointment));
         when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(i -> i.getArgument(0));
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -381,6 +416,143 @@ class PatientAppointmentServiceTest {
             "patient-1", "app-1", new CreateAppointmentCommand("slot-2", 1L, "es")))
             .isInstanceOf(ConflictException.class)
             .hasMessageContaining("ya pas");
+    }
+
+    @Test
+    void rescheduleAppointment_shouldRejectWhenAnotherFutureAppointmentExistsWithinSevenDays() {
+        Appointment appointment = Appointment.builder()
+            .id("app-1")
+            .slotId("slot-1")
+            .patientId("patient-1")
+            .nutritionistId("nutri-1")
+            .startTime(slot.getStartTime())
+            .endTime(slot.getEndTime())
+            .status(AppointmentStatus.CONFIRMED)
+            .locale("es")
+            .build();
+
+        Instant newBase = Instant.now().plusSeconds(86400 * 2);
+        TimeSlot newSlot = TimeSlot.builder()
+            .id("slot-2")
+            .nutritionistId("nutri-1")
+            .startTime(newBase)
+            .endTime(newBase.plusSeconds(1800))
+            .reserved(false)
+            .active(true)
+            .version(1L)
+            .origin(TimeSlotOrigin.PREDEFINED)
+            .build();
+
+        Appointment nearbyAppointment = Appointment.builder()
+            .id("app-2")
+            .slotId("slot-3")
+            .patientId("patient-1")
+            .nutritionistId("nutri-2")
+            .startTime(newBase.plusSeconds(3600))
+            .endTime(newBase.plusSeconds(5400))
+            .status(AppointmentStatus.PENDING)
+            .build();
+
+        when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+        when(timeSlotRepository.findById("slot-2")).thenReturn(Optional.of(newSlot));
+        when(appointmentRepository.findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            eq("patient-1"), any(Instant.class), any(Instant.class), eq(List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED))
+        )).thenReturn(List.of(appointment, nearbyAppointment));
+
+        assertThatThrownBy(() -> service.rescheduleAppointment(
+            "patient-1", "app-1", new CreateAppointmentCommand("slot-2", 1L, "es")))
+            .isInstanceOf(ConflictException.class)
+            .hasMessageContaining("7 dias");
+    }
+
+    @Test
+    void createAppointmentForPatient_shouldReserveOwnSlotForLinkedPatient() {
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+        when(clinicalServiceClient.validateLink("patient-1", "nutri-1")).thenReturn(true);
+        when(appointmentRepository.findByPatientIdAndStartTimeBetweenAndStatusInOrderByStartTime(
+            eq("patient-1"), any(Instant.class), any(Instant.class), eq(List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED))
+        )).thenReturn(List.of());
+        when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
+            Appointment appointment = invocation.getArgument(0);
+            appointment.setId("app-1");
+            return appointment;
+        });
+
+        Appointment result = service.createAppointmentForPatient(
+            "nutri-1",
+            "patient-1",
+            new CreateAppointmentCommand("slot-1", 1L, "es-MX")
+        );
+
+        assertThat(result.getPatientId()).isEqualTo("patient-1");
+        assertThat(result.getNutritionistId()).isEqualTo("nutri-1");
+        assertThat(result.getStatus()).isEqualTo(AppointmentStatus.PENDING);
+    }
+
+    @Test
+    void createAppointmentForPatient_shouldRejectSlotFromDifferentNutritionist() {
+        TimeSlot otherSlot = slot.toBuilder().nutritionistId("nutri-2").build();
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(otherSlot));
+
+        assertThatThrownBy(() -> service.createAppointmentForPatient(
+            "nutri-1",
+            "patient-1",
+            new CreateAppointmentCommand("slot-1", 1L, "es-MX")
+        )).isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void cancelAppointmentAsNutritionist_shouldReleaseSlotAndKeepItActive() {
+        TimeSlot reservedSlot = slot.toBuilder()
+            .reserved(true)
+            .reservedByPatientId("patient-1")
+            .active(true)
+            .build();
+        Appointment appointment = Appointment.builder()
+            .id("app-1")
+            .slotId("slot-1")
+            .patientId("patient-1")
+            .nutritionistId("nutri-1")
+            .startTime(slot.getStartTime())
+            .endTime(slot.getEndTime())
+            .status(AppointmentStatus.CONFIRMED)
+            .locale("es")
+            .build();
+
+        when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+        when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(reservedSlot));
+        when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.cancelAppointmentAsNutritionist("nutri-1", "app-1");
+
+        assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        assertThat(appointment.getCancelledBy()).isEqualTo("nutri-1");
+        assertThat(appointment.getCancellationReason()).isEqualTo("NUTRITIONIST_CANCELLED");
+        assertThat(reservedSlot.isReserved()).isFalse();
+        assertThat(reservedSlot.isActive()).isTrue();
+        verify(agendaEventPublisher).publishAppointmentCancelled(any(AppointmentCancelledEvent.class));
+    }
+
+    @Test
+    void cancelAppointmentAsNutritionist_shouldRejectPastAppointment() {
+        Appointment appointment = Appointment.builder()
+            .id("app-1")
+            .slotId("slot-1")
+            .patientId("patient-1")
+            .nutritionistId("nutri-1")
+            .startTime(Instant.now().minusSeconds(60))
+            .endTime(Instant.now().plusSeconds(1800))
+            .status(AppointmentStatus.CONFIRMED)
+            .build();
+
+        when(appointmentRepository.findById("app-1")).thenReturn(Optional.of(appointment));
+
+        assertThatThrownBy(() -> service.cancelAppointmentAsNutritionist("nutri-1", "app-1"))
+            .isInstanceOf(ConflictException.class)
+            .hasMessageContaining("comenzo");
     }
 }
 

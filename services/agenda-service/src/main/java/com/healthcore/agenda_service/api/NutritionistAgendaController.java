@@ -24,9 +24,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.healthcore.agenda_service.api.dto.AppointmentResponse;
 import com.healthcore.agenda_service.api.dto.AvailabilitySlotResponse;
+import com.healthcore.agenda_service.api.dto.CreateNutritionistAppointmentRequest;
 import com.healthcore.agenda_service.api.dto.GenerateSlotsRequest;
 import com.healthcore.agenda_service.application.GenerateSlotsCommand;
 import com.healthcore.agenda_service.application.NutritionistAvailabilityService;
+import com.healthcore.agenda_service.application.CreateAppointmentCommand;
+import com.healthcore.agenda_service.application.PatientAppointmentService;
 import com.healthcore.agenda_service.domain.Appointment;
 import com.healthcore.agenda_service.domain.AppointmentStatus;
 import com.healthcore.agenda_service.domain.TimeSlot;
@@ -45,6 +48,7 @@ import lombok.RequiredArgsConstructor;
 public class NutritionistAgendaController {
 
     private final NutritionistAvailabilityService nutritionistAvailabilityService;
+    private final PatientAppointmentService patientAppointmentService;
 
     @Value("${agenda.default-time-zone:America/Mexico_City}")
     private String defaultTimeZone;
@@ -100,6 +104,58 @@ public class NutritionistAgendaController {
     ) {
         String nutritionistId = currentNutritionistId(authentication);
         nutritionistAvailabilityService.deactivateTimeSlot(nutritionistId, slotId);
+    }
+
+    @Operation(summary = "Activate slot", description = "Re-enables an inactive future slot that belongs to the authenticated nutritionist.")
+    @ApiResponse(responseCode = "204", description = "Slot activated successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "404", description = "Slot not found")
+    @PatchMapping("/slots/{id}/activate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void activateSlot(
+        Authentication authentication,
+        @PathVariable("id") String slotId
+    ) {
+        String nutritionistId = currentNutritionistId(authentication);
+        nutritionistAvailabilityService.activateTimeSlot(nutritionistId, slotId);
+    }
+
+    @Operation(summary = "Create appointment for a linked patient", description = "Books a future free slot owned by the authenticated nutritionist for one of their linked patients.")
+    @ApiResponse(responseCode = "201", description = "Appointment created successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request payload")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Patient is not linked to the authenticated nutritionist")
+    @ApiResponse(responseCode = "404", description = "Slot not found")
+    @ApiResponse(responseCode = "409", description = "Slot changed or patient already has another appointment within 7 days")
+    @PostMapping("/appointments")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AppointmentResponse createAppointmentForPatient(
+        Authentication authentication,
+        @Valid @RequestBody CreateNutritionistAppointmentRequest request
+    ) {
+        String nutritionistId = currentNutritionistId(authentication);
+        Appointment created = patientAppointmentService.createAppointmentForPatient(
+            nutritionistId,
+            request.patientId(),
+            new CreateAppointmentCommand(request.slotId(), request.slotVersion(), request.locale())
+        );
+        return toAppointmentResponse(created);
+    }
+
+    @Operation(summary = "Cancel appointment", description = "Cancels a future appointment booked with the authenticated nutritionist and releases the slot without deactivating it.")
+    @ApiResponse(responseCode = "204", description = "Appointment cancelled successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @ApiResponse(responseCode = "403", description = "Appointment does not belong to the nutritionist")
+    @ApiResponse(responseCode = "404", description = "Appointment not found")
+    @ApiResponse(responseCode = "409", description = "Appointment already started")
+    @PatchMapping("/appointments/{id}/cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelAppointment(
+        Authentication authentication,
+        @PathVariable("id") String appointmentId
+    ) {
+        String nutritionistId = currentNutritionistId(authentication);
+        patientAppointmentService.cancelAppointmentAsNutritionist(nutritionistId, appointmentId);
     }
 
     @Operation(summary = "Get my appointments", description = "Returns the appointments booked with the authenticated nutritionist.")

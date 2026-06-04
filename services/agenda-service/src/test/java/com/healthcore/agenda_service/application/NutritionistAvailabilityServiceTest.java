@@ -362,6 +362,47 @@ class NutritionistAvailabilityServiceTest {
                                 .hasMessageContaining("transaccion");
         }
 
+        @Test
+        void activateTimeSlot_shouldReactivateInactiveFutureSlot() {
+                TimeSlot slot = TimeSlot.builder()
+                                .id("slot-1")
+                                .nutritionistId("nutri-1")
+                                .startTime(Instant.now().plus(48, ChronoUnit.HOURS))
+                                .endTime(Instant.now().plus(49, ChronoUnit.HOURS))
+                                .active(false)
+                                .reserved(false)
+                                .deactivatedBy("nutri-1")
+                                .deactivationReason("NUTRITIONIST_DEACTIVATED")
+                                .deactivatedAt(Instant.now())
+                                .version(1L)
+                                .build();
+                when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+                when(timeSlotRepository.save(any(TimeSlot.class))).thenAnswer(i -> i.getArgument(0));
+
+                service.activateTimeSlot("nutri-1", "slot-1");
+
+                assertThat(slot.isActive()).isTrue();
+                assertThat(slot.getDeactivatedAt()).isNull();
+                assertThat(slot.getDeactivatedBy()).isNull();
+                assertThat(slot.getDeactivationReason()).isNull();
+        }
+
+        @Test
+        void activateTimeSlot_shouldRejectReservedSlot() {
+                TimeSlot slot = TimeSlot.builder()
+                                .id("slot-1")
+                                .nutritionistId("nutri-1")
+                                .startTime(Instant.now().plus(48, ChronoUnit.HOURS))
+                                .active(false)
+                                .reserved(true)
+                                .build();
+                when(timeSlotRepository.findById("slot-1")).thenReturn(Optional.of(slot));
+
+                assertThatThrownBy(() -> service.activateTimeSlot("nutri-1", "slot-1"))
+                                .isInstanceOf(ConflictException.class)
+                                .hasMessageContaining("reservado");
+        }
+
         // ── query methods ────────────────────────────────────────────────────
 
         @Test
